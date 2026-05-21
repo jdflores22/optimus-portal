@@ -40,7 +40,7 @@
         <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ 'now'|date('U') }}">
         
         {# Notyf Toast Notifications #}
-        <link rel="stylesheet" href="{{ asset('node_modules/notyf/notyf.min.css') }}?v={{ 'now'|date('U') }}">
+        <link rel="stylesheet" href="{{ asset('vendor/notyf/notyf.min.css') }}?v={{ 'now'|date('U') }}">
         
         {% block stylesheets %}
         {% endblock %}
@@ -60,11 +60,11 @@
         </script>
         
         {# Third-party libraries #}
-        <script src="{{ asset('node_modules/lodash/lodash.min.js') }}"></script>
-        <script src="{{ asset('node_modules/apexcharts/dist/apexcharts.min.js') }}"></script>
+        <script src="{{ asset('vendor/lodash/lodash.min.js') }}"></script>
+        <script src="{{ asset('vendor/apexcharts/apexcharts.min.js') }}"></script>
         
         {# Notyf Toast Notifications #}
-        <script src="{{ asset('node_modules/notyf/notyf.min.js') }}?v={{ 'now'|date('U') }}"></script>
+        <script src="{{ asset('vendor/notyf/notyf.min.js') }}?v={{ 'now'|date('U') }}"></script>
         <script>
             // Initialize global Notyf instance after DOM is ready
             document.addEventListener('DOMContentLoaded', function() {
