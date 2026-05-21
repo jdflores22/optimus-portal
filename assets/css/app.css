@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* FlyonUI imports */
+@import 'flyonui';
+@import 'flyonui/components';
+@import 'flyonui/src/vendor/apexcharts.css';
+
+/* Custom base overrides */
+@layer base {
+  body {
+    @apply bg-base-200;
+  }
+
+  /* Suppress browser default validation styling */
+  input:invalid,
+  textarea:invalid,
+  select:invalid {
+    box-shadow: none;
+    border-color: inherit;
+  }
+
+  input.error,
+  textarea.error,
+  select.error {
+    @apply border-error focus:border-error;
+  }
+}
+
+@layer utilities {
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* Global Styling - Claude theme border radius (1rem) applied to all themes */
+@layer components {
+  /* Badges - uniform 1rem radius across all sizes and themes */
+  .badge,
+  .badge-sm,
+  .badge-lg,
+  .badge-xl {
+    border-radius: 1rem !important;
+  }
+  
+  /* Buttons - uniform 1rem radius across all sizes and themes */
+  .btn,
+  .btn-sm,
+  .btn-lg,
+  .btn-xl {
+    border-radius: 1rem !important;
+  }
+  
+  /* Input fields - uniform 1rem radius for consistency */
+  .input,
+  .select,
+  .textarea,
+  .input-sm,
+  .select-sm,
+  .textarea-sm,
+  .input-lg,
+  .select-lg,
+  .textarea-lg {
+    border-radius: 1rem !important;
+  }
+  
+  /* Cards - uniform 1rem radius */
+  .card {
+    border-radius: 1rem !important;
+  }
+  
+  /* Alerts - uniform 1rem radius */
+  .alert {
+    border-radius: 1rem !important;
+  }
+  
+  /* Avatar - global centering for all content inside avatars */
+  .avatar,
+  .avatar.placeholder {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  .avatar > *,
+  .avatar.placeholder > * {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}

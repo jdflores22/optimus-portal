@@ -1,0 +1,172 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Broker Transfer Requests - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900">Broker Transfer Requests</h1>
+        <p class="mt-2 text-gray-600">Review and approve broker transfer requests from consignees</p>
+    </div>
+
+    <!-- Pending Requests -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Pending Requests ({{ requests|length }})</h3>
+        </div>
+
+        {% if requests|length > 0 %}
+            <div class="divide-y divide-gray-200">
+                {% for request in requests %}
+                    <div class="p-6 hover:bg-gray-50">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3">
+                                    <h4 class="text-lg font-medium text-gray-900">
+                                        Manifest #{{ request.manifest.manifestNumber }}
+                                    </h4>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                        Pending
+                                    </span>
+                                </div>
+                                
+                                <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-sm text-gray-500">Consignee</p>
+                                        <p class="text-sm font-medium text-gray-900">{{ request.consignee.businessName }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Current Broker</p>
+                                        <p class="text-sm font-medium text-gray-900">
+                                            {% if request.currentBroker %}
+                                                {{ request.currentBroker.fullName }}
+                                            {% else %}
+                                                <span class="text-gray-400">No broker</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">New Broker</p>
+                                        <p class="text-sm font-medium text-gray-900">{{ request.newBroker.fullName }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Requested</p>
+                                        <p class="text-sm font-medium text-gray-900">{{ request.createdAt|date('M j, Y g:i A') }}</p>
+                                    </div>
+                                </div>
+
+                                {% if request.reason %}
+                                    <div class="mt-3">
+                                        <p class="text-sm text-gray-500">Reason</p>
+                                        <p class="text-sm text-gray-700 mt-1">{{ request.reason }}</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="ml-6 flex flex-col space-y-2">
+                                <form method="POST" action="{{ path('sl_transfer_request_approve', {id: request.id}) }}" class="inline">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('approve_transfer_' ~ request.id) }}">
+                                    <button type="submit" 
+                                            class="px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                        Approve
+                                    </button>
+                                </form>
+                                <button type="button" 
+                                        onclick="showRejectModal({{ request.id }}, '{{ request.manifest.manifestNumber }}')"
+                                        class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    Reject
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No pending requests</h3>
+                <p class="mt-1 text-sm text-gray-500">All transfer requests have been processed.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div id="rejectModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-auto">
+            <form method="POST" id="rejectForm">
+                <div class="p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Reject Transfer Request</h3>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Are you sure you want to reject the transfer request for Manifest <span id="rejectManifestNumber" class="font-medium"></span>?
+                    </p>
+                    
+                    <div>
+                        <label for="rejectionNotes" class="block text-sm font-medium text-gray-700 mb-1">
+                            Rejection Notes <span class="text-red-500">*</span>
+                        </label>
+                        <textarea 
+                            name="notes" 
+                            id="rejectionNotes" 
+                            rows="4" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Explain why this transfer request is being rejected..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-end space-x-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+                    <button type="button" 
+                            onclick="closeRejectModal()"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700">
+                        Reject Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function showRejectModal(requestId, manifestNumber) {
+    const modal = document.getElementById('rejectModal');
+    const form = document.getElementById('rejectForm');
+    const manifestNumberSpan = document.getElementById('rejectManifestNumber');
+    
+    form.action = `/sl-staff/transfer-requests/${requestId}/reject`;
+    manifestNumberSpan.textContent = manifestNumber;
+    modal.classList.remove('hidden');
+}
+
+function closeRejectModal() {
+    const modal = document.getElementById('rejectModal');
+    const form = document.getElementById('rejectForm');
+    const textarea = document.getElementById('rejectionNotes');
+    
+    modal.classList.add('hidden');
+    textarea.value = '';
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeRejectModal();
+    }
+});
+
+// Close modal when clicking outside
+document.getElementById('rejectModal').addEventListener('click', function(event) {
+    if (event.target === this) {
+        closeRejectModal();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,747 @@
+<!-- Sidebar -->
+<div class="hidden md:flex md:w-72 md:flex-col md:fixed md:inset-y-0">
+    <div class="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto bg-indigo-600">
+        <!-- Logo -->
+        <div class="flex items-center flex-shrink-0 px-6">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-lg">
+                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                    </svg>
+                </div>
+                <span class="ml-3 text-xl font-bold text-white">OPTIMUS</span>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="mt-8 flex-1 px-4 space-y-1">
+            {% set currentRoute = app.request.attributes.get('_route') %}
+            
+            <!-- Dashboard -->
+            {% if app.user.role.value == 'SYSTEM_ADMIN' %}
+                <a href="{{ path('app_admin_dashboard') }}" 
+                   class="group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg {{ currentRoute starts with 'app_admin_dashboard' ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-700 hover:text-white' }} transition-colors duration-150">
+                    <svg class="mr-3 flex-shrink-0 h-5 w-5 {{ currentRoute starts with 'app_admin_dashboard' ? 'text-white' : 'text-indigo-300' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"></path>
+                    </svg>
+                    Dashboard
+                </a>
+                
+                <!-- eDO Release Queue -->
+                <a href="{{ path('admin_edo_release_queue') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_edo_release' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_edo_release' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    eDO Release Queue
+                    {% set pendingCount = pending_edo_payment_count() %}
+                    {% if pendingCount > 0 %}
+                        <span class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">{{ pendingCount }}</span>
+                    {% endif %}
+                </a>
+            {% elseif app.user.role.value == 'CONSIGNEE' %}
+                <a href="{{ path('app_consignee_dashboard') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_consignee_dashboard' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_consignee_dashboard' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                    </svg>
+                    Dashboard
+                </a>
+            {% elseif app.user.role.value == 'BROKER' %}
+                <a href="{{ path('broker_workspace_selector') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'broker_workspace' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'broker_workspace' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                    Workspace
+                </a>
+                <a href="{{ path('app_broker_dashboard') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_broker_dashboard' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_broker_dashboard' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                    </svg>
+                    Dashboard
+                </a>
+            {% elseif app.user.role.value == 'EVALUATOR' %}
+                <a href="{{ path('app_evaluator_dashboard') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_evaluator_dashboard' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_evaluator_dashboard' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                    </svg>
+                    Dashboard
+                </a>
+            {% elseif app.user.role.value == 'SL_STAFF' %}
+                <a href="{{ path('app_sl_staff_dashboard') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_sl_staff_dashboard' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_sl_staff_dashboard' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                    </svg>
+                    Dashboard
+                </a>
+            {% elseif app.user.role.value == 'SHIPPING_LINES_ADMIN' %}
+                <a href="{{ path('app_shipping_admin_dashboard') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_shipping_admin_dashboard' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_shipping_admin_dashboard' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                    </svg>
+                    Dashboard
+                </a>
+            {% elseif app.user.role.value == 'ACCOUNTING' %}
+                <a href="{{ path('app_accounting_dashboard_new') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_accounting_dashboard' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_accounting_dashboard' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                    </svg>
+                    Dashboard
+                </a>
+            {% elseif app.user.role.value == 'TERMINAL_TEAM' %}
+                <a href="{{ path('app_terminal_team_dashboard') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_terminal_team_dashboard' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_terminal_team_dashboard' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                    </svg>
+                    Dashboard
+                </a>
+            {% endif %}
+
+            <!-- Notifications (Available to all users) -->
+            <a href="{{ path('notifications_page') }}" 
+               class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'notifications' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'notifications' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM11 17H6l5 5v-5zM7 7a5 5 0 1110 0v3l2 2v1H5v-1l2-2V7z"></path>
+                </svg>
+                Notifications
+                <span id="sidebarNotificationBadge" class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 hidden">0</span>
+            </a>
+
+            <!-- Role-specific navigation items -->
+            {% if app.user.role.value == 'SYSTEM_ADMIN' %}
+                <!-- System Admin Menu -->
+                <a href="{{ path('app_admin_approved_accreditations') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_admin_approved_accreditations' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_admin_approved_accreditations' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Approved Accreditations
+                </a>
+                
+                <a href="{{ path('app_admin_users') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_admin_users' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_admin_users' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                    </svg>
+                    User Management
+                </a>
+                
+                <a href="{{ path('admin_appeals_list') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_appeals' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_appeals' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Suspension Appeals
+                    {% if pendingAppealsCount is defined and pendingAppealsCount > 0 %}
+                        <span class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">{{ pendingAppealsCount }}</span>
+                    {% endif %}
+                </a>
+                
+                <a href="{{ path('admin_broker_transfer_requests') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_broker_transfer' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_broker_transfer' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                    </svg>
+                    Transfer Requests
+                    {% if pendingTransferRequestsCount is defined and pendingTransferRequestsCount > 0 %}
+                        <span class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{{ pendingTransferRequestsCount }}</span>
+                    {% endif %}
+                </a>
+                
+                <a href="{{ path('app_admin_audit_logs') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_admin_audit_logs' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_admin_audit_logs' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Audit Logs
+                </a>
+                
+                <a href="{{ path('admin_shipping_lines_list') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_shipping_lines' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_shipping_lines' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    Shipping Lines
+                </a>
+                
+                <a href="{{ path('admin_terminals_index') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_terminals' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_terminals' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8h4m-4 4h4"/>
+                    </svg>
+                    Terminal Management
+                </a>
+                
+                <a href="{{ path('admin_container_types_index') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_container_types' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_container_types' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    Container Types
+                </a>
+                
+                <a href="{{ path('admin_container_sizes_index') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_container_sizes' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_container_sizes' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                    </svg>
+                    Container Sizes
+                </a>
+                
+                <a href="{{ path('admin_user_hierarchy_list') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_user_hierarchy' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_user_hierarchy' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    User Hierarchy
+                </a>
+                
+                <a href="{{ path('form_builder_list') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'form_builder' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'form_builder' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                    Form Builder
+                </a>
+                
+                <a href="{{ path('admin_system_settings') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_system_settings' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_system_settings' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    System Settings
+                </a>
+
+            {% elseif app.user.role.value == 'CONSIGNEE' %}
+                <!-- Consignee Menu -->
+                <a href="{{ path('accreditation_index') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'accreditation' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'accreditation' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Accreditation
+                </a>
+                
+                <a href="{{ path('consignee_manifest_list') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'consignee_manifest' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'consignee_manifest' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    My Manifests
+                </a>
+                
+                <a href="{{ path('consignee_brokers') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'consignee_brokers' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'consignee_brokers' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    Brokers
+                </a>
+
+            {% elseif app.user.role.value == 'BROKER' %}
+                <!-- Broker Menu -->
+                <a href="{{ path('accreditation_index') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'accreditation' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'accreditation' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Accreditation
+                </a>
+                
+                <a href="{{ path('broker_shipment_search') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'broker_shipment' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'broker_shipment' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    Search Shipments
+                </a>
+                
+                <a href="{{ path('broker_manifest_list') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'broker_manifest' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'broker_manifest' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    My Manifests
+                </a>
+
+            {% elseif app.user.role.value == 'EVALUATOR' %}
+                <!-- Evaluator Menu -->
+                <a href="{{ path('app_evaluator_applications') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_evaluator_applications' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_evaluator_applications' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Applications
+                </a>
+
+            {% elseif app.user.role.value == 'SHIPPING_LINES_ADMIN' %}
+                <!-- Shipping Lines Admin Menu -->
+                <a href="{{ path('shipment_list') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'shipment' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'shipment' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                    </svg>
+                    All Shipments
+                </a>
+                
+                <a href="{{ path('admin_user_hierarchy_list') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_user_hierarchy' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_user_hierarchy' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                    </svg>
+                    My Team
+                </a>
+                
+                <a href="{{ path('payment_list') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'payment' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'payment' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                    </svg>
+                    System Payments
+                </a>
+
+            {% elseif app.user.role.value == 'SL_STAFF' %}
+                <!-- SL Staff Menu -->
+                <a href="{{ path('shipment_list') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'shipment' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'shipment' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                    </svg>
+                    Shipments
+                </a>
+                
+                <a href="{{ path('manifest_workflow_list') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'manifest_workflow' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'manifest_workflow' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Manifest Workflow
+                </a>
+
+            {% elseif app.user.role.value == 'ACCOUNTING' %}
+                <!-- Accounting Menu -->
+                <a href="{{ path('payment_list') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'payment' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'payment' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                    </svg>
+                    Payments
+                </a>
+                
+                <a href="{{ path('accounting_payment_dashboard') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'accounting_payment' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'accounting_payment' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Final Payment Validation
+                </a>
+            {% elseif app.user.role.value == 'TERMINAL_TEAM' %}
+                <!-- Terminal Team Menu -->
+                <a href="{{ path('app_terminal_team_pre_advice_requests', {status: 'pending'}) }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_terminal_team_pre_advice' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_terminal_team_pre_advice' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                    </svg>
+                    FREE-ADVICE
+                    {% if pending_pre_advice_count > 0 %}
+                        <span class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            {{ pending_pre_advice_count > 99 ? '99+' : pending_pre_advice_count }}
+                        </span>
+                    {% endif %}
+                </a>
+                
+                <a href="{{ path('app_terminal_team_dwell_time_monitoring') }}" 
+                   class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute == 'app_terminal_team_dwell_time_monitoring' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                    <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute == 'app_terminal_team_dwell_time_monitoring' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Dwell Time Monitoring
+                </a>
+            {% endif %}
+        </nav>
+    </div>
+</div>
+
+<!-- Mobile sidebar -->
+<div class="md:hidden">
+    <div class="fixed inset-0 flex z-40" id="mobile-sidebar" style="display: none;">
+        <div class="fixed inset-0 bg-gray-600 bg-opacity-75" onclick="toggleMobileSidebar()"></div>
+        <div class="relative flex-1 flex flex-col max-w-xs w-full bg-white">
+            <div class="absolute top-0 right-0 -mr-12 pt-2">
+                <button type="button" class="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white" onclick="toggleMobileSidebar()">
+                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
+                <!-- Mobile navigation content (same as desktop) -->
+                <div class="flex items-center flex-shrink-0 px-4">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                            </svg>
+                        </div>
+                        <span class="ml-3 text-xl font-bold text-gray-900">OPTIMUS</span>
+                    </div>
+                </div>
+                <nav class="mt-8 px-2 space-y-1">
+                    {% set currentRoute = app.request.attributes.get('_route') %}
+                    
+                    <!-- Dashboard -->
+                    {% if app.user.role.value == 'SYSTEM_ADMIN' %}
+                        <a href="{{ path('app_admin_dashboard') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_admin_dashboard' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_admin_dashboard' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"></path>
+                            </svg>
+                            Dashboard
+                        </a>
+                        
+                        <!-- eDO Release Queue -->
+                        <a href="{{ path('admin_edo_release_queue') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_edo_release' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_edo_release' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            eDO Release Queue
+                            {% set pendingCount = pending_edo_payment_count() %}
+                            {% if pendingCount > 0 %}
+                                <span class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">{{ pendingCount }}</span>
+                            {% endif %}
+                        </a>
+                    {% elseif app.user.role.value == 'CONSIGNEE' %}
+                        <a href="{{ path('app_consignee_dashboard') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_consignee_dashboard' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_consignee_dashboard' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                            </svg>
+                            Dashboard
+                        </a>
+                    {% elseif app.user.role.value == 'BROKER' %}
+                        <a href="{{ path('broker_workspace_selector') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'broker_workspace' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'broker_workspace' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                            Workspace
+                        </a>
+                        <a href="{{ path('app_broker_dashboard') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_broker_dashboard' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_broker_dashboard' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                            </svg>
+                            Dashboard
+                        </a>
+                    {% elseif app.user.role.value == 'EVALUATOR' %}
+                        <a href="{{ path('app_evaluator_dashboard') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_evaluator_dashboard' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_evaluator_dashboard' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                            </svg>
+                            Dashboard
+                        </a>
+                    {% elseif app.user.role.value == 'SL_STAFF' %}
+                        <a href="{{ path('app_sl_staff_dashboard') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_sl_staff_dashboard' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_sl_staff_dashboard' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                            </svg>
+                            Dashboard
+                        </a>
+                    {% elseif app.user.role.value == 'SHIPPING_LINES_ADMIN' %}
+                        <a href="{{ path('app_shipping_admin_dashboard') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_shipping_admin_dashboard' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_shipping_admin_dashboard' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                            </svg>
+                            Dashboard
+                        </a>
+                    {% elseif app.user.role.value == 'ACCOUNTING' %}
+                        <a href="{{ path('app_accounting_dashboard_new') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_accounting_dashboard' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_accounting_dashboard' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                            </svg>
+                            Dashboard
+                        </a>
+                    {% elseif app.user.role.value == 'TERMINAL_TEAM' %}
+                        <a href="{{ path('app_terminal_team_dashboard') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_terminal_team_dashboard' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_terminal_team_dashboard' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                            </svg>
+                            Dashboard
+                        </a>
+                    {% endif %}
+
+                    <!-- Role-specific navigation items -->
+                    {% if app.user.role.value == 'SYSTEM_ADMIN' %}
+                        <!-- System Admin Menu -->
+                        <a href="{{ path('app_admin_approved_accreditations') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_admin_approved_accreditations' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_admin_approved_accreditations' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Approved Accreditations
+                        </a>
+                        
+                        <a href="{{ path('app_admin_users') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_admin_users' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_admin_users' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                            </svg>
+                            User Management
+                        </a>
+                        
+                        <a href="{{ path('admin_appeals_list') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_appeals' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_appeals' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Suspension Appeals
+                            {% if pendingAppealsCount is defined and pendingAppealsCount > 0 %}
+                                <span class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">{{ pendingAppealsCount }}</span>
+                            {% endif %}
+                        </a>
+                        
+                        <a href="{{ path('admin_broker_transfer_requests') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_broker_transfer' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_broker_transfer' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                            </svg>
+                            Transfer Requests
+                            {% if pendingTransferRequestsCount is defined and pendingTransferRequestsCount > 0 %}
+                                <span class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{{ pendingTransferRequestsCount }}</span>
+                            {% endif %}
+                        </a>
+                        
+                        <a href="{{ path('app_admin_audit_logs') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_admin_audit_logs' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_admin_audit_logs' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Audit Logs
+                        </a>
+                        
+                        <a href="{{ path('admin_shipping_lines_list') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_shipping_lines' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_shipping_lines' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                            </svg>
+                            Shipping Lines
+                        </a>
+                        
+                        <a href="{{ path('admin_terminals_index') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_terminals' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_terminals' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8h4m-4 4h4"/>
+                            </svg>
+                            Terminal Management
+                        </a>
+                        
+                        <a href="{{ path('admin_container_types_index') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_container_types' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_container_types' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                            </svg>
+                            Container Types
+                        </a>
+                        
+                        <a href="{{ path('admin_container_sizes_index') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_container_sizes' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_container_sizes' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                            </svg>
+                            Container Sizes
+                        </a>
+                        
+                        <a href="{{ path('admin_user_hierarchy_list') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_user_hierarchy' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_user_hierarchy' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                            User Hierarchy
+                        </a>
+                        
+                        <a href="{{ path('form_builder_list') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'form_builder' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'form_builder' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                            Form Builder
+                        </a>
+
+                    {% elseif app.user.role.value == 'CONSIGNEE' %}
+                        <!-- Consignee Menu -->
+                        <a href="{{ path('accreditation_index') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'accreditation' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'accreditation' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Accreditation
+                        </a>
+                        
+                        <a href="{{ path('consignee_manifest_list') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'consignee_manifest' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'consignee_manifest' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            My Manifests
+                        </a>
+                        
+                        <a href="{{ path('consignee_brokers') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'consignee_brokers' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'consignee_brokers' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                            Brokers
+                        </a>
+
+                    {% elseif app.user.role.value == 'BROKER' %}
+                        <!-- Broker Menu -->
+                        <a href="{{ path('accreditation_index') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'accreditation' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'accreditation' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Accreditation
+                        </a>
+                        
+                        <a href="{{ path('broker_shipment_search') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'broker_shipment' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'broker_shipment' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            Search Shipments
+                        </a>
+                        
+                        <a href="{{ path('broker_manifest_list') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'broker_manifest' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'broker_manifest' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            My Manifests
+                        </a>
+
+                    {% elseif app.user.role.value == 'EVALUATOR' %}
+                        <!-- Evaluator Menu -->
+                        <a href="{{ path('app_evaluator_applications') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_evaluator_applications' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_evaluator_applications' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Applications
+                        </a>
+
+                    {% elseif app.user.role.value == 'SHIPPING_LINES_ADMIN' %}
+                        <!-- Shipping Lines Admin Menu -->
+                        <a href="{{ path('shipment_list') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'shipment' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'shipment' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                            </svg>
+                            All Shipments
+                        </a>
+                        
+                        <a href="{{ path('admin_user_hierarchy_list') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'admin_user_hierarchy' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'admin_user_hierarchy' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                            </svg>
+                            My Team
+                        </a>
+                        
+                        <a href="{{ path('payment_list') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'payment' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'payment' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            </svg>
+                            System Payments
+                        </a>
+
+                    {% elseif app.user.role.value == 'SL_STAFF' %}
+                        <!-- SL Staff Menu -->
+                        <a href="{{ path('shipment_list') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'shipment' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'shipment' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                            </svg>
+                            Shipments
+                        </a>
+                        
+                        <a href="{{ path('manifest_workflow_list') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'manifest_workflow' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'manifest_workflow' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Manifest Workflow
+                        </a>
+
+                    {% elseif app.user.role.value == 'ACCOUNTING' %}
+                        <!-- Accounting Menu -->
+                        <a href="{{ path('payment_list') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'payment' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'payment' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            </svg>
+                            Payments
+                        </a>
+                        
+                        <a href="{{ path('accounting_payment_dashboard') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'accounting_payment' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'accounting_payment' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Final Payment Validation
+                        </a>
+                    {% elseif app.user.role.value == 'TERMINAL_TEAM' %}
+                        <!-- Terminal Team Menu -->
+                        <a href="{{ path('app_terminal_team_pre_advice_requests', {status: 'pending'}) }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute starts with 'app_terminal_team_pre_advice' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute starts with 'app_terminal_team_pre_advice' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                            </svg>
+                            FREE-ADVICE
+                            {% if pending_pre_advice_count > 0 %}
+                                <span class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    {{ pending_pre_advice_count > 99 ? '99+' : pending_pre_advice_count }}
+                                </span>
+                            {% endif %}
+                        </a>
+                        
+                        <a href="{{ path('app_terminal_team_dwell_time_monitoring') }}" onclick="toggleMobileSidebar()"
+                           class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ currentRoute == 'app_terminal_team_dwell_time_monitoring' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                            <svg class="mr-3 flex-shrink-0 h-6 w-6 {{ currentRoute == 'app_terminal_team_dwell_time_monitoring' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Dwell Time Monitoring
+                        </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleMobileSidebar() {
+    const sidebar = document.getElementById('mobile-sidebar');
+    if (sidebar.style.display === 'none') {
+        sidebar.style.display = 'flex';
+    } else {
+        sidebar.style.display = 'none';
+    }
+}
+</script>

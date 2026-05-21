@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #2563eb;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f9fafb;
+            padding: 30px;
+            border: 1px solid #e5e7eb;
+            border-top: none;
+        }
+        .info-box {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #10b981;
+        }
+        .action-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            color: #6b7280;
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Welcome to OPTIMUS!</h1>
+    </div>
+    <div class="content">
+        <p>Hello {{ broker.fullName }},</p>
+        
+        <p>Your broker account has been successfully created and linked to <strong>{{ consignee.businessName }}</strong>.</p>
+        
+        <div class="info-box">
+            <h3 style="margin-top: 0;">Account Details</h3>
+            <p><strong>Email:</strong> {{ broker.email }}</p>
+            <p><strong>Role:</strong> Broker</p>
+            <p><strong>Linked Consignee:</strong> {{ consignee.businessName }}</p>
+            <p><strong>Registration Date:</strong> {{ registrationDate|date('F j, Y') }}</p>
+        </div>
+        
+        <p>You can now log in to your account and start managing manifests for {{ consignee.businessName }}.</p>
+        
+        <center>
+            <a href="{{ loginUrl }}" class="action-button">Log In to Your Account</a>
+        </center>
+        
+        <p><strong>Next Steps:</strong></p>
+        <ul>
+            <li>Log in to your account</li>
+            <li>Select your workspace ({{ consignee.businessName }})</li>
+            <li>View and manage assigned manifests</li>
+            <li>Upload bills of lading and submit payments</li>
+        </ul>
+        
+        <p>If you have any questions or need assistance, please contact support.</p>
+        
+        <p>Best regards,<br>The OPTIMUS Team</p>
+    </div>
+    <div class="footer">
+        <p>This is an automated message from OPTIMUS Shipping Portal.</p>
+        <p>© {{ 'now'|date('Y') }} OPTIMUS. All rights reserved.</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,352 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Manifest List - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-base-content">NOA & BL Workflow</h1>
+                <p class="mt-2 text-base-content/60">Manage Notice of Arrivals (NOA) and Bill of Lading (BL) workflow</p>
+            </div>
+            <div class="flex gap-2">
+                <a href="{{ path('manifest_workflow_bulk_import') }}" 
+                   class="btn btn-soft btn-info btn-lg gap-2 rounded-full">
+                    <span class="icon-[tabler--file-upload] size-5"></span>
+                    Bulk Import NOAs
+                </a>
+                <a href="{{ path('manifest_workflow_bulk_import_manifests') }}" 
+                   class="btn btn-soft btn-success btn-lg gap-2 rounded-full">
+                    <span class="icon-[tabler--file-spreadsheet] size-5"></span>
+                    Bulk Import Manifests
+                </a>
+                <a href="{{ path('manifest_workflow_create') }}" 
+                   class="btn btn-primary btn-lg gap-2 rounded-full">
+                    <span class="icon-[tabler--plus] size-5"></span>
+                    Create NOA
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Cards - Clickable Filters -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
+        <!-- Total NOAs -->
+        <a href="{{ path('manifest_workflow_list', filters|merge({status: '', page: 1})) }}" 
+           class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer {% if filters.status == '' or filters.status is null %}ring-2 ring-primary{% endif %}">
+            <div class="card-body p-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="icon-[tabler--file-text] size-5 text-primary"></span>
+                    <h3 class="text-xs font-medium text-base-content/70">Total</h3>
+                </div>
+                <p class="text-3xl font-bold text-base-content">{{ stats.total }}</p>
+                <p class="text-xs text-primary mt-1">All NOAs</p>
+            </div>
+        </a>
+
+        <!-- NOA Generated -->
+        <a href="{{ path('manifest_workflow_list', filters|merge({status: 'noa_generated', page: 1})) }}" 
+           class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer {% if filters.status == 'noa_generated' %}ring-2 ring-info{% endif %}">
+            <div class="card-body p-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="icon-[tabler--file-check] size-5 text-info"></span>
+                    <h3 class="text-xs font-medium text-base-content/70">NOA Created</h3>
+                </div>
+                <p class="text-3xl font-bold text-base-content">{{ stats.noa_generated }}</p>
+                <p class="text-xs text-info mt-1">Initial stage</p>
+            </div>
+        </a>
+
+        <!-- BL Generated -->
+        <a href="{{ path('manifest_workflow_list', filters|merge({status: 'bl_generated', page: 1})) }}" 
+           class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer {% if filters.status == 'bl_generated' %}ring-2 ring-success{% endif %}">
+            <div class="card-body p-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="icon-[tabler--file-upload] size-5 text-success"></span>
+                    <h3 class="text-xs font-medium text-base-content/70">BL Uploaded</h3>
+                </div>
+                <p class="text-3xl font-bold text-base-content">{{ stats.bl_generated }}</p>
+                <p class="text-xs text-success mt-1">BL ready</p>
+            </div>
+        </a>
+
+        <!-- Billing Generated -->
+        <a href="{{ path('manifest_workflow_list', filters|merge({status: 'billing_generated', page: 1})) }}" 
+           class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer {% if filters.status == 'billing_generated' %}ring-2 ring-warning{% endif %}">
+            <div class="card-body p-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="icon-[tabler--receipt] size-5 text-warning"></span>
+                    <h3 class="text-xs font-medium text-base-content/70">Billing</h3>
+                </div>
+                <p class="text-3xl font-bold text-base-content">{{ stats.billing_generated }}</p>
+                <p class="text-xs text-warning mt-1">Awaiting payment</p>
+            </div>
+        </a>
+
+        <!-- Payment Verified -->
+        <a href="{{ path('manifest_workflow_list', filters|merge({status: 'payment_verified', page: 1})) }}" 
+           class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer {% if filters.status == 'payment_verified' %}ring-2 ring-secondary{% endif %}">
+            <div class="card-body p-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="icon-[tabler--circle-check] size-5 text-secondary"></span>
+                    <h3 class="text-xs font-medium text-base-content/70">Paid</h3>
+                </div>
+                <p class="text-3xl font-bold text-base-content">{{ stats.payment_verified }}</p>
+                <p class="text-xs text-secondary mt-1">Payment verified</p>
+            </div>
+        </a>
+
+        <!-- eDO Generated -->
+        <a href="{{ path('manifest_workflow_list', filters|merge({status: 'edo_generated', page: 1})) }}" 
+           class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer {% if filters.status == 'edo_generated' %}ring-2 ring-success{% endif %}">
+            <div class="card-body p-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="icon-[tabler--file-certificate] size-5 text-success"></span>
+                    <h3 class="text-xs font-medium text-base-content/70">eDO Created</h3>
+                </div>
+                <p class="text-3xl font-bold text-base-content">{{ stats.edo_generated }}</p>
+                <p class="text-xs text-success mt-1">eDO ready</p>
+            </div>
+        </a>
+
+        <!-- eDO Released -->
+        <a href="{{ path('manifest_workflow_list', filters|merge({status: 'edo_released', page: 1})) }}" 
+           class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer {% if filters.status == 'edo_released' %}ring-2 ring-success{% endif %}">
+            <div class="card-body p-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="icon-[tabler--circle-check-filled] size-5 text-success"></span>
+                    <h3 class="text-xs font-medium text-base-content/70">Released</h3>
+                </div>
+                <p class="text-3xl font-bold text-base-content">{{ stats.edo_released }}</p>
+                <p class="text-xs text-success mt-1">Complete</p>
+            </div>
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card bg-base-100 shadow-md mb-6">
+        <div class="card-body">
+            <form method="GET" action="{{ path('manifest_workflow_list') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Date From -->
+                <div class="form-control">
+                    <label for="date_from" class="label">
+                        <span class="label-text">Date From</span>
+                    </label>
+                    <input type="date" name="date_from" id="date_from" value="{{ filters.date_from }}" 
+                           class="input input-bordered w-full">
+                </div>
+
+                <!-- Date To -->
+                <div class="form-control">
+                    <label for="date_to" class="label">
+                        <span class="label-text">Date To</span>
+                    </label>
+                    <input type="date" name="date_to" id="date_to" value="{{ filters.date_to }}" 
+                           class="input input-bordered w-full">
+                </div>
+
+                <!-- Consignee Filter -->
+                <div class="form-control">
+                    <label for="consignee" class="label">
+                        <span class="label-text">Consignee</span>
+                    </label>
+                    <input type="text" name="consignee" id="consignee" value="{{ filters.consignee }}" 
+                           placeholder="Search consignee..."
+                           class="input input-bordered w-full">
+                </div>
+
+                <!-- BL Number Filter -->
+                <div class="form-control">
+                    <label for="bl_number" class="label">
+                        <span class="label-text">BL Number</span>
+                    </label>
+                    <input type="text" name="bl_number" id="bl_number" value="{{ filters.bl_number }}" 
+                           placeholder="Search BL number..."
+                           class="input input-bordered w-full">
+                </div>
+
+                <!-- Hidden status field to preserve status filter from clickable cards -->
+                <input type="hidden" name="status" value="{{ filters.status }}">
+
+                <!-- Filter Buttons -->
+                <div class="lg:col-span-4 flex items-center justify-end gap-3">
+                    <a href="{{ path('manifest_workflow_list') }}" 
+                       class="btn btn-ghost">
+                        Clear Filters
+                    </a>
+                    <button type="submit" 
+                            class="btn btn-primary">
+                        Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- NOA/BL List -->
+    <div class="card bg-base-100 shadow-md">
+        <div class="card-body">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-base-content">NOA & BL Records</h3>
+                <span class="badge badge-primary badge-lg">{{ total }} Records</span>
+            </div>
+
+            {% if noas|length > 0 %}
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>NOA Number</th>
+                                <th>BL Number</th>
+                                <th>Vessel</th>
+                                <th>Consignee</th>
+                                <th>ETA</th>
+                                <th>Containers</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in noas %}
+                                {% set noa = item.noa %}
+                                {% set manifest = item.manifest %}
+                                <tr class="hover">
+                                    <td>
+                                        <div class="font-semibold text-base-content">{{ noa.noaNumber }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="text-base-content">{{ noa.blNumber }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="text-base-content">{{ noa.vesselNumber }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="text-base-content">{{ noa.consignee.businessName }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="text-base-content">{{ noa.eta|date('M j, Y') }}</div>
+                                        <div class="text-xs text-base-content/50">{{ noa.eta|date('H:i') }}</div>
+                                    </td>
+                                    <td>
+                                        {% if item.all_edos_generated %}
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="badge badge-success badge-sm gap-1">
+                                                    <span class="icon-[tabler--circle-check] size-3"></span>
+                                                    {{ item.containers_with_edo }}/{{ item.total_containers }}
+                                                </span>
+                                                <span class="text-xs text-success">✓</span>
+                                            </div>
+                                        {% elseif item.containers_with_edo > 0 %}
+                                            <div class="flex flex-col gap-1">
+                                                <span class="badge badge-warning badge-sm">
+                                                    {{ item.containers_with_edo }}/{{ item.total_containers }} eDOs
+                                                </span>
+                                                <div class="w-16 bg-base-300 rounded-full h-1">
+                                                    <div class="bg-warning h-1 rounded-full" style="width: {{ item.edo_progress }}%"></div>
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <span class="badge badge-info badge-sm">{{ item.total_containers }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if manifest %}
+                                            {% set status = manifest.workflowState %}
+                                            {% if status.value == 'noa_generated' %}
+                                                <span class="badge badge-info badge-sm">{{ status.displayName }}</span>
+                                            {% elseif status.value == 'bl_generated' %}
+                                                <span class="badge badge-success badge-sm">{{ status.displayName }}</span>
+                                            {% elseif status.value == 'billing_generated' %}
+                                                <span class="badge badge-warning badge-sm">{{ status.displayName }}</span>
+                                            {% elseif status.value == 'payment_verified' %}
+                                                <span class="badge badge-secondary badge-sm">{{ status.displayName }}</span>
+                                            {% elseif status.value == 'edo_generated' or status.value == 'edo_released' %}
+                                                <span class="badge badge-success badge-sm">{{ status.displayName }}</span>
+                                            {% else %}
+                                                <span class="badge badge-ghost badge-sm">{{ status.displayName }}</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge badge-ghost badge-sm">NOA Only</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-base-content/60">
+                                        {{ noa.createdAt|date('M j, Y') }}
+                                    </td>
+                                    <td>
+                                        <div class="flex justify-end gap-3">
+                                            <a href="{{ path('manifest_workflow_noa_detail', {id: noa.id}) }}" 
+                                               class="text-base-content/60 hover:text-primary transition-colors" 
+                                               title="View Details">
+                                                <span class="icon-[tabler--eye] size-5"></span>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if totalPages > 1 %}
+                    <div class="flex items-center justify-between mt-6">
+                        <div class="text-sm text-base-content/60">
+                            Page {{ currentPage }} of {{ totalPages }}
+                        </div>
+                        <div class="join">
+                            {% if currentPage > 1 %}
+                                <a href="{{ path('manifest_workflow_list', filters|merge({page: currentPage - 1})) }}" 
+                                   class="join-item btn btn-sm">
+                                    Previous
+                                </a>
+                            {% endif %}
+                            {% if currentPage < totalPages %}
+                                <a href="{{ path('manifest_workflow_list', filters|merge({page: currentPage + 1})) }}" 
+                                   class="join-item btn btn-sm">
+                                    Next
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-16">
+                    <div class="w-24 h-24 mx-auto bg-base-200 rounded-full flex items-center justify-center mb-6">
+                        <span class="icon-[tabler--file-text] size-12 text-base-content/40"></span>
+                    </div>
+                    <h3 class="text-xl font-semibold text-base-content mb-2">No NOA records found</h3>
+                    <p class="text-base-content/60 mb-6">Get started by creating a Notice of Arrival (NOA).</p>
+                    <a href="{{ path('manifest_workflow_create') }}" 
+                       class="btn btn-primary btn-lg">
+                        <span class="icon-[tabler--plus] size-5"></span>
+                        Create NOA
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{# Show flash messages as toast notifications #}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            {% for message in app.flashes('success') %}
+                if (window.notyf) {
+                    notyf.success('{{ message|e('js') }}');
+                }
+            {% endfor %}
+            
+            {% for message in app.flashes('error') %}
+                if (window.notyf) {
+                    notyf.error('{{ message|e('js') }}');
+                }
+            {% endfor %}
+        }, 100);
+    });
+</script>
+
+{% endblock %}

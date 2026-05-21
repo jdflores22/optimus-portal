@@ -1,0 +1,566 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}SAS Application Details - OPTIMUS{% endblock %}
+
+{% block body %}
+<!-- Toast Notification Container -->
+<div class="toast toast-top toast-end z-50">
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert {% if type == 'success' %}alert-success{% elseif type == 'error' %}alert-error{% elseif type == 'warning' %}alert-warning{% else %}alert-info{% endif %}">
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endfor %}
+</div>
+
+<div class="min-h-screen bg-base-200">
+    <!-- Breadcrumb Navigation -->
+    <div class="bg-base-100">
+        <div class="px-4 sm:px-6 lg:px-8 py-3">
+            <div class="breadcrumbs text-sm">
+                <ul>
+                    <li><a href="{{ path('accreditation_index') }}" class="text-primary hover:text-primary-focus">SAS</a></li>
+                    <li class="text-base-content">Application #{{ submission.id }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shipping Line Branding Header -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <!-- Left: Shipping Line Info -->
+                <div class="flex items-center gap-4">
+                    {% set logoUrl = submission.shippingLine.logoPath ? asset('uploads/shipping-lines/' ~ submission.shippingLine.logoPath) : (submission.shippingLine.portalConfig.logoUrl ?? null) %}
+                    {% if logoUrl %}
+                        <img src="{{ logoUrl }}" 
+                             alt="{{ submission.shippingLine.brandName }} logo" 
+                             class="h-16 w-auto object-contain">
+                    {% else %}
+                        {% set brandColor = submission.shippingLine.brandColor ?? (submission.shippingLine.portalConfig.primaryColor ?? '#3B82F6') %}
+                        <div class="size-16 rounded-xl flex items-center justify-center shadow-lg" style="background: linear-gradient(135deg, {{ brandColor }}, {{ brandColor }}dd);">
+                            <span class="text-2xl font-bold text-white">{{ submission.shippingLine.brandName|slice(0, 2)|upper }}</span>
+                        </div>
+                    {% endif %}
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold text-base-content">{{ submission.shippingLine.brandName }}</h1>
+                        <p class="text-sm text-base-content/60 mt-1">SAS Application #{{ submission.id }}</p>
+                    </div>
+                </div>
+                
+                <!-- Right: Back Button -->
+                <a href="{{ path('accreditation_index') }}" class="btn btn-ghost gap-2">
+                    <span class="icon-[tabler--arrow-left] size-4"></span>
+                    Back to SAS Center
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column: Status & Timeline -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Status Card -->
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-6">
+                        <h3 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-4">Application Status</h3>
+                        
+                        {% set statusBadge = 'badge-ghost' %}
+                        {% set statusIcon = 'help-circle' %}
+                        {% if submission.status.value == 'APPROVED' %}
+                            {% set statusBadge = 'badge-success' %}
+                            {% set statusIcon = 'circle-check' %}
+                        {% elseif submission.status.value == 'DENIED' or submission.status.value == 'REJECTED' %}
+                            {% set statusBadge = 'badge-error' %}
+                            {% set statusIcon = 'x' %}
+                        {% elseif submission.status.value == 'PENDING' %}
+                            {% set statusBadge = 'badge-info' %}
+                            {% set statusIcon = 'clock' %}
+                        {% elseif submission.status.value == 'COMPLIANCE_REQUIRED' %}
+                            {% set statusBadge = 'badge-warning' %}
+                            {% set statusIcon = 'alert-triangle' %}
+                        {% endif %}
+                        
+                        <div class="flex flex-col items-center text-center p-6 bg-base-200 rounded-xl">
+                            <div class="size-16 {{ statusBadge }} rounded-full flex items-center justify-center mb-4">
+                                <span class="icon-[tabler--{{ statusIcon }}] size-8"></span>
+                            </div>
+                            <p class="text-2xl font-bold text-base-content">
+                                {{ submission.status.value|replace({'_': ' '})|title }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline Card -->
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-6">
+                        <h3 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-4">Timeline</h3>
+                        <ul class="timeline timeline-vertical">
+                            <!-- Submitted -->
+                            <li>
+                                <div class="timeline-start text-xs text-base-content/60">{{ submission.submittedAt|date('M j, Y') }}</div>
+                                <div class="timeline-middle">
+                                    <span class="icon-[tabler--circle-check] size-5 text-info"></span>
+                                </div>
+                                <div class="timeline-end timeline-box bg-info/10 border-info/20">
+                                    <p class="text-sm font-medium text-base-content">Submitted</p>
+                                    <p class="text-xs text-base-content/60">{{ submission.submittedAt|date('g:i A') }}</p>
+                                </div>
+                                <hr class="bg-info" />
+                            </li>
+                            
+                            {% if submission.evaluatedAt %}
+                            <!-- Evaluated -->
+                            <li>
+                                <hr class="bg-secondary" />
+                                <div class="timeline-start text-xs text-base-content/60">{{ submission.evaluatedAt|date('M j, Y') }}</div>
+                                <div class="timeline-middle">
+                                    <span class="icon-[tabler--circle-check] size-5 text-secondary"></span>
+                                </div>
+                                <div class="timeline-end timeline-box bg-secondary/10 border-secondary/20">
+                                    <p class="text-sm font-medium text-base-content">Evaluated</p>
+                                    <p class="text-xs text-base-content/60">{{ submission.evaluatedAt|date('g:i A') }}</p>
+                                </div>
+                                {% if submission.approvedAt %}<hr class="bg-success" />{% endif %}
+                            </li>
+                            {% endif %}
+                            
+                            {% if submission.approvedAt %}
+                            <!-- Approved -->
+                            <li>
+                                <hr class="bg-success" />
+                                <div class="timeline-start text-xs text-base-content/60">{{ submission.approvedAt|date('M j, Y') }}</div>
+                                <div class="timeline-middle">
+                                    <span class="icon-[tabler--circle-check] size-5 text-success"></span>
+                                </div>
+                                <div class="timeline-end timeline-box bg-success/10 border-success/20">
+                                    <p class="text-sm font-medium text-base-content">Approved</p>
+                                    <p class="text-xs text-base-content/60">{{ submission.approvedAt|date('g:i A') }}</p>
+                                </div>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-6">
+                        <h3 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-4">Quick Actions</h3>
+                        <div class="space-y-3">
+                            {% if submission.status.value == 'DENIED' or submission.status.value == 'REJECTED' or submission.status.value == 'COMPLIANCE_REQUIRED' %}
+                                <a href="{{ path('accreditation_submit', {shippingLineId: submission.shippingLine.id}) }}" 
+                                   class="btn btn-primary w-full gap-2">
+                                    <span class="icon-[tabler--upload] size-4"></span>
+                                    Submit New Application
+                                </a>
+                            {% endif %}
+                            <a href="{{ path('accreditation_index') }}" class="btn btn-ghost w-full gap-2">
+                                <span class="icon-[tabler--arrow-left] size-4"></span>
+                                Back to SAS Center
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Details -->
+            <div class="lg:col-span-2 space-y-6">
+
+                <!-- Status Message -->
+                {% if submission.status.value == 'APPROVED' %}
+                    <div class="alert alert-success">
+                        <span class="icon-[tabler--circle-check] size-6"></span>
+                        <div>
+                            <h3 class="font-bold">SAS Accreditation Approved</h3>
+                            <p class="text-sm">Congratulations! Your SAS accreditation has been successfully approved. You now have full secured access to all platform features and services for {{ submission.shippingLine.brandName }}.</p>
+                            {% if submission.evaluatedAt %}
+                                <p class="text-xs mt-2 opacity-80">Approved on {{ submission.evaluatedAt|date('F j, Y') }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% elseif submission.status.value == 'PENDING' %}
+                    <div class="alert alert-info">
+                        <span class="icon-[tabler--clock] size-6"></span>
+                        <div>
+                            <h3 class="font-bold">SAS Application Under Review</h3>
+                            <p class="text-sm">Your SAS application is currently being reviewed by the {{ submission.shippingLine.brandName }} evaluation team. We'll notify you via email once the review is complete.</p>
+                            <p class="text-xs mt-2 opacity-80">Expected review time: 3-5 business days</p>
+                        </div>
+                    </div>
+                {% elseif submission.status.value == 'DENIED' or submission.status.value == 'REJECTED' %}
+                    <div class="alert alert-error">
+                        <span class="icon-[tabler--x] size-6"></span>
+                        <div>
+                            <h3 class="font-bold">SAS Application {{ submission.status.value|title }}</h3>
+                            <p class="text-sm">Unfortunately, your SAS application was not approved. Please review the feedback below and consider submitting a new application with the required corrections.</p>
+                            {% if submission.evaluatedAt %}
+                                <p class="text-xs mt-2 opacity-80">{{ submission.status.value|title }} on {{ submission.evaluatedAt|date('F j, Y') }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% elseif submission.status.value == 'COMPLIANCE_REQUIRED' %}
+                    <div class="alert alert-warning">
+                        <span class="icon-[tabler--alert-triangle] size-6"></span>
+                        <div>
+                            <h3 class="font-bold">Additional Compliance Required</h3>
+                            <p class="text-sm">Your SAS application requires additional compliance documentation or corrections. Please review the feedback and resubmit with the required information.</p>
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <!-- Feedback Section -->
+                {% if submission.denialReason %}
+                    <div class="card bg-base-100 shadow-sm">
+                        <div class="card-body p-6">
+                            <h3 class="text-lg font-bold text-base-content flex items-center gap-2 mb-4">
+                                <span class="icon-[tabler--message] size-5"></span>
+                                Evaluator Feedback
+                            </h3>
+                            <div class="alert">
+                                <p class="text-sm whitespace-pre-wrap">{{ submission.denialReason }}</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Submitted Data Preview -->
+                {% if submission.submittedData %}
+                    <div class="card bg-base-100 shadow-sm">
+                        <div class="card-body p-6">
+                            <h3 class="text-lg font-bold text-base-content flex items-center gap-2 mb-4">
+                                <span class="icon-[tabler--file-text] size-5"></span>
+                                Submitted Information
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {% for key, value in submission.submittedData %}
+                                    {% if key != '_csrf_token' and key != '_token' %}
+                                        <div class="space-y-2">
+                                            {% set fieldLabel = key|replace({'_': ' '})|title %}
+                                            {% if submission.formConfig.fields is defined %}
+                                                {% for field in submission.formConfig.fields %}
+                                                    {% if field['id'] is defined and field['id'] == key and field['label'] is defined %}
+                                                        {% set fieldLabel = field['label'] %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
+                                            <label class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">
+                                                {{ fieldLabel }}
+                                            </label>
+                                            {% if value is iterable and value is not same as(value|join) %}
+                                                <!-- Handle arrays/objects -->
+                                                {% if key == '_files' %}
+                                                    <!-- Special handling for _files field with document types and file IDs -->
+                                                    <div class="space-y-2">
+                                                        {% for docType, fileId in value %}
+                                                            {% set docLabel = docType|replace({'_': ' '})|title %}
+                                                            <div class="flex items-center justify-between p-3 bg-info/10 rounded-lg hover:bg-info/20 transition-colors">
+                                                                <div class="flex items-center gap-3">
+                                                                    <span class="icon-[tabler--file-text] size-5 text-info"></span>
+                                                                    <span class="text-sm font-medium text-base-content">{{ docLabel }}</span>
+                                                                </div>
+                                                                <button onclick="openDocumentModal('{{ fileId }}', '{{ docLabel }}')" 
+                                                                        class="btn btn-info btn-sm gap-2">
+                                                                    <span class="icon-[tabler--eye] size-4"></span>
+                                                                    View
+                                                                </button>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% else %}
+                                                    <!-- Regular array/object handling -->
+                                                    <div class="flex flex-wrap gap-2">
+                                                        {% if value is iterable %}
+                                                            {% for item in value %}
+                                                                <span class="badge badge-info badge-lg">{{ item }}</span>
+                                                            {% endfor %}
+                                                        {% else %}
+                                                            <p class="text-sm text-base-content">{{ value }}</p>
+                                                        {% endif %}
+                                                    </div>
+                                                {% endif %}
+                                            {% elseif 'file' in key|lower or 'document' in key|lower or 'upload' in key|lower or 'attachment' in key|lower %}
+                                                <!-- File fields - show view button with modal -->
+                                                {% if value %}
+                                                    <div class="flex items-center justify-between p-3 bg-info/10 rounded-lg hover:bg-info/20 transition-colors">
+                                                        <div class="flex items-center gap-3">
+                                                            <span class="icon-[tabler--file-text] size-5 text-info"></span>
+                                                            <span class="text-sm font-medium text-base-content">{{ fieldLabel }}</span>
+                                                        </div>
+                                                        <button onclick="openDocumentModal('{{ value }}', '{{ fieldLabel }}')" 
+                                                                class="btn btn-info btn-sm gap-2">
+                                                            <span class="icon-[tabler--eye] size-4"></span>
+                                                            View
+                                                        </button>
+                                                    </div>
+                                                {% else %}
+                                                    <p class="text-sm text-base-content/50 italic">No file uploaded</p>
+                                                {% endif %}
+                                            {% elseif 'email' in key|lower %}
+                                                <!-- Email fields -->
+                                                <p class="text-sm text-base-content font-medium">
+                                                    <a href="mailto:{{ value }}" class="link link-primary">{{ value }}</a>
+                                                </p>
+                                            {% elseif 'phone' in key|lower %}
+                                                <!-- Phone fields -->
+                                                <p class="text-sm text-base-content font-medium">
+                                                    <a href="tel:{{ value }}" class="link link-primary">{{ value }}</a>
+                                                </p>
+                                            {% elseif 'website' in key|lower or 'url' in key|lower %}
+                                                <!-- URL fields -->
+                                                <p class="text-sm text-base-content font-medium">
+                                                    <a href="{{ value }}" target="_blank" class="link link-primary inline-flex items-center gap-1">
+                                                        {{ value }}
+                                                        <span class="icon-[tabler--external-link] size-3"></span>
+                                                    </a>
+                                                </p>
+                                            {% elseif 'address' in key|lower %}
+                                                <!-- Address fields -->
+                                                <p class="text-sm text-base-content whitespace-pre-line bg-base-200 p-3 rounded-lg">{{ value }}</p>
+                                            {% elseif 'date' in key|lower %}
+                                                <!-- Date fields -->
+                                                <p class="text-sm text-base-content font-medium">
+                                                    {% if value|date('Y-m-d') %}
+                                                        {{ value|date('F j, Y') }}
+                                                    {% else %}
+                                                        {{ value }}
+                                                    {% endif %}
+                                                </p>
+                                            {% elseif value|length > 100 %}
+                                                <!-- Long text fields -->
+                                                <div class="text-sm text-base-content bg-base-200 rounded-lg p-4 whitespace-pre-wrap">{{ value }}</div>
+                                            {% elseif value == '1' or value == 'on' or value == 'true' %}
+                                                <!-- Boolean/checkbox fields -->
+                                                <div class="flex items-center gap-2">
+                                                    <span class="icon-[tabler--check] size-5 text-success"></span>
+                                                    <span class="text-sm text-success font-semibold">Yes</span>
+                                                </div>
+                                            {% elseif value == '0' or value == 'off' or value == 'false' %}
+                                                <!-- Boolean/checkbox fields -->
+                                                <div class="flex items-center gap-2">
+                                                    <span class="icon-[tabler--x] size-5 text-error"></span>
+                                                    <span class="text-sm text-error font-semibold">No</span>
+                                                </div>
+                                            {% else %}
+                                                <!-- Regular text fields -->
+                                                <p class="text-sm text-base-content font-medium">{{ value ?: 'Not provided' }}</p>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Document Modal -->
+<div id="documentModal" class="fixed inset-0 z-[9999] hidden">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal()"></div>
+    
+    <!-- Modal Content -->
+    <div class="fixed inset-0 overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative bg-base-100 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between px-6 py-4 border-b border-base-300">
+                    <h3 class="text-lg font-bold flex items-center gap-2" id="modalTitle">
+                        <span class="icon-[tabler--file-text] size-5"></span>
+                        Document Viewer
+                    </h3>
+                    <button type="button" onclick="closeModal()" class="btn btn-ghost btn-sm btn-circle">
+                        <span class="icon-[tabler--x] size-5"></span>
+                    </button>
+                </div>
+                
+                <!-- Modal Body -->
+                <div class="flex-1 p-6 overflow-auto">
+                    <div id="documentContent" class="flex items-center justify-center min-h-[400px]">
+                        <div class="text-center">
+                            <span class="loading loading-spinner loading-lg text-primary"></span>
+                            <p class="text-base-content font-medium mt-4">Loading document...</p>
+                            <p class="text-sm text-base-content/60 mt-1">Please wait</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-base-300">
+                    <a id="downloadLink" href="#" target="_blank" class="btn btn-primary gap-2">
+                        <span class="icon-[tabler--download] size-4"></span>
+                        Download
+                    </a>
+                    <button type="button" onclick="closeModal()" class="btn btn-ghost">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Document modal functions
+function openDocumentModal(fileId, documentTitle) {
+    const modal = document.getElementById('documentModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const documentContent = document.getElementById('documentContent');
+    const downloadLink = document.getElementById('downloadLink');
+    
+    modalTitle.innerHTML = `<span class="icon-[tabler--file-text] size-5"></span> ${documentTitle || 'Document Viewer'}`;
+    
+    const viewUrl = '{{ path('accreditation_file_download', {fileId: '__FILE_ID__'}) }}'.replace('__FILE_ID__', fileId);
+    downloadLink.href = viewUrl;
+    
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    // Show loading state
+    documentContent.innerHTML = `
+        <div class="text-center">
+            <span class="loading loading-spinner loading-lg text-primary"></span>
+            <p class="text-base-content font-medium mt-4">Loading document...</p>
+            <p class="text-sm text-base-content/60 mt-2">Please wait while we prepare your document</p>
+        </div>
+    `;
+    
+    // Fetch document as blob to avoid CSP issues
+    fetch(viewUrl)
+        .then(response => {
+            if (!response.ok) throw new Error('Document not found');
+            return response.blob();
+        })
+        .then(blob => {
+            const url = URL.createObjectURL(blob);
+            const contentType = blob.type;
+            
+            if (contentType.startsWith('image/') || documentTitle.toLowerCase().match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)) {
+                createImageElement(url, documentTitle);
+            } else if (contentType === 'application/pdf' || documentTitle.toLowerCase().endsWith('.pdf')) {
+                createPdfElement(url);
+            } else {
+                showUnsupportedFormat(viewUrl, documentTitle);
+            }
+        })
+        .catch(error => showDocumentError(error.message, viewUrl, documentTitle));
+}
+
+function createImageElement(url, documentTitle) {
+    const documentContent = document.getElementById('documentContent');
+    documentContent.innerHTML = `
+        <div class="w-full flex items-center justify-center p-4">
+            <img src="${url}" 
+                 alt="${documentTitle}"
+                 class="max-w-full max-h-full object-contain rounded-lg shadow-xl"
+                 onload="this.style.opacity='1'"
+                 style="opacity:0; transition: opacity 0.3s;">
+        </div>
+    `;
+}
+
+function createPdfElement(url) {
+    const documentContent = document.getElementById('documentContent');
+    documentContent.innerHTML = `
+        <div class="w-full bg-base-100 rounded-lg overflow-hidden">
+            <iframe src="${url}" 
+                    class="w-full h-full min-h-[500px] border-0"
+                    onload="this.style.opacity='1'"
+                    style="opacity:0; transition: opacity 0.3s;">
+            </iframe>
+        </div>
+    `;
+}
+
+function showUnsupportedFormat(fileUrl, documentTitle) {
+    const documentContent = document.getElementById('documentContent');
+    documentContent.innerHTML = `
+        <div class="flex flex-col items-center justify-center p-8 text-center">
+            <div class="size-24 bg-warning/10 rounded-2xl flex items-center justify-center mb-6">
+                <span class="icon-[tabler--file-text] size-12 text-warning"></span>
+            </div>
+            <h4 class="text-2xl font-bold text-base-content mb-3">Preview Not Available</h4>
+            <p class="text-base-content/60 mb-8 max-w-md">This document type cannot be previewed in the browser. Please download it to view the contents.</p>
+            <a href="${fileUrl}" target="_blank" class="btn btn-primary gap-2">
+                <span class="icon-[tabler--download] size-5"></span>
+                Download ${documentTitle}
+            </a>
+        </div>
+    `;
+}
+
+function showDocumentError(errorMessage, fileUrl, documentTitle) {
+    const documentContent = document.getElementById('documentContent');
+    documentContent.innerHTML = `
+        <div class="flex flex-col items-center justify-center p-8 text-center">
+            <div class="size-24 bg-error/10 rounded-2xl flex items-center justify-center mb-6">
+                <span class="icon-[tabler--alert-circle] size-12 text-error"></span>
+            </div>
+            <h4 class="text-2xl font-bold text-base-content mb-3">Unable to Load Document</h4>
+            <p class="text-base-content/60 mb-8 max-w-md">${errorMessage}. Please try downloading the document instead.</p>
+            <a href="${fileUrl}" target="_blank" class="btn btn-primary gap-2">
+                <span class="icon-[tabler--download] size-5"></span>
+                Download ${documentTitle}
+            </a>
+        </div>
+    `;
+}
+
+function closeModal() {
+    const modal = document.getElementById('documentModal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+    
+    // Clean up any object URLs
+    const documentContent = document.getElementById('documentContent');
+    const iframe = documentContent.querySelector('iframe');
+    const img = documentContent.querySelector('img');
+    
+    if (iframe && iframe.src.startsWith('blob:')) {
+        URL.revokeObjectURL(iframe.src);
+    }
+    if (img && img.src.startsWith('blob:')) {
+        URL.revokeObjectURL(img.src);
+    }
+    
+    // Reset content to loading state
+    documentContent.innerHTML = `
+        <div class="text-center">
+            <span class="loading loading-spinner loading-lg text-primary"></span>
+            <p class="text-base-content font-medium mt-4">Loading document...</p>
+            <p class="text-sm text-base-content/60 mt-1">Please wait</p>
+        </div>
+    `;
+}
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('documentModal');
+        if (!modal.classList.contains('hidden')) {
+            closeModal();
+        }
+    }
+});
+
+// Auto-dismiss flash messages after 5 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    const alerts = document.querySelectorAll('.toast .alert');
+    alerts.forEach(alert => {
+        setTimeout(() => {
+            alert.style.opacity = '0';
+            alert.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => alert.remove(), 300);
+        }, 5000);
+    });
+});
+</script>
+
+{% endblock %}

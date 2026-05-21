@@ -1,0 +1,131 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}eDO Payment - {{ manifest.manifestNumber }} - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <!-- Header Section -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 lg:px-8 py-4">
+            <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" 
+               class="inline-flex items-center text-sm text-base-content/60 hover:text-base-content mb-2 gap-2">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back to Manifest
+            </a>
+            <h1 class="text-2xl font-bold text-base-content">eDO Payment</h1>
+            <p class="mt-1 text-sm text-base-content/60">Select an eDO to submit payment for Manifest {{ manifest.manifestNumber }}</p>
+        </div>
+    </div>
+
+    <div class="px-4 sm:px-6 lg:px-8 py-6">
+        <!-- eDO List Card -->
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-0">
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">eDO Number</th>
+                                <th class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Container</th>
+                                <th class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Manifest</th>
+                                <th class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Status</th>
+                                <th class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Fee Amount</th>
+                                <th class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Submitted</th>
+                                <th class="text-xs font-semibold text-base-content/50 uppercase tracking-wider text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for edo in edos %}
+                                {% set currentPayment = edo.currentPayment %}
+                                <tr class="hover:bg-base-200">
+                                    <td>
+                                        <a href="{{ path('broker_manifest_edo_payment_specific', {id: manifest.id, edoNumber: edo.edoNumber}) }}" 
+                                           class="text-sm font-semibold text-primary hover:text-primary/80">
+                                            {{ edo.edoNumber }}
+                                        </a>
+                                    </td>
+                                    <td class="text-sm font-medium text-base-content">
+                                        {{ edo.container ? edo.container.containerNumber : 'N/A' }}
+                                    </td>
+                                    <td class="text-sm text-base-content/60">
+                                        {{ manifest.manifestNumber ?? 'N/A' }}
+                                    </td>
+                                    <td>
+                                        {% if currentPayment %}
+                                            {% if currentPayment.status.value == 'pending_validation' %}
+                                                <span class="badge badge-warning badge-md rounded-lg">
+                                                    Pending Validation
+                                                </span>
+                                            {% elseif currentPayment.status.value == 'approved' %}
+                                                <span class="badge badge-success badge-md rounded-lg">
+                                                    Released
+                                                </span>
+                                            {% elseif currentPayment.status.value == 'rejected' %}
+                                                <span class="badge badge-error badge-md rounded-lg">
+                                                    Rejected
+                                                </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge badge-ghost badge-md rounded-lg">
+                                                Pending Payment
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-sm font-semibold text-base-content">
+                                        ₱{{ edo.feeAmount|number_format(2) }}
+                                    </td>
+                                    <td class="text-sm text-base-content/60">
+                                        {% if currentPayment %}
+                                            {{ currentPayment.createdAt|date('M j, Y, h:i A') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-right">
+                                        {% if not currentPayment %}
+                                            <a href="{{ path('broker_manifest_edo_payment_specific', {id: manifest.id, edoNumber: edo.edoNumber}) }}" 
+                                               class="btn btn-primary btn-sm rounded-lg gap-2">
+                                                <span class="icon-[tabler--credit-card] size-4"></span>
+                                                Pay Now
+                                            </a>
+                                        {% elseif currentPayment.status.value == 'pending_validation' %}
+                                            <span class="btn btn-ghost btn-sm rounded-lg gap-2 cursor-not-allowed opacity-50">
+                                                <span class="icon-[tabler--clock] size-4"></span>
+                                                Awaiting Approval
+                                            </span>
+                                        {% elseif currentPayment.status.value == 'approved' or edo.status.value == 'released' %}
+                                            <a href="{{ path('broker_edo_download', {id: edo.id}) }}" 
+                                               class="btn btn-success btn-sm rounded-lg gap-2">
+                                                <span class="icon-[tabler--download] size-4"></span>
+                                                Download PDF
+                                            </a>
+                                        {% elseif currentPayment.status.value == 'rejected' %}
+                                            <a href="{{ path('broker_manifest_edo_payment_specific', {id: manifest.id, edoNumber: edo.edoNumber}) }}" 
+                                               class="btn btn-warning btn-sm rounded-lg gap-2">
+                                                <span class="icon-[tabler--refresh] size-4"></span>
+                                                Resubmit
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-12">
+                                        <div class="flex flex-col items-center justify-center">
+                                            <div class="size-16 bg-base-200 rounded-full flex items-center justify-center mb-3">
+                                                <span class="icon-[tabler--file-off] size-8 text-base-content/40"></span>
+                                            </div>
+                                            <p class="text-sm text-base-content/60">No eDOs found for this manifest.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

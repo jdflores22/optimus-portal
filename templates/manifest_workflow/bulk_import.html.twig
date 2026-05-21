@@ -1,0 +1,262 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Bulk Import NOAs - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+    {# Breadcrumb #}
+    <div class="breadcrumbs text-sm">
+        <ul>
+            <li>
+                <a href="{{ path('manifest_workflow_list') }}" class="inline-flex items-center gap-2">
+                    <span class="icon-[tabler--file-text] size-4"></span>
+                    NOA Workflow
+                </a>
+            </li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li aria-current="page">Bulk Import</li>
+        </ul>
+    </div>
+
+    {# Header #}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <span class="icon-[tabler--file-upload] size-7 text-primary"></span>
+            </div>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-base-content">Bulk Import NOAs</h1>
+                <p class="text-sm text-base-content/60 mt-1">Upload a CSV or Excel file to create multiple NOAs at once</p>
+            </div>
+        </div>
+        <a href="{{ path('manifest_workflow_list') }}" class="btn btn-ghost btn-sm gap-2 rounded-full">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back to List
+        </a>
+    </div>
+
+    {# Flash messages #}
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success">
+            <span class="icon-[tabler--circle-check] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error">
+            <span class="icon-[tabler--alert-circle] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+
+    {# 2 Column Layout #}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {# Left Column - Upload Form #}
+        <div class="space-y-6">
+            <form id="bulkImportForm" method="POST" enctype="multipart/form-data" class="space-y-6">
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-6">
+                        <h3 class="text-lg font-semibold text-base-content mb-4 flex items-center gap-2">
+                            <span class="icon-[tabler--upload] size-5 text-primary"></span>
+                            1. Upload File
+                        </h3>
+                        
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-medium">Select CSV or Excel file <span class="text-error">*</span></span>
+                            </label>
+                            <input type="file" 
+                                   name="import_file" 
+                                   id="importFile" 
+                                   accept=".csv,.xlsx,.xls"
+                                   required
+                                   class="block cursor-pointer text-sm text-base-content file:uppercase file:text-primary-content file:bg-primary file:px-4 file:h-9.5 file:rounded-field file:cursor-pointer file:font-medium file:text-base file:me-3 file:border-0 focus:outline-none w-full"
+                                   aria-label="file-input">
+                            <label class="label">
+                                <span class="label-text-alt text-base-content/60">Accepted formats: CSV, XLSX, XLS (Max 5MB)</span>
+                            </label>
+                        </div>
+
+                        <div class="form-control mt-4">
+                            <label class="label cursor-pointer justify-start gap-3">
+                                <input type="checkbox" name="skip_duplicates" class="checkbox checkbox-primary" checked>
+                                <span class="label-text">Skip duplicate BL numbers (recommended)</span>
+                            </label>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label cursor-pointer justify-start gap-3">
+                                <input type="checkbox" name="validate_only" id="validateOnly" class="checkbox checkbox-primary">
+                                <span class="label-text">Validate only (don't import, just check for errors)</span>
+                            </label>
+                        </div>
+
+                        <div class="divider"></div>
+
+                        {# Actions #}
+                        <div class="flex items-center justify-end gap-3">
+                            <a href="{{ path('manifest_workflow_list') }}" class="btn btn-ghost rounded-full">Cancel</a>
+                            <button type="submit" class="btn btn-primary gap-2 rounded-full">
+                                <span class="icon-[tabler--upload] size-5"></span>
+                                <span id="submitText">Upload & Preview</span>
+                                <span id="submitSpinner" class="loading loading-spinner loading-sm hidden"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            {# CSV Format Reference #}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-6">
+                    <h3 class="text-lg font-semibold text-base-content mb-4 flex items-center gap-2">
+                        <span class="icon-[tabler--table] size-5 text-primary"></span>
+                        CSV Format Reference
+                    </h3>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Column</th>
+                                    <th>Format</th>
+                                    <th>Example</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="badge badge-soft badge-primary badge-sm">bl_number</span></td>
+                                    <td class="text-xs">Text (max 50)</td>
+                                    <td><code class="text-xs">BL-2024-001</code></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge badge-soft badge-primary badge-sm">vessel_number</span></td>
+                                    <td class="text-xs">Text (max 50)</td>
+                                    <td><code class="text-xs">VESSEL-001</code></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge badge-soft badge-primary badge-sm">eta</span></td>
+                                    <td class="text-xs">YYYY-MM-DD HH:MM:SS</td>
+                                    <td><code class="text-xs">2024-12-31 14:30:00</code></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge badge-soft badge-primary badge-sm">consignee_email</span></td>
+                                    <td class="text-xs">Valid email</td>
+                                    <td><code class="text-xs">user@example.com</code></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge badge-soft badge-primary badge-sm">cy_location</span></td>
+                                    <td class="text-xs">Terminal code</td>
+                                    <td><code class="text-xs">ATI or ICTSI</code></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge badge-soft badge-info badge-sm">containers</span></td>
+                                    <td class="text-xs">Pipe-separated</td>
+                                    <td><code class="text-xs">CONT001|20|DRY|CY 1</code></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4 p-4 rounded-xl bg-warning/10 border border-warning/20">
+                        <div class="flex items-start gap-2">
+                            <span class="icon-[tabler--alert-triangle] size-5 text-warning flex-shrink-0 mt-0.5"></span>
+                            <div class="text-sm text-warning">
+                                <p class="font-semibold mb-1">Container Format:</p>
+                                <p class="text-warning/80">Each container: <code>number|size|type|cy_code</code></p>
+                                <p class="text-warning/80 mt-1">Multiple containers separated by pipes</p>
+                                <p class="text-warning/80 mt-1">Size: 20, 40, 40HC, or 45 | Type: DRY, REEFER, OPEN_TOP, FLAT_RACK, TANK, HIGH_CUBE</p>
+                                <p class="text-warning/80 mt-1">CY Code: Use terminal codes like ATI, ICTSI, CY-A, ESAFE</p>
+                                <p class="text-warning/80 mt-2"><strong>Note:</strong> NOA numbers are auto-generated by the system</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Right Column - Instructions & Template #}
+        <div class="space-y-6">
+            
+            {# Instructions #}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-6">
+                    <h3 class="text-lg font-semibold text-base-content mb-4 flex items-center gap-2">
+                        <span class="icon-[tabler--info-circle] size-5 text-info"></span>
+                        2. How to use Bulk Import
+                    </h3>
+                    <ol class="list-decimal list-inside space-y-3 text-sm text-base-content/70">
+                        <li class="pl-2">Download the CSV template below</li>
+                        <li class="pl-2">Fill in the NOA details following the format in the template</li>
+                        <li class="pl-2">Save your file as CSV or Excel format</li>
+                        <li class="pl-2">Upload the file using the form on the left</li>
+                        <li class="pl-2">Review the preview and confirm the import</li>
+                    </ol>
+                </div>
+            </div>
+
+            {# Download Template #}
+            <div class="card bg-gradient-to-br from-primary/10 to-secondary/10 border-2 border-primary/20 shadow-sm">
+                <div class="card-body p-6">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="size-12 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
+                            <span class="icon-[tabler--file-spreadsheet] size-6 text-primary"></span>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-base-content mb-1">Download CSV Template</h3>
+                            <p class="text-sm text-base-content/60">Use this template to format your NOA data correctly</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-2 text-xs mb-4">
+                        <span class="badge badge-soft badge-primary">BL Number</span>
+                        <span class="badge badge-soft badge-primary">Vessel Number</span>
+                        <span class="badge badge-soft badge-primary">ETA</span>
+                        <span class="badge badge-soft badge-primary">Consignee Email</span>
+                        <span class="badge badge-soft badge-primary">CY Location</span>
+                        <span class="badge badge-soft badge-primary">Containers</span>
+                    </div>
+
+                    <a href="{{ path('manifest_workflow_download_template') }}" 
+                       class="btn btn-primary btn-block gap-2 rounded-full">
+                        <span class="icon-[tabler--download] size-5"></span>
+                        Download Template
+                    </a>
+                </div>
+            </div>
+
+            {# Template Preview #}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-6">
+                    <h3 class="text-lg font-semibold text-base-content mb-4 flex items-center gap-2">
+                        <span class="icon-[tabler--eye] size-5 text-primary"></span>
+                        Template Preview
+                    </h3>
+                    <div class="mockup-code text-xs">
+                        <pre><code>bl_number,vessel_number,eta,consignee_email,cy_location,containers</code></pre>
+                        <pre><code>BL-2024-001,VESSEL-001,2024-12-31 14:30:00,user@example.com,ATI,CONT001|20|DRY|ATI|CONT002|40|REEFER|ICTSI</code></pre>
+                        <pre><code>BL-2024-002,VESSEL-002,2024-12-31 16:00:00,user@example.com,ICTSI,CONT003|20|DRY|ICTSI</code></pre>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+document.getElementById('bulkImportForm').addEventListener('submit', function(e) {
+    const submitText = document.getElementById('submitText');
+    const submitSpinner = document.getElementById('submitSpinner');
+    const validateOnly = document.getElementById('validateOnly');
+    
+    submitText.textContent = validateOnly.checked ? 'Validating...' : 'Uploading...';
+    submitSpinner.classList.remove('hidden');
+});
+</script>
+
+{% endblock %}

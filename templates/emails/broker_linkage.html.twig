@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Consignee Linked</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6; 
+            color: #1c1e21; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f0f2f5;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 20px auto; 
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header { 
+            background-color: #17a2b8; 
+            color: white; 
+            padding: 32px 24px; 
+            text-align: center; 
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .content { 
+            padding: 32px 24px; 
+            background-color: #ffffff; 
+        }
+        .content p {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+        }
+        .consignee-card {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .consignee-card h3 {
+            margin: 0 0 12px 0;
+            color: #17a2b8;
+            font-size: 18px;
+        }
+        .consignee-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #65676b;
+        }
+        .info-value {
+            color: #1c1e21;
+        }
+        .footer { 
+            padding: 24px; 
+            text-align: center; 
+            font-size: 14px; 
+            color: #65676b;
+            background-color: #f0f2f5;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #17a2b8;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 16px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔗 New Consignee Linked</h1>
+        </div>
+        <div class="content">
+            <p>Dear {{ broker.fullName }},</p>
+            <p>A new consignee has been successfully linked to your broker account. You can now manage shipments and operations for this consignee.</p>
+            
+            <div class="consignee-card">
+                <h3>Consignee Information</h3>
+                <div class="consignee-info">
+                    <span class="info-label">Business Name:</span>
+                    <span class="info-value">{{ consignee.businessName }}</span>
+                </div>
+                <div class="consignee-info">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{ consignee.email }}</span>
+                </div>
+                <div class="consignee-info">
+                    <span class="info-label">Linked Date:</span>
+                    <span class="info-value">{{ "now"|date('M d, Y') }}</span>
+                </div>
+            </div>
+
+            <p>You can now:</p>
+            <ul>
+                <li>View and manage shipments for {{ consignee.businessName }}</li>
+                <li>Submit payment verifications on their behalf</li>
+                <li>Access Electronic Delivery Orders for their shipments</li>
+            </ul>
+
+            <a href="#" class="cta-button">View Dashboard</a>
+        </div>
+        <div class="footer">
+            <p><strong>OPTIMUS Shipping Portal</strong><br>
+            Your trusted partner in shipping operations</p>
+        </div>
+    </div>
+</body>
+</html>

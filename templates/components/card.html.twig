@@ -1,0 +1,63 @@
+{# Card Component Macros #}
+{% macro card(content, title = null, subtitle = null, size = 'md', hover = false) %}
+    {% set size_class = size == 'sm' ? 'card-sm' : (size == 'lg' ? 'card-lg' : 'card-md') %}
+    {% set hover_class = hover ? 'card-hover' : 'card' %}
+    
+    <div class="{{ hover_class }} {{ size_class }}">
+        {% if title %}
+            <div class="card-header">
+                <h3 class="card-title">{{ title }}</h3>
+                {% if subtitle %}
+                    <p class="card-subtitle">{{ subtitle }}</p>
+                {% endif %}
+            </div>
+        {% endif %}
+        {{ content|raw }}
+    </div>
+{% endmacro %}
+
+{% macro metric_card(title, value, subtitle = null, icon = null, color = 'primary') %}
+    {% set color_classes = {
+        'primary': 'border-l-meta-blue-500 bg-meta-blue-50',
+        'success': 'border-l-green-500 bg-green-50',
+        'warning': 'border-l-yellow-500 bg-yellow-50',
+        'danger': 'border-l-red-500 bg-red-50',
+        'info': 'border-l-blue-500 bg-blue-50'
+    } %}
+    
+    <div class="card-md border-l-4 {{ color_classes[color] ?? color_classes['primary'] }}">
+        <div class="flex items-center">
+            {% if icon %}
+                <div class="flex-shrink-0 mr-4">
+                    <div class="w-8 h-8 flex items-center justify-center">
+                        {{ icon|raw }}
+                    </div>
+                </div>
+            {% endif %}
+            <div class="flex-1">
+                <div class="text-2xl font-bold text-meta-text-primary">{{ value }}</div>
+                <div class="text-sm font-medium text-meta-text-primary">{{ title }}</div>
+                {% if subtitle %}
+                    <div class="text-xs text-meta-text-secondary mt-1">{{ subtitle }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro list_card(items, title = null) %}
+    <div class="card-md">
+        {% if title %}
+            <div class="card-header">
+                <h3 class="card-title">{{ title }}</h3>
+            </div>
+        {% endif %}
+        <div class="space-y-2">
+            {% for item in items %}
+                <div class="flex items-center justify-between py-2 border-b border-meta-gray-100 last:border-b-0">
+                    {{ item|raw }}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endmacro %}

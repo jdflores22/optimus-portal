@@ -1,0 +1,32 @@
+framework:
+    messenger:
+        # Async message handling
+        failure_transport: failed
+
+        transports:
+            # Use Doctrine as the message transport (simpler for development)
+            async:
+                dsn: 'doctrine://default?queue_name=async'
+                retry_strategy:
+                    max_retries: 3
+                    delay: 1000
+                    multiplier: 2
+                    max_delay: 0
+
+            # Failed messages transport
+            failed: 'doctrine://default?queue_name=failed'
+
+        routing:
+            # Route Symfony Mailer messages to async transport
+            'Symfony\Component\Mailer\Messenger\SendEmailMessage': async
+            
+            # Route notification messages to async transport
+            'App\Message\SendEmailNotificationMessage': async
+            'App\Message\SendInAppNotificationMessage': async
+
+when@test:
+    framework:
+        messenger:
+            transports:
+                async: 'in-memory://'
+                failed: 'in-memory://'

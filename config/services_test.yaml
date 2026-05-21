@@ -1,0 +1,76 @@
+services:
+    # Make integration services public for testing
+    App\Service\AuthenticationIntegrationService:
+        public: true
+    
+    App\Service\FileManagementIntegrationService:
+        public: true
+    
+    App\Service\PaymentIntegrationService:
+        public: true
+    
+    App\Service\EDOIntegrationService:
+        public: true
+    
+    # Make terminal team pre-advice services public for testing
+    App\Service\ContainerSearchService:
+        public: true
+    
+    App\Service\TerminalService:
+        public: true
+    
+    App\Service\SlotManagementService:
+        public: true
+    
+    App\Service\PreAdviceService:
+        public: true
+    
+    App\Service\PhotoVerificationService:
+        public: true
+    
+    App\Service\QRCodeService:
+        public: true
+    
+    App\Service\DwellTimeNotificationService:
+        public: true
+    
+    # Role acceptance workflow services
+    App\Service\PendingUserService:
+        public: true
+    
+    App\Service\EmailNotificationService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $mailer: '@mailer.mailer'
+            $twig: '@twig'
+            $urlGenerator: '@router'
+            $logger: '@logger'
+            $notificationService: '@App\Service\InAppNotificationService'
+            $fromAddress: '%env(MAILER_FROM_EMAIL)%'
+    
+    # Required services for testing
+    App\Service\RetryService:
+        public: true
+    
+    App\Service\FileService:
+        public: true
+
+    # Terminal Team Dwell Time Service
+    App\Service\TerminalTeamDwellTimeService:
+        public: true
+        autowire: true
+    
+    # Dwell Time Services
+    App\Service\DwellTimeService:
+        public: true
+        autowire: true
+    
+    App\Service\ContainerStatusService:
+        public: true
+        autowire: true
+
+    # Mobile Push Notifications Gateway
+    App\Service\NotificationGateway:
+        public: true
+        autowire: true

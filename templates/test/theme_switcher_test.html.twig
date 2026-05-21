@@ -1,0 +1,253 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Theme Switcher Test{% endblock %}
+
+{% block body %}
+<div class="container mx-auto px-4 py-8 max-w-6xl">
+    <h1 class="text-3xl font-bold mb-8 text-base-content">Theme Switcher Test</h1>
+    
+    <!-- Theme Switcher Demo -->
+    <section class="card bg-base-100 shadow-xl p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4 text-base-content">Theme Switcher</h2>
+        <p class="text-base-content/70 mb-6">
+            Click the palette icon in the top navigation to switch between themes: Light, Dark, Claude, and Corporate.
+        </p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <button onclick="setTheme('light')" class="btn btn-outline">
+                <span class="icon-[tabler--sun] w-5 h-5"></span>
+                Light Theme
+            </button>
+            <button onclick="setTheme('dark')" class="btn btn-outline">
+                <span class="icon-[tabler--moon] w-5 h-5"></span>
+                Dark Theme
+            </button>
+            <button onclick="setTheme('claude')" class="btn btn-outline">
+                <span class="icon-[tabler--sparkles] w-5 h-5"></span>
+                Claude Theme
+            </button>
+            <button onclick="setTheme('corporate')" class="btn btn-outline">
+                <span class="icon-[tabler--briefcase] w-5 h-5"></span>
+                Corporate Theme
+            </button>
+        </div>
+    </section>
+    
+    <!-- Component Showcase -->
+    <div class="space-y-8">
+        <!-- Buttons -->
+        <section class="card bg-base-100 shadow-xl p-6">
+            <h2 class="text-xl font-semibold mb-4 text-base-content">Buttons</h2>
+            <div class="flex flex-wrap gap-2">
+                <button class="btn btn-primary">Primary</button>
+                <button class="btn btn-secondary">Secondary</button>
+                <button class="btn btn-accent">Accent</button>
+                <button class="btn btn-success">Success</button>
+                <button class="btn btn-warning">Warning</button>
+                <button class="btn btn-error">Error</button>
+                <button class="btn btn-ghost">Ghost</button>
+                <button class="btn btn-link">Link</button>
+            </div>
+        </section>
+        
+        <!-- Alerts -->
+        <section class="card bg-base-100 shadow-xl p-6">
+            <h2 class="text-xl font-semibold mb-4 text-base-content">Alerts</h2>
+            <div class="space-y-4">
+                <div class="alert alert-info">
+                    <span class="icon-[tabler--info-circle] w-5 h-5"></span>
+                    <span>This is an info alert with theme colors!</span>
+                </div>
+                <div class="alert alert-success">
+                    <span class="icon-[tabler--check] w-5 h-5"></span>
+                    <span>This is a success alert with theme colors!</span>
+                </div>
+                <div class="alert alert-warning">
+                    <span class="icon-[tabler--alert-triangle] w-5 h-5"></span>
+                    <span>This is a warning alert with theme colors!</span>
+                </div>
+                <div class="alert alert-error">
+                    <span class="icon-[tabler--alert-circle] w-5 h-5"></span>
+                    <span>This is an error alert with theme colors!</span>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Cards -->
+        <section class="card bg-base-100 shadow-xl p-6">
+            <h2 class="text-xl font-semibold mb-4 text-base-content">Cards</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="card bg-base-200 shadow-md">
+                    <div class="card-body">
+                        <h3 class="card-title">Card Title</h3>
+                        <p class="text-base-content/70">This card adapts to the current theme.</p>
+                        <div class="card-actions justify-end">
+                            <button class="btn btn-primary btn-sm">Action</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card bg-base-200 shadow-md">
+                    <div class="card-body">
+                        <h3 class="card-title">Another Card</h3>
+                        <p class="text-base-content/70">Theme colors are applied automatically.</p>
+                        <div class="card-actions justify-end">
+                            <button class="btn btn-secondary btn-sm">Action</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card bg-base-200 shadow-md">
+                    <div class="card-body">
+                        <h3 class="card-title">Third Card</h3>
+                        <p class="text-base-content/70">Switch themes to see the difference!</p>
+                        <div class="card-actions justify-end">
+                            <button class="btn btn-accent btn-sm">Action</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Badges -->
+        <section class="card bg-base-100 shadow-xl p-6">
+            <h2 class="text-xl font-semibold mb-4 text-base-content">Badges</h2>
+            <div class="flex flex-wrap gap-2">
+                <span class="badge badge-primary">Primary</span>
+                <span class="badge badge-secondary">Secondary</span>
+                <span class="badge badge-accent">Accent</span>
+                <span class="badge badge-success">Success</span>
+                <span class="badge badge-warning">Warning</span>
+                <span class="badge badge-error">Error</span>
+                <span class="badge badge-info">Info</span>
+                <span class="badge badge-ghost">Ghost</span>
+            </div>
+        </section>
+        
+        <!-- Form Elements -->
+        <section class="card bg-base-100 shadow-xl p-6">
+            <h2 class="text-xl font-semibold mb-4 text-base-content">Form Elements</h2>
+            <div class="space-y-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Input Field</span>
+                    </label>
+                    <input type="text" placeholder="Type here" class="input input-bordered w-full" />
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Select</span>
+                    </label>
+                    <select class="select select-bordered w-full">
+                        <option>Option 1</option>
+                        <option>Option 2</option>
+                        <option>Option 3</option>
+                    </select>
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Textarea</span>
+                    </label>
+                    <textarea class="textarea textarea-bordered" placeholder="Type here"></textarea>
+                </div>
+                <div class="form-control">
+                    <label class="label cursor-pointer justify-start gap-2">
+                        <input type="checkbox" class="checkbox" />
+                        <span class="label-text">Checkbox</span>
+                    </label>
+                </div>
+                <div class="form-control">
+                    <label class="label cursor-pointer justify-start gap-2">
+                        <input type="radio" name="radio" class="radio" checked />
+                        <span class="label-text">Radio Button</span>
+                    </label>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Table -->
+        <section class="card bg-base-100 shadow-xl p-6">
+            <h2 class="text-xl font-semibold mb-4 text-base-content">Table</h2>
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>John Doe</td>
+                            <td>Admin</td>
+                            <td><span class="badge badge-success">Active</span></td>
+                            <td>
+                                <button class="btn btn-ghost btn-sm">
+                                    <span class="icon-[tabler--edit] w-4 h-4"></span>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Jane Smith</td>
+                            <td>User</td>
+                            <td><span class="badge badge-warning">Pending</span></td>
+                            <td>
+                                <button class="btn btn-ghost btn-sm">
+                                    <span class="icon-[tabler--edit] w-4 h-4"></span>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Bob Johnson</td>
+                            <td>User</td>
+                            <td><span class="badge badge-error">Inactive</span></td>
+                            <td>
+                                <button class="btn btn-ghost btn-sm">
+                                    <span class="icon-[tabler--edit] w-4 h-4"></span>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        
+        <!-- Current Theme Info -->
+        <section class="card bg-base-100 shadow-xl p-6">
+            <h2 class="text-xl font-semibold mb-4 text-base-content">Current Theme</h2>
+            <div class="bg-base-200 p-4 rounded-lg">
+                <p class="text-base-content/70 mb-2">Active theme:</p>
+                <p class="text-2xl font-bold text-primary" id="currentThemeDisplay">Loading...</p>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+// Display current theme
+function updateThemeDisplay() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const display = document.getElementById('currentThemeDisplay');
+    if (display) {
+        display.textContent = currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1);
+    }
+}
+
+// Update on load
+updateThemeDisplay();
+
+// Update when theme changes
+const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+            updateThemeDisplay();
+        }
+    });
+});
+
+observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme']
+});
+</script>
+{% endblock %}

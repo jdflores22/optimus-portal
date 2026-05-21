@@ -1,0 +1,133 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}FlyonUI Interactive Components Test{% endblock %}
+
+{% block body %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <h1 class="text-3xl font-bold mb-8 text-gray-900">FlyonUI Interactive Components Test</h1>
+    
+    <div class="space-y-8">
+        <!-- Dropdown Component Test -->
+        <section class="card p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">Dropdown Component</h2>
+            <div class="dropdown">
+                <button class="btn btn-primary" type="button">
+                    Open Dropdown
+                    <span class="icon-[tabler--chevron-down] size-4"></span>
+                </button>
+                <ul class="dropdown-menu dropdown-open:opacity-100">
+                    <li><a href="#" class="dropdown-item">Action</a></li>
+                    <li><a href="#" class="dropdown-item">Another action</a></li>
+                    <li><a href="#" class="dropdown-item">Something else here</a></li>
+                </ul>
+            </div>
+            <p class="mt-4 text-sm text-gray-600">✓ Dropdown should open/close when clicking the button</p>
+        </section>
+
+        <!-- Modal Component Test -->
+        <section class="card p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">Modal Component</h2>
+            <button class="btn btn-secondary" data-overlay="#test-modal">
+                Open Modal
+            </button>
+            
+            <div id="test-modal" class="overlay modal overlay-open:opacity-100 hidden" role="dialog" tabindex="-1">
+                <div class="modal-dialog overlay-open:opacity-100">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Test Modal</h3>
+                            <button type="button" class="btn btn-text btn-circle btn-sm absolute end-3 top-3" aria-label="Close" data-overlay="#test-modal">
+                                <span class="icon-[tabler--x] size-4"></span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <p>This is a test modal to verify FlyonUI JavaScript is working correctly.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-soft btn-secondary" data-overlay="#test-modal">Close</button>
+                            <button type="button" class="btn btn-primary">Save changes</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="mt-4 text-sm text-gray-600">✓ Modal should open/close when clicking the buttons</p>
+        </section>
+
+        <!-- Tooltip Component Test -->
+        <section class="card p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">Tooltip Component</h2>
+            <div class="flex gap-4">
+                <button class="btn btn-outline" data-tooltip="This is a tooltip on top" data-placement="top">
+                    Hover me (Top)
+                </button>
+                <button class="btn btn-outline" data-tooltip="This is a tooltip on right" data-placement="right">
+                    Hover me (Right)
+                </button>
+                <button class="btn btn-outline" data-tooltip="This is a tooltip on bottom" data-placement="bottom">
+                    Hover me (Bottom)
+                </button>
+                <button class="btn btn-outline" data-tooltip="This is a tooltip on left" data-placement="left">
+                    Hover me (Left)
+                </button>
+            </div>
+            <p class="mt-4 text-sm text-gray-600">✓ Tooltips should appear on hover in the correct position</p>
+        </section>
+
+        <!-- Accordion Component Test -->
+        <section class="card p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">Accordion Component</h2>
+            <div class="accordion">
+                <div class="accordion-item">
+                    <button type="button" class="accordion-toggle">
+                        <span>Accordion Item #1</span>
+                        <span class="accordion-icon"></span>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="p-5">
+                            This is the first item's accordion body. It is shown by default, until the collapse plugin adds the appropriate classes.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <button type="button" class="accordion-toggle">
+                        <span>Accordion Item #2</span>
+                        <span class="accordion-icon"></span>
+                    </button>
+                    <div class="accordion-content hidden">
+                        <div class="p-5">
+                            This is the second item's accordion body. It is hidden by default, until the collapse plugin adds the appropriate classes.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <button type="button" class="accordion-toggle">
+                        <span>Accordion Item #3</span>
+                        <span class="accordion-icon"></span>
+                    </button>
+                    <div class="accordion-content hidden">
+                        <div class="p-5">
+                            This is the third item's accordion body. It is hidden by default, until the collapse plugin adds the appropriate classes.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="mt-4 text-sm text-gray-600">✓ Accordion items should expand/collapse when clicking the headers</p>
+        </section>
+
+        <!-- Test Results Summary -->
+        <section class="card p-6 bg-blue-50 border-blue-200">
+            <h2 class="text-xl font-semibold mb-4 text-blue-900">Test Instructions</h2>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                <li>Click the "Open Dropdown" button - a menu should appear below it</li>
+                <li>Click the "Open Modal" button - a modal dialog should overlay the page</li>
+                <li>Hover over the tooltip buttons - tooltips should appear in the specified positions</li>
+                <li>Click the accordion headers - panels should expand and collapse</li>
+            </ol>
+            <div class="mt-4 p-4 bg-white rounded-lg border border-blue-300">
+                <p class="font-semibold text-blue-900">Expected Result:</p>
+                <p class="text-gray-700">All interactive components should function correctly, indicating that FlyonUI JavaScript is properly loaded and initialized.</p>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

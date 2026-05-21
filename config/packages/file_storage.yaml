@@ -1,0 +1,44 @@
+parameters:
+    # Storage configuration
+    storage.adapter: '%env(STORAGE_ADAPTER)%'
+    storage.max_file_size: 10485760 # 10 MB
+    
+    # S3/MinIO configuration (only used when storage.adapter=s3)
+    storage.s3.endpoint: '%env(S3_ENDPOINT)%'
+    storage.s3.bucket: '%env(S3_BUCKET)%'
+    storage.s3.region: '%env(S3_REGION)%'
+    storage.s3.key: '%env(S3_KEY)%'
+    storage.s3.secret: '%env(S3_SECRET)%'
+
+services:
+    # Local Storage Adapter
+    App\Service\Storage\LocalStorageAdapter:
+        arguments:
+            $parameterBag: '@parameter_bag'
+            $logger: '@logger'
+
+    # S3 Storage Adapter (requires aws/aws-sdk-php)
+    App\Service\Storage\S3StorageAdapter:
+        arguments:
+            $logger: '@logger'
+            $endpoint: '%storage.s3.endpoint%'
+            $bucket: '%storage.s3.bucket%'
+            $region: '%storage.s3.region%'
+            $key: '%storage.s3.key%'
+            $secret: '%storage.s3.secret%'
+
+    # Storage Adapter Interface - defaults to local, can be overridden
+    App\Service\Storage\StorageAdapterInterface:
+        alias: App\Service\Storage\LocalStorageAdapter
+        # To use S3/MinIO, change to:
+        # alias: App\Service\Storage\S3StorageAdapter
+
+    # File Storage Service
+    App\Service\FileStorageService:
+        public: true
+        arguments:
+            $storageAdapter: '@App\Service\Storage\StorageAdapterInterface'
+            $logger: '@logger'
+
+    App\Service\FileStorageServiceInterface:
+        alias: App\Service\FileStorageService

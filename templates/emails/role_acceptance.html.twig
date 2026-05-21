@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role Invitation - OPTIMUS Portal</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6; 
+            color: #1c1e21; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f0f2f5;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 20px auto; 
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header { 
+            background-color: #1877F2; 
+            color: white; 
+            padding: 32px 24px; 
+            text-align: center; 
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .content { 
+            padding: 32px 24px; 
+            background-color: #ffffff; 
+        }
+        .content p {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+        }
+        .role-details {
+            background-color: #e8f4fd;
+            border-left: 4px solid #1877F2;
+            padding: 20px;
+            margin: 24px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .role-details h3 {
+            margin: 0 0 12px 0;
+            color: #1565c0;
+            font-size: 18px;
+        }
+        .role-details .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 4px 0;
+            border-bottom: 1px solid #e3f2fd;
+        }
+        .role-details .detail-row:last-child {
+            border-bottom: none;
+        }
+        .role-details .label {
+            font-weight: 600;
+            color: #1565c0;
+        }
+        .role-details .value {
+            color: #1976d2;
+        }
+        .action-buttons {
+            text-align: center;
+            margin: 32px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 8px 12px;
+            text-align: center;
+            min-width: 140px;
+        }
+        .btn-accept {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-accept:hover {
+            background-color: #218838;
+        }
+        .btn-decline {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-decline:hover {
+            background-color: #c82333;
+        }
+        .admin-contact {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 24px 0;
+        }
+        .admin-contact h4 {
+            margin: 0 0 12px 0;
+            color: #495057;
+            font-size: 16px;
+        }
+        .admin-contact p {
+            margin: 4px 0;
+            font-size: 14px;
+            color: #6c757d;
+        }
+        .security-notice {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+        .security-notice h4 {
+            margin: 0 0 8px 0;
+            color: #856404;
+            font-size: 14px;
+        }
+        .security-notice p {
+            margin: 0;
+            font-size: 13px;
+            color: #856404;
+        }
+        .footer { 
+            padding: 24px; 
+            text-align: center; 
+            font-size: 14px; 
+            color: #65676b;
+            background-color: #f0f2f5;
+        }
+        .shipping-line-branding {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .shipping-line-branding h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                border-radius: 0;
+            }
+            .content {
+                padding: 20px 16px;
+            }
+            .btn {
+                display: block;
+                margin: 8px 0;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .role-details .detail-row {
+                flex-direction: column;
+            }
+            .role-details .label {
+                margin-bottom: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Role Invitation</h1>
+        </div>
+        <div class="content">
+            <p>Hello {{ pendingUser.firstName }},</p>
+            <p>You have been invited to join the OPTIMUS Shipping Portal with a specific role. Please review the details below and accept or decline this invitation.</p>
+            
+            {% if pendingUser.shippingLine %}
+            <div class="shipping-line-branding">
+                <h3>{{ pendingUser.shippingLine.brandName }}</h3>
+                <p style="margin: 4px 0 0 0; opacity: 0.9;">Shipping Line</p>
+            </div>
+            {% endif %}
+
+            <div class="role-details">
+                <h3>📋 Role Details</h3>
+                <div class="detail-row">
+                    <span class="label">Full Name:</span>
+                    <span class="value">{{ pendingUser.fullName }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Email Address:</span>
+                    <span class="value">{{ pendingUser.email }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Assigned Role:</span>
+                    <span class="value">{{ pendingUser.role.value|title|replace({'_': ' '}) }}</span>
+                </div>
+                {% if pendingUser.shippingLine %}
+                <div class="detail-row">
+                    <span class="label">Shipping Line:</span>
+                    <span class="value">{{ pendingUser.shippingLine.brandName }}</span>
+                </div>
+                {% endif %}
+                <div class="detail-row">
+                    <span class="label">Invitation Expires:</span>
+                    <span class="value">{{ expiresAt|date('F j, Y \\a\\t g:i A') }}</span>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <a href="{{ acceptanceUrl }}" class="btn btn-accept">
+                    ✅ Accept Role
+                </a>
+                <a href="{{ acceptanceUrl }}" class="btn btn-decline">
+                    ❌ Decline Role
+                </a>
+            </div>
+
+            <p style="text-align: center; margin: 16px 0; font-size: 14px; color: #666;">
+                <em>Both buttons will take you to the role acceptance page where you can make your final decision.</em>
+            </p>
+
+            <div class="admin-contact">
+                <h4>👤 Contact Information</h4>
+                <p><strong>Invited by:</strong> {{ admin.email }}</p>
+                {% if pendingUser.shippingLineAdmin and pendingUser.shippingLineAdmin.id != admin.id %}
+                <p><strong>Shipping Line Admin:</strong> {{ pendingUser.shippingLineAdmin.email }}</p>
+                {% endif %}
+                <p>If you have questions about this role or need assistance, please contact the admin who sent this invitation.</p>
+            </div>
+
+            <p><strong>What happens when you accept?</strong></p>
+            <ul>
+                <li>Your user account will be created with the specified role</li>
+                <li>You'll receive login credentials and welcome information</li>
+                <li>You can immediately start using OPTIMUS Portal</li>
+                <li>The admin will be notified of your acceptance</li>
+            </ul>
+
+            <p><strong>What happens if you decline?</strong></p>
+            <ul>
+                <li>No account will be created</li>
+                <li>The admin will be notified of your decision</li>
+                <li>This invitation will be cancelled</li>
+                <li>You can be re-invited later if circumstances change</li>
+            </ul>
+
+            <div class="security-notice">
+                <h4>🛡️ Security Notice</h4>
+                <p>This invitation will expire on {{ expiresAt|date('F j, Y \\a\\t g:i A') }} for security reasons. If you didn't expect this invitation or have concerns, please contact the sender directly.</p>
+            </div>
+
+            <p>If the buttons above don't work, you can copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; background-color: #f8f9fa; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 14px;">
+                {{ acceptanceUrl }}
+            </p>
+        </div>
+        <div class="footer">
+            <p><strong>OPTIMUS Shipping Portal</strong><br>
+            Your trusted partner in shipping operations</p>
+            <p style="font-size: 12px; margin-top: 16px;">
+                This is an automated message. Please do not reply to this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

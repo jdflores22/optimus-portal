@@ -1,0 +1,57 @@
+{# Notification Detail Modal #}
+<div id="notificationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[10001]">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="relative bg-base-100 rounded-lg shadow-xl max-w-md w-full mx-auto">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-6 border-b border-base-300">
+                <h3 class="text-lg font-medium text-base-content" id="modalNotificationTitle">Notification Details</h3>
+                <button type="button" onclick="closeNotificationModal()" class="text-base-content/40 hover:text-base-content/60 focus:outline-none">
+                    <span class="icon-[tabler--x] w-6 h-6"></span>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-6">
+                <div class="flex items-start space-x-3 mb-4">
+                    <div class="flex-shrink-0">
+                        <div id="modalNotificationIcon" class="w-8 h-8 rounded-full flex items-center justify-center">
+                            <!-- Icon will be inserted here -->
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <div id="modalNotificationStatus" class="text-xs font-medium mb-2">
+                            <!-- Status will be inserted here -->
+                        </div>
+                        <h4 class="text-sm font-medium text-base-content mb-2" id="modalNotificationTitleText">
+                            <!-- Title will be inserted here -->
+                        </h4>
+                        <p class="text-sm text-base-content/60 mb-3" id="modalNotificationMessage">
+                            <!-- Message will be inserted here -->
+                        </p>
+                        <div class="flex items-center justify-between text-xs text-base-content/50">
+                            <span id="modalNotificationTime">
+                                <!-- Time will be inserted here -->
+                            </span>
+                            <span id="modalNotificationType" class="badge badge-sm">
+                                <!-- Type will be inserted here -->
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-end space-x-3 px-6 py-4 border-t border-base-300 bg-base-200/50 rounded-b-lg">
+                <button type="button" onclick="closeNotificationModal()" class="btn btn-ghost btn-sm">
+                    Close
+                </button>
+                <button type="button" id="modalActionButton" onclick="handleModalAction()" class="btn btn-primary btn-sm" style="display: none;">
+                    <!-- Action text will be inserted here -->
+                </button>
+                <button type="button" id="modalMarkReadButton" onclick="markNotificationAsReadFromModal()" class="btn btn-info btn-soft btn-sm" style="display: none;">
+                    Mark as Read
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

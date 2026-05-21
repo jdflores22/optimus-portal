@@ -1,0 +1,354 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ containerNumber }} - Container Details - OPTIMUS{% endblock %}
+
+{% block body %}
+<!-- Header -->
+<div class="bg-base-100">
+    <div class="w-full px-4 sm:px-6 lg:px-8">
+        <div class="py-6">
+            <!-- Breadcrumb Navigation -->
+            <div class="breadcrumbs text-sm mb-4">
+                <ul>
+                    <li>
+                        <a href="{{ path('app_shipping_admin_dashboard') }}" class="inline-flex items-center hover:text-primary">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                            </svg>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="javascript:history.back()" class="hover:text-primary">Stack View</a>
+                    </li>
+                    <li>{{ containerNumber }}</li>
+                </ul>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div class="mb-4 sm:mb-0">
+                    <h1 class="text-2xl sm:text-3xl font-bold">{{ containerNumber }}</h1>
+                    <p class="mt-2 text-base-content/70">Container Details & History</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="badge badge-lg
+                        {% if containerDetails.basicInfo.status == 'Available' %}badge-success
+                        {% elseif containerDetails.basicInfo.status == 'Reserved' %}badge-info
+                        {% elseif containerDetails.basicInfo.status == 'Pre-Forecast' %}badge-warning
+                        {% else %}badge-ghost{% endif %}">
+                        {{ containerDetails.basicInfo.status }}
+                    </span>
+                    <span class="badge badge-lg
+                        {% if containerDetails.basicInfo.condition == 'Good' %}badge-success
+                        {% elseif containerDetails.basicInfo.condition == 'Fair' %}badge-warning
+                        {% else %}badge-error{% endif %}">
+                        {{ containerDetails.basicInfo.condition }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Column - Basic Info & Specifications -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Basic Information -->
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h3 class="card-title text-lg">Basic Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">Container Number</dt>
+                            <dd class="mt-1 text-sm font-mono font-semibold">{{ containerDetails.basicInfo.containerNumber }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">Size/Type</dt>
+                            <dd class="mt-1">
+                                <span class="badge
+                                    {% if containerDetails.basicInfo.sizeType starts with '20ft' %}badge-info{% else %}badge-secondary{% endif %}">
+                                    {{ containerDetails.basicInfo.sizeType }}
+                                </span>
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">TEU Count</dt>
+                            <dd class="mt-1 text-sm">{{ containerDetails.basicInfo.teuCount }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">Current Location</dt>
+                            <dd class="mt-1 text-sm">{{ containerDetails.basicInfo.location }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">Gate In Date</dt>
+                            <dd class="mt-1 text-sm">{{ containerDetails.basicInfo.gateInDate|date('M j, Y H:i') }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">Dwell Time</dt>
+                            <dd class="mt-1">
+                                <span class="badge
+                                    {% if containerDetails.basicInfo.dwellTime <= 7 %}badge-success
+                                    {% elseif containerDetails.basicInfo.dwellTime <= 14 %}badge-warning
+                                    {% elseif containerDetails.basicInfo.dwellTime <= 21 %}badge-warning
+                                    {% else %}badge-error{% endif %}">
+                                    {{ containerDetails.basicInfo.dwellTime }} days
+                                </span>
+                            </dd>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Specifications -->
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h3 class="card-title text-lg">Technical Specifications</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">Manufacturer</dt>
+                            <dd class="mt-1 text-sm">{{ containerDetails.specifications.manufacturer }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">Year Built</dt>
+                            <dd class="mt-1 text-sm">{{ containerDetails.specifications.yearBuilt }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">ISO Code</dt>
+                            <dd class="mt-1 text-sm font-mono">{{ containerDetails.specifications.isoCode }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">CSC Plate</dt>
+                            <dd class="mt-1 text-sm">{{ containerDetails.specifications.cscPlate }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">Max Gross Weight</dt>
+                            <dd class="mt-1 text-sm">{{ containerDetails.specifications.maxGrossWeight }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">Tare Weight</dt>
+                            <dd class="mt-1 text-sm">{{ containerDetails.specifications.tareWeight }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">Max Payload</dt>
+                            <dd class="mt-1 text-sm">{{ containerDetails.specifications.maxPayload }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">Dimensions (L×W×H)</dt>
+                            <dd class="mt-1 text-sm">
+                                {{ containerDetails.specifications.dimensions.length }} × 
+                                {{ containerDetails.specifications.dimensions.width }} × 
+                                {{ containerDetails.specifications.dimensions.height }}
+                            </dd>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Last Movement -->
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h3 class="card-title text-lg">Last Movement</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">Date & Time</dt>
+                            <dd class="mt-1 text-sm">{{ containerDetails.movement.lastMovement }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">Movement Type</dt>
+                            <dd class="mt-1 text-sm">{{ containerDetails.movement.movementType }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">From Location</dt>
+                            <dd class="mt-1 text-sm">{{ containerDetails.movement.fromLocation }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">To Location</dt>
+                            <dd class="mt-1 text-sm">{{ containerDetails.movement.toLocation }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">Operator</dt>
+                            <dd class="mt-1 text-sm">{{ containerDetails.movement.operator }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/70">Equipment Used</dt>
+                            <dd class="mt-1 text-sm">{{ containerDetails.movement.equipment }}</dd>
+                        </div>
+                        <div class="md:col-span-2">
+                            <dt class="text-sm font-medium text-base-content/70">Remarks</dt>
+                            <dd class="mt-1 text-sm">{{ containerDetails.movement.remarks }}</dd>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Documentation & Charges -->
+        <div class="space-y-6">
+            
+            <!-- Documentation -->
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h3 class="card-title text-lg">Documentation</h3>
+                    <div class="space-y-4 mt-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-base-content/70">Bill of Lading</span>
+                            <span class="text-sm font-mono">{{ containerDetails.documentation.billOfLading }}</span>
+                        </div>
+                        <div class="divider my-2"></div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-base-content/70">Manifest</span>
+                            <span class="text-sm font-mono">{{ containerDetails.documentation.manifest }}</span>
+                        </div>
+                        <div class="divider my-2"></div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-base-content/70">Customs Declaration</span>
+                            <span class="text-sm font-mono">{{ containerDetails.documentation.customsDeclaration }}</span>
+                        </div>
+                        {% if containerDetails.documentation.deliveryOrder %}
+                        <div class="divider my-2"></div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-base-content/70">Delivery Order</span>
+                            <span class="text-sm font-mono">{{ containerDetails.documentation.deliveryOrder }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="divider my-2"></div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-base-content/70">Gate Pass</span>
+                            <span class="text-sm font-mono">{{ containerDetails.documentation.gatePass }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charges -->
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h3 class="card-title text-lg">Charges</h3>
+                    <div class="space-y-4 mt-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-base-content/70">Storage Charges</span>
+                            <span class="text-sm">${{ containerDetails.charges.storageCharges }}</span>
+                        </div>
+                        <div class="divider my-2"></div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-base-content/70">Handling Charges</span>
+                            <span class="text-sm">${{ containerDetails.charges.handlingCharges }}</span>
+                        </div>
+                        <div class="divider my-2"></div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-base-content/70">Documentation Fee</span>
+                            <span class="text-sm">${{ containerDetails.charges.documentationFee }}</span>
+                        </div>
+                        <div class="divider my-2"></div>
+                        <div class="flex justify-between items-center font-semibold">
+                            <span class="text-sm">Total Charges</span>
+                            <span class="text-sm">${{ containerDetails.charges.storageCharges + containerDetails.charges.handlingCharges + containerDetails.charges.documentationFee }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h3 class="card-title text-lg">Quick Actions</h3>
+                    <div class="space-y-3 mt-4">
+                        <button class="btn btn-primary btn-block">
+                            Generate Delivery Order
+                        </button>
+                        <button class="btn btn-neutral btn-block">
+                            Print Gate Pass
+                        </button>
+                        <button class="btn btn-success btn-block">
+                            Schedule Inspection
+                        </button>
+                        <button class="btn btn-outline btn-block">
+                            View Photos
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movement History -->
+    <div class="mt-8 card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h3 class="card-title text-lg">Movement History</h3>
+            <div class="overflow-x-auto mt-4">
+                <table class="table table-zebra">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Type</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Operator</th>
+                            <th>Equipment</th>
+                            <th>Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for movement in containerDetails.history %}
+                        <tr>
+                            <td class="whitespace-nowrap">{{ movement.date }}</td>
+                            <td>{{ movement.type }}</td>
+                            <td>{{ movement.fromLocation }}</td>
+                            <td>{{ movement.toLocation }}</td>
+                            <td>{{ movement.operator }}</td>
+                            <td>{{ movement.equipment }}</td>
+                            <td>{{ movement.remarks }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inspection History -->
+    <div class="mt-8 card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h3 class="card-title text-lg">Inspection History</h3>
+            <div class="overflow-x-auto mt-4">
+                <table class="table table-zebra">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Inspector</th>
+                            <th>Result</th>
+                            <th>Photos</th>
+                            <th>Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inspection in containerDetails.inspections %}
+                        <tr>
+                            <td class="whitespace-nowrap">{{ inspection.date }}</td>
+                            <td>{{ inspection.type }}</td>
+                            <td>{{ inspection.inspector }}</td>
+                            <td>
+                                <span class="badge
+                                    {% if inspection.result == 'Pass' %}badge-success
+                                    {% elseif inspection.result == 'Pass with Minor Issues' %}badge-warning
+                                    {% elseif inspection.result == 'Conditional Pass' %}badge-warning
+                                    {% else %}badge-error{% endif %}">
+                                    {{ inspection.result }}
+                                </span>
+                            </td>
+                            <td>{{ inspection.photos }}</td>
+                            <td>{{ inspection.remarks }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,278 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Create Notice of Arrival (NOA) - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+    {# Header #}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+            <h1 class="text-2xl font-bold text-base-content">Create Notice of Arrival</h1>
+            <p class="mt-1 text-sm text-base-content/60">Create a new NOA record — the first step in the workflow</p>
+        </div>
+        <a href="{{ path('manifest_workflow_list') }}" class="btn btn-ghost btn-sm gap-2 self-start sm:self-auto">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back to List
+        </a>
+    </div>
+
+    {# Workflow info #}
+    <div class="flex items-start gap-3 p-4 rounded-xl bg-info/10 border border-info/20 text-sm text-info">
+        <span class="icon-[tabler--info-circle] size-5 flex-shrink-0 mt-0.5"></span>
+        <div>
+            <span class="font-semibold">Workflow Order</span> —
+            1. Create NOA (this step) → 2. Generate BL → 3. Upload BL → 4. Generate Billing → 5. Submit Payment → 6. Generate eDO → 7. Release eDO
+        </div>
+    </div>
+
+    {# Form #}
+    <form id="noaCreationForm" class="space-y-6">
+
+        {# Consignee #}
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body p-5 sm:p-6">
+                <h2 class="card-title text-base text-base-content mb-4">
+                    <span class="icon-[tabler--building] size-5 text-primary"></span>
+                    Consignee
+                </h2>
+                <div class="form-control max-w-2xl">
+                    <label class="label pb-1">
+                        <span class="label-text font-medium">Consignee <span class="text-error">*</span></span>
+                    </label>
+                    <div class="relative">
+                        <input type="text"
+                               id="consigneeSearch"
+                               autocomplete="off"
+                               placeholder="Type to search consignees..."
+                               class="input input-bordered w-full">
+                        <div id="consigneeSearchResults"
+                             class="absolute z-30 w-full mt-1 bg-base-200 border border-base-300 rounded-xl shadow-xl hidden max-h-60 overflow-y-auto"></div>
+                    </div>
+                    <input type="hidden" id="consigneeId" name="consigneeId" required>
+                    <div id="selectedConsigneeCard" class="hidden mt-3 flex items-start justify-between gap-3 p-4 rounded-xl bg-primary/10 border border-primary/20">
+                        <div>
+                            <p class="text-sm font-semibold text-base-content" id="selectedConsigneeName"></p>
+                            <p class="text-xs text-base-content/60" id="selectedConsigneeEmail"></p>
+                        </div>
+                        <button type="button" id="clearConsigneeBtn" class="btn btn-ghost btn-xs btn-circle text-error">
+                            <span class="icon-[tabler--x] size-4"></span>
+                        </button>
+                    </div>
+                    <label class="label pt-1 hidden" id="consigneeIdError">
+                        <span class="label-text-alt text-error"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        {# BL / Vessel / ETA #}
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body p-5 sm:p-6">
+                <h2 class="card-title text-base text-base-content mb-4">
+                    <span class="icon-[tabler--ship] size-5 text-primary"></span>
+                    Shipment Details
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="form-control">
+                        <label class="label pb-1">
+                            <span class="label-text font-medium">BL Number <span class="text-error">*</span></span>
+                        </label>
+                        <input type="text" id="blNumber" name="blNumber" required maxlength="50"
+                               placeholder="Enter Bill of Lading number"
+                               class="input input-bordered w-full">
+                        <label class="label pt-1 hidden" id="blNumberError">
+                            <span class="label-text-alt text-error"></span>
+                        </label>
+                    </div>
+                    <div class="form-control">
+                        <label class="label pb-1">
+                            <span class="label-text font-medium">Vessel Number <span class="text-error">*</span></span>
+                        </label>
+                        <input type="text" id="vesselNumber" name="vesselNumber" required maxlength="50"
+                               placeholder="Enter vessel number"
+                               class="input input-bordered w-full">
+                        <label class="label pt-1 hidden" id="vesselNumberError">
+                            <span class="label-text-alt text-error"></span>
+                        </label>
+                    </div>
+                    <div class="form-control md:col-span-2">
+                        <label class="label pb-1">
+                            <span class="label-text font-medium">Estimated Time of Arrival (ETA) <span class="text-error">*</span></span>
+                        </label>
+                        <input type="datetime-local" id="eta" name="eta" required
+                               class="input input-bordered w-full max-w-sm">
+                        <label class="label pt-1 hidden" id="etaError">
+                            <span class="label-text-alt text-error"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# CY Locations #}
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body p-5 sm:p-6">
+                <h2 class="card-title text-base text-base-content mb-1">
+                    <span class="icon-[tabler--map-pin] size-5 text-primary"></span>
+                    CY Empty Return Locations
+                </h2>
+                <p class="text-sm text-base-content/60 mb-4">View real-time capacity utilization. CY locations are assigned per container below.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="cyLocationsGrid"></div>
+            </div>
+        </div>
+
+        {# Containers #}
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body p-0">
+                <div class="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-base-300">
+                    <h2 class="card-title text-base text-base-content">
+                        <span class="icon-[tabler--container] size-5 text-primary"></span>
+                        Containers
+                    </h2>
+                    <button type="button" id="addContainerBtn" class="btn btn-primary btn-sm gap-2">
+                        <span class="icon-[tabler--plus] size-4"></span>
+                        Add Container
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="table table-sm w-full">
+                        <thead>
+                            <tr class="bg-base-200/50">
+                                <th class="text-xs uppercase tracking-wide text-base-content/50">#</th>
+                                <th class="text-xs uppercase tracking-wide text-base-content/50">Container Number</th>
+                                <th class="text-xs uppercase tracking-wide text-base-content/50">Size</th>
+                                <th class="text-xs uppercase tracking-wide text-base-content/50">Type</th>
+                                <th class="text-xs uppercase tracking-wide text-base-content/50">TEU</th>
+                                <th class="text-xs uppercase tracking-wide text-base-content/50">CY Location</th>
+                                <th class="text-xs uppercase tracking-wide text-base-content/50 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="containersTableBody"></tbody>
+                    </table>
+                </div>
+                <p class="px-5 sm:px-6 py-2 text-sm text-error hidden" id="containersError"></p>
+            </div>
+        </div>
+
+        {# CY Allocation Summary #}
+        <div id="cyAllocationDisplay" class="hidden card bg-base-100 shadow-md">
+            <div class="card-body p-5 sm:p-6">
+                <h2 class="card-title text-base text-base-content mb-4">
+                    <span class="icon-[tabler--chart-bar] size-5 text-primary"></span>
+                    CY Allocation Summary
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="rounded-xl bg-info/10 border border-info/20 p-4">
+                        <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide mb-1">Total TEU Required</p>
+                        <p class="text-3xl font-bold text-info" id="totalTeuRequired">0</p>
+                    </div>
+                    <div class="rounded-xl bg-success/10 border border-success/20 p-4">
+                        <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide mb-1">Available TEU Capacity</p>
+                        <p class="text-3xl font-bold text-success" id="availableTeuCapacity">0</p>
+                    </div>
+                    <div class="rounded-xl bg-base-200 border border-base-300 p-4">
+                        <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide mb-1">Remaining Capacity</p>
+                        <p class="text-3xl font-bold text-base-content" id="remainingCapacity">0</p>
+                    </div>
+                </div>
+                <div id="capacityWarning" class="hidden mt-4 flex items-start gap-2 p-3 rounded-xl bg-error/10 border border-error/20 text-sm text-error">
+                    <span class="icon-[tabler--alert-circle] size-4 flex-shrink-0 mt-0.5"></span>
+                    Insufficient CY capacity. Please reduce container count or select a different CY location.
+                </div>
+            </div>
+        </div>
+
+        {# Actions #}
+        <div class="flex items-center justify-end gap-3">
+            <a href="{{ path('manifest_workflow_list') }}" class="btn btn-ghost">Cancel</a>
+            <button type="submit" id="submitBtn" class="btn btn-primary gap-2">
+                <span id="submitBtnText">Create NOA</span>
+                <span id="submitBtnSpinner" class="loading loading-spinner loading-sm hidden"></span>
+            </button>
+        </div>
+
+    </form>
+</div>
+
+{# Success Modal #}
+<div id="successModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeSuccessModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg z-10">
+        <div class="flex items-center gap-3 px-6 py-4 bg-success rounded-t-2xl">
+            <span class="icon-[tabler--circle-check] size-7 text-success-content"></span>
+            <h3 class="text-lg font-bold text-success-content">NOA Created Successfully</h3>
+        </div>
+        <div class="px-6 py-5 space-y-4">
+            <p class="text-sm text-base-content/70">Your Notice of Arrival has been created successfully.</p>
+            <div class="grid grid-cols-2 gap-3 p-4 rounded-xl bg-success/10 border border-success/20 text-sm">
+                <div>
+                    <span class="text-base-content/50 text-xs uppercase tracking-wide">NOA Number</span>
+                    <p class="font-semibold text-base-content" id="successNoaNumber">-</p>
+                </div>
+                <div>
+                    <span class="text-base-content/50 text-xs uppercase tracking-wide">BL Number</span>
+                    <p class="font-semibold text-base-content" id="successBlNumber">-</p>
+                </div>
+                <div>
+                    <span class="text-base-content/50 text-xs uppercase tracking-wide">Vessel</span>
+                    <p class="font-semibold text-base-content" id="successVesselNumber">-</p>
+                </div>
+                <div>
+                    <span class="text-base-content/50 text-xs uppercase tracking-wide">Containers</span>
+                    <p class="font-semibold text-base-content" id="successContainerCount">-</p>
+                </div>
+                <div class="col-span-2">
+                    <span class="text-base-content/50 text-xs uppercase tracking-wide">PDF Document</span>
+                    <p class="font-semibold text-base-content" id="successPdfStatus">-</p>
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-end gap-2 px-6 py-4 border-t border-base-300">
+            <button type="button" onclick="closeSuccessModal()" class="btn btn-ghost btn-sm">Close</button>
+            <button type="button" onclick="redirectToWorkflow()" class="btn btn-success btn-sm">View NOA List</button>
+        </div>
+    </div>
+</div>
+
+{# Error Modal #}
+<div id="errorModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeErrorModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg z-10">
+        <div id="errorModalHeader" class="flex items-center gap-3 px-6 py-4 bg-error rounded-t-2xl">
+            <span class="icon-[tabler--alert-triangle] size-7 text-error-content"></span>
+            <div>
+                <h3 class="text-lg font-bold text-error-content" id="errorModalTitle">Error</h3>
+                <p class="text-xs text-error-content/80" id="errorModalSubtitle">Please review the error below</p>
+            </div>
+        </div>
+        <div class="px-6 py-5 space-y-3">
+            <div class="p-4 rounded-xl bg-error/10 border border-error/20">
+                <p class="text-sm text-error" id="errorMessage"></p>
+            </div>
+            <div id="errorSuggestions" class="hidden">
+                <p class="text-sm font-semibold text-base-content mb-2">Suggestions:</p>
+                <ul class="list-disc list-inside text-sm text-base-content/70 space-y-1" id="errorSuggestionsList"></ul>
+            </div>
+        </div>
+        <div class="flex justify-end px-6 py-4 border-t border-base-300">
+            <button type="button" onclick="closeErrorModal()" class="btn btn-error btn-sm">Close</button>
+        </div>
+    </div>
+</div>
+
+{# Loading Modal #}
+<div id="loadingModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-sm z-10 px-8 py-10 text-center">
+        <span class="loading loading-spinner loading-lg text-primary mb-4"></span>
+        <h3 class="text-base font-semibold text-base-content mb-1">Creating NOA...</h3>
+        <p class="text-sm text-base-content/60">Please wait while we process your request</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('js/noa-creation.js') }}?v=19"></script>
+{% endblock %}

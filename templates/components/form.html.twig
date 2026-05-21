@@ -1,0 +1,127 @@
+{# Form Component Macros #}
+{% macro form_group(label, input, required = false, error = null, help = null) %}
+    <div class="form-group">
+        {% if label %}
+            <label class="form-label {{ required ? 'required' : '' }}">{{ label }}</label>
+        {% endif %}
+        {{ input|raw }}
+        {% if error %}
+            <div class="form-error">{{ error }}</div>
+        {% endif %}
+        {% if help %}
+            <div class="form-help">{{ help }}</div>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro text_input(name, value = '', placeholder = '', required = false, class = '') %}
+    <input type="text" 
+           name="{{ name }}" 
+           id="{{ name }}" 
+           value="{{ value }}" 
+           placeholder="{{ placeholder }}" 
+           class="form-input {{ class }}" 
+           {{ required ? 'required' : '' }}>
+{% endmacro %}
+
+{% macro email_input(name, value = '', placeholder = '', required = false, class = '') %}
+    <input type="email" 
+           name="{{ name }}" 
+           id="{{ name }}" 
+           value="{{ value }}" 
+           placeholder="{{ placeholder }}" 
+           class="form-input {{ class }}" 
+           {{ required ? 'required' : '' }}>
+{% endmacro %}
+
+{% macro password_input(name, placeholder = '', required = false, class = '') %}
+    <input type="password" 
+           name="{{ name }}" 
+           id="{{ name }}" 
+           placeholder="{{ placeholder }}" 
+           class="form-input {{ class }}" 
+           {{ required ? 'required' : '' }}>
+{% endmacro %}
+
+{% macro textarea(name, value = '', placeholder = '', rows = 4, required = false, class = '') %}
+    <textarea name="{{ name }}" 
+              id="{{ name }}" 
+              rows="{{ rows }}" 
+              placeholder="{{ placeholder }}" 
+              class="form-textarea {{ class }}" 
+              {{ required ? 'required' : '' }}>{{ value }}</textarea>
+{% endmacro %}
+
+{% macro select(name, options, selected = '', required = false, placeholder = null, class = '') %}
+    <select name="{{ name }}" 
+            id="{{ name }}" 
+            class="form-select {{ class }}" 
+            {{ required ? 'required' : '' }}>
+        {% if placeholder %}
+            <option value="">{{ placeholder }}</option>
+        {% endif %}
+        {% for value, label in options %}
+            <option value="{{ value }}" {{ value == selected ? 'selected' : '' }}>{{ label }}</option>
+        {% endfor %}
+    </select>
+{% endmacro %}
+
+{% macro checkbox(name, value = '1', checked = false, label = null, class = '') %}
+    <div class="flex items-center">
+        <input type="checkbox" 
+               name="{{ name }}" 
+               id="{{ name }}" 
+               value="{{ value }}" 
+               class="form-checkbox {{ class }}" 
+               {{ checked ? 'checked' : '' }}>
+        {% if label %}
+            <label for="{{ name }}" class="ml-2 text-sm text-meta-text-primary">{{ label }}</label>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro radio_group(name, options, selected = '', class = '') %}
+    <div class="space-y-2">
+        {% for value, label in options %}
+            <div class="flex items-center">
+                <input type="radio" 
+                       name="{{ name }}" 
+                       id="{{ name }}_{{ value }}" 
+                       value="{{ value }}" 
+                       class="form-radio {{ class }}" 
+                       {{ value == selected ? 'checked' : '' }}>
+                <label for="{{ name }}_{{ value }}" class="ml-2 text-sm text-meta-text-primary">{{ label }}</label>
+            </div>
+        {% endfor %}
+    </div>
+{% endmacro %}
+
+{% macro file_input(name, accept = null, required = false, class = '') %}
+    <input type="file" 
+           name="{{ name }}" 
+           id="{{ name }}" 
+           class="form-file {{ class }}" 
+           {{ accept ? 'accept="' ~ accept ~ '"' : '' }}
+           {{ required ? 'required' : '' }}>
+{% endmacro %}
+
+{% macro date_input(name, value = '', required = false, class = '') %}
+    <input type="date" 
+           name="{{ name }}" 
+           id="{{ name }}" 
+           value="{{ value }}" 
+           class="form-input {{ class }}" 
+           {{ required ? 'required' : '' }}>
+{% endmacro %}
+
+{% macro number_input(name, value = '', min = null, max = null, step = null, required = false, class = '') %}
+    <input type="number" 
+           name="{{ name }}" 
+           id="{{ name }}" 
+           value="{{ value }}" 
+           class="form-input {{ class }}" 
+           {{ min is not null ? 'min="' ~ min ~ '"' : '' }}
+           {{ max is not null ? 'max="' ~ max ~ '"' : '' }}
+           {{ step is not null ? 'step="' ~ step ~ '"' : '' }}
+           {{ required ? 'required' : '' }}>
+{% endmacro %}

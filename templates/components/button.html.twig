@@ -1,0 +1,111 @@
+{# Button Component Macros #}
+{% macro button(text, type = 'primary', size = 'md', href = null, onclick = null, disabled = false, icon = null, class = '') %}
+    {% set type_class = '' %}
+    {% set size_class = '' %}
+    
+    {# Button type classes #}
+    {% if type == 'primary' %}
+        {% set type_class = 'btn-primary' %}
+    {% elseif type == 'secondary' %}
+        {% set type_class = 'btn-secondary' %}
+    {% elseif type == 'success' %}
+        {% set type_class = 'btn-success' %}
+    {% elseif type == 'danger' %}
+        {% set type_class = 'btn-danger' %}
+    {% elseif type == 'warning' %}
+        {% set type_class = 'btn-warning' %}
+    {% endif %}
+    
+    {# Button size classes #}
+    {% if size == 'sm' %}
+        {% set size_class = 'btn-sm' %}
+    {% elseif size == 'lg' %}
+        {% set size_class = 'btn-lg' %}
+    {% else %}
+        {% set size_class = 'btn-md' %}
+    {% endif %}
+    
+    {% set all_classes = type_class ~ ' ' ~ size_class ~ ' ' ~ class %}
+    {% set disabled_attr = disabled ? 'disabled' : '' %}
+    
+    {% if href %}
+        <a href="{{ href }}" class="{{ all_classes }} {{ disabled ? 'opacity-50 pointer-events-none' : '' }}" {{ onclick ? 'onclick="' ~ onclick ~ '"' : '' }}>
+            {% if icon %}
+                <span class="mr-2">{{ icon|raw }}</span>
+            {% endif %}
+            {{ text }}
+        </a>
+    {% else %}
+        <button type="button" class="{{ all_classes }}" {{ onclick ? 'onclick="' ~ onclick ~ '"' : '' }} {{ disabled_attr }}>
+            {% if icon %}
+                <span class="mr-2">{{ icon|raw }}</span>
+            {% endif %}
+            {{ text }}
+        </button>
+    {% endif %}
+{% endmacro %}
+
+{% macro submit_button(text = 'Submit', type = 'primary', size = 'md', disabled = false, icon = null, class = '') %}
+    {% set type_class = '' %}
+    {% set size_class = '' %}
+    
+    {# Button type classes #}
+    {% if type == 'primary' %}
+        {% set type_class = 'btn-primary' %}
+    {% elseif type == 'secondary' %}
+        {% set type_class = 'btn-secondary' %}
+    {% elseif type == 'success' %}
+        {% set type_class = 'btn-success' %}
+    {% elseif type == 'danger' %}
+        {% set type_class = 'btn-danger' %}
+    {% elseif type == 'warning' %}
+        {% set type_class = 'btn-warning' %}
+    {% endif %}
+    
+    {# Button size classes #}
+    {% if size == 'sm' %}
+        {% set size_class = 'btn-sm' %}
+    {% elseif size == 'lg' %}
+        {% set size_class = 'btn-lg' %}
+    {% else %}
+        {% set size_class = 'btn-md' %}
+    {% endif %}
+    
+    {% set all_classes = type_class ~ ' ' ~ size_class ~ ' ' ~ class %}
+    {% set disabled_attr = disabled ? 'disabled' : '' %}
+    
+    <button type="submit" class="{{ all_classes }}" {{ disabled_attr }}>
+        {% if icon %}
+            <span class="mr-2">{{ icon|raw }}</span>
+        {% endif %}
+        {{ text }}
+    </button>
+{% endmacro %}
+
+{% macro icon_button(icon, type = 'primary', size = 'md', href = null, onclick = null, disabled = false, title = null) %}
+    {% set type_class = '' %}
+    
+    {# Icon button type classes #}
+    {% if type == 'primary' %}
+        {% set type_class = 'icon-btn-primary' %}
+    {% elseif type == 'secondary' %}
+        {% set type_class = 'icon-btn-secondary' %}
+    {% elseif type == 'success' %}
+        {% set type_class = 'icon-btn-success' %}
+    {% elseif type == 'danger' %}
+        {% set type_class = 'icon-btn-danger' %}
+    {% endif %}
+    
+    {% set disabled_attr = disabled ? 'disabled' : '' %}
+    {% set title_attr = title ? 'title="' ~ title ~ '"' : '' %}
+    
+    {% if href %}
+        <a href="{{ href }}" class="{{ type_class }} {{ disabled ? 'opacity-50 pointer-events-none' : '' }}" {{ onclick ? 'onclick="' ~ onclick ~ '"' : '' }} {{ title_attr }}>
+            {{ icon|raw }}
+        </a>
+    {% else %}
+        <button type="button" class="{{ type_class }}" {{ onclick ? 'onclick="' ~ onclick ~ '"' : '' }} {{ disabled_attr }} {{ title_attr }}>
+            {{ icon|raw }}
+        </button>
+    {% endif %}
+{% endmacro %}

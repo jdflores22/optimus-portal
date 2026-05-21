@@ -1,0 +1,155 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Evaluator Dashboard - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <!-- Header -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-primary">OPTIMUS</span>
+                    <span class="ml-4 text-base-content/70">Evaluator Dashboard</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Flash Messages -->
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success mb-4">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-error mb-4">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                </svg>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold">Pending Applications</h1>
+            <p class="mt-2 text-base-content/70">Review and evaluate accreditation applications</p>
+        </div>
+
+        <!-- Applications Grid -->
+        <!-- Skeleton Loader -->
+        <div id="dashboard-skeleton">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for i in 1..6 %}
+                    <div class="card bg-base-100 shadow-sm">
+                        <div class="card-body">
+                            <!-- Status Badge Skeleton -->
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="skeleton skeleton-animated h-8 w-32 rounded-full"></div>
+                                <div class="skeleton skeleton-animated h-4 w-20"></div>
+                            </div>
+
+                            <!-- Applicant Info Skeleton -->
+                            <div class="mb-4">
+                                <div class="skeleton skeleton-animated h-6 w-48 mb-2"></div>
+                                <div class="skeleton skeleton-animated h-4 w-32 mb-2"></div>
+                                <div class="skeleton skeleton-animated h-4 w-40"></div>
+                            </div>
+
+                            <!-- Action Button Skeleton -->
+                            <div class="skeleton skeleton-animated h-10 w-full rounded-lg"></div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Actual Content -->
+        <div id="dashboard-content" class="hidden">
+        {% if pendingApplications is defined and pendingApplications|length > 0 %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for application in pendingApplications %}
+                    <div class="card bg-base-100 shadow-sm hover:shadow-lg transition-shadow">
+                        <div class="card-body">
+                            <!-- Status Badge -->
+                            <div class="flex items-center justify-between mb-4">
+                                {% if application.status.value == 'PENDING' %}
+                                    <span class="badge badge-warning badge-lg">Pending Review</span>
+                                {% elseif application.status.value == 'APPROVED' %}
+                                    <span class="badge badge-success badge-lg">Approved</span>
+                                {% elseif application.status.value == 'REJECTED' %}
+                                    <span class="badge badge-error badge-lg">Rejected</span>
+                                {% endif %}
+                                <span class="text-xs text-base-content/60">
+                                    {{ application.submittedAt|date('M d, Y') }}
+                                </span>
+                            </div>
+
+                            <!-- Applicant Info -->
+                            <div class="mb-4">
+                                <h3 class="text-lg font-semibold mb-1">
+                                    {{ application.applicant.email }}
+                                </h3>
+                                <p class="text-sm text-base-content/70">
+                                    Type: 
+                                    <span class="font-medium">
+                                        {{ application.applicant.role.value }}
+                                    </span>
+                                </p>
+                                {% if application.applicant.role.value == 'BROKER' %}
+                                    <p class="text-sm text-base-content/70 mt-1">
+                                        Full Name: {{ application.applicant.fullName }}
+                                    </p>
+                                {% elseif application.applicant.role.value == 'CONSIGNEE' %}
+                                    <p class="text-sm text-base-content/70 mt-1">
+                                        Business: {{ application.applicant.businessName }}
+                                    </p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Action Button -->
+                            <a href="{{ path('app_evaluator_application_detail', {id: application.id}) }}" 
+                               class="btn btn-primary w-full gap-2">
+                                <span class="icon-[tabler--eye] size-4"></span>
+                                Review Application
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body items-center text-center py-16">
+                    <div class="size-20 bg-base-200 rounded-full flex items-center justify-center mb-6">
+                        <span class="icon-[tabler--file-off] size-10 text-base-content/40"></span>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">No pending applications</h3>
+                    <p class="text-sm text-base-content/60">All applications have been reviewed</p>
+                </div>
+            </div>
+        {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Show skeleton on page load, hide when content is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        const skeleton = document.getElementById('dashboard-skeleton');
+        const content = document.getElementById('dashboard-content');
+        
+        // Hide skeleton and show content after a brief delay
+        setTimeout(function() {
+            if (skeleton) skeleton.classList.add('hidden');
+            if (content) content.classList.remove('hidden');
+        }, 300);
+    });
+</script>
+{% endblock %}

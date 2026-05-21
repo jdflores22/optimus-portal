@@ -1,0 +1,128 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Create Notice of Arrival (NOA){% endblock %}
+
+{% block page_title %}Create Notice of Arrival{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white shadow-sm rounded-lg">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">New NOA Creation</h2>
+            <p class="mt-1 text-sm text-gray-600">Create a Notice of Arrival with container details and CY allocation</p>
+        </div>
+
+        <!-- Form -->
+        <form id="noaCreationForm" class="px-6 py-6 space-y-6">
+            <!-- BL Number -->
+            <div>
+                <label for="blNumber" class="block text-sm font-medium text-gray-700">BL Number *</label>
+                <input type="text" id="blNumber" name="blNumber" required maxlength="50"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                       placeholder="Enter Bill of Lading number">
+                <p class="mt-1 text-sm text-red-600 hidden" id="blNumberError"></p>
+            </div>
+
+            <!-- Vessel Number -->
+            <div>
+                <label for="vesselNumber" class="block text-sm font-medium text-gray-700">Vessel Number *</label>
+                <input type="text" id="vesselNumber" name="vesselNumber" required maxlength="50"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                       placeholder="Enter vessel number">
+                <p class="mt-1 text-sm text-red-600 hidden" id="vesselNumberError"></p>
+            </div>
+
+            <!-- ETA -->
+            <div>
+                <label for="eta" class="block text-sm font-medium text-gray-700">Estimated Time of Arrival (ETA) *</label>
+                <input type="datetime-local" id="eta" name="eta" required
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                <p class="mt-1 text-sm text-red-600 hidden" id="etaError"></p>
+            </div>
+
+            <!-- CY Location -->
+            <div>
+                <label for="cyLocation" class="block text-sm font-medium text-gray-700">CY Empty Return Location *</label>
+                <input type="text" id="cyLocation" name="cyLocation" required maxlength="100"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                       placeholder="Enter Container Yard location">
+                <p class="mt-1 text-sm text-red-600 hidden" id="cyLocationError"></p>
+            </div>
+
+            <!-- Consignee Selection -->
+            <div>
+                <label for="consigneeId" class="block text-sm font-medium text-gray-700">Consignee *</label>
+                <select id="consigneeId" name="consigneeId" required
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    <option value="">Select consignee</option>
+                    {# Consignees will be loaded dynamically #}
+                </select>
+                <p class="mt-1 text-sm text-red-600 hidden" id="consigneeIdError"></p>
+            </div>
+
+            <!-- Container Collection -->
+            <div class="border-t border-gray-200 pt-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Containers</h3>
+                    <button type="button" id="addContainerBtn"
+                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Add Container
+                    </button>
+                </div>
+
+                <div id="containersCollection" class="space-y-4">
+                    <!-- Container entries will be added here dynamically -->
+                </div>
+                <p class="mt-2 text-sm text-red-600 hidden" id="containersError"></p>
+            </div>
+
+            <!-- CY Allocation Display -->
+            <div id="cyAllocationDisplay" class="hidden border-t border-gray-200 pt-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">CY Allocation</h3>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <p class="text-sm font-medium text-gray-700">Total TEU Required</p>
+                            <p class="text-2xl font-bold text-blue-600" id="totalTeuRequired">0</p>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-700">Available TEU Capacity</p>
+                            <p class="text-2xl font-bold text-green-600" id="availableTeuCapacity">0</p>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-700">Remaining Capacity</p>
+                            <p class="text-2xl font-bold" id="remainingCapacity">0</p>
+                        </div>
+                    </div>
+                    <div id="capacityWarning" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                        <p class="text-sm text-red-800">
+                            <svg class="inline w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                            </svg>
+                            Insufficient CY capacity. Please reduce container count or select a different CY location.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
+                <a href="{{ path('app_terminal_team_dashboard') }}"
+                   class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Cancel
+                </a>
+                <button type="submit" id="submitBtn"
+                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Create NOA
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="{{ asset('js/noa-creation.js') }}"></script>
+{% endblock %}

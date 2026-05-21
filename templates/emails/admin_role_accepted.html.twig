@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role Invitation Accepted - OPTIMUS Portal</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6; 
+            color: #1c1e21; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f0f2f5;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 20px auto; 
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header { 
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white; 
+            padding: 32px 24px; 
+            text-align: center; 
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .content { 
+            padding: 32px 24px; 
+            background-color: #ffffff; 
+        }
+        .content p {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+        }
+        .success-info {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 20px;
+            margin: 24px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .success-info h3 {
+            margin: 0 0 12px 0;
+            color: #155724;
+            font-size: 18px;
+        }
+        .success-info .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 4px 0;
+            border-bottom: 1px solid #c3e6cb;
+        }
+        .success-info .detail-row:last-child {
+            border-bottom: none;
+        }
+        .success-info .label {
+            font-weight: 600;
+            color: #155724;
+        }
+        .success-info .value {
+            color: #1e7e34;
+        }
+        .action-button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 24px 0;
+            text-align: center;
+        }
+        .action-button:hover {
+            background-color: #0056b3;
+        }
+        .next-steps {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 24px 0;
+        }
+        .next-steps h4 {
+            margin: 0 0 12px 0;
+            color: #495057;
+            font-size: 16px;
+        }
+        .next-steps ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .next-steps li {
+            margin: 8px 0;
+            font-size: 14px;
+            color: #6c757d;
+        }
+        .footer { 
+            padding: 24px; 
+            text-align: center; 
+            font-size: 14px; 
+            color: #65676b;
+            background-color: #f0f2f5;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                border-radius: 0;
+            }
+            .content {
+                padding: 20px 16px;
+            }
+            .action-button {
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .success-info .detail-row {
+                flex-direction: column;
+            }
+            .success-info .label {
+                margin-bottom: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✅ Role Invitation Accepted</h1>
+        </div>
+        <div class="content">
+            <p>Hello {{ admin.email }},</p>
+            <p>Great news! A role invitation you sent has been accepted and the user account has been successfully created.</p>
+
+            <div class="success-info">
+                <h3>🎉 New User Account Created</h3>
+                <div class="detail-row">
+                    <span class="label">User Email:</span>
+                    <span class="value">{{ newUser.email }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Assigned Role:</span>
+                    <span class="value">{{ newUser.role.value|title|replace({'_': ' '}) }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Account Status:</span>
+                    <span class="value">{{ newUser.status.value|title }}</span>
+                </div>
+                {% if newUser.managedShippingLine %}
+                <div class="detail-row">
+                    <span class="label">Shipping Line:</span>
+                    <span class="value">{{ newUser.managedShippingLine.brandName }}</span>
+                </div>
+                {% endif %}
+                <div class="detail-row">
+                    <span class="label">Account Created:</span>
+                    <span class="value">{{ "now"|date('F j, Y \\a\\t g:i A') }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">User ID:</span>
+                    <span class="value">#{{ newUser.id }}</span>
+                </div>
+            </div>
+
+            <div style="text-align: center;">
+                <a href="{{ userProfileUrl }}" class="action-button">
+                    👤 View User Profile
+                </a>
+            </div>
+
+            <div class="next-steps">
+                <h4>📋 What Happens Next</h4>
+                <ul>
+                    <li><strong>Welcome email sent:</strong> The user has received login instructions and welcome information</li>
+                    <li><strong>Account is active:</strong> The user can now log in and access their assigned features</li>
+                    <li><strong>Password setup:</strong> The user will set their password on first login</li>
+                    <li><strong>Profile completion:</strong> The user may need to complete their profile information</li>
+                    <li><strong>Training:</strong> Consider providing orientation or training materials</li>
+                </ul>
+            </div>
+
+            <p><strong>User Permissions:</strong></p>
+            <p>The new user has been granted <strong>{{ newUser.role.value|title|replace({'_': ' '}) }}</strong> permissions, which include:</p>
+            <ul>
+                {% if newUser.role.value == 'CONSIGNEE' %}
+                <li>Submit and track shipment requests</li>
+                <li>View shipment status and documentation</li>
+                <li>Manage consignee profile and settings</li>
+                {% elseif newUser.role.value == 'BROKER' %}
+                <li>Manage broker accreditation</li>
+                <li>Handle shipment documentation</li>
+                <li>Access broker-specific features</li>
+                {% elseif newUser.role.value == 'SL_STAFF' %}
+                <li>Manage shipping line operations</li>
+                <li>Process shipment requests</li>
+                <li>Access staff dashboard and reports</li>
+                {% elseif newUser.role.value == 'SHIPPING_LINES_ADMIN' %}
+                <li>Full shipping line administration</li>
+                <li>Manage staff and user accounts</li>
+                <li>Access all shipping line features</li>
+                {% else %}
+                <li>Role-specific permissions as configured</li>
+                <li>Access to assigned features and modules</li>
+                <li>Standard user account capabilities</li>
+                {% endif %}
+            </ul>
+
+            <p><strong>Administrative Notes:</strong></p>
+            <ul>
+                <li>The user account is immediately active and ready for use</li>
+                <li>You can modify user permissions through the admin panel if needed</li>
+                <li>The user will appear in your user management dashboard</li>
+                <li>Consider reaching out to welcome the new user personally</li>
+            </ul>
+
+            <p>If you need to make any changes to the user's account or have questions about user management, please use the admin panel or contact system support.</p>
+        </div>
+        <div class="footer">
+            <p><strong>OPTIMUS Shipping Portal</strong><br>
+            Administrative Notification System</p>
+            <p style="font-size: 12px; margin-top: 16px;">
+                This is an automated message. Please do not reply to this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

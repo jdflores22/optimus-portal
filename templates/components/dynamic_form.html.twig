@@ -1,0 +1,200 @@
+{# Dynamic Form Component Macros #}
+{% from 'components/form.html.twig' import form_group, text_input, email_input, number_input, date_input, textarea, select, checkbox, radio_group, file_input %}
+
+{% macro render_dynamic_field(field, value = '', error = null) %}
+    {% set field_name = field.id %}
+    {% set field_label = field.label %}
+    {% set field_required = field.required ?? false %}
+    {% set field_type = field.type %}
+    
+    {% if field_type == 'text' %}
+        {{ form_group(
+            field_label,
+            text_input(field_name, value, field.placeholder ?? '', field_required),
+            field_required,
+            error,
+            field.help ?? null
+        ) }}
+    
+    {% elseif field_type == 'email' %}
+        {{ form_group(
+            field_label,
+            email_input(field_name, value, field.placeholder ?? '', field_required),
+            field_required,
+            error,
+            field.help ?? null
+        ) }}
+    
+    {% elseif field_type == 'number' %}
+        {{ form_group(
+            field_label,
+            number_input(
+                field_name, 
+                value, 
+                field.validation.min ?? null, 
+                field.validation.max ?? null, 
+                field.validation.step ?? null, 
+                field_required
+            ),
+            field_required,
+            error,
+            field.help ?? null
+        ) }}
+    
+    {% elseif field_type == 'date' %}
+        {{ form_group(
+            field_label,
+            date_input(field_name, value, field_required),
+            field_required,
+            error,
+            field.help ?? null
+        ) }}
+    
+    {% elseif field_type == 'textarea' %}
+        {{ form_group(
+            field_label,
+            textarea(field_name, value, field.placeholder ?? '', field.rows ?? 4, field_required),
+            field_required,
+            error,
+            field.help ?? null
+        ) }}
+    
+    {% elseif field_type == 'select' or field_type == 'dropdown' %}
+        {% set options = field.validation.options ?? {} %}
+        {{ form_group(
+            field_label,
+            select(field_name, options, value, field_required, field.placeholder ?? 'Select an option'),
+            field_required,
+            error,
+            field.help ?? null
+        ) }}
+    
+    {% elseif field_type == 'checkbox' %}
+        {% if field.validation.options is defined %}
+            {# Multiple checkboxes #}
+            <div class="form-group">
+                <label class="form-label {{ field_required ? 'required' : '' }}">{{ field_label }}</label>
+                <div class="space-y-2">
+                    {% for option_value, option_label in field.validation.options %}
+                        {% set checkbox_name = field_name ~ '[]' %}
+                        {% set checkbox_id = field_name ~ '_' ~ option_value %}
+                        {% set is_checked = value is iterable and option_value in value %}
+                        <div class="flex items-center">
+                            <input type="checkbox" 
+                                   name="{{ checkbox_name }}" 
+                                   id="{{ checkbox_id }}" 
+                                   value="{{ option_value }}" 
+                                   class="form-checkbox" 
+                                   {{ is_checked ? 'checked' : '' }}>
+                            <label for="{{ checkbox_id }}" class="ml-2 text-sm text-meta-text-primary">{{ option_label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if error %}
+                    <div class="form-error">{{ error }}</div>
+                {% endif %}
+                {% if field.help %}
+                    <div class="form-help">{{ field.help }}</div>
+                {% endif %}
+            </div>
+        {% else %}
+            {# Single checkbox #}
+            <div class="form-group">
+                {{ checkbox(field_name, field.value ?? '1', value == (field.value ?? '1'), field_label) }}
+                {% if error %}
+                    <div class="form-error">{{ error }}</div>
+                {% endif %}
+                {% if field.help %}
+                    <div class="form-help">{{ field.help }}</div>
+                {% endif %}
+            </div>
+        {% endif %}
+    
+    {% elseif field_type == 'radio' %}
+        {% set options = field.validation.options ?? {} %}
+        {{ form_group(
+            field_label,
+            radio_group(field_name, options, value),
+            field_required,
+            error,
+            field.help ?? null
+        ) }}
+    
+    {% elseif field_type == 'file' %}
+        {% set allowedTypes = field.validation.allowedTypes ?? [] %}
+        {% set acceptString = allowedTypes ? ('.' ~ allowedTypes|join(',.')) : null %}
+        {{ form_group(
+            field_label,
+            file_input(field_name, acceptString, field_required),
+            field_required,
+            error,
+            field.help ?? ('Maximum file size: ' ~ ((field.validation.maxSize ?? 10485760) / 1048576)|round(1) ~ 'MB')
+        ) }}
+    
+    {% else %}
+        {# Fallback to text input for unknown field types #}
+        {{ form_group(
+            field_label,
+            text_input(field_name, value, field.placeholder ?? '', field_required),
+            field_required,
+            error,
+            field.help ?? null
+        ) }}
+    {% endif %}
+{% endmacro %}
+
+{% macro render_dynamic_form(form_config, submitted_data = {}, errors = {}) %}
+    {% if form_config and form_config.fields and form_config.fields.fields is defined and form_config.fields.fields is iterable %}
+        <div class="space-y-6">
+            {% for field in form_config.fields.fields|sort((a, b) => (a.order ?? 0) <=> (b.order ?? 0)) %}
+                {% if field and field.id is defined and field.label is defined and field.type is defined %}
+                    {% set field_value = submitted_data[field.id] ?? '' %}
+                    {% set field_error = errors[field.id] ?? null %}
+                    
+                    {{ _self.render_dynamic_field(field, field_value, field_error) }}
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card-md text-center text-meta-text-secondary">
+            <div class="py-8">
+                <svg class="mx-auto h-12 w-12 text-meta-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-meta-text-secondary">No form configuration available</h3>
+                <p class="mt-1 text-sm text-meta-text-tertiary">Please contact an administrator to set up the form.</p>
+            </div>
+        </div>
+    {% endif %}
+{% endmacro %}
+
+{% macro render_form_preview(form_config) %}
+    {% if form_config and form_config.fields %}
+        <div class="space-y-6">
+            <div class="card-header">
+                <h3 class="card-title">{{ form_config.name }} Preview</h3>
+                <p class="card-subtitle">Form Type: {{ form_config.type|title }} | Version: {{ form_config.version }}</p>
+            </div>
+            
+            {% for field in form_config.fields|sort((a, b) => a.order <=> b.order) %}
+                <div class="border border-meta-gray-200 rounded-meta p-4 bg-meta-gray-50">
+                    {{ _self.render_dynamic_field(field) }}
+                    
+                    <div class="mt-2 text-xs text-meta-text-tertiary">
+                        <strong>Field ID:</strong> {{ field.id }} | 
+                        <strong>Type:</strong> {{ field.type }} | 
+                        <strong>Required:</strong> {{ field.required ? 'Yes' : 'No' }}
+                        {% if field.validation %}
+                            | <strong>Validation:</strong> {{ field.validation|json_encode }}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert-warning">
+            <strong>No fields configured</strong><br>
+            This form doesn't have any fields yet. Add some fields to see the preview.
+        </div>
+    {% endif %}
+{% endmacro %}

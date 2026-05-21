@@ -1,0 +1,142 @@
+security:
+    # Password hashing with bcrypt cost 12
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+            algorithm: bcrypt
+            cost: 12
+
+    # Custom user provider loading users from database
+    providers:
+        app_user_provider:
+            id: App\Security\UserProvider
+
+    # Role hierarchy
+    role_hierarchy:
+        ROLE_SYSTEM_ADMIN: [ROLE_SHIPPING_LINES_ADMIN, ROLE_EVALUATOR, ROLE_SL_STAFF, ROLE_TERMINAL_TEAM]
+        ROLE_SHIPPING_LINES_ADMIN: [ROLE_EVALUATOR, ROLE_SL_STAFF]
+        ROLE_EVALUATOR: [ROLE_USER]
+        ROLE_SL_STAFF: [ROLE_USER]
+        ROLE_ACCOUNTING: [ROLE_USER]
+        ROLE_TERMINAL_TEAM: [ROLE_USER]
+        ROLE_TRUCKER: [ROLE_USER]
+        ROLE_BROKER: [ROLE_USER]
+        ROLE_CONSIGNEE: [ROLE_USER]
+
+    firewalls:
+        dev:
+            pattern: ^/(_profiler|_wdt|assets|build)/
+            security: false
+        
+        # Public VAPID key endpoint (no authentication required)
+        vapid_public:
+            pattern: ^/api/push/vapid-public-key$
+            security: false
+        
+        # Public exchange rate endpoint (no authentication required)
+        exchange_rate_public:
+            pattern: ^/api/exchange-rate/
+            security: false
+        
+        # API firewall for mobile applications (exclude /api/locations, /api/container-types, /api/container-sizes, /api/consignees, /api/cy-allocations, /api/containers, /api/manifests, /api/push, /api/account, /api/session)
+        api:
+            pattern: ^/api/(?!locations|container-types|container-sizes|consignees|cy-allocations|containers|manifests|payments|noa|billing|edos|files|bl|push|account|session)
+            stateless: true
+            provider: app_user_provider
+            custom_authenticator: App\Security\ApiTokenAuthenticator
+        
+        main:
+            lazy: true
+            provider: app_user_provider
+            
+            # Custom form login authenticator
+            custom_authenticator: App\Security\LoginFormAuthenticator
+            
+            # Logout configuration
+            logout:
+                path: app_logout
+                target: app_login
+                invalidate_session: true
+            
+            # Session management with 30-minute idle timeout
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 1800 # 30 minutes in seconds
+                path: /
+                always_remember_me: false
+                secure: auto
+                httponly: true
+                samesite: lax
+
+    # Access control rules
+    access_control:
+        - { path: ^/$, roles: PUBLIC_ACCESS }
+        - { path: ^/features$, roles: PUBLIC_ACCESS }
+        - { path: ^/login, roles: PUBLIC_ACCESS }
+        - { path: ^/register, roles: PUBLIC_ACCESS }
+        - { path: ^/forgot-password, roles: PUBLIC_ACCESS }
+        - { path: ^/email/verify, roles: PUBLIC_ACCESS }
+        - { path: ^/email/resend, roles: PUBLIC_ACCESS }
+        - { path: ^/role-acceptance, roles: PUBLIC_ACCESS }
+        - { path: ^/trucker/login, roles: PUBLIC_ACCESS }
+        - { path: ^/trucker/register, roles: PUBLIC_ACCESS }
+        - { path: ^/trucker/forgot-password, roles: PUBLIC_ACCESS }
+        - { path: ^/trucker/verify-email, roles: PUBLIC_ACCESS }
+        - { path: ^/api/push/vapid-public-key, roles: PUBLIC_ACCESS }
+        - { path: ^/api/exchange-rate/, roles: PUBLIC_ACCESS }
+        - { path: ^/api/account/status, roles: ROLE_USER }
+        - { path: ^/api/session/ping, roles: ROLE_USER }
+        - { path: ^/api/session/status, roles: ROLE_USER }
+        - { path: ^/api/payments/\d+/receipt/download, roles: ROLE_USER }
+        - { path: ^/api/extend-session, roles: ROLE_USER }
+        - { path: ^/api/locations, roles: ROLE_USER }
+        - { path: ^/api/v1/pre-advice, roles: ROLE_TRUCKER }
+        # Manifest Payment and NOA Workflow API endpoints
+        - { path: ^/api/manifests$, roles: ROLE_SL_STAFF, methods: [POST] }
+        - { path: ^/api/manifests/\d+/declare-consignee$, roles: ROLE_SL_STAFF, methods: [POST] }
+        - { path: ^/api/manifests/\d+/bl$, roles: ROLE_BROKER, methods: [POST] }
+        - { path: ^/api/manifests/\d+/payments/final$, roles: ROLE_BROKER, methods: [POST] }
+        - { path: ^/api/payments/final/pending$, roles: ROLE_ACCOUNTING, methods: [GET] }
+        - { path: ^/api/payments/\d+/validate-final$, roles: ROLE_ACCOUNTING, methods: [POST] }
+        - { path: ^/api/manifests/\d+/noa$, roles: ROLE_SL_STAFF, methods: [POST] }
+        - { path: ^/api/manifests/\d+/billing$, roles: ROLE_ACCOUNTING, methods: [POST] }
+        - { path: ^/api/manifests/\d+/billing$, roles: [ROLE_ACCOUNTING, ROLE_BROKER], methods: [GET] }
+        # eDO Release Workflow API endpoints
+        - { path: ^/admin/edo-release/queue$, roles: ROLE_SYSTEM_ADMIN, methods: [GET] }
+        - { path: ^/admin/edo-release/\d+/release$, roles: ROLE_SYSTEM_ADMIN, methods: [POST] }
+        - { path: ^/admin/edo-release/\d+/reject$, roles: ROLE_SYSTEM_ADMIN, methods: [POST] }
+        - { path: ^/admin/edo-release/\d+/history$, roles: ROLE_SYSTEM_ADMIN, methods: [GET] }
+        - { path: ^/admin/edo-release/\d+/details$, roles: ROLE_SYSTEM_ADMIN, methods: [GET] }
+        # eDO Payment Validation endpoints
+        - { path: ^/admin/edo-payments$, roles: ROLE_SYSTEM_ADMIN, methods: [GET] }
+        - { path: ^/admin/edo-payments/\d+/validate$, roles: ROLE_SYSTEM_ADMIN, methods: [POST] }
+        - { path: ^/api/manifests/\d+/payments/edo-access$, roles: ROLE_BROKER, methods: [POST] }
+        - { path: ^/api/payments/edo-access/pending$, roles: ROLE_SYSTEM_ADMIN, methods: [GET] }
+        - { path: ^/api/payments/\d+/validate-edo-access$, roles: ROLE_SYSTEM_ADMIN, methods: [POST] }
+        # Payment Fee Configuration
+        - { path: ^/admin/payment-fee-config$, roles: ROLE_SYSTEM_ADMIN, methods: [GET] }
+        - { path: ^/admin/payment-fee-config/update$, roles: ROLE_SYSTEM_ADMIN, methods: [POST] }
+        - { path: ^/api/, roles: ROLE_USER }
+        - { path: ^/admin/user-hierarchy, roles: [ROLE_SYSTEM_ADMIN, ROLE_SHIPPING_LINES_ADMIN] }
+        - { path: ^/admin/activity-logs, roles: [ROLE_SYSTEM_ADMIN, ROLE_SHIPPING_LINES_ADMIN] }
+        - { path: ^/notifications, roles: ROLE_USER }
+        - { path: ^/admin, roles: ROLE_SYSTEM_ADMIN }
+        - { path: ^/evaluator, roles: ROLE_EVALUATOR }
+        - { path: ^/shipping-admin, roles: ROLE_SHIPPING_LINES_ADMIN }
+        - { path: ^/staff, roles: ROLE_SL_STAFF }
+        - { path: ^/accounting, roles: ROLE_ACCOUNTING }
+        - { path: ^/terminal-team, roles: ROLE_TERMINAL_TEAM }
+        - { path: ^/trucker, roles: ROLE_TRUCKER }
+        - { path: ^/broker, roles: ROLE_BROKER }
+        - { path: ^/consignee, roles: ROLE_CONSIGNEE }
+        - { path: ^/, roles: ROLE_USER }
+
+when@test:
+    security:
+        password_hashers:
+            # Password hashers are resource-intensive by design to ensure security.
+            # In tests, it's safe to reduce their cost to improve performance.
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4 # Lowest possible value for bcrypt
+                time_cost: 3 # Lowest possible value for argon
+                memory_cost: 10 # Lowest possible value for argon

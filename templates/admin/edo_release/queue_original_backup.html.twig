@@ -1,0 +1,1512 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}eDO Release Queue - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6 md:mb-8">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-900">eDO Release Queue</h1>
+                <p class="mt-1 md:mt-2 text-xs md:text-sm text-gray-600">Review and release pending electronic delivery orders</p>
+            </div>
+            <a href="{{ path('admin_payment_fee_config') }}" 
+               class="inline-flex items-center justify-center px-4 py-2.5 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                <span class="hidden sm:inline">Configure Payment Fee</span>
+                <span class="sm:hidden">Configure Fee</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% for message in app.flashes('success') %}
+        <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg">
+            {{ message }}
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg">
+            {{ message }}
+        </div>
+    {% endfor %}
+
+    <!-- Analytics Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
+        <!-- Total Pending -->
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg md:rounded-xl shadow-sm border border-blue-200 p-4 md:p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide truncate">Total</p>
+                    <p class="text-2xl md:text-3xl font-bold text-blue-900 mt-1 md:mt-2">{{ stats.total }}</p>
+                </div>
+                <div class="w-10 h-10 md:w-12 md:h-12 bg-blue-500 rounded-lg md:rounded-xl flex items-center justify-center shadow-lg flex-shrink-0 ml-2">
+                    <svg class="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Validation -->
+        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg md:rounded-xl shadow-sm border border-yellow-200 p-4 md:p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-semibold text-yellow-600 uppercase tracking-wide truncate">Pending</p>
+                    <p class="text-2xl md:text-3xl font-bold text-yellow-900 mt-1 md:mt-2">{{ stats.pendingValidation }}</p>
+                </div>
+                <div class="w-10 h-10 md:w-12 md:h-12 bg-yellow-500 rounded-lg md:rounded-xl flex items-center justify-center shadow-lg flex-shrink-0 ml-2">
+                    <svg class="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ready to Release -->
+        <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg md:rounded-xl shadow-sm border border-green-200 p-4 md:p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-semibold text-green-600 uppercase tracking-wide truncate">Ready</p>
+                    <p class="text-2xl md:text-3xl font-bold text-green-900 mt-1 md:mt-2">{{ stats.readyToRelease }}</p>
+                </div>
+                <div class="w-10 h-10 md:w-12 md:h-12 bg-green-500 rounded-lg md:rounded-xl flex items-center justify-center shadow-lg flex-shrink-0 ml-2">
+                    <svg class="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Awaiting Payment -->
+        <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg md:rounded-xl shadow-sm border border-gray-200 p-4 md:p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide truncate">Awaiting</p>
+                    <p class="text-2xl md:text-3xl font-bold text-gray-900 mt-1 md:mt-2">{{ stats.awaitingPayment }}</p>
+                </div>
+                <div class="w-10 h-10 md:w-12 md:h-12 bg-gray-500 rounded-lg md:rounded-xl flex items-center justify-center shadow-lg flex-shrink-0 ml-2">
+                    <svg class="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="mb-4 md:mb-6">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-1">
+            <!-- Desktop Tabs -->
+            <nav class="hidden md:flex space-x-1" aria-label="Tabs">
+                <a href="{{ path('admin_edo_release_queue', {tab: 'all'}) }}" 
+                   class="{% if activeTab == 'all' %}bg-blue-600 text-white{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} flex-1 py-3 px-4 rounded-md font-medium text-sm text-center transition-colors">
+                    All EDOs
+                    <span class="ml-2 py-0.5 px-2 rounded-full text-xs font-semibold {% if activeTab == 'all' %}bg-blue-500 text-white{% else %}bg-gray-200 text-gray-700{% endif %}">
+                        {{ stats.total }}
+                    </span>
+                </a>
+                
+                <a href="{{ path('admin_edo_release_queue', {tab: 'pending'}) }}" 
+                   class="{% if activeTab == 'pending' %}bg-yellow-500 text-white{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} flex-1 py-3 px-4 rounded-md font-medium text-sm text-center transition-colors">
+                    Pending Validation
+                    <span class="ml-2 py-0.5 px-2 rounded-full text-xs font-semibold {% if activeTab == 'pending' %}bg-yellow-600 text-white{% else %}bg-gray-200 text-gray-700{% endif %}">
+                        {{ stats.pendingValidation }}
+                    </span>
+                </a>
+                
+                <a href="{{ path('admin_edo_release_queue', {tab: 'verified'}) }}" 
+                   class="{% if activeTab == 'verified' %}bg-green-600 text-white{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} flex-1 py-3 px-4 rounded-md font-medium text-sm text-center transition-colors">
+                    Verified Payments
+                    <span class="ml-2 py-0.5 px-2 rounded-full text-xs font-semibold {% if activeTab == 'verified' %}bg-green-500 text-white{% else %}bg-gray-200 text-gray-700{% endif %}">
+                        {{ stats.readyToRelease }}
+                    </span>
+                </a>
+                
+                <a href="{{ path('admin_edo_release_queue', {tab: 'awaiting'}) }}" 
+                   class="{% if activeTab == 'awaiting' %}bg-gray-600 text-white{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} flex-1 py-3 px-4 rounded-md font-medium text-sm text-center transition-colors">
+                    Awaiting Payment
+                    <span class="ml-2 py-0.5 px-2 rounded-full text-xs font-semibold {% if activeTab == 'awaiting' %}bg-gray-500 text-white{% else %}bg-gray-200 text-gray-700{% endif %}">
+                        {{ stats.awaitingPayment }}
+                    </span>
+                </a>
+            </nav>
+            
+            <!-- Mobile Tabs -->
+            <nav class="md:hidden grid grid-cols-2 gap-1" aria-label="Tabs">
+                <a href="{{ path('admin_edo_release_queue', {tab: 'all'}) }}" 
+                   class="{% if activeTab == 'all' %}bg-blue-600 text-white{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} py-2.5 px-3 rounded-md font-medium text-xs text-center transition-colors">
+                    All
+                    <span class="ml-1 py-0.5 px-1.5 rounded-full text-xs font-semibold {% if activeTab == 'all' %}bg-blue-500 text-white{% else %}bg-gray-200 text-gray-700{% endif %}">
+                        {{ stats.total }}
+                    </span>
+                </a>
+                
+                <a href="{{ path('admin_edo_release_queue', {tab: 'pending'}) }}" 
+                   class="{% if activeTab == 'pending' %}bg-yellow-500 text-white{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} py-2.5 px-3 rounded-md font-medium text-xs text-center transition-colors">
+                    Pending
+                    <span class="ml-1 py-0.5 px-1.5 rounded-full text-xs font-semibold {% if activeTab == 'pending' %}bg-yellow-600 text-white{% else %}bg-gray-200 text-gray-700{% endif %}">
+                        {{ stats.pendingValidation }}
+                    </span>
+                </a>
+                
+                <a href="{{ path('admin_edo_release_queue', {tab: 'verified'}) }}" 
+                   class="{% if activeTab == 'verified' %}bg-green-600 text-white{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} py-2.5 px-3 rounded-md font-medium text-xs text-center transition-colors">
+                    Verified
+                    <span class="ml-1 py-0.5 px-1.5 rounded-full text-xs font-semibold {% if activeTab == 'verified' %}bg-green-500 text-white{% else %}bg-gray-200 text-gray-700{% endif %}">
+                        {{ stats.readyToRelease }}
+                    </span>
+                </a>
+                
+                <a href="{{ path('admin_edo_release_queue', {tab: 'awaiting'}) }}" 
+                   class="{% if activeTab == 'awaiting' %}bg-gray-600 text-white{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} py-2.5 px-3 rounded-md font-medium text-xs text-center transition-colors">
+                    Awaiting
+                    <span class="ml-1 py-0.5 px-1.5 rounded-full text-xs font-semibold {% if activeTab == 'awaiting' %}bg-gray-500 text-white{% else %}bg-gray-200 text-gray-700{% endif %}">
+                        {{ stats.awaitingPayment }}
+                    </span>
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Queue Stats (removed old single card) -->
+
+    <!-- eDO Queue Table (Desktop) -->
+    <div class="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                    <tr>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Manifest / eDO
+                        </th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Consignee
+                        </th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Broker
+                        </th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Payment Status
+                        </th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Generated
+                        </th>
+                        <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-100">
+                    {% if edos|length > 0 %}
+                        {% for edo in edos %}
+                            <tr class="hover:bg-blue-50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                            <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="ml-3">
+                                            <div class="text-sm font-semibold text-gray-900">{{ edo.manifest.manifestNumber }}</div>
+                                            <div class="text-xs text-gray-500">{{ edo.edoNumber }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {% if edo.manifest.consignee %}
+                                            {{ edo.manifest.consignee.businessName }}
+                                        {% else %}
+                                            <span class="text-gray-400 italic">Not declared</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">
+                                        {% if edo.manifest.broker %}
+                                            {{ edo.manifest.broker.fullName }}
+                                        {% else %}
+                                            <span class="text-gray-400 italic">None</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% set payment = edo.currentPayment %}
+                                    {% if payment %}
+                                        {% if payment.status.value == 'pending_validation' %}
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200">
+                                                <svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                Pending Validation
+                                            </span>
+                                            <div class="text-xs font-semibold text-gray-700 mt-1">₱{{ payment.amount|number_format(2) }}</div>
+                                        {% elseif payment.status.value == 'verified' %}
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
+                                                <svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                Verified
+                                            </span>
+                                            <div class="text-xs font-semibold text-gray-700 mt-1">₱{{ payment.amount|number_format(2) }}</div>
+                                        {% elseif payment.status.value == 'rejected' %}
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
+                                                <svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                Rejected
+                                            </span>
+                                            <div class="text-xs font-semibold text-gray-700 mt-1">₱{{ payment.amount|number_format(2) }}</div>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
+                                            <svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd"></path>
+                                            </svg>
+                                            Not Submitted
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">{{ edo.generatedAt|date('M j, Y') }}</div>
+                                    <div class="text-xs text-gray-500">{{ edo.generatedAt|date('g:i A') }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <div class="flex items-center justify-end space-x-2">
+                                        {% set payment = edo.currentPayment %}
+                                        <button onclick="viewEDODetails({
+                                            id: {{ edo.id }},
+                                            edoNumber: '{{ edo.edoNumber|e('js') }}',
+                                            status: '{{ edo.status.value }}',
+                                            generatedAt: '{{ edo.generatedAt|date('Y-m-d H:i:s') }}',
+                                            releasedAt: {{ edo.releasedAt ? "'" ~ edo.releasedAt|date('Y-m-d H:i:s') ~ "'" : 'null' }},
+                                            manifest: {
+                                                manifestNumber: '{{ edo.manifest.manifestNumber|e('js') }}',
+                                                consignee: {{ edo.manifest.consignee ? "'" ~ edo.manifest.consignee.businessName|e('js') ~ "'" : 'null' }},
+                                                broker: {{ edo.manifest.broker ? "'" ~ edo.manifest.broker.fullName|e('js') ~ "'" : 'null' }}
+                                            },
+                                            edoPayment: {{ payment ? '{
+                                                id: ' ~ payment.id ~ ',
+                                                amount: ' ~ payment.amount ~ ',
+                                                status: "' ~ payment.status.value ~ '",
+                                                submittedBy: "' ~ payment.submittedBy.fullName|e('js') ~ '",
+                                                createdAt: "' ~ payment.createdAt|date('Y-m-d H:i:s') ~ '",
+                                                validatedAt: ' ~ (payment.validatedAt ? '"' ~ payment.validatedAt|date('Y-m-d H:i:s') ~ '"' : 'null') ~ ',
+                                                validatedBy: ' ~ (payment.validatedBy ? '"' ~ payment.validatedBy.fullName|e('js') ~ '"' : 'null') ~ ',
+                                                rejectionReason: ' ~ (payment.rejectionReason ? '"' ~ payment.rejectionReason|e('js') ~ '"' : 'null') ~ ',
+                                                receiptPath: ' ~ (payment.receiptPath ? '"' ~ payment.receiptPath|e('js') ~ '"' : 'null') ~ '
+                                            }' : 'null' }}
+                                        })" 
+                                                class="inline-flex items-center px-3 py-1.5 border border-blue-300 rounded-lg text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                            View
+                                        </button>
+                                        
+                                        {% if payment and payment.status.value == 'pending_validation' %}
+                                            <button onclick="showValidatePaymentModal({{ payment.id }}, {
+                                                id: {{ payment.id }},
+                                                amount: {{ payment.amount }},
+                                                submittedBy: '{{ payment.submittedBy.fullName|e('js') }}',
+                                                createdAt: '{{ payment.createdAt|date('Y-m-d H:i:s') }}'
+                                            })" 
+                                                    class="inline-flex items-center px-3 py-1.5 border border-purple-300 rounded-lg text-xs font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors">
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                Validate
+                                            </button>
+                                        {% elseif payment and payment.status.value == 'verified' %}
+                                            {% if edo.status.value == 'pending_release' %}
+                                                <button onclick="releaseEDO({{ edo.id }})" 
+                                                        class="inline-flex items-center px-3 py-1.5 border border-green-300 rounded-lg text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 transition-colors">
+                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                    </svg>
+                                                    Release
+                                                </button>
+                                            {% else %}
+                                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                                    Released
+                                                </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-gray-400 text-xs italic">Awaiting Payment</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-1">No pending eDOs</h3>
+                                    <p class="text-sm text-gray-500">All eDOs have been processed</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if totalPages > 1 %}
+            <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                <div class="flex-1 flex justify-between sm:hidden">
+                    {% if page > 1 %}
+                        <a href="{{ path('admin_edo_release_queue', {page: page - 1}) }}" 
+                           class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            Previous
+                        </a>
+                    {% endif %}
+                    {% if page < totalPages %}
+                        <a href="{{ path('admin_edo_release_queue', {page: page + 1}) }}" 
+                           class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            Next
+                        </a>
+                    {% endif %}
+                </div>
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-gray-700">
+                            Showing
+                            <span class="font-medium">{{ (page - 1) * perPage + 1 }}</span>
+                            to
+                            <span class="font-medium">{{ min(page * perPage, total) }}</span>
+                            of
+                            <span class="font-medium">{{ total }}</span>
+                            results
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            {% if page > 1 %}
+                                <a href="{{ path('admin_edo_release_queue', {page: page - 1}) }}" 
+                                   class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <span class="sr-only">Previous</span>
+                                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </a>
+                            {% endif %}
+                            
+                            {% for p in 1..totalPages %}
+                                {% if p == page %}
+                                    <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
+                                        {{ p }}
+                                    </span>
+                                {% else %}
+                                    <a href="{{ path('admin_edo_release_queue', {page: p}) }}" 
+                                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                        {{ p }}
+                                    </a>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page < totalPages %}
+                                <a href="{{ path('admin_edo_release_queue', {page: page + 1}) }}" 
+                                   class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <span class="sr-only">Next</span>
+                                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </a>
+                            {% endif %}
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- eDO Queue Cards (Mobile) -->
+    <div class="md:hidden space-y-3">
+        {% if edos|length > 0 %}
+            {% for edo in edos %}
+                {% set payment = edo.currentPayment %}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                    <!-- Header -->
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center mb-1">
+                                <div class="flex-shrink-0 h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center mr-2">
+                                    <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-bold text-gray-900 truncate">{{ edo.manifest.manifestNumber }}</p>
+                                    <p class="text-xs text-gray-500 truncate">{{ edo.edoNumber }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% if payment %}
+                            {% if payment.status.value == 'pending_validation' %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 border border-yellow-200 flex-shrink-0 ml-2">
+                                    Pending
+                                </span>
+                            {% elseif payment.status.value == 'verified' %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200 flex-shrink-0 ml-2">
+                                    Verified
+                                </span>
+                            {% elseif payment.status.value == 'rejected' %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200 flex-shrink-0 ml-2">
+                                    Rejected
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200 flex-shrink-0 ml-2">
+                                No Payment
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Details -->
+                    <div class="space-y-2 mb-3">
+                        <div class="flex items-center text-xs">
+                            <svg class="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                            <span class="text-gray-500 mr-1">Consignee:</span>
+                            <span class="text-gray-900 font-medium truncate">
+                                {% if edo.manifest.consignee %}
+                                    {{ edo.manifest.consignee.businessName }}
+                                {% else %}
+                                    <span class="italic">Not declared</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="flex items-center text-xs">
+                            <svg class="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            <span class="text-gray-500 mr-1">Broker:</span>
+                            <span class="text-gray-900 font-medium truncate">
+                                {% if edo.manifest.broker %}
+                                    {{ edo.manifest.broker.fullName }}
+                                {% else %}
+                                    <span class="italic">None</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        {% if payment %}
+                            <div class="flex items-center text-xs">
+                                <svg class="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                </svg>
+                                <span class="text-gray-500 mr-1">Amount:</span>
+                                <span class="text-gray-900 font-bold">₱{{ payment.amount|number_format(2) }}</span>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="flex items-center text-xs">
+                            <svg class="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <span class="text-gray-500 mr-1">Generated:</span>
+                            <span class="text-gray-900 font-medium">{{ edo.generatedAt|date('M j, Y g:i A') }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
+                        <button onclick="viewEDODetails({
+                            id: {{ edo.id }},
+                            edoNumber: '{{ edo.edoNumber|e('js') }}',
+                            status: '{{ edo.status.value }}',
+                            generatedAt: '{{ edo.generatedAt|date('Y-m-d H:i:s') }}',
+                            releasedAt: {{ edo.releasedAt ? "'" ~ edo.releasedAt|date('Y-m-d H:i:s') ~ "'" : 'null' }},
+                            manifest: {
+                                manifestNumber: '{{ edo.manifest.manifestNumber|e('js') }}',
+                                consignee: {{ edo.manifest.consignee ? "'" ~ edo.manifest.consignee.businessName|e('js') ~ "'" : 'null' }},
+                                broker: {{ edo.manifest.broker ? "'" ~ edo.manifest.broker.fullName|e('js') ~ "'" : 'null' }}
+                            },
+                            edoPayment: {{ payment ? '{
+                                id: ' ~ payment.id ~ ',
+                                amount: ' ~ payment.amount ~ ',
+                                status: "' ~ payment.status.value ~ '",
+                                submittedBy: "' ~ payment.submittedBy.fullName|e('js') ~ '",
+                                createdAt: "' ~ payment.createdAt|date('Y-m-d H:i:s') ~ '",
+                                validatedAt: ' ~ (payment.validatedAt ? '"' ~ payment.validatedAt|date('Y-m-d H:i:s') ~ '"' : 'null') ~ ',
+                                validatedBy: ' ~ (payment.validatedBy ? '"' ~ payment.validatedBy.fullName|e('js') ~ '"' : 'null') ~ ',
+                                rejectionReason: ' ~ (payment.rejectionReason ? '"' ~ payment.rejectionReason|e('js') ~ '"' : 'null') ~ ',
+                                receiptPath: ' ~ (payment.receiptPath ? '"' ~ payment.receiptPath|e('js') ~ '"' : 'null') ~ '
+                            }' : 'null' }}
+                        })" 
+                                class="flex-1 inline-flex items-center justify-center px-3 py-2 border border-blue-300 rounded-lg text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            View
+                        </button>
+                        
+                        {% if payment and payment.status.value == 'pending_validation' %}
+                            <button onclick="showValidatePaymentModal({{ payment.id }}, {
+                                id: {{ payment.id }},
+                                amount: {{ payment.amount }},
+                                submittedBy: '{{ payment.submittedBy.fullName|e('js') }}',
+                                createdAt: '{{ payment.createdAt|date('Y-m-d H:i:s') }}'
+                            })" 
+                                    class="flex-1 inline-flex items-center justify-center px-3 py-2 border border-purple-300 rounded-lg text-xs font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 transition-colors">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Validate
+                            </button>
+                        {% elseif payment and payment.status.value == 'verified' %}
+                            {% if edo.status.value == 'pending_release' %}
+                                <button onclick="releaseEDO({{ edo.id }})" 
+                                        class="flex-1 inline-flex items-center justify-center px-3 py-2 border border-green-300 rounded-lg text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 transition-colors">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    Release
+                                </button>
+                            {% else %}
+                                <span class="flex-1 inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                    Released
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            <span class="flex-1 text-center text-gray-400 text-xs italic py-2">Awaiting Payment</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-base font-semibold text-gray-900 mb-1">No pending eDOs</h3>
+                <p class="text-sm text-gray-500">All eDOs have been processed</p>
+            </div>
+        {% endif %}
+        
+        <!-- Mobile Pagination -->
+        {% if totalPages > 1 %}
+            <div class="flex items-center justify-between pt-4">
+                <div class="text-xs text-gray-600">
+                    Page {{ page }} of {{ totalPages }}
+                </div>
+                <div class="flex space-x-2">
+                    {% if page > 1 %}
+                        <a href="{{ path('admin_edo_release_queue', {page: page - 1, tab: activeTab}) }}" 
+                           class="px-3 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50">
+                            Previous
+                        </a>
+                    {% endif %}
+                    {% if page < totalPages %}
+                        <a href="{{ path('admin_edo_release_queue', {page: page + 1, tab: activeTab}) }}" 
+                           class="px-3 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50">
+                            Next
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- eDO Detail Modal -->
+<div id="edoDetailModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 9999;">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-3xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center mb-4 pb-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">eDO & Payment Details</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-500 transition-colors">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="edoDetailContent" class="mt-4">
+            <!-- Content loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- Rejection Modal -->
+<div id="rejectModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 9999;">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-md shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Reject eDO Release</h3>
+            <button onclick="closeRejectModal()" class="text-gray-400 hover:text-gray-500">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <form id="rejectForm" onsubmit="submitRejection(event)">
+            <input type="hidden" id="rejectEdoId" name="edoId">
+            <div class="mb-4">
+                <label for="rejectionReason" class="block text-sm font-medium text-gray-700 mb-2">
+                    Rejection Reason <span class="text-red-500">*</span>
+                </label>
+                <textarea id="rejectionReason" 
+                          name="reason" 
+                          rows="4" 
+                          required
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Please provide a detailed reason for rejecting this eDO..."></textarea>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button type="button" 
+                        onclick="closeRejectModal()" 
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700">
+                    Reject eDO
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Payment Rejection Modal -->
+<div id="rejectPaymentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 9999;">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-md shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Reject EDO Payment</h3>
+            <button onclick="closeRejectPaymentModal()" class="text-gray-400 hover:text-gray-500">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <form id="rejectPaymentForm" onsubmit="submitPaymentRejection(event)">
+            <input type="hidden" id="rejectPaymentId">
+            <div class="mb-4">
+                <label for="paymentRejectionReason" class="block text-sm font-medium text-gray-700 mb-2">
+                    Rejection Reason <span class="text-red-500">*</span>
+                </label>
+                <textarea id="paymentRejectionReason" 
+                          rows="4" 
+                          required
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Please provide a detailed reason for rejecting this payment..."></textarea>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button type="button" 
+                        onclick="closeRejectPaymentModal()" 
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700">
+                    Reject Payment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Payment Validation Modal -->
+<div id="validatePaymentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 9999;">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Validate eDO Release Payment</h3>
+            <button onclick="closeValidatePaymentModal()" class="text-gray-400 hover:text-gray-500">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="validatePaymentContent">
+            <!-- Content loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- Rejection Reason Modal -->
+<div id="rejectionReasonModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full" style="z-index: 10000;">
+    <div class="relative top-1/2 transform -translate-y-1/2 mx-auto p-6 border w-11/12 max-w-md shadow-2xl rounded-xl bg-white">
+        <div class="text-center">
+            <!-- Icon -->
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            
+            <!-- Title -->
+            <h3 class="text-xl font-bold text-gray-900 mb-2">
+                Rejection Reason Required
+            </h3>
+            
+            <!-- Message -->
+            <p class="text-sm text-gray-600 mb-4">
+                Please provide a detailed reason for rejecting this payment. This will be sent to the broker.
+            </p>
+            
+            <!-- Textarea -->
+            <div class="mb-6 text-left">
+                <textarea id="rejectionReasonInput" 
+                          rows="4" 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder="Enter rejection reason..."></textarea>
+            </div>
+            
+            <!-- Actions -->
+            <div class="flex space-x-3">
+                <button type="button" 
+                        onclick="closeRejectionReasonModal()" 
+                        class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                    Cancel
+                </button>
+                <button type="button" 
+                        onclick="submitRejectionReason()" 
+                        class="flex-1 px-4 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors">
+                    Continue
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmationModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full" style="z-index: 10000;">
+    <div class="relative top-1/2 transform -translate-y-1/2 mx-auto p-6 border w-11/12 max-w-md shadow-2xl rounded-xl bg-white">
+        <div class="text-center">
+            <!-- Icon -->
+            <div id="confirmationIcon" class="mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4">
+                <!-- Icon will be set dynamically -->
+            </div>
+            
+            <!-- Title -->
+            <h3 id="confirmationTitle" class="text-xl font-bold text-gray-900 mb-2">
+                <!-- Title will be set dynamically -->
+            </h3>
+            
+            <!-- Message -->
+            <p id="confirmationMessage" class="text-sm text-gray-600 mb-6">
+                <!-- Message will be set dynamically -->
+            </p>
+            
+            <!-- Amount Display -->
+            <div id="confirmationAmount" class="hidden bg-gray-50 rounded-lg p-3 mb-6">
+                <p class="text-xs text-gray-500 mb-1">Payment Amount</p>
+                <p class="text-2xl font-bold text-gray-900">₱<span id="confirmationAmountValue">0.00</span></p>
+            </div>
+            
+            <!-- Rejection Reason Display -->
+            <div id="confirmationReason" class="hidden bg-red-50 rounded-lg p-3 mb-6 text-left">
+                <p class="text-xs text-red-600 font-medium mb-1">Rejection Reason</p>
+                <p id="confirmationReasonText" class="text-sm text-gray-900"></p>
+            </div>
+            
+            <!-- Actions -->
+            <div class="flex space-x-3">
+                <button type="button" 
+                        onclick="closeConfirmationModal()" 
+                        class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                    Cancel
+                </button>
+                <button type="button" 
+                        id="confirmationActionBtn"
+                        onclick="confirmValidatePayment()" 
+                        class="flex-1 px-4 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white transition-colors">
+                    <!-- Button text will be set dynamically -->
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div id="loadingModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full" style="z-index: 10001;">
+    <div class="relative top-1/2 transform -translate-y-1/2 mx-auto p-6 w-11/12 max-w-sm">
+        <div class="bg-white rounded-xl shadow-2xl p-8 text-center">
+            <!-- Spinner -->
+            <div class="mx-auto mb-4">
+                <svg class="animate-spin h-16 w-16 mx-auto text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Processing...</h3>
+            <p class="text-sm text-gray-600">Please wait while we validate the payment</p>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div id="successModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full" style="z-index: 10001;">
+    <div class="relative top-1/2 transform -translate-y-1/2 mx-auto p-6 border w-11/12 max-w-md shadow-2xl rounded-xl bg-white">
+        <div class="text-center">
+            <!-- Success Icon -->
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+                <svg class="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            
+            <!-- Title -->
+            <h3 id="successTitle" class="text-xl font-bold text-gray-900 mb-2">
+                Success!
+            </h3>
+            
+            <!-- Message -->
+            <p id="successMessage" class="text-sm text-gray-600 mb-6">
+                <!-- Message will be set dynamically -->
+            </p>
+            
+            <!-- Action -->
+            <button type="button" 
+                    onclick="closeSuccessModal()" 
+                    class="w-full px-4 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors">
+                Continue
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+console.log('EDO Release Queue Script Loaded - Version 2.0');
+
+async function viewEDODetails(edoData) {
+    const modal = document.getElementById('edoDetailModal');
+    const content = document.getElementById('edoDetailContent');
+    
+    modal.classList.remove('hidden');
+    
+    // Show loading state
+    content.innerHTML = `
+        <div class="text-center py-8">
+            <svg class="animate-spin h-8 w-8 mx-auto text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-2 text-sm text-gray-600">Loading details...</p>
+        </div>
+    `;
+    
+    try {
+        // Fetch fresh data from API
+        const response = await fetch(`/admin/edo-release/${edoData.id}/details`);
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to load EDO details');
+        }
+        
+        // Use the fresh data from API
+        edoData = result.data;
+        
+        // Helper function to format dates
+        function formatDate(dateString) {
+            if (!dateString) return null;
+            return new Date(dateString).toLocaleString();
+        }
+        
+        // Build payment section
+        let paymentHtml = '';
+        if (edoData.payment) {
+            const payment = edoData.payment;
+            const statusColors = {
+                'pending_validation': 'bg-yellow-100 text-yellow-800',
+                'verified': 'bg-green-100 text-green-800',
+                'rejected': 'bg-red-100 text-red-800'
+            };
+            const statusLabels = {
+                'pending_validation': 'Pending Validation',
+                'verified': 'Verified',
+                'rejected': 'Rejected'
+            };
+            
+            paymentHtml = `
+                <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <h4 class="text-sm font-semibold text-gray-900 mb-3">Payment Information</h4>
+                    <dl class="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <dt class="text-gray-600">Payment ID</dt>
+                            <dd class="font-medium text-gray-900">#${payment.id}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Amount</dt>
+                            <dd class="font-medium text-gray-900">₱${parseFloat(payment.amount).toFixed(2)}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Status</dt>
+                            <dd><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[payment.status]}">${statusLabels[payment.status]}</span></dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Submitted By</dt>
+                            <dd class="font-medium text-gray-900">${payment.submittedBy}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Submitted At</dt>
+                            <dd class="font-medium text-gray-900">${formatDate(payment.createdAt)}</dd>
+                        </div>
+                        ${payment.validatedAt ? `
+                        <div>
+                            <dt class="text-gray-600">Validated At</dt>
+                            <dd class="font-medium text-gray-900">${formatDate(payment.validatedAt)}</dd>
+                        </div>
+                        ` : ''}
+                        ${payment.validatedBy ? `
+                        <div>
+                            <dt class="text-gray-600">Validated By</dt>
+                            <dd class="font-medium text-gray-900">${payment.validatedBy}</dd>
+                        </div>
+                        ` : ''}
+                        ${payment.rejectionReason ? `
+                        <div class="col-span-2">
+                            <dt class="text-gray-600">Rejection Reason</dt>
+                            <dd class="font-medium text-red-600 mt-1">${payment.rejectionReason}</dd>
+                        </div>
+                        ` : ''}
+                    </dl>
+                    ${payment.receiptPath || payment.officialReceiptPath ? `
+                    <div class="mt-3 pt-3 border-t border-blue-200">
+                        <a href="/admin/edo-payments/${payment.id}/receipt" target="_blank" 
+                           class="inline-flex items-center px-3 py-2 border border-blue-300 rounded-md text-sm text-blue-700 bg-white hover:bg-blue-50 transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            View Payment Receipt
+                        </a>
+                        ${payment.officialReceiptPath || payment.status === 'verified' ? `
+                        <a href="/admin/edo-payments/${payment.id}/official-receipt" target="_blank" 
+                           class="inline-flex items-center px-3 py-2 border border-green-300 rounded-md text-sm text-green-700 bg-white hover:bg-green-50 transition-colors ml-2">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            View Official Receipt
+                        </a>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        } else {
+            paymentHtml = `
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 text-center">
+                    <svg class="mx-auto h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                    </svg>
+                    <p class="mt-2 text-sm font-medium text-gray-900">No Payment Submitted</p>
+                    <p class="text-xs text-gray-500">Awaiting payment from broker</p>
+                </div>
+            `;
+        }
+        
+        // Build EDO status badge
+        const edoStatusColors = {
+            'pending_release': 'bg-yellow-100 text-yellow-800',
+            'released': 'bg-green-100 text-green-800',
+            'rejected': 'bg-red-100 text-red-800'
+        };
+        const edoStatusLabels = {
+            'pending_release': 'Pending Release',
+            'released': 'Released',
+            'rejected': 'Rejected'
+        };
+        
+        content.innerHTML = `
+            <div class="space-y-4">
+                <!-- EDO Information -->
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <h4 class="text-sm font-semibold text-gray-900 mb-3">eDO Information</h4>
+                    <dl class="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <dt class="text-gray-600">eDO Number</dt>
+                            <dd class="font-medium text-gray-900">${edoData.edoNumber}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Status</dt>
+                            <dd><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${edoStatusColors[edoData.status]}">${edoStatusLabels[edoData.status]}</span></dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Manifest Number</dt>
+                            <dd class="font-medium text-gray-900">${edoData.manifest.manifestNumber}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Generated At</dt>
+                            <dd class="font-medium text-gray-900">${formatDate(edoData.generatedAt)}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Consignee</dt>
+                            <dd class="font-medium text-gray-900">${edoData.manifest.consignee || 'Not declared'}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Broker</dt>
+                            <dd class="font-medium text-gray-900">${edoData.manifest.broker || 'None'}</dd>
+                        </div>
+                        ${edoData.releasedAt ? `
+                        <div>
+                            <dt class="text-gray-600">Released At</dt>
+                            <dd class="font-medium text-gray-900">${formatDate(edoData.releasedAt)}</dd>
+                        </div>
+                        ` : ''}
+                    </dl>
+                </div>
+                
+                <!-- Payment Information -->
+                ${paymentHtml}
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error displaying EDO details:', error);
+        content.innerHTML = `<div class="text-center py-4"><p class="text-sm text-red-600">Error displaying details: ${error.message}</p></div>`;
+    }
+}
+
+function closeModal() {
+    document.getElementById('edoDetailModal').classList.add('hidden');
+}
+
+function showRejectModal(edoId) {
+    document.getElementById('rejectEdoId').value = edoId;
+    document.getElementById('rejectionReason').value = '';
+    document.getElementById('rejectModal').classList.remove('hidden');
+}
+
+function closeRejectModal() {
+    document.getElementById('rejectModal').classList.add('hidden');
+}
+
+function showValidatePaymentModal(paymentId, paymentData) {
+    const modal = document.getElementById('validatePaymentModal');
+    const content = document.getElementById('validatePaymentContent');
+    
+    modal.classList.remove('hidden');
+    
+    try {
+        console.log('Payment data received:', paymentData); // Debug log
+        
+        const payment = paymentData;
+        
+        // Parse date
+        const createdAtDate = new Date(payment.createdAt);
+        
+        // Extract values with fallbacks
+        const id = payment.id || paymentId;
+        const amount = parseFloat(payment.amount || 0);
+        const submittedBy = payment.submittedBy || 'N/A';
+        const receiptPath = '/admin/edo-payments/' + paymentId + '/receipt';
+        
+        content.innerHTML = `
+            <div class="space-y-4">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="text-sm font-medium text-gray-900 mb-3">Payment Information</h4>
+                    <dl class="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <dt class="text-gray-500">Payment ID</dt>
+                            <dd class="font-medium text-gray-900">#${id}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-500">Amount</dt>
+                            <dd class="font-medium text-gray-900">₱${amount.toFixed(2)}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-500">Submitted By</dt>
+                            <dd class="font-medium text-gray-900">${submittedBy}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-500">Submitted At</dt>
+                            <dd class="font-medium text-gray-900">${createdAtDate.toLocaleString()}</dd>
+                        </div>
+                    </dl>
+                </div>
+                
+                <div>
+                    <h4 class="text-sm font-medium text-gray-900 mb-2">Payment Receipt</h4>
+                    <a href="${receiptPath}" target="_blank" 
+                       class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        View Receipt
+                    </a>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" 
+                            onclick="closeValidatePaymentModal()" 
+                            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="button" 
+                            onclick="showRejectionReasonModal(${paymentId})" 
+                            class="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700">
+                        Reject
+                    </button>
+                    <button type="button" 
+                            onclick="validatePayment(${paymentId}, true)" 
+                            class="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700">
+                        Approve & Release eDO
+                    </button>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error displaying payment modal:', error);
+        content.innerHTML = '<p class="text-sm text-red-600">Error loading payment details. Please try again.</p>';
+    }
+}
+
+function closeValidatePaymentModal() {
+    document.getElementById('validatePaymentModal').classList.add('hidden');
+}
+
+// Store payment validation context
+let pendingValidation = {
+    paymentId: null,
+    approved: null,
+    reason: null,
+    amount: null
+};
+
+function showRejectionReasonModal(paymentId) {
+    // Store payment ID for later use
+    pendingValidation.paymentId = paymentId;
+    
+    // Get amount from the modal content
+    const amountElements = document.querySelectorAll('#validatePaymentContent dd');
+    let amount = null;
+    if (amountElements.length > 1) {
+        const amountText = amountElements[1].textContent;
+        amount = amountText.replace('₱', '').replace(',', '');
+    }
+    pendingValidation.amount = amount;
+    
+    // Clear previous reason
+    document.getElementById('rejectionReasonInput').value = '';
+    
+    // Close validation modal
+    closeValidatePaymentModal();
+    
+    // Show rejection reason modal
+    document.getElementById('rejectionReasonModal').classList.remove('hidden');
+}
+
+function closeRejectionReasonModal() {
+    document.getElementById('rejectionReasonModal').classList.add('hidden');
+    // Reopen validation modal
+    document.getElementById('validatePaymentModal').classList.remove('hidden');
+}
+
+function submitRejectionReason() {
+    const reason = document.getElementById('rejectionReasonInput').value.trim();
+    
+    if (!reason) {
+        alert('Please provide a rejection reason.');
+        document.getElementById('rejectionReasonInput').focus();
+        return;
+    }
+    
+    // Close rejection reason modal
+    document.getElementById('rejectionReasonModal').classList.add('hidden');
+    
+    // Show confirmation modal
+    showConfirmationModal(pendingValidation.paymentId, false, reason, pendingValidation.amount);
+}
+
+function showConfirmationModal(paymentId, approved, reason, amount) {
+    const modal = document.getElementById('confirmationModal');
+    const icon = document.getElementById('confirmationIcon');
+    const title = document.getElementById('confirmationTitle');
+    const message = document.getElementById('confirmationMessage');
+    const amountDiv = document.getElementById('confirmationAmount');
+    const amountValue = document.getElementById('confirmationAmountValue');
+    const reasonDiv = document.getElementById('confirmationReason');
+    const reasonText = document.getElementById('confirmationReasonText');
+    const actionBtn = document.getElementById('confirmationActionBtn');
+    
+    // Store context
+    pendingValidation = { paymentId, approved, reason, amount };
+    
+    if (approved) {
+        // Approval confirmation
+        icon.className = 'mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4';
+        icon.innerHTML = `
+            <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        `;
+        title.textContent = 'Approve Payment & Release eDO?';
+        message.textContent = 'This will approve the payment and automatically release the eDO to the broker. This action cannot be undone.';
+        actionBtn.className = 'flex-1 px-4 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors';
+        actionBtn.textContent = 'Approve & Release';
+        
+        // Show amount
+        if (amount) {
+            amountDiv.classList.remove('hidden');
+            amountValue.textContent = parseFloat(amount).toFixed(2);
+        }
+        
+        // Hide rejection reason
+        reasonDiv.classList.add('hidden');
+    } else {
+        // Rejection confirmation
+        icon.className = 'mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4';
+        icon.innerHTML = `
+            <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        `;
+        title.textContent = 'Reject Payment?';
+        message.textContent = 'This will reject the payment and notify the broker. They will need to resubmit a new payment.';
+        actionBtn.className = 'flex-1 px-4 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors';
+        actionBtn.textContent = 'Reject Payment';
+        
+        // Hide amount for rejection
+        amountDiv.classList.add('hidden');
+        
+        // Show rejection reason
+        if (reason) {
+            reasonDiv.classList.remove('hidden');
+            reasonText.textContent = reason;
+        }
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function closeConfirmationModal() {
+    document.getElementById('confirmationModal').classList.add('hidden');
+    pendingValidation = { paymentId: null, approved: null, reason: null, amount: null };
+}
+
+function showLoadingModal() {
+    document.getElementById('loadingModal').classList.remove('hidden');
+}
+
+function closeLoadingModal() {
+    document.getElementById('loadingModal').classList.add('hidden');
+}
+
+function showSuccessModal(message) {
+    const modal = document.getElementById('successModal');
+    const messageEl = document.getElementById('successMessage');
+    
+    messageEl.textContent = message;
+    modal.classList.remove('hidden');
+}
+
+function closeSuccessModal() {
+    document.getElementById('successModal').classList.add('hidden');
+    // Reload page after closing success modal
+    window.location.reload();
+}
+
+function confirmValidatePayment() {
+    const { paymentId, approved, reason } = pendingValidation;
+    
+    if (!paymentId) {
+        alert('Invalid payment context');
+        return;
+    }
+    
+    // Close confirmation modal
+    closeConfirmationModal();
+    
+    // Show loading spinner
+    showLoadingModal();
+    
+    // Proceed with validation
+    fetch(`/api/payments/${paymentId}/validate-edo-access`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+            approved: approved,
+            reason: reason || null
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Close loading modal
+        closeLoadingModal();
+        
+        if (data.success) {
+            // Show success message
+            const successMessage = approved 
+                ? 'Payment approved successfully! The eDO has been released to the broker.' 
+                : 'Payment rejected successfully. The broker has been notified.';
+            showSuccessModal(successMessage);
+        } else {
+            alert('Error: ' + (data.error || data.message));
+        }
+    })
+    .catch(error => {
+        // Close loading modal
+        closeLoadingModal();
+        console.error('Validation error:', error);
+        alert('An error occurred while validating the payment');
+    });
+}
+
+function validatePayment(paymentId, approved) {
+    // Get amount from the modal content
+    const amountElements = document.querySelectorAll('#validatePaymentContent dd');
+    let amount = null;
+    if (amountElements.length > 1) {
+        const amountText = amountElements[1].textContent;
+        amount = amountText.replace('₱', '').replace(',', '');
+    }
+    
+    // Close validation modal
+    closeValidatePaymentModal();
+    
+    // Show confirmation modal (approval only, rejection goes through showRejectionReasonModal)
+    showConfirmationModal(paymentId, approved, null, amount);
+}
+
+function releaseEDO(edoId) {
+    if (!confirm('Are you sure you want to release this eDO?')) {
+        return;
+    }
+    
+    fetch(`/admin/edo-release/${edoId}/release`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('An error occurred while releasing the eDO');
+    });
+}
+
+function submitRejection(event) {
+    event.preventDefault();
+    
+    const edoId = document.getElementById('rejectEdoId').value;
+    const reason = document.getElementById('rejectionReason').value;
+    
+    if (!reason.trim()) {
+        alert('Please provide a rejection reason');
+        return;
+    }
+    
+    fetch(`/admin/edo-release/${edoId}/reject`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: reason })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('An error occurred while rejecting the eDO');
+    });
+}
+
+// EDO Payment Validation Functions
+function approveEDOPayment(paymentId) {
+    if (!confirm('Are you sure you want to approve this EDO payment? The EDO will be automatically released.')) {
+        return;
+    }
+    
+    fetch(`/admin/edo-payments/${paymentId}/validate`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            approved: true
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to validate payment'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while validating the payment');
+    });
+}
+
+function showRejectPaymentModal(paymentId) {
+    document.getElementById('rejectPaymentId').value = paymentId;
+    document.getElementById('paymentRejectionReason').value = '';
+    document.getElementById('rejectPaymentModal').classList.remove('hidden');
+}
+
+function closeRejectPaymentModal() {
+    document.getElementById('rejectPaymentModal').classList.add('hidden');
+}
+
+function submitPaymentRejection(event) {
+    event.preventDefault();
+    
+    const paymentId = document.getElementById('rejectPaymentId').value;
+    const reason = document.getElementById('paymentRejectionReason').value;
+    
+    if (!reason.trim()) {
+        alert('Please provide a rejection reason');
+        return;
+    }
+    
+    fetch(`/admin/edo-payments/${paymentId}/validate`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            approved: false,
+            reason: reason
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to validate payment'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while rejecting the payment');
+    });
+}
+</script>
+{% endblock %}

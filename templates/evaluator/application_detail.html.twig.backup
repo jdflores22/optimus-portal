@@ -1,0 +1,535 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Application Review - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="w-full px-4 py-6 bg-base-200 min-h-screen">
+    <!-- Breadcrumbs -->
+    <div class="breadcrumbs text-sm mb-4">
+        <ul>
+            <li><a href="{{ path('app_evaluator_dashboard') }}"><span class="icon-[tabler--home] size-4"></span>Dashboard</a></li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li><a href="{{ path('app_evaluator_applications') }}"><span class="icon-[tabler--file-text] size-4"></span>Applications</a></li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li aria-current="page">Application #{{ submission.id }}</li>
+        </ul>
+    </div>
+
+    <!-- Flash Messages -->
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success mb-4">
+            <span class="icon-[tabler--circle-check] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error mb-4">
+            <span class="icon-[tabler--circle-x] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+
+    <!-- Application Header -->
+    <div class="card mb-6">
+        <div class="card-body">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="card-title text-2xl">Application #{{ submission.id }}</h1>
+                    <p class="text-sm opacity-60 mt-1">
+                        Submitted on {{ submission.submittedAt|date('F d, Y \\a\\t g:i A') }}
+                    </p>
+                </div>
+                {% if submission.status.value == 'PENDING' %}
+                    <span class="badge badge-warning badge-lg">{{ submission.status.value }}</span>
+                {% elseif submission.status.value == 'APPROVED' %}
+                    <span class="badge badge-success badge-lg">{{ submission.status.value }}</span>
+                {% elseif submission.status.value == 'DENIED' or submission.status.value == 'REJECTED' %}
+                    <span class="badge badge-error badge-lg">{{ submission.status.value }}</span>
+                {% else %}
+                    <span class="badge badge-neutral badge-lg">{{ submission.status.value }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Applicant Information -->
+    <div class="card mb-6">
+        <div class="card-body">
+            <h2 class="card-title mb-4">Applicant Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div>
+                    <label class="label"><span class="label-text font-medium">Email Address</span></label>
+                    <p class="text-sm">{{ submission.applicant.email }}</p>
+                </div>
+                <div>
+                    <label class="label"><span class="label-text font-medium">User Role</span></label>
+                    <span class="badge badge-primary badge-soft">{{ submission.applicant.role.value }}</span>
+                </div>
+                {% if submission.applicant.role.value == 'BROKER' %}
+                    <div>
+                        <label class="label"><span class="label-text font-medium">Full Name</span></label>
+                        <p class="text-sm">{{ submission.applicant.fullName }}</p>
+                    </div>
+                {% elseif submission.applicant.role.value == 'CONSIGNEE' %}
+                    <div>
+                        <label class="label"><span class="label-text font-medium">Business Name</span></label>
+                        <p class="text-sm">{{ submission.applicant.businessName }}</p>
+                    </div>
+                {% endif %}
+                {% if submission.applicant.role.value == 'CONSIGNEE' and submission.applicant.linkedBroker %}
+                    <div>
+                        <label class="label"><span class="label-text font-medium">Linked Broker</span></label>
+                        <p class="text-sm">{{ submission.applicant.linkedBroker.fullName }}</p>
+                    </div>
+                {% endif %}
+                <div>
+                    <label class="label"><span class="label-text font-medium">Account Status</span></label>
+                    {% if submission.applicant.status.value == 'APPROVED' %}
+                        <span class="badge badge-success badge-soft">{{ submission.applicant.status.value }}</span>
+                    {% elseif submission.applicant.status.value == 'PENDING' %}
+                        <span class="badge badge-warning badge-soft">{{ submission.applicant.status.value }}</span>
+                    {% else %}
+                        <span class="badge badge-error badge-soft">{{ submission.applicant.status.value }}</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="label"><span class="label-text font-medium">Account Created</span></label>
+                    <p class="text-sm">{{ submission.applicant.createdAt|date('M d, Y') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column (2/3 width) -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Submitted Data -->
+            <div class="card">
+        <div class="card-body">
+            <h2 class="card-title mb-4">Application Details</h2>
+            {% if submission.submittedData and submission.formConfig %}
+                {% set formFields = submission.formConfig.fields.fields %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for key, value in submission.submittedData %}
+                        {% if key != '_files' and key != '_csrf_token' %}
+                            {% set fieldLabel = key|replace({'_': ' '})|title %}
+                            {% set fieldType = 'text' %}
+                            
+                            {# Find the proper label and type from form configuration #}
+                            {% for field in formFields %}
+                                {% if field.id == key %}
+                                    {% set fieldLabel = field.label %}
+                                    {% set fieldType = field.type %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            <div>
+                                <label class="label"><span class="label-text font-medium">{{ fieldLabel }}</span></label>
+                                
+                                {% if fieldType == 'checkbox' %}
+                                    {% set fieldConfig = null %}
+                                    {% for field in formFields %}
+                                        {% if field.id == key %}
+                                            {% set fieldConfig = field %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if fieldConfig and fieldConfig.validation is defined and fieldConfig.validation.options is defined %}
+                                        {% if value is iterable and value is not same as(value|join('')) %}
+                                            <div class="flex flex-wrap gap-2">
+                                                {% for optionValue, optionLabel in fieldConfig.validation.options %}
+                                                    {% if optionValue in value %}
+                                                        <span class="badge badge-primary badge-soft">{{ optionLabel }}</span>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <span class="text-sm opacity-50 italic">No options selected</span>
+                                        {% endif %}
+                                    {% else %}
+                                        {% if value == '1' or value == 1 or value == true %}
+                                            <span class="badge badge-success badge-soft">
+                                                <span class="icon-[tabler--check] size-4"></span>
+                                                Accepted
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-error badge-soft">
+                                                <span class="icon-[tabler--x] size-4"></span>
+                                                Not Accepted
+                                            </span>
+                                        {% endif %}
+                                    {% endif %}
+                                {% elseif fieldType == 'checkbox_group' %}
+                                    {% if value is iterable and value is not same as(value|join('')) %}
+                                        <div class="flex flex-wrap gap-2">
+                                            {% for item in value %}
+                                                <span class="badge badge-primary badge-soft">{{ item }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-sm opacity-50 italic">No options selected</span>
+                                    {% endif %}
+                                {% elseif fieldType == 'select' and value is iterable and value is not same as(value|join('')) %}
+                                    <div class="flex flex-wrap gap-2">
+                                        {% for item in value %}
+                                            <span class="badge badge-secondary badge-soft">{{ item }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% elseif value is iterable and value is not same as(value|join('')) %}
+                                    <div class="flex flex-wrap gap-2">
+                                        {% for item in value %}
+                                            <span class="badge badge-neutral badge-soft">{{ item }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="bg-base-200 rounded-lg p-3">
+                                        <p class="text-sm">{{ value }}</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-sm opacity-60">No form data available</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Uploaded Files -->
+    {% if submission.submittedData._files is defined and submission.submittedData._files|length > 0 %}
+    <div class="card mb-6">
+        <div class="card-body">
+            <h2 class="card-title mb-4">Supporting Documents</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for fieldName, fileId in submission.submittedData._files %}
+                    <div class="card bg-base-100 border border-base-300 hover:shadow-lg transition-shadow">
+                        <div class="card-body p-4">
+                            <div class="flex items-start gap-3">
+                                <div class="avatar avatar-placeholder">
+                                    <div class="bg-primary text-primary-content w-10 rounded-full">
+                                        <span class="icon-[tabler--file] size-5"></span>
+                                    </div>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-medium text-sm mb-1">
+                                        {% set documentName = '' %}
+                                        {% if fieldName == 'broker_license_document' %}
+                                            {% set documentName = 'Broker License Document' %}
+                                        {% elseif fieldName == 'company_registration' %}
+                                            {% set documentName = 'Company Registration Certificate' %}
+                                        {% elseif fieldName == 'representative_id' %}
+                                            {% set documentName = 'Representative ID Document' %}
+                                        {% elseif fieldName == 'financial_guarantee' %}
+                                            {% set documentName = 'Financial Guarantee Document' %}
+                                        {% elseif fieldName == 'professional_indemnity' %}
+                                            {% set documentName = 'Professional Indemnity Insurance' %}
+                                        {% elseif fieldName == 'business_license' %}
+                                            {% set documentName = 'Business License Document' %}
+                                        {% elseif fieldName == 'insurance_certificate' %}
+                                            {% set documentName = 'Insurance Certificate' %}
+                                        {% else %}
+                                            {% set documentName = fieldName|title %}
+                                        {% endif %}
+                                        {{ documentName }}
+                                    </p>
+                                    <p class="text-xs opacity-60 mb-3">ID: {{ fileId }}</p>
+                                    <div class="flex gap-2">
+                                        <button type="button" data-file-id="{{ fileId }}" data-document-name="{{ documentName }}" 
+                                                class="view-document-btn btn btn-primary btn-xs">
+                                            <span class="icon-[tabler--eye] size-3"></span>
+                                            View
+                                        </button>
+                                        <a href="{{ path('accreditation_file_download', {fileId: fileId}) }}" 
+                                           class="btn btn-neutral btn-xs">
+                                            <span class="icon-[tabler--download] size-3"></span>
+                                            Download
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Evaluation Form or Status -->
+    {% if submission.status.value == 'PENDING' %}
+        <!-- Evaluation Form -->
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title mb-4">Evaluate Application</h2>
+                <form method="POST" action="{{ path('app_evaluator_evaluate', {id: submission.id}) }}" id="evaluationForm">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('evaluate_application') }}">
+                    
+                    <div class="mb-4">
+                        <label for="status" class="label">
+                            <span class="label-text">Decision <span class="text-error">*</span></span>
+                        </label>
+                        <select id="status" name="status" required class="select select-bordered w-full">
+                            <option value="">Select a decision...</option>
+                            <option value="APPROVED">Approve - Forward to Admin</option>
+                            <option value="DENIED">Deny - Reject application</option>
+                            <option value="REJECTED">Reject - Invalid submission</option>
+                            <option value="COMPLIANCE_REQUIRED">Compliance Required - Request additional info</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="reason" class="label">
+                            <span class="label-text">Reason / Comments</span>
+                        </label>
+                        <textarea id="reason" name="reason" rows="4" class="textarea textarea-bordered w-full"
+                                  placeholder="Provide reason for denial or additional comments..."></textarea>
+                        <label class="label">
+                            <span class="label-text-alt">Required for denials and rejections</span>
+                        </label>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <button type="submit" id="submitBtn" class="btn btn-primary flex-1">
+                            <span id="submitText">Submit Evaluation</span>
+                            <span id="loadingText" class="hidden">Processing...</span>
+                        </button>
+                        <a href="{{ path('app_evaluator_dashboard') }}" class="btn btn-neutral flex-1">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        <!-- Evaluation Status -->
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title mb-4">Evaluation Status</h2>
+                <div class="alert {% if submission.status.value == 'APPROVED' %}alert-success{% elseif submission.status.value == 'DENIED' or submission.status.value == 'REJECTED' %}alert-error{% else %}alert-warning{% endif %}">
+                    {% if submission.status.value == 'APPROVED' %}
+                        <span class="icon-[tabler--circle-check] size-6"></span>
+                        <div>
+                            <p class="font-medium">Application Approved</p>
+                            <p class="text-sm">Forwarded to admin for final approval</p>
+                        </div>
+                    {% elseif submission.status.value == 'DENIED' %}
+                        <span class="icon-[tabler--circle-x] size-6"></span>
+                        <div>
+                            <p class="font-medium">Application Denied</p>
+                            <p class="text-sm">Application has been rejected</p>
+                        </div>
+                    {% elseif submission.status.value == 'REJECTED' %}
+                        <span class="icon-[tabler--alert-triangle] size-6"></span>
+                        <div>
+                            <p class="font-medium">Application Rejected</p>
+                            <p class="text-sm">Invalid submission</p>
+                        </div>
+                    {% elseif submission.status.value == 'COMPLIANCE_REQUIRED' %}
+                        <span class="icon-[tabler--alert-circle] size-6"></span>
+                        <div>
+                            <p class="font-medium">Compliance Required</p>
+                            <p class="text-sm">Additional information requested</p>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                {% if submission.evaluatedAt %}
+                    <div class="mt-4 pt-4 border-t border-base-300">
+                        <div class="flex items-center gap-3">
+                            <div class="avatar avatar-placeholder">
+                                <div class="bg-secondary text-secondary-content w-10 rounded-full">
+                                    <span class="text-sm font-bold">{{ submission.evaluator.email|slice(0, 2)|upper }}</span>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-medium text-sm">Evaluated by {{ submission.evaluator.email }}</p>
+                                <p class="text-xs opacity-60">{{ submission.evaluatedAt|date('F d, Y \\a\\t g:i A') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+                
+                {% if submission.denialReason %}
+                    <div class="mt-4 p-3 bg-base-200 rounded-lg">
+                        <p class="font-medium text-sm mb-1">Evaluation Comments:</p>
+                        <p class="text-sm">{{ submission.denialReason }}</p>
+                    </div>
+                {% endif %}
+                
+                <div class="mt-6">
+                    <a href="{{ path('app_evaluator_dashboard') }}" class="btn btn-neutral">
+                        <span class="icon-[tabler--arrow-left] size-4"></span>
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Document Modal -->
+    <dialog id="documentModal" class="modal">
+        <div class="modal-box max-w-4xl">
+            <h3 class="text-lg font-bold" id="modalTitle">Document Viewer</h3>
+            <button type="button" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="documentModal.close()">✕</button>
+            
+            <div class="py-4">
+                <div id="documentContent" class="flex items-center justify-center min-h-[400px]">
+                    <div class="text-center">
+                        <span class="loading loading-spinner loading-lg"></span>
+                        <p class="mt-2">Loading document...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-action">
+                <a id="downloadLink" href="#" target="_blank" class="btn btn-primary">
+                    <span class="icon-[tabler--download] size-4"></span>
+                    Download
+                </a>
+                <button type="button" class="btn" onclick="documentModal.close()">Close</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
+
+    <script>
+    // Document modal functions
+    function viewDocument(fileId, documentName) {
+        const modal = document.getElementById('documentModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const documentContent = document.getElementById('documentContent');
+        const downloadLink = document.getElementById('downloadLink');
+        
+        modalTitle.textContent = documentName;
+        downloadLink.href = `/accreditation/file/${fileId}`;
+        modal.showModal();
+        
+        documentContent.innerHTML = `
+            <div class="text-center">
+                <span class="loading loading-spinner loading-lg"></span>
+                <p class="mt-2">Loading document...</p>
+            </div>
+        `;
+        
+        fetch(`/accreditation/file/${fileId}`)
+            .then(response => {
+                if (!response.ok) throw new Error('Document not found');
+                return response.blob();
+            })
+            .then(blob => {
+                const url = URL.createObjectURL(blob);
+                const contentType = blob.type;
+                
+                if (contentType.startsWith('image/')) {
+                    createImageElement(url, documentName);
+                } else if (contentType === 'application/pdf' || contentType.includes('pdf') || documentName.toLowerCase().endsWith('.pdf')) {
+                    createPdfElement(url);
+                } else if (documentName.toLowerCase().match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)) {
+                    createImageElement(url, documentName);
+                } else {
+                    showUnsupportedFormat();
+                }
+            })
+            .catch(error => {
+                showDocumentError(error.message);
+            });
+    }
+    
+    function showDocumentError(message) {
+        const documentContent = document.getElementById('documentContent');
+        documentContent.innerHTML = `
+            <div class="text-center py-8">
+                <span class="icon-[tabler--alert-circle] size-16 text-error"></span>
+                <p class="text-error mt-4">Error loading document</p>
+                <p class="text-sm opacity-60 mt-2">${message}</p>
+            </div>
+        `;
+    }
+    
+    function showUnsupportedFormat() {
+        const documentContent = document.getElementById('documentContent');
+        documentContent.innerHTML = `
+            <div class="text-center py-8">
+                <span class="icon-[tabler--file] size-16 opacity-40"></span>
+                <p class="mt-4">Preview not available for this file type</p>
+                <p class="text-sm opacity-60 mt-2">Click download to view the document</p>
+            </div>
+        `;
+    }
+    
+    function createImageElement(url, documentName) {
+        const documentContent = document.getElementById('documentContent');
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = documentName;
+        img.className = 'max-w-full max-h-[500px] object-contain rounded-lg';
+        
+        img.onload = function() {
+            documentContent.innerHTML = '';
+            documentContent.appendChild(img);
+        };
+        
+        img.onerror = function() {
+            showDocumentError('Failed to load image');
+        };
+    }
+    
+    function createPdfElement(url) {
+        const documentContent = document.getElementById('documentContent');
+        const iframe = document.createElement('iframe');
+        iframe.src = url;
+        iframe.className = 'w-full rounded-lg';
+        iframe.style.height = '500px';
+        
+        documentContent.innerHTML = '';
+        documentContent.appendChild(iframe);
+        
+        iframe.onerror = function() {
+            showDocumentError('Failed to load PDF');
+        };
+    }
+    
+    // Initialize event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.view-document-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const fileId = this.getAttribute('data-file-id');
+                const documentName = this.getAttribute('data-document-name');
+                viewDocument(fileId, documentName);
+            });
+        });
+        
+        const evaluationForm = document.getElementById('evaluationForm');
+        if (evaluationForm) {
+            evaluationForm.addEventListener('submit', function(e) {
+                const status = document.getElementById('status').value;
+                const reason = document.getElementById('reason').value.trim();
+                const submitBtn = document.getElementById('submitBtn');
+                const submitText = document.getElementById('submitText');
+                const loadingText = document.getElementById('loadingText');
+                
+                if ((status === 'DENIED' || status === 'REJECTED') && !reason) {
+                    e.preventDefault();
+                    alert('Please provide a reason for denial or rejection.');
+                    return false;
+                }
+                
+                submitBtn.disabled = true;
+                submitText.classList.add('hidden');
+                loadingText.classList.remove('hidden');
+                
+                setTimeout(function() {
+                    submitBtn.disabled = false;
+                    submitText.classList.remove('hidden');
+                    loadingText.classList.add('hidden');
+                }, 10000);
+            });
+        }
+    });
+    </script>
+</div>
+{% endblock %}

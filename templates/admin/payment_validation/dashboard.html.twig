@@ -1,0 +1,267 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Payment Validation Dashboard - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900">Payment Validation Dashboard</h1>
+        <p class="mt-2 text-gray-600">Manage and validate all payment submissions</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <!-- EDO Payment Stats -->
+        <div class="bg-white rounded-lg shadow-sm border border-yellow-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">EDO Payments Pending</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ stats.edo_payment.pending }}</p>
+                </div>
+                <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-green-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">EDO Payments Approved</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ stats.edo_payment.approved }}</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-red-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">EDO Payments Rejected</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ stats.edo_payment.rejected }}</p>
+                </div>
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDO Payments Section -->
+    <div class="mb-6">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-6 py-4 bg-blue-600 rounded-t-lg">
+                <h2 class="text-xl font-semibold text-white">Pending EDO Access Payments</h2>
+                <p class="text-sm text-blue-100 mt-1">Review and validate EDO access payments submitted by brokers</p>
+            </div>
+            <div class="p-6">
+                {% if edoPayments is empty %}
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No pending EDO access payments</h3>
+                        <p class="mt-1 text-sm text-gray-500">All EDO payments have been validated</p>
+                    </div>
+                {% else %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manifest #</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EDO #</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Broker</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receipt</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for payment in edoPayments %}
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <a href="{{ path('broker_manifest_detail', {id: payment.manifest.id}) }}" class="text-sm font-medium text-blue-600 hover:text-blue-900">
+                                                {{ payment.manifest.manifestNumber }}
+                                            </a>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">
+                                                {% if payment.manifest.edo %}
+                                                    {{ payment.manifest.edo.edoNumber }}
+                                                {% else %}
+                                                    <span class="text-gray-400">N/A</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">{{ payment.submittedBy.fullName }}</div>
+                                            <div class="text-xs text-gray-500">{{ payment.submittedBy.email }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm font-medium text-gray-900">₱{{ payment.amount|number_format(2) }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">{{ payment.createdAt|date('M j, Y') }}</div>
+                                            <div class="text-xs text-gray-500">{{ payment.createdAt|date('g:i A') }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <a href="{{ path('admin_edo_payment_receipt', {id: payment.id}) }}" 
+                                               target="_blank"
+                                               class="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                                </svg>
+                                                View
+                                            </a>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <button onclick="approvePayment({{ payment.id }})" 
+                                                    class="text-green-600 hover:text-green-900 mr-3">
+                                                <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                Approve
+                                            </button>
+                                            <button onclick="showRejectModal({{ payment.id }})" 
+                                                    class="text-red-600 hover:text-red-900">
+                                                <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                Reject
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rejection Reason Modal -->
+<div id="rejectModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-md shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Reject Payment</h3>
+            <button onclick="closeRejectModal()" class="text-gray-400 hover:text-gray-500">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <form id="rejectForm" onsubmit="submitRejection(event)">
+            <input type="hidden" id="rejectPaymentId">
+            <div class="mb-4">
+                <label for="rejectionReason" class="block text-sm font-medium text-gray-700 mb-2">
+                    Rejection Reason <span class="text-red-500">*</span>
+                </label>
+                <textarea id="rejectionReason" 
+                          rows="4" 
+                          required
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Please provide a detailed reason for rejecting this payment..."></textarea>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button type="button" 
+                        onclick="closeRejectModal()" 
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700">
+                    Reject Payment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function approvePayment(paymentId) {
+    if (!confirm('Are you sure you want to approve this EDO payment? The EDO will be automatically released.')) {
+        return;
+    }
+    
+    fetch(`/admin/edo-payments/${paymentId}/validate`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            approved: true
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to validate payment'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while validating the payment');
+    });
+}
+
+function showRejectModal(paymentId) {
+    document.getElementById('rejectPaymentId').value = paymentId;
+    document.getElementById('rejectionReason').value = '';
+    document.getElementById('rejectModal').classList.remove('hidden');
+}
+
+function closeRejectModal() {
+    document.getElementById('rejectModal').classList.add('hidden');
+}
+
+function submitRejection(event) {
+    event.preventDefault();
+    
+    const paymentId = document.getElementById('rejectPaymentId').value;
+    const reason = document.getElementById('rejectionReason').value;
+    
+    if (!reason.trim()) {
+        alert('Please provide a rejection reason');
+        return;
+    }
+    
+    fetch(`/admin/edo-payments/${paymentId}/validate`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            approved: false,
+            reason: reason
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to validate payment'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while rejecting the payment');
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,318 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Photo Management{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Photo Management</h1>
+                <a href="{{ path('trucker_dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo Guidelines -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Photo Guidelines for Container Returns</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Technical Requirements</h6>
+                            <ul>
+                                <li><strong>GPS Coordinates:</strong> Photos must contain location data (geotag)</li>
+                                <li><strong>File Format:</strong> JPEG or PNG only</li>
+                                <li><strong>File Size:</strong> Maximum 10MB per photo</li>
+                                <li><strong>Resolution:</strong> Minimum 800x600 pixels</li>
+                                <li><strong>Quality:</strong> Clear, well-lit photos</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Content Requirements</h6>
+                            <ul>
+                                <li><strong>Container Side View:</strong> Full side view of the container</li>
+                                <li><strong>Container Number:</strong> Clearly visible container number</li>
+                                <li><strong>Container Condition:</strong> Show any damage or issues</li>
+                                <li><strong>Multiple Angles:</strong> Take photos from different angles</li>
+                                <li><strong>No Obstructions:</strong> Ensure nothing blocks the view</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo Upload Tool -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-camera"></i> Test Photo Upload</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Use this tool to test your photos before submitting a FREE-ADVICE request.</p>
+                    
+                    <div class="mb-3">
+                        <label for="testPhotos" class="form-label">Upload Test Photos</label>
+                        <input type="file" 
+                               class="form-control" 
+                               id="testPhotos" 
+                               multiple 
+                               accept="image/jpeg,image/jpg,image/png">
+                        <div class="form-text">
+                            Upload photos to check if they meet the requirements.
+                        </div>
+                    </div>
+
+                    <!-- Test Results -->
+                    <div id="testResults" style="display: none;">
+                        <h6>Test Results</h6>
+                        <div id="testPhotoGrid" class="row">
+                            <!-- Test photo results will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo Tips -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-check-circle"></i> Good Photo Examples</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Clear container number visible</strong>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Full side view of container</strong>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Good lighting conditions</strong>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>GPS coordinates embedded</strong>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>High resolution and sharp focus</strong>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>Multiple angles for verification</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-times-circle"></i> Common Issues to Avoid</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-times text-danger me-2"></i>
+                            <strong>No GPS coordinates (location disabled)</strong>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-times text-danger me-2"></i>
+                            <strong>Blurry or out-of-focus images</strong>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-times text-danger me-2"></i>
+                            <strong>Poor lighting or shadows</strong>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-times text-danger me-2"></i>
+                            <strong>Container number not visible</strong>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-times text-danger me-2"></i>
+                            <strong>Partial container view only</strong>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-times text-danger me-2"></i>
+                            <strong>File size too large (>10MB)</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How to Enable GPS -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-map-marker-alt"></i> How to Enable GPS in Photos</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6><i class="fab fa-android"></i> Android Devices</h6>
+                            <ol>
+                                <li>Open Camera app</li>
+                                <li>Go to Settings</li>
+                                <li>Enable "Location tags" or "GPS tags"</li>
+                                <li>Ensure Location services are enabled</li>
+                            </ol>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fab fa-apple"></i> iOS Devices</h6>
+                            <ol>
+                                <li>Go to Settings > Privacy & Security</li>
+                                <li>Tap Location Services</li>
+                                <li>Find Camera app</li>
+                                <li>Set to "While Using App"</li>
+                            </ol>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-camera"></i> Digital Cameras</h6>
+                            <ol>
+                                <li>Enable GPS in camera settings</li>
+                                <li>Wait for GPS signal acquisition</li>
+                                <li>Check GPS icon is active</li>
+                                <li>Take photos with GPS enabled</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const testPhotosInput = document.getElementById('testPhotos');
+    const testResults = document.getElementById('testResults');
+    const testPhotoGrid = document.getElementById('testPhotoGrid');
+
+    testPhotosInput.addEventListener('change', function() {
+        const files = Array.from(this.files);
+        
+        if (files.length > 0) {
+            testPhotoGrid.innerHTML = '';
+            testResults.style.display = 'block';
+            
+            files.forEach((file, index) => {
+                testPhoto(file, index);
+            });
+        } else {
+            testResults.style.display = 'none';
+        }
+    });
+
+    function testPhoto(file, index) {
+        const col = document.createElement('div');
+        col.className = 'col-md-4 mb-3';
+
+        // Basic validation
+        const errors = [];
+        const warnings = [];
+        
+        // File size check
+        if (file.size > 10 * 1024 * 1024) {
+            errors.push('File size exceeds 10MB limit');
+        }
+        
+        // File type check
+        if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+            errors.push('Invalid file type. Only JPEG and PNG are allowed');
+        }
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                // Resolution check
+                if (img.width < 800 || img.height < 600) {
+                    errors.push(`Resolution too low (${img.width}x${img.height}). Minimum: 800x600`);
+                }
+
+                // Simulate GPS check (in real implementation would check EXIF data)
+                const hasGPS = Math.random() > 0.4; // 60% chance for demo
+                if (!hasGPS) {
+                    errors.push('No GPS coordinates found');
+                }
+
+                const isValid = errors.length === 0;
+                const cardClass = isValid ? 'border-success' : 'border-danger';
+                const statusBadge = isValid ? 
+                    '<span class="badge bg-success"><i class="fas fa-check"></i> Valid</span>' :
+                    '<span class="badge bg-danger"><i class="fas fa-times"></i> Invalid</span>';
+
+                col.innerHTML = `
+                    <div class="card ${cardClass}">
+                        <img src="${e.target.result}" class="card-img-top" style="height: 150px; object-fit: cover;">
+                        <div class="card-body p-2">
+                            <h6 class="card-title">${file.name}</h6>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    Size: ${(file.size / 1024 / 1024).toFixed(2)} MB<br>
+                                    Resolution: ${img.width}x${img.height}
+                                </small><br>
+                                ${statusBadge}
+                            </p>
+                            
+                            ${hasGPS ? `
+                                <div class="mt-2">
+                                    <small class="text-success">
+                                        <i class="fas fa-map-marker-alt"></i> GPS: Available
+                                    </small>
+                                </div>
+                            ` : ''}
+                            
+                            ${errors.length > 0 ? `
+                                <div class="mt-2">
+                                    ${errors.map(error => `
+                                        <small class="text-danger d-block">
+                                            <i class="fas fa-exclamation-triangle"></i> ${error}
+                                        </small>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                            
+                            ${warnings.length > 0 ? `
+                                <div class="mt-2">
+                                    ${warnings.map(warning => `
+                                        <small class="text-warning d-block">
+                                            <i class="fas fa-exclamation-circle"></i> ${warning}
+                                        </small>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+
+        testPhotoGrid.appendChild(col);
+    }
+});
+</script>
+{% endblock %}

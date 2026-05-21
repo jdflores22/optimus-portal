@@ -1,0 +1,273 @@
+{# Expiration Date Selection Modal for eDO Batch Generation #}
+<div id="edoExpirationDateModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75" aria-hidden="true"></div>
+
+        <!-- Modal panel -->
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+            <!-- Header -->
+            <div class="bg-blue-600 px-6 py-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 id="modal-title" class="text-xl font-bold text-white">Generate eDOs for Manifest <span id="manifestNumber"></span></h3>
+                        <p class="text-sm text-blue-100 mt-0.5">Set expiration date and review container information</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="px-6 py-5 max-h-96 overflow-y-auto">
+                <!-- Container Information Section -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="h-5 w-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
+                        Container Information
+                    </h4>
+                    
+                    <!-- Container Summary -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-blue-600" id="containerCount">0</div>
+                                <div class="text-sm text-blue-700">Total Containers</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-600">₱500</div>
+                                <div class="text-sm text-green-700">eDO Fee per Container</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-purple-600" id="totalEdoFees">₱0</div>
+                                <div class="text-sm text-purple-700">Total eDO Fees</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Container List -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h5 class="text-sm font-medium text-gray-700 mb-3">Containers to receive eDOs:</h5>
+                        <div class="max-h-40 overflow-y-auto">
+                            <div id="containerList" class="space-y-2">
+                                <!-- Container items will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expiration Date Selection -->
+                <form id="expirationDateForm">
+                    <div class="mb-6">
+                        <label for="expirationDate" class="block text-sm font-medium text-gray-700 mb-2">
+                            <svg class="inline h-4 w-4 text-gray-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            eDO Expiration Date <span class="text-red-500">*</span>
+                        </label>
+                        <input 
+                            type="date" 
+                            id="expirationDate" 
+                            name="expiration_date" 
+                            required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                            placeholder="Select expiration date"
+                        >
+                        <p class="text-xs text-gray-500 mt-2">
+                            <svg class="inline h-4 w-4 text-gray-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Expiration date must be at least 1 day in the future. All eDOs will have the same expiration date.
+                        </p>
+                        <div id="dateError" class="hidden mt-2 text-sm text-red-600">
+                            <svg class="inline h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span id="dateErrorMessage">Please select a future date</span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Footer with Action Buttons -->
+            <div class="bg-gray-50 px-6 py-4 flex flex-col sm:flex-row sm:space-x-3 space-y-3 sm:space-y-0">
+                <button 
+                    type="button" 
+                    id="cancelExpirationBtn"
+                    class="flex-1 inline-flex justify-center items-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                >
+                    <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    Cancel
+                </button>
+                <button 
+                    type="submit" 
+                    id="confirmExpirationBtn"
+                    disabled
+                    class="flex-1 inline-flex justify-center items-center px-4 py-3 border border-transparent text-sm font-medium rounded-lg text-white bg-gray-400 cursor-not-allowed transition-colors disabled:bg-gray-400 enabled:bg-blue-600 enabled:hover:bg-blue-700 enabled:cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                    <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Generate eDOs
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('edoExpirationDateModal');
+    const form = document.getElementById('expirationDateForm');
+    const dateInput = document.getElementById('expirationDate');
+    const dateError = document.getElementById('dateError');
+    const dateErrorMessage = document.getElementById('dateErrorMessage');
+    const cancelBtn = document.getElementById('cancelExpirationBtn');
+    const confirmBtn = document.getElementById('confirmExpirationBtn');
+    const manifestNumber = document.getElementById('manifestNumber');
+    const containerCount = document.getElementById('containerCount');
+    const totalEdoFees = document.getElementById('totalEdoFees');
+    const containerList = document.getElementById('containerList');
+    
+    // Set minimum date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const minDate = tomorrow.toISOString().split('T')[0];
+    dateInput.setAttribute('min', minDate);
+    
+    // Function to validate date and update button state
+    function validateDateAndUpdateButton() {
+        const selectedDate = new Date(dateInput.value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (!dateInput.value) {
+            // No date selected
+            confirmBtn.disabled = true;
+            confirmBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'cursor-pointer');
+            confirmBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            dateError.classList.add('hidden');
+            dateInput.classList.remove('border-red-500');
+            dateInput.classList.add('border-gray-300');
+        } else if (selectedDate <= today) {
+            // Invalid date (past or today)
+            confirmBtn.disabled = true;
+            confirmBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'cursor-pointer');
+            confirmBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            dateError.classList.remove('hidden');
+            dateErrorMessage.textContent = 'Expiration date must be at least 1 day from now';
+            dateInput.classList.add('border-red-500');
+            dateInput.classList.remove('border-gray-300');
+        } else {
+            // Valid date
+            confirmBtn.disabled = false;
+            confirmBtn.classList.add('bg-blue-600', 'hover:bg-blue-700', 'cursor-pointer');
+            confirmBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+            dateError.classList.add('hidden');
+            dateInput.classList.remove('border-red-500');
+            dateInput.classList.add('border-gray-300');
+        }
+    }
+    
+    // Validate date on input
+    dateInput.addEventListener('change', validateDateAndUpdateButton);
+    dateInput.addEventListener('input', validateDateAndUpdateButton);
+    
+    // Cancel button handler
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function() {
+            closeModal();
+        });
+    }
+    
+    // Function to close modal and reset form
+    function closeModal() {
+        modal.classList.add('hidden');
+        form.reset();
+        dateError.classList.add('hidden');
+        dateInput.classList.remove('border-red-500');
+        dateInput.classList.add('border-gray-300');
+        confirmBtn.disabled = true;
+        confirmBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'cursor-pointer');
+        confirmBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+        
+        // Clear container data
+        manifestNumber.textContent = '';
+        containerCount.textContent = '0';
+        totalEdoFees.textContent = '₱0';
+        containerList.innerHTML = '';
+    }
+    
+    // Function to populate modal with manifest data
+    window.populateEDOModal = function(data) {
+        manifestNumber.textContent = data.manifestNumber;
+        containerCount.textContent = data.containerCount;
+        totalEdoFees.textContent = '₱' + data.totalEdoFees.toLocaleString('en-PH', { minimumFractionDigits: 2 });
+        
+        // Populate container list
+        containerList.innerHTML = '';
+        data.containers.forEach(function(container, index) {
+            const containerItem = document.createElement('div');
+            containerItem.className = 'flex items-center justify-between p-3 bg-white rounded border border-gray-200';
+            containerItem.innerHTML = `
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                        <span class="text-xs font-bold text-blue-600">${index + 1}</span>
+                    </div>
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">${container.containerNumber}</div>
+                        <div class="text-xs text-gray-500">${container.size || 'N/A'} • ${container.type || 'N/A'}</div>
+                    </div>
+                </div>
+                <div class="text-sm font-medium text-green-600">₱500</div>
+            `;
+            containerList.appendChild(containerItem);
+        });
+    };
+    
+    // Prevent modal close on background click during selection
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+    
+    // Handle escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+    
+    // Form submission handler
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (!confirmBtn.disabled) {
+            // Trigger the eDO generation process
+            if (window.generateEDOsForManifest) {
+                window.generateEDOsForManifest(dateInput.value);
+            }
+        }
+    });
+    
+    // Also handle button click directly
+    confirmBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        if (!this.disabled) {
+            // Trigger the eDO generation process
+            if (window.generateEDOsForManifest) {
+                window.generateEDOsForManifest(dateInput.value);
+            }
+        }
+    });
+});
+</script>

@@ -1,0 +1,386 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Trucker Dashboard - OPTIMUS{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">Welcome, {{ trucker.fullName }}</h1>
+                        <p class="mt-2 text-gray-600">Manage your container FREE-ADVICE requests and track shipments</p>
+                    </div>
+                    <div>
+                        <a href="{{ path('trucker_container_search') }}" 
+                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            Search Container
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Flash Messages -->
+        {% for message in app.flashes('success') %}
+            <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg">
+                {{ message }}
+            </div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg">
+                {{ message }}
+            </div>
+        {% endfor %}
+
+        <!-- System Health Status -->
+        <div class="mb-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-medium text-gray-900">Account Status</h2>
+                <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 bg-green-400 rounded-full"></div>
+                    <span class="text-sm text-green-600 font-medium">Account Active</span>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Account Verified</p>
+                        <p class="text-xs text-green-600">Active</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Company</p>
+                        <p class="text-xs text-blue-600">{{ trucker.companyName ?? 'Not specified' }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">License</p>
+                        <p class="text-xs text-purple-600">{{ trucker.licenseNumber ?? 'Not specified' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Metrics - 4 Cards per Row -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <!-- Total Requests -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Requests</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ stats.total_requests }}</p>
+                        <p class="text-xs text-blue-600 font-medium">All time</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Requests -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Pending</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ stats.pending_requests }}</p>
+                        <p class="text-xs text-yellow-600 font-medium">Awaiting review</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verified Requests -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Verified</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ stats.verified_requests }}</p>
+                        <p class="text-xs text-green-600 font-medium">Approved</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Completed Requests -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Completed</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ stats.completed_requests }}</p>
+                        <p class="text-xs text-indigo-600 font-medium">Finished</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Management Sections -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">Quick Actions</h3>
+                    <p class="text-sm text-gray-500">Common trucker operations</p>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <a href="{{ path('trucker_container_search') }}" 
+                           class="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-blue-800">Search Container</p>
+                                    <p class="text-xs text-blue-600">Find containers and create FREE-ADVICE</p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
+
+                        <a href="{{ path('trucker_pre_advice_list') }}" 
+                           class="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-green-800">My FREE-ADVICE Requests</p>
+                                    <p class="text-xs text-green-600">View all your requests</p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
+
+                        {% if stats.pending_requests > 0 %}
+                        <a href="{{ path('trucker_pre_advice_list', {status: 'pending'}) }}" 
+                           class="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 transition-colors">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-yellow-800">Pending Requests</p>
+                                    <p class="text-xs text-yellow-600">{{ stats.pending_requests }} awaiting review</p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent FREE-ADVICE Requests -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">Recent Requests</h3>
+                        <p class="text-sm text-gray-500">Your latest FREE-ADVICE submissions</p>
+                    </div>
+                    <a href="{{ path('trucker_pre_advice_list') }}" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                        View All
+                    </a>
+                </div>
+                <div class="p-6">
+                    {% if recent_requests is empty %}
+                        <div class="text-center py-8">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No requests yet</h3>
+                            <p class="mt-1 text-sm text-gray-500">Get started by creating your first FREE-ADVICE request</p>
+                            <div class="mt-6">
+                                <a href="{{ path('trucker_container_search') }}" 
+                                   class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                    Create Your First Request
+                                </a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="space-y-4 max-h-80 overflow-y-auto">
+                            {% for request in recent_requests %}
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div class="flex items-center space-x-3">
+                                        {% if request.status.value == 'pending' %}
+                                            <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                                                <div class="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                                            </div>
+                                        {% elseif request.status.value == 'verified' %}
+                                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                            </div>
+                                        {% elseif request.status.value == 'completed' %}
+                                            <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                                                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                                </svg>
+                                            </div>
+                                        {% elseif request.status.value == 'rejected' %}
+                                            <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                                                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </div>
+                                        {% else %}
+                                            <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                                <div class="w-2 h-2 bg-gray-400 rounded-full"></div>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900">{{ request.container.containerNumber }}</p>
+                                            <p class="text-xs text-gray-500">
+                                                {{ request.selectedTerminal.name }} • {{ request.createdAt|date('M j, Y') }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {% set statusClass = 'bg-gray-100 text-gray-800' %}
+                                    {% if request.status.value == 'verified' %}
+                                        {% set statusClass = 'bg-green-100 text-green-800' %}
+                                    {% elseif request.status.value == 'pending' %}
+                                        {% set statusClass = 'bg-yellow-100 text-yellow-800' %}
+                                    {% elseif request.status.value == 'completed' %}
+                                        {% set statusClass = 'bg-indigo-100 text-indigo-800' %}
+                                    {% elseif request.status.value == 'rejected' %}
+                                        {% set statusClass = 'bg-red-100 text-red-800' %}
+                                    {% endif %}
+                                    <div class="flex items-center space-x-2">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ statusClass }}">
+                                            {{ request.status.value|title }}
+                                        </span>
+                                        <a href="{{ path('trucker_pre_advice_detail', {id: request.id}) }}" 
+                                           class="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                                            View
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if recent_requests|length >= 5 %}
+                            <div class="mt-3 text-center">
+                                <p class="text-xs text-gray-500">Showing recent requests</p>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Trucker Operations -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Trucker Operations</h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <a href="{{ path('trucker_container_search') }}" 
+                       class="flex items-center justify-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        Search Container
+                    </a>
+                    
+                    <a href="{{ path('trucker_pre_advice_list') }}" 
+                       class="flex items-center justify-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        </svg>
+                        My Requests
+                    </a>
+                    
+                    {% if stats.pending_requests > 0 %}
+                    <a href="{{ path('trucker_pre_advice_list', {status: 'pending'}) }}" 
+                       class="flex items-center justify-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Pending Requests
+                    </a>
+                    {% endif %}
+                    
+                    {% if stats.verified_requests > 0 %}
+                    <a href="{{ path('trucker_pre_advice_list', {status: 'verified'}) }}" 
+                       class="flex items-center justify-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Verified Requests
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

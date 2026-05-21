@@ -1,0 +1,264 @@
+<?php
+
+namespace App\Service;
+
+use App\Entity\Payment;
+use App\Entity\Manifest;
+use App\Entity\User;
+use App\Entity\Enum\PaymentType;
+use App\Entity\Enum\PaymentStatus;
+use App\Entity\Enum\WorkflowState;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+
+class PaymentService implements PaymentServiceInterface
+{
+    public function __construct(
+        private EntityManagerInterface $entityManager,
+        private FileService $fileService,
+        private AuditService $auditService,
+        private PaymentVerificationTransactionService $verificationTransactionService,
+        private ManifestNotificationService $notificationService,
+        private ActivityLogService $activityLogService,
+        private PaymentFeeConfigurationServiceInterface $paymentFeeConfigService,
+        private PaymentReceiptGenerator $receiptGenerator,
+        private string $projectDir
+    ) {
+    }
+
+    public function submitFinalPayment(int $manifestId, float $amount, UploadedFile $receipt, User $broker): Payment
+    {
+        $manifest = $this->entityManager->getRepository(Manifest::class)->find($manifestId);
+        if (!$manifest) {
+            throw new \InvalidArgumentException('Manifest not found');
+        }
+
+        // Validate workflow state
+        if ($manifest->getWorkflowState() !== WorkflowState::BILLING_GENERATED) {
+            throw new \InvalidArgumentException('Manifest must be in billing_generated state');
+        }
+
+        // Validate amount against billing
+        $billing = $manifest->getBilling();
+        if (!$billing) {
+            throw new \InvalidArgumentException('Billing not found for manifest');
+        }
+
+        if (abs($amount - $billing->getTotalAmount()) > 0.01) {
+            // Log discrepancy but allow submission
+            $this->auditService->logAction(
+                $broker,
+                'payment_amount_discrepancy',
+                'Payment',
+                0,
+                [
+                    'manifest_id' => $manifestId,
+                    'expected_amount' => $billing->getTotalAmount(),
+                    'submitted_amount' => $amount,
+                    'discrepancy' => abs($amount - $billing->getTotalAmount())
+                ]
+            );
+        }
+
+        // Upload receipt file
+        $storedFile = $this->fileService->uploadFile(
+            $receipt,
+            'receipt',
+            $broker
+        );
+
+        // Convert absolute path to relative path for web access
+        $relativePath = $this->getRelativePath($storedFile->getEncryptedPath());
+
+        $payment = new Payment();
+        $payment->setManifest($manifest);
+        $payment->setShippingLine($manifest->getShippingLine()); // Set shipping line from manifest
+        $payment->setPaymentType(PaymentType::FINAL_PAYMENT);
+        $payment->setAmount($amount);
+        $payment->setReceiptFilePath($relativePath);
+        $payment->setSubmittedBy($broker);
+        $payment->setStatus(PaymentStatus::PENDING_VALIDATION);
+
+        $this->entityManager->persist($payment);
+        
+        // Update manifest state
+        $manifest->transitionTo(WorkflowState::PAYMENT_SUBMITTED);
+        
+        $this->entityManager->flush();
+
+        // Log payment submission
+        $this->auditService->logAction(
+            $broker,
+            'payment_submission',
+            'Payment',
+            $payment->getId(),
+            [
+                'payment_type' => PaymentType::FINAL_PAYMENT->value,
+                'amount' => $amount,
+                'manifest_id' => $manifestId
+            ]
+        );
+
+        // Log to activity log for notifications
+        $this->activityLogService->logManifestPaymentSubmission(
+            $broker,
+            $payment,
+            $manifest
+        );
+
+        // Notify SYSTEM_ADMIN users about the payment submission
+        $this->notificationService->notifyPaymentSubmitted($payment);
+
+        return $payment;
+    }
+
+    public function validateFinalPayment(int $paymentId, bool $approved, ?string $reason, User $accounting): void
+    {
+        $payment = $this->entityManager->getRepository(Payment::class)->find($paymentId);
+        if (!$payment) {
+            throw new \InvalidArgumentException('Payment not found');
+        }
+
+        if ($payment->getPaymentType() !== PaymentType::FINAL_PAYMENT) {
+            throw new \InvalidArgumentException('Payment is not a final payment');
+        }
+
+        if ($approved) {
+            $payment->verify($accounting);
+            
+            // Update manifest state to payment_verified (NOT edo_generated)
+            $manifest = $payment->getManifest();
+            $manifest->setWorkflowState(WorkflowState::PAYMENT_VERIFIED);
+            
+            // Flush payment and manifest changes together
+            $this->entityManager->flush();
+            
+            // Generate official receipt PDF from shipping line using TCPDF
+            try {
+                $officialReceiptPath = $this->receiptGenerator->generateOfficialReceipt($payment);
+                $payment->setOfficialReceiptPath($officialReceiptPath);
+                $this->entityManager->flush();
+                
+                // Log official receipt generation
+                $this->auditService->logAction(
+                    $accounting,
+                    'official_receipt_generated',
+                    'Payment',
+                    $payment->getId(),
+                    [
+                        'receipt_path' => $officialReceiptPath,
+                        'manifest_id' => $payment->getManifest()->getId()
+                    ]
+                );
+            } catch (\Exception $e) {
+                // Log error but don't fail the payment validation
+                $this->auditService->logAction(
+                    $accounting,
+                    'official_receipt_generation_failed',
+                    'Payment',
+                    $payment->getId(),
+                    [
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                        'manifest_id' => $payment->getManifest()->getId()
+                    ]
+                );
+            }
+            
+            // Notify broker, consignee, and SL_STAFF about approval
+            // SL_STAFF will now generate the eDO
+            $this->notificationService->notifyPaymentValidated($payment, true);
+        } else {
+            if (!$reason) {
+                throw new \InvalidArgumentException('Rejection reason is required');
+            }
+            $payment->reject($accounting, $reason);
+            
+            // Revert manifest state to billing_generated
+            $manifest = $payment->getManifest();
+            $manifest->setWorkflowState(WorkflowState::BILLING_GENERATED);
+            $this->entityManager->flush();
+            
+            // Notify broker, consignee, and SL_STAFF about rejection
+            $this->notificationService->notifyPaymentValidated($payment, false, $reason);
+        }
+
+        // Log payment validation
+        $this->auditService->logAction(
+            $accounting,
+            'payment_validation',
+            'Payment',
+            $payment->getId(),
+            [
+                'payment_type' => PaymentType::FINAL_PAYMENT->value,
+                'approved' => $approved,
+                'reason' => $reason,
+                'manifest_id' => $payment->getManifest()->getId()
+            ]
+        );
+
+        // Log to activity log for notifications
+        $this->activityLogService->logManifestPaymentValidation(
+            $accounting,
+            $payment,
+            $payment->getManifest(),
+            $approved
+        );
+    }
+
+    public function getPendingFinalPayments(): array
+    {
+        return $this->entityManager->getRepository(Payment::class)
+            ->createQueryBuilder('p')
+            ->leftJoin('p.manifest', 'm')
+            ->addSelect('m')
+            ->leftJoin('m.consignee', 'c')
+            ->addSelect('c')
+            ->leftJoin('m.broker', 'b')
+            ->addSelect('b')
+            ->leftJoin('m.billing', 'bill')
+            ->addSelect('bill')
+            ->leftJoin('p.submittedBy', 's')
+            ->addSelect('s')
+            ->where('p.paymentType = :type')
+            ->andWhere('p.status = :status')
+            ->setParameter('type', PaymentType::FINAL_PAYMENT)
+            ->setParameter('status', PaymentStatus::PENDING_VALIDATION)
+            ->orderBy('p.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function getPaymentById(int $paymentId): ?Payment
+    {
+        return $this->entityManager->getRepository(Payment::class)->find($paymentId);
+    }
+
+    /**
+     * Convert absolute file path to relative path for web access
+     */
+    private function getRelativePath(string $absolutePath): string
+    {
+        // Remove the project directory and public folder from the path
+        $publicDir = $this->projectDir . '/public';
+        
+        // If the path starts with the public directory, remove it
+        if (str_starts_with($absolutePath, $publicDir)) {
+            return str_replace($publicDir, '', $absolutePath);
+        }
+        
+        // If the path already looks relative (starts with /uploads), return as is
+        if (str_starts_with($absolutePath, '/uploads')) {
+            return $absolutePath;
+        }
+        
+        // Otherwise, try to extract the uploads part
+        if (str_contains($absolutePath, '/uploads/')) {
+            $parts = explode('/uploads/', $absolutePath);
+            return '/uploads/' . end($parts);
+        }
+        
+        // Fallback: return the original path
+        return $absolutePath;
+    }
+}

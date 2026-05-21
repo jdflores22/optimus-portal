@@ -1,0 +1,78 @@
+{# Loading Component Macros #}
+{% macro spinner(size = 'md', text = null) %}
+    {% set size_class = size == 'sm' ? 'spinner-sm' : (size == 'lg' ? 'spinner-lg' : 'spinner-md') %}
+    
+    <div class="flex items-center justify-center">
+        <div class="{{ size_class }}"></div>
+        {% if text %}
+            <span class="ml-2 text-meta-text-secondary">{{ text }}</span>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro loading_overlay(text = 'Loading...') %}
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-meta p-6 flex items-center space-x-3">
+            <div class="spinner-md"></div>
+            <span class="text-meta-text-primary">{{ text }}</span>
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro loading_button(text, loading_text = 'Loading...', is_loading = false, type = 'primary', size = 'md') %}
+    {% from 'components/button.html.twig' import button %}
+    
+    {% if is_loading %}
+        {{ button(
+            '<div class="spinner-sm mr-2"></div>' ~ loading_text, 
+            type, 
+            size, 
+            null, 
+            null, 
+            true
+        ) }}
+    {% else %}
+        {{ button(text, type, size) }}
+    {% endif %}
+{% endmacro %}
+
+{% macro skeleton_loader(lines = 3, width = 'full') %}
+    <div class="animate-pulse">
+        {% for i in 1..lines %}
+            <div class="h-4 bg-meta-gray-200 rounded mb-2 {{ width == 'full' ? 'w-full' : (width == 'half' ? 'w-1/2' : 'w-3/4') }}"></div>
+        {% endfor %}
+    </div>
+{% endmacro %}
+
+{% macro card_skeleton() %}
+    <div class="card-md animate-pulse">
+        <div class="h-4 bg-meta-gray-200 rounded w-1/4 mb-4"></div>
+        <div class="space-y-2">
+            <div class="h-3 bg-meta-gray-200 rounded w-full"></div>
+            <div class="h-3 bg-meta-gray-200 rounded w-5/6"></div>
+            <div class="h-3 bg-meta-gray-200 rounded w-4/6"></div>
+        </div>
+    </div>
+{% endmacro %}
+
+{% macro table_skeleton(rows = 5, columns = 4) %}
+    <div class="card-md animate-pulse">
+        <div class="space-y-3">
+            {# Header skeleton #}
+            <div class="flex space-x-4">
+                {% for i in 1..columns %}
+                    <div class="h-4 bg-meta-gray-200 rounded flex-1"></div>
+                {% endfor %}
+            </div>
+            
+            {# Row skeletons #}
+            {% for i in 1..rows %}
+                <div class="flex space-x-4">
+                    {% for j in 1..columns %}
+                        <div class="h-3 bg-meta-gray-200 rounded flex-1"></div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endmacro %}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>eDO Payment Submitted</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #3b82f6;">eDO Payment Submitted for Validation</h2>
+        
+        <p>Dear System Administrator,</p>
+        
+        <p>An eDO payment has been submitted and requires your validation.</p>
+        
+        <div style="background-color: #dbeafe; padding: 15px; border-left: 4px solid #3b82f6; margin: 20px 0;">
+            <p><strong>eDO Number:</strong> {{ edo_number }}</p>
+            <p><strong>Container Number:</strong> {{ container_number }}</p>
+            <p><strong>Manifest Number:</strong> {{ manifest_number }}</p>
+            <p><strong>Broker Name:</strong> {{ broker_name }}</p>
+            <p><strong>Payment Amount:</strong> ₱{{ amount|number_format(2) }}</p>
+            <p><strong>Submitted At:</strong> {{ submitted_at|date('F d, Y H:i:s') }}</p>
+        </div>
+        
+        <p>Please review the payment receipt and validate the payment to release the eDO.</p>
+        
+        <p style="margin-top: 30px;">
+            <a href="{{ dashboard_link }}" 
+               style="background-color: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                View Payment Dashboard
+            </a>
+        </p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        
+        <p style="font-size: 12px; color: #666;">
+            This is an automated message from OPTIMUS Shipping Portal. Please do not reply to this email.
+        </p>
+    </div>
+</body>
+</html>

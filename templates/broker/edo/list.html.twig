@@ -1,0 +1,306 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My eDOs - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <!-- Header Section -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h1 class="text-2xl font-bold text-base-content">My eDOs</h1>
+                    <p class="text-sm text-base-content/60 mt-1">View and manage Electronic Delivery Orders</p>
+                </div>
+                
+                <!-- Active Workspace Badge -->
+                {% if app.session.get('active_workspace_consignee_id') %}
+                    <div class="flex items-center gap-2 bg-primary/10 rounded-xl px-4 py-3">
+                        <span class="icon-[tabler--briefcase] size-5 text-primary"></span>
+                        <div class="flex flex-col">
+                            <span class="text-xs text-primary/70 font-medium">Active Workspace</span>
+                            <span class="text-sm font-bold text-primary truncate max-w-[200px]">{{ app.session.get('active_workspace_consignee_name', 'Workspace') }}</span>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- Filters -->
+        <div class="card bg-base-100 shadow-sm mb-6">
+            <div class="card-body p-4">
+                <form method="GET" action="{{ path('broker_edo_list_page') }}" class="flex flex-col sm:flex-row gap-3">
+                    <!-- Status Filter -->
+                    <div class="flex-1">
+                        <label for="statusFilter" class="block text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-2">Filter by Status</label>
+                        <select name="status" id="statusFilter" class="select select-bordered w-full rounded-lg" onchange="this.form.submit()">
+                            <option value="">All Statuses</option>
+                            <option value="pending_release" {{ filters.status == 'pending_release' ? 'selected' : '' }}>Pending Payment</option>
+                            <option value="pending_validation" {{ filters.status == 'pending_validation' ? 'selected' : '' }}>Pending Validation</option>
+                            <option value="released" {{ filters.status == 'released' ? 'selected' : '' }}>Released</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- eDO List -->
+        <div class="card bg-base-100 shadow-sm">
+            {% if edos|length > 0 %}
+                <!-- eDO Table - Desktop -->
+                <div class="hidden lg:block overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>eDO Number</th>
+                                <th>Container</th>
+                                <th>Manifest</th>
+                                <th>Status</th>
+                                <th>Fee Amount</th>
+                                <th>Submitted</th>
+                                <th class="text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for edo in edos %}
+                                {% set currentPayment = edo.currentPayment %}
+                                {% set paymentStatus = currentPayment ? currentPayment.status.value : null %}
+                                {% set edoStatus = edo.status.value %}
+                                
+                                <tr class="hover" onclick="window.location.href='{{ path('broker_edo_detail_page', {id: edo.id}) }}'" style="cursor: pointer;">
+                                    <td>
+                                        <span class="font-semibold text-primary">{{ edo.edoNumber }}</span>
+                                    </td>
+                                    <td>{{ edo.container ? edo.container.containerNumber : 'N/A' }}</td>
+                                    <td>{{ edo.manifest.manifestNumber ?? 'N/A' }}</td>
+                                    <td>
+                                        {% if currentPayment %}
+                                            {% if paymentStatus == 'pending_validation' %}
+                                                <span class="badge badge-soft badge-warning text-xs rounded-lg">Pending Validation</span>
+                                            {% elseif paymentStatus == 'verified' or paymentStatus == 'approved' %}
+                                                <span class="badge badge-soft badge-success text-xs rounded-lg">Released</span>
+                                            {% elseif paymentStatus == 'rejected' %}
+                                                <span class="badge badge-soft badge-error text-xs rounded-lg">Rejected</span>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if edoStatus == 'pending_release' %}
+                                                <span class="badge badge-soft text-xs rounded-lg">Pending Payment</span>
+                                            {% elseif edoStatus == 'pending_validation' %}
+                                                <span class="badge badge-soft badge-warning text-xs rounded-lg">Pending Validation</span>
+                                            {% elseif edoStatus == 'released' %}
+                                                <span class="badge badge-soft badge-success text-xs rounded-lg">Released</span>
+                                            {% else %}
+                                                <span class="badge badge-soft text-xs rounded-lg">Unknown</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td>₱{{ edo.feeAmount|number_format(2, '.', ',') }}</td>
+                                    <td>
+                                        {% if currentPayment %}
+                                            {{ currentPayment.createdAt|date('M j, Y, g:i A') }}
+                                        {% else %}
+                                            <span class="opacity-60">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-right" onclick="event.stopPropagation()">
+                                        {% if currentPayment %}
+                                            {% if paymentStatus == 'pending_validation' %}
+                                                <span class="btn btn-ghost btn-sm rounded-lg cursor-not-allowed opacity-50">
+                                                    <span class="icon-[tabler--clock] size-4"></span>
+                                                    Awaiting Approval
+                                                </span>
+                                            {% elseif paymentStatus == 'verified' or paymentStatus == 'approved' or edoStatus == 'released' %}
+                                                <a href="{{ path('broker_edo_download', {id: edo.id}) }}" class="btn btn-success btn-sm rounded-lg gap-2">
+                                                    <span class="icon-[tabler--download] size-4"></span>
+                                                    Download PDF
+                                                </a>
+                                            {% elseif paymentStatus == 'rejected' %}
+                                                <a href="{{ path('broker_manifest_edo_payment_specific', {id: edo.manifest.id, edoNumber: edo.edoNumber}) }}" class="btn btn-warning btn-sm rounded-lg gap-2">
+                                                    <span class="icon-[tabler--refresh] size-4"></span>
+                                                    Resubmit
+                                                </a>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if edoStatus == 'pending_validation' %}
+                                                <span class="btn btn-ghost btn-sm rounded-lg cursor-not-allowed opacity-50">
+                                                    <span class="icon-[tabler--clock] size-4"></span>
+                                                    Awaiting Approval
+                                                </span>
+                                            {% elseif edoStatus == 'pending_release' %}
+                                                <a href="{{ path('broker_manifest_edo_payment_specific', {id: edo.manifest.id, edoNumber: edo.edoNumber}) }}" class="btn btn-primary btn-sm rounded-lg gap-2">
+                                                    <span class="icon-[tabler--credit-card] size-4"></span>
+                                                    Pay Now
+                                                </a>
+                                            {% elseif edoStatus == 'released' %}
+                                                <a href="{{ path('broker_edo_download', {id: edo.id}) }}" class="btn btn-success btn-sm rounded-lg gap-2">
+                                                    <span class="icon-[tabler--download] size-4"></span>
+                                                    Download PDF
+                                                </a>
+                                            {% else %}
+                                                <span class="text-xs font-medium opacity-60">View Details</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- eDO Cards - Mobile -->
+                <div class="lg:hidden divide-y divide-base-300">
+                    {% for edo in edos %}
+                        {% set currentPayment = edo.currentPayment %}
+                        {% set paymentStatus = currentPayment ? currentPayment.status.value : null %}
+                        {% set edoStatus = edo.status.value %}
+                        
+                        <div class="p-4 hover:bg-base-200">
+                            <div class="flex flex-col gap-3">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="flex-1">
+                                        <div class="font-bold">{{ edo.edoNumber }}</div>
+                                        <div class="text-sm opacity-60 mt-1">Container: {{ edo.container ? edo.container.containerNumber : 'N/A' }}</div>
+                                        <div class="text-sm opacity-60">Manifest: {{ edo.manifest.manifestNumber ?? 'N/A' }}</div>
+                                    </div>
+                                    <div>
+                                        {% if currentPayment %}
+                                            {% if paymentStatus == 'pending_validation' %}
+                                                <span class="btn btn-ghost btn-sm rounded-lg cursor-not-allowed opacity-50">
+                                                    <span class="icon-[tabler--clock] size-4"></span>
+                                                    Awaiting
+                                                </span>
+                                            {% elseif paymentStatus == 'verified' or paymentStatus == 'approved' or edoStatus == 'released' %}
+                                                <a href="{{ path('broker_edo_download', {id: edo.id}) }}" class="btn btn-success btn-sm rounded-lg gap-2">
+                                                    <span class="icon-[tabler--download] size-4"></span>
+                                                    Download
+                                                </a>
+                                            {% elseif paymentStatus == 'rejected' %}
+                                                <a href="{{ path('broker_manifest_edo_payment_specific', {id: edo.manifest.id, edoNumber: edo.edoNumber}) }}" class="btn btn-warning btn-sm rounded-lg gap-2">
+                                                    <span class="icon-[tabler--refresh] size-4"></span>
+                                                    Resubmit
+                                                </a>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if edoStatus == 'pending_validation' %}
+                                                <span class="btn btn-ghost btn-sm rounded-lg cursor-not-allowed opacity-50">
+                                                    <span class="icon-[tabler--clock] size-4"></span>
+                                                    Awaiting
+                                                </span>
+                                            {% elseif edoStatus == 'pending_release' %}
+                                                <a href="{{ path('broker_manifest_edo_payment_specific', {id: edo.manifest.id, edoNumber: edo.edoNumber}) }}" class="btn btn-primary btn-sm rounded-lg gap-2">
+                                                    <span class="icon-[tabler--credit-card] size-4"></span>
+                                                    Pay Now
+                                                </a>
+                                            {% elseif edoStatus == 'released' %}
+                                                <a href="{{ path('broker_edo_download', {id: edo.id}) }}" class="btn btn-success btn-sm rounded-lg gap-2">
+                                                    <span class="icon-[tabler--download] size-4"></span>
+                                                    Download
+                                                </a>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    {% if currentPayment %}
+                                        {% if paymentStatus == 'pending_validation' %}
+                                            <span class="badge badge-soft badge-warning text-xs rounded-lg">Pending Validation</span>
+                                        {% elseif paymentStatus == 'verified' or paymentStatus == 'approved' %}
+                                            <span class="badge badge-soft badge-success text-xs rounded-lg">Released</span>
+                                        {% elseif paymentStatus == 'rejected' %}
+                                            <span class="badge badge-soft badge-error text-xs rounded-lg">Rejected</span>
+                                        {% endif %}
+                                    {% else %}
+                                        {% if edoStatus == 'pending_release' %}
+                                            <span class="badge badge-soft text-xs rounded-lg">Pending Payment</span>
+                                        {% elseif edoStatus == 'pending_validation' %}
+                                            <span class="badge badge-soft badge-warning text-xs rounded-lg">Pending Validation</span>
+                                        {% elseif edoStatus == 'released' %}
+                                            <span class="badge badge-soft badge-success text-xs rounded-lg">Released</span>
+                                        {% else %}
+                                            <span class="badge badge-soft text-xs rounded-lg">Unknown</span>
+                                        {% endif %}
+                                    {% endif %}
+                                    <span class="text-sm font-semibold">₱{{ edo.feeAmount|number_format(2, '.', ',') }}</span>
+                                </div>
+                                <div class="text-sm opacity-60">
+                                    Submitted: {% if currentPayment %}{{ currentPayment.createdAt|date('M j, Y, g:i A') }}{% else %}Not submitted{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if totalPages > 1 %}
+                    <div class="px-6 py-4 bg-base-200/50 border-t border-base-300">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1 flex justify-between sm:hidden">
+                                {% if currentPage > 1 %}
+                                    <a href="{{ path('broker_edo_list_page', filters|merge({page: currentPage - 1})) }}" class="btn btn-ghost btn-sm rounded-lg">
+                                        Previous
+                                    </a>
+                                {% endif %}
+                                {% if currentPage < totalPages %}
+                                    <a href="{{ path('broker_edo_list_page', filters|merge({page: currentPage + 1})) }}" class="btn btn-ghost btn-sm rounded-lg">
+                                        Next
+                                    </a>
+                                {% endif %}
+                            </div>
+                            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-sm opacity-60">
+                                        Page {{ currentPage }} of {{ totalPages }} ({{ total }} total)
+                                    </p>
+                                </div>
+                                <div>
+                                    <div class="join">
+                                        {% if currentPage > 1 %}
+                                            <a href="{{ path('broker_edo_list_page', filters|merge({page: currentPage - 1})) }}" class="btn btn-ghost btn-sm join-item rounded-lg">
+                                                <span class="icon-[tabler--chevron-left] size-4"></span>
+                                            </a>
+                                        {% endif %}
+                                        
+                                        {% for i in 1..totalPages %}
+                                            {% if i == 1 or i == totalPages or (i >= currentPage - 1 and i <= currentPage + 1) %}
+                                                <a href="{{ path('broker_edo_list_page', filters|merge({page: i})) }}" 
+                                                   class="btn btn-sm join-item rounded-lg {{ i == currentPage ? 'btn-primary' : 'btn-ghost' }}">
+                                                    {{ i }}
+                                                </a>
+                                            {% elseif i == currentPage - 2 or i == currentPage + 2 %}
+                                                <span class="btn btn-ghost btn-sm join-item rounded-lg cursor-default">...</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                        
+                                        {% if currentPage < totalPages %}
+                                            <a href="{{ path('broker_edo_list_page', filters|merge({page: currentPage + 1})) }}" class="btn btn-ghost btn-sm join-item rounded-lg">
+                                                <span class="icon-[tabler--chevron-right] size-4"></span>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% else %}
+                <!-- Empty State -->
+                <div class="p-12 text-center">
+                    <div class="size-16 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="icon-[tabler--file-off] size-8 opacity-40"></span>
+                    </div>
+                    <h3 class="text-base font-semibold">No eDOs found</h3>
+                    <p class="mt-2 text-sm opacity-60">No Electronic Delivery Orders match your current filter.</p>
+                    {% if filters.status %}
+                        <a href="{{ path('broker_edo_list_page') }}" class="btn btn-ghost btn-sm mt-4">
+                            Clear Filter
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

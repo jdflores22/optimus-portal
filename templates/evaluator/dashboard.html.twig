@@ -1,0 +1,92 @@
+{% extends 'base.html.twig' %}
+{% from 'components/card.html.twig' import card %}
+{% from 'components/badge.html.twig' import status_badge %}
+{% from 'components/button.html.twig' import button %}
+{% from 'components/alert.html.twig' import flash_messages %}
+
+{% block title %}Evaluator Dashboard - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-meta-gray-100">
+    <!-- Top Navigation -->
+    <nav class="topnav">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-meta-blue-500">OPTIMUS</span>
+                    <span class="ml-4 text-meta-text-secondary">Evaluator Dashboard</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Flash Messages -->
+        {{ flash_messages(app.flashes) }}
+
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-meta-text-primary">Pending Applications</h1>
+            <p class="mt-2 text-meta-text-secondary">Review and evaluate accreditation applications</p>
+        </div>
+
+        <!-- Applications Grid -->
+        {% if pendingApplications|length > 0 %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for application in pendingApplications %}
+                    <div class="card-hover card-md">
+                        <!-- Status Badge -->
+                        <div class="flex items-center justify-between mb-4">
+                            {{ status_badge(application.status.value, 'sm') }}
+                            <span class="text-xs text-meta-text-tertiary">
+                                {{ application.submittedAt|date('M d, Y') }}
+                            </span>
+                        </div>
+
+                        <!-- Applicant Info -->
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-meta-text-primary mb-1">
+                                {{ application.applicant.email }}
+                            </h3>
+                            <p class="text-sm text-meta-text-secondary">
+                                Type: 
+                                <span class="font-medium">
+                                    {{ application.applicant.role.value }}
+                                </span>
+                            </p>
+                            {% if application.applicant.role.value == 'BROKER' %}
+                                <p class="text-sm text-meta-text-secondary mt-1">
+                                    Full Name: {{ application.applicant.fullName }}
+                                </p>
+                            {% elseif application.applicant.role.value == 'CONSIGNEE' %}
+                                <p class="text-sm text-meta-text-secondary mt-1">
+                                    Business: {{ application.applicant.businessName }}
+                                </p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Form Info -->
+                        <div class="mb-4 pb-4 border-b border-meta-gray-200">
+                            <p class="text-xs text-meta-text-tertiary">
+                                Form: {{ application.formConfig.name }} (v{{ application.formConfig.version }})
+                            </p>
+                        </div>
+
+                        <!-- Action Button -->
+                        {{ button('Review Application', 'primary', 'md', path('app_evaluator_application_detail', {id: application.id}), null, false, null, 'w-full') }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card-lg text-center">
+                <svg class="mx-auto h-12 w-12 text-meta-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 class="mt-4 text-lg font-medium text-meta-text-primary">No pending applications</h3>
+                <p class="mt-2 text-sm text-meta-text-secondary">All applications have been reviewed</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

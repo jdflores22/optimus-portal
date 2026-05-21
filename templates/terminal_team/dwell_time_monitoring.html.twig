@@ -1,0 +1,308 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dwell Time Monitoring - Terminal Team - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="space-y-5">
+    <!-- Breadcrumb -->
+    <div class="text-sm breadcrumbs text-base-content/50">
+        <ul>
+            <li>
+                <a href="{{ path('app_terminal_team_dashboard') }}" class="hover:text-base-content inline-flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                    </svg>
+                    Dashboard
+                </a>
+            </li>
+            <li class="text-base-content">Dwell Time Monitoring</li>
+        </ul>
+    </div>
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <div class="size-12 rounded-full bg-warning/10 flex items-center justify-center flex-shrink-0">
+                <svg class="w-7 h-7 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-base-content">Container Dwell Time Monitoring</h1>
+                <p class="text-sm text-base-content/60 mt-1">Containers requiring return advice (60+ days)</p>
+            </div>
+        </div>
+        <div class="text-left sm:text-right">
+            <p class="text-sm text-base-content/60">Total Containers</p>
+            <p class="text-3xl font-bold text-base-content">{{ dwell_time_containers.stats.total }}</p>
+        </div>
+    </div>
+        {% if dwell_time_containers.no_shipping_line is defined and dwell_time_containers.no_shipping_line %}
+            <!-- No Shipping Line Association Message -->
+            <div class="alert alert-warning">
+                <svg class="w-8 h-8 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                <div>
+                    <h3 class="font-bold">No Shipping Line Association</h3>
+                    <p class="text-sm mt-2">
+                        Your Terminal Team account is not currently associated with a shipping line. To view and manage dwell time containers, 
+                        you must be linked to a Shipping Line Admin who manages a specific shipping line.
+                    </p>
+                    <p class="text-sm mt-2">
+                        The shipping line association is established through the following hierarchy:
+                    </p>
+                    <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                        <li>Terminal Team User → Shipping Line Admin (via account relationship)</li>
+                        <li>Shipping Line Admin → Shipping Line (via managed shipping line)</li>
+                        <li>Container → Shipping Line (direct association)</li>
+                    </ul>
+                    <p class="text-sm mt-2">
+                        Please contact your system administrator to establish the shipping line association for your account.
+                    </p>
+                </div>
+            </div>
+        {% else %}
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- 60-89 Days Card -->
+            <div class="card bg-base-100 shadow-sm border-t-4 border-t-warning">
+                <div class="card-body p-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="size-12 rounded-full bg-warning/10 flex items-center justify-center">
+                            <svg class="w-7 h-7 text-warning" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <span class="text-5xl font-bold text-base-content">{{ dwell_time_containers.stats.count_60_to_89 }}</span>
+                    </div>
+                    <p class="text-lg font-semibold text-base-content mb-2">60-89 Days Threshold</p>
+                    <p class="text-sm text-base-content/60 mb-3">Warning - Return advice available</p>
+                    <div class="alert alert-warning">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium">Return Advice: CY (Container Yard) Available</p>
+                            <p class="text-xs mt-1">These containers can be returned to Container Yard or Port Terminal</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 90+ Days Card -->
+            <div class="card bg-base-100 shadow-sm border-t-4 border-t-error">
+                <div class="card-body p-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="size-12 rounded-full bg-error/10 flex items-center justify-center">
+                            <svg class="w-7 h-7 text-error" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <span class="text-5xl font-bold text-base-content">{{ dwell_time_containers.stats.count_90_plus }}</span>
+                    </div>
+                    <p class="text-lg font-semibold text-base-content mb-2">90+ Days Threshold</p>
+                    <p class="text-sm text-base-content/60 mb-3">Critical - Immediate action required</p>
+                    <div class="alert alert-error">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium">Return Advice: Port Terminal ONLY</p>
+                            <p class="text-xs mt-1">No Container Yard options available due to extended dwell time</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs for 60-89 and 90+ Days -->
+        <div class="card bg-base-100 shadow-sm">
+            <div role="tablist" class="tabs tabs-bordered">
+                <button role="tab" class="tab tab-active" onclick="switchTab('tab-60-89')" id="btn-tab-60-89">
+                    60-89 Days ({{ dwell_time_containers.stats.count_60_to_89 }})
+                </button>
+                <button role="tab" class="tab" onclick="switchTab('tab-90-plus')" id="btn-tab-90-plus">
+                    90+ Days ({{ dwell_time_containers.stats.count_90_plus }})
+                </button>
+            </div>
+
+            <!-- 60-89 Days Tab Content -->
+            <div id="tab-60-89" class="tab-content p-6">
+                <div class="alert alert-warning mb-6">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <div>
+                        <p class="font-medium">Return Advice for 60-89 Day Containers</p>
+                        <p class="text-sm mt-1">These containers can be returned to Container Yard (CY) or Port Terminal. Multiple return location options available.</p>
+                    </div>
+                </div>
+
+                {% if dwell_time_containers.containers_60_to_89|length > 0 %}
+                    <div class="overflow-x-auto">
+                        <table class="table table-zebra">
+                            <thead>
+                                <tr>
+                                    <th>Container</th>
+                                    <th>Size/Type</th>
+                                    <th>Dwell Time</th>
+                                    <th>Location</th>
+                                    <th>Return Advice</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for container in dwell_time_containers.containers_60_to_89 %}
+                                    <tr>
+                                        <td class="font-medium">{{ container.container_number }}</td>
+                                        <td>
+                                            <span class="badge badge-info badge-sm">{{ container.size_type }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="flex flex-col gap-1">
+                                                <span class="badge badge-warning badge-sm">{{ container.dwell_time }} days</span>
+                                                {% if container.is_paused %}
+                                                    <span class="badge badge-info badge-sm gap-1">
+                                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                                        </svg>
+                                                        {{ container.total_paused_days }}d paused
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td class="text-sm">{{ container.location }}</td>
+                                        <td>
+                                            <span class="badge badge-success gap-1">
+                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                </svg>
+                                                CY Available
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-sm
+                                                {% if container.status == 'AVAILABLE_FOR_RETURN' %}badge-success
+                                                {% elseif container.status == 'ALERT' %}badge-error
+                                                {% else %}badge-ghost{% endif %}">
+                                                {{ container.status|replace({'_': ' '})|title }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-16 w-16 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                        </svg>
+                        <p class="mt-4 text-base text-base-content/50">No containers in 60-89 day range</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- 90+ Days Tab Content -->
+            <div id="tab-90-plus" class="tab-content hidden p-6">
+                <div class="alert alert-error mb-6">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <div>
+                        <p class="font-medium">Critical Return Advice for 90+ Day Containers</p>
+                        <p class="text-sm mt-1">These containers MUST be returned to Port Terminal ONLY. No Container Yard (CY) options available due to extended dwell time.</p>
+                    </div>
+                </div>
+
+                {% if dwell_time_containers.containers_90_plus|length > 0 %}
+                    <div class="overflow-x-auto">
+                        <table class="table table-zebra">
+                            <thead>
+                                <tr>
+                                    <th>Container</th>
+                                    <th>Size/Type</th>
+                                    <th>Dwell Time</th>
+                                    <th>Location</th>
+                                    <th>Return Advice</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for container in dwell_time_containers.containers_90_plus %}
+                                    <tr>
+                                        <td class="font-medium">{{ container.container_number }}</td>
+                                        <td>
+                                            <span class="badge badge-info badge-sm">{{ container.size_type }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="flex flex-col gap-1">
+                                                <span class="badge badge-error badge-sm">{{ container.dwell_time }} days</span>
+                                                {% if container.is_paused %}
+                                                    <span class="badge badge-info badge-sm gap-1">
+                                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                                        </svg>
+                                                        {{ container.total_paused_days }}d paused
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td class="text-sm">{{ container.location }}</td>
+                                        <td>
+                                            <span class="badge badge-error gap-1">
+                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                                </svg>
+                                                Port Terminal Only
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-sm
+                                                {% if container.status == 'AVAILABLE_FOR_RETURN' %}badge-success
+                                                {% elseif container.status == 'ALERT' %}badge-error
+                                                {% else %}badge-ghost{% endif %}">
+                                                {{ container.status|replace({'_': ' '})|title }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-16 w-16 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                        </svg>
+                        <p class="mt-4 text-base text-base-content/50">No containers in 90+ day range</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Tab switching functionality
+function switchTab(tabId) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.tab').forEach(button => {
+        button.classList.remove('tab-active');
+    });
+    
+    // Show selected tab content
+    document.getElementById(tabId).classList.remove('hidden');
+    
+    // Add active class to selected tab button
+    document.getElementById('btn-' + tabId).classList.add('tab-active');
+}
+</script>
+{% endblock %}

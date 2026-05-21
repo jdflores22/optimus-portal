@@ -1,0 +1,141 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Error Page Testing{% endblock %}
+
+{% block body %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h1 class="text-2xl font-bold text-gray-900">Error Page Testing</h1>
+            <p class="mt-1 text-sm text-gray-600">
+                Test custom error pages in development mode
+            </p>
+        </div>
+        
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <a href="{{ path('test_error_404') }}" 
+                   class="block p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                            <span class="text-red-600 font-bold">404</span>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">Not Found</h3>
+                            <p class="text-sm text-gray-500">Page not found error</p>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="{{ path('test_error_403') }}" 
+                   class="block p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                            <span class="text-orange-600 font-bold">403</span>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">Access Denied</h3>
+                            <p class="text-sm text-gray-500">Forbidden access error</p>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="{{ path('test_error_401') }}" 
+                   class="block p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <span class="text-yellow-600 font-bold">401</span>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">Unauthorized</h3>
+                            <p class="text-sm text-gray-500">Authentication required</p>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="{{ path('test_error_500') }}" 
+                   class="block p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                            <span class="text-red-600 font-bold">500</span>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">Server Error</h3>
+                            <p class="text-sm text-gray-500">Internal server error</p>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="{{ path('test_error_503') }}" 
+                   class="block p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                            <span class="text-purple-600 font-bold">503</span>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">Service Unavailable</h3>
+                            <p class="text-sm text-gray-500">Service temporarily unavailable</p>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="{{ path('test_error_422') }}" 
+                   class="block p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                            <span class="text-indigo-600 font-bold">422</span>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">Unprocessable Entity</h3>
+                            <p class="text-sm text-gray-500">Request validation failed</p>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="{{ path('test_error_generic') }}" 
+                   class="block p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                            <span class="text-gray-600 font-bold">???</span>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">Generic Error</h3>
+                            <p class="text-sm text-gray-500">Fallback error template</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="mt-8 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div class="flex items-start space-x-3">
+                    <svg class="w-5 h-5 text-green-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <div>
+                        <h4 class="text-sm font-medium text-green-900">Testing Custom Error Pages</h4>
+                        <p class="mt-1 text-sm text-green-800">
+                            These links will show you the actual custom error page templates that users will see in production. 
+                            The error pages are now working and will be displayed when real errors occur.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div class="flex items-start space-x-3">
+                    <svg class="w-5 h-5 text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <div>
+                        <h4 class="text-sm font-medium text-blue-900">Production Behavior</h4>
+                        <p class="mt-1 text-sm text-blue-800">
+                            In production (when <code>APP_DEBUG=0</code>), these custom error pages will automatically 
+                            be shown when users encounter errors. The error controller is properly configured.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

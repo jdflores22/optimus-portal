@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Audit Trail - {{ manifest.manifestNumber }}</title>
+    <style>
+        body {
+            font-family: 'DejaVu Sans', sans-serif;
+            font-size: 10pt;
+            margin: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 18pt;
+            color: #333;
+        }
+        
+        .header p {
+            margin: 5px 0;
+            color: #666;
+        }
+        
+        .manifest-info {
+            background-color: #f5f5f5;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        .manifest-info table {
+            width: 100%;
+        }
+        
+        .manifest-info td {
+            padding: 3px 5px;
+        }
+        
+        .manifest-info td:first-child {
+            font-weight: bold;
+            width: 150px;
+        }
+        
+        .audit-log {
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            page-break-inside: avoid;
+        }
+        
+        .audit-log-header {
+            background-color: #e9ecef;
+            padding: 5px;
+            margin: -10px -10px 10px -10px;
+            font-weight: bold;
+        }
+        
+        .audit-log-body {
+            font-size: 9pt;
+        }
+        
+        .audit-log-body table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .audit-log-body td {
+            padding: 3px 5px;
+            vertical-align: top;
+        }
+        
+        .audit-log-body td:first-child {
+            font-weight: bold;
+            width: 120px;
+            color: #555;
+        }
+        
+        .changes-box {
+            background-color: #f8f9fa;
+            padding: 5px;
+            margin-top: 5px;
+            border-left: 3px solid #007bff;
+            font-size: 8pt;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 8pt;
+            font-weight: bold;
+        }
+        
+        .badge-primary { background-color: #007bff; color: white; }
+        .badge-success { background-color: #28a745; color: white; }
+        .badge-danger { background-color: #dc3545; color: white; }
+        .badge-warning { background-color: #ffc107; color: black; }
+        .badge-info { background-color: #17a2b8; color: white; }
+        .badge-secondary { background-color: #6c757d; color: white; }
+        
+        .footer {
+            margin-top: 30px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            font-size: 8pt;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Audit Trail Report</h1>
+        <p>Manifest: <strong>{{ manifest.manifestNumber }}</strong></p>
+        <p>Generated: {{ exportDate|date('F j, Y g:i A') }}</p>
+    </div>
+
+    <div class="manifest-info">
+        <table>
+            <tr>
+                <td>Manifest Number:</td>
+                <td>{{ manifest.manifestNumber }}</td>
+            </tr>
+            <tr>
+                <td>Current Status:</td>
+                <td>{{ manifest.workflowState.getDisplayName() }}</td>
+            </tr>
+            {% if manifest.consignee %}
+            <tr>
+                <td>Consignee:</td>
+                <td>{{ manifest.consignee.businessName }}</td>
+            </tr>
+            {% endif %}
+            {% if manifest.broker %}
+            <tr>
+                <td>Broker:</td>
+                <td>{{ manifest.broker.fullName }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td>Created Date:</td>
+                <td>{{ manifest.createdAt|date('F j, Y g:i A') }}</td>
+            </tr>
+            <tr>
+                <td>Total Audit Entries:</td>
+                <td>{{ auditLogs|length }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <h2 style="font-size: 14pt; margin-bottom: 15px;">Activity Timeline</h2>
+
+    {% for log in auditLogs %}
+    <div class="audit-log">
+        <div class="audit-log-header">
+            {{ log.timestamp|date('Y-m-d H:i:s') }} - {{ log.action|replace({'_': ' '})|title }}
+        </div>
+        <div class="audit-log-body">
+            <table>
+                <tr>
+                    <td>User:</td>
+                    <td>
+                        {{ log.user.fullName ?? log.user.email }}
+                        <span class="badge badge-info">{{ log.user.role.value }}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Action:</td>
+                    <td>{{ log.action|replace({'_': ' '})|title }}</td>
+                </tr>
+                <tr>
+                    <td>Entity:</td>
+                    <td>{{ log.entityType }} (ID: {{ log.entityId }})</td>
+                </tr>
+                <tr>
+                    <td>IP Address:</td>
+                    <td>{{ log.ipAddress }}</td>
+                </tr>
+                {% if log.changes is not empty %}
+                <tr>
+                    <td>Changes:</td>
+                    <td>
+                        <div class="changes-box">
+                            {% if log.action == 'state_transition' %}
+                                <strong>State Transition:</strong><br>
+                                From: <span class="badge badge-secondary">{{ log.changes.from_state|default('N/A') }}</span>
+                                To: <span class="badge badge-primary">{{ log.changes.to_state }}</span>
+                                {% if log.changes.reason %}
+                                <br><strong>Reason:</strong> {{ log.changes.reason }}
+                                {% endif %}
+                            {% elseif log.action == 'payment_verification' %}
+                                <strong>Payment Verification:</strong><br>
+                                Status: 
+                                {% if log.changes.approved %}
+                                    <span class="badge badge-success">Approved</span>
+                                {% else %}
+                                    <span class="badge badge-danger">Rejected</span>
+                                {% endif %}
+                                {% if log.changes.reason %}
+                                <br><strong>Reason:</strong> {{ log.changes.reason }}
+                                {% endif %}
+                            {% elseif log.action == 'document_upload' %}
+                                <strong>Document Upload:</strong><br>
+                                Filename: {{ log.changes.filename }}
+                                {% if log.changes.upload_time %}
+                                <br>Upload Time: {{ log.changes.upload_time }}
+                                {% endif %}
+                            {% elseif log.action == 'document_download' %}
+                                <strong>Document Download:</strong><br>
+                                Download Time: {{ log.changes.download_time }}
+                            {% else %}
+                                {{ log.changes|json_encode }}
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="footer">
+        <p>This is a system-generated audit trail report for compliance purposes.</p>
+        <p>OPTIMUS Shipping Management Platform - Confidential</p>
+        <p>Page generated on {{ exportDate|date('Y-m-d H:i:s') }}</p>
+    </div>
+</body>
+</html>

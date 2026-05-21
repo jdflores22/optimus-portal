@@ -1,0 +1,832 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Create Notice of Arrival (NOA){% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Top Navigation -->
+    <nav class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-blue-600">OPTIMUS</span>
+                    {% if not isShippingLinesAdmin %}
+                        <span class="ml-4 text-gray-600">SL-Staff Portal</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="mb-6">
+            <a href="{{ path('shipment_list') }}" class="text-blue-600 hover:text-blue-800 text-sm mb-2 inline-block">
+                ← Back to Shipments
+            </a>
+            <h1 class="text-3xl font-bold text-gray-900">Create Notice of Arrival (NOA)</h1>
+        </div>
+
+        <!-- Error Messages -->
+        {% if errors is defined and errors is not empty %}
+            <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                <h3 class="text-red-800 font-semibold mb-2">Please correct the following errors:</h3>
+                <ul class="list-disc list-inside text-red-700">
+                    {% for error in errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <!-- Create Form -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <form method="POST" action="{{ path('shipment_store') }}">
+                <div class="space-y-6">
+                    <!-- Consignee Search -->
+                    <div>
+                        <label for="consigneeSearch" class="block text-sm font-medium text-gray-700 mb-1">
+                            Consignee <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="text" 
+                                   id="consigneeSearch" 
+                                   name="consigneeSearch"
+                                   value="{{ selectedConsignee.businessName ?? formData.consigneeSearch ?? '' }}"
+                                   required
+                                   autocomplete="off"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="Search for consignee by business name or email...">
+                            <input type="hidden" id="consigneeId" name="consigneeId" value="{{ selectedConsignee.id ?? formData.consigneeId ?? '' }}">
+                            
+                            <!-- Search Results Dropdown -->
+                            <div id="consigneeResults" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 hidden max-h-60 overflow-y-auto">
+                                <!-- Results will be populated by JavaScript -->
+                            </div>
+                        </div>
+                        <p class="mt-1 text-sm text-gray-500">Search and select the consignee for this shipment</p>
+                        
+                        <!-- Linked Broker Information -->
+                        <div id="linkedBrokerInfo" class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg hidden">
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                                </svg>
+                                <span class="text-sm font-medium text-blue-800">Linked Broker:</span>
+                                <span id="linkedBrokerName" class="text-sm text-blue-700 font-semibold"></span>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                    Will be auto-authorized
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Manifest Number -->
+                    <div>
+                        <label for="manifestNumber" class="block text-sm font-medium text-gray-700 mb-1">
+                            Manifest Number <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" 
+                               id="manifestNumber" 
+                               name="manifestNumber" 
+                               value="{{ formData.manifestNumber ?? '' }}"
+                               required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="e.g., MAN-2024-001">
+                        <p class="mt-1 text-sm text-gray-500">Unique identifier for this shipment</p>
+                    </div>
+
+                    <!-- Delivery Order No -->
+                    <div>
+                        <label for="deliveryOrderNo" class="block text-sm font-medium text-gray-700 mb-1">
+                            Delivery Order No
+                        </label>
+                        <input type="text" 
+                               id="deliveryOrderNo" 
+                               name="deliveryOrderNo" 
+                               value="{{ formData.deliveryOrderNo ?? '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="e.g., DO-2024-001">
+                    </div>
+
+                    <!-- B/L No -->
+                    <div>
+                        <label for="blNo" class="block text-sm font-medium text-gray-700 mb-1">
+                            B/L No
+                        </label>
+                        <input type="text" 
+                               id="blNo" 
+                               name="blNo" 
+                               value="{{ formData.blNo ?? '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Bill of Lading Number">
+                    </div>
+
+                    <!-- Vessel and Voyage (side by side) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="vessel" class="block text-sm font-medium text-gray-700 mb-1">
+                                Vessel
+                            </label>
+                            <input type="text" 
+                                   id="vessel" 
+                                   name="vessel" 
+                                   value="{{ formData.vessel ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="Vessel name">
+                        </div>
+                        <div>
+                            <label for="voyage" class="block text-sm font-medium text-gray-700 mb-1">
+                                Voyage
+                            </label>
+                            <input type="text" 
+                                   id="voyage" 
+                                   name="voyage" 
+                                   value="{{ formData.voyage ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="Voyage number">
+                        </div>
+                    </div>
+
+                    <!-- LLOYDS No -->
+                    <div>
+                        <label for="lloydsNo" class="block text-sm font-medium text-gray-700 mb-1">
+                            LLOYDS No
+                        </label>
+                        <input type="text" 
+                               id="lloydsNo" 
+                               name="lloydsNo" 
+                               value="{{ formData.lloydsNo ?? '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Lloyd's number">
+                    </div>
+
+                    <!-- CUST Status and CUST REF (side by side) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="custStatus" class="block text-sm font-medium text-gray-700 mb-1">
+                                CUST Status
+                            </label>
+                            <input type="text" 
+                                   id="custStatus" 
+                                   name="custStatus" 
+                                   value="{{ formData.custStatus ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="Customs status">
+                        </div>
+                        <div>
+                            <label for="custRef" class="block text-sm font-medium text-gray-700 mb-1">
+                                CUST REF
+                            </label>
+                            <input type="text" 
+                                   id="custRef" 
+                                   name="custRef" 
+                                   value="{{ formData.custRef ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="Customs reference">
+                        </div>
+                    </div>
+
+                    <!-- General Declaration DT -->
+                    <div>
+                        <label for="generalDeclarationDt" class="block text-sm font-medium text-gray-700 mb-1">
+                            General Declaration Date
+                        </label>
+                        <input type="date" 
+                               id="generalDeclarationDt" 
+                               name="generalDeclarationDt" 
+                               value="{{ formData.generalDeclarationDt ?? '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+
+                    <!-- Vessel Custom No -->
+                    <div>
+                        <label for="vesselCustomNo" class="block text-sm font-medium text-gray-700 mb-1">
+                            Vessel Custom No
+                        </label>
+                        <input type="text" 
+                               id="vesselCustomNo" 
+                               name="vesselCustomNo" 
+                               value="{{ formData.vesselCustomNo ?? '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Vessel customs number">
+                    </div>
+
+                    <!-- Agent Custom Reg No (Optional) -->
+                    <div>
+                        <label for="agentCustomRegNo" class="block text-sm font-medium text-gray-700 mb-1">
+                            Agent Custom Reg No <span class="text-gray-400">(Optional)</span>
+                        </label>
+                        <input type="text" 
+                               id="agentCustomRegNo" 
+                               name="agentCustomRegNo" 
+                               value="{{ formData.agentCustomRegNo ?? '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Agent customs registration number">
+                    </div>
+
+                    <!-- Cust ID (Optional) -->
+                    <div>
+                        <label for="custId" class="block text-sm font-medium text-gray-700 mb-1">
+                            Cust ID <span class="text-gray-400">(Optional)</span>
+                        </label>
+                        <input type="text" 
+                               id="custId" 
+                               name="custId" 
+                               value="{{ formData.custId ?? '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="Customer ID">
+                    </div>
+
+                    <!-- Notice of Arrival Date -->
+                    <div>
+                        <label for="noticeOfArrivalDate" class="block text-sm font-medium text-gray-700 mb-1">
+                            Notice of Arrival Date <span class="text-red-500">*</span>
+                        </label>
+                        <input type="datetime-local" 
+                               id="noticeOfArrivalDate" 
+                               name="noticeOfArrivalDate" 
+                               value="{{ formData.noticeOfArrivalDate ?? '' }}"
+                               required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <p class="mt-1 text-sm text-gray-500">Expected arrival date and time</p>
+                    </div>
+
+                    <!-- Actual Arrival Date -->
+                    <div>
+                        <label for="actualArrivalDate" class="block text-sm font-medium text-gray-700 mb-1">
+                            Actual Arrival Date
+                        </label>
+                        <input type="datetime-local" 
+                               id="actualArrivalDate" 
+                               name="actualArrivalDate" 
+                               value="{{ formData.actualArrivalDate ?? '' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <p class="mt-1 text-sm text-gray-500">Leave empty if not yet arrived</p>
+                    </div>
+
+                    <!-- Billing Information -->
+                    <div>
+                        <label for="billingInformation" class="block text-sm font-medium text-gray-700 mb-1">
+                            Billing Information <span class="text-red-500">*</span>
+                        </label>
+                        <textarea id="billingInformation" 
+                                  name="billingInformation" 
+                                  rows="6"
+                                  required
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder="Enter billing details, charges, and payment information...">{{ formData.billingInformation ?? '' }}</textarea>
+                        <p class="mt-1 text-sm text-gray-500">Detailed billing and payment information</p>
+                    </div>
+
+                    <!-- Container Information Section -->
+                    <div class="border-t border-gray-200 pt-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Container Information</h3>
+                        
+                        <!-- Container Number -->
+                        <div class="mb-4">
+                            <label for="containerNumber" class="block text-sm font-medium text-gray-700 mb-1">
+                                Container Number
+                            </label>
+                            <input type="text" 
+                                   id="containerNumber" 
+                                   name="containerNumber" 
+                                   value="{{ formData.containerNumber ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="e.g., ABCD1234567">
+                        </div>
+
+                        <!-- Container Type and Size (side by side) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="containerType" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Container Type
+                                </label>
+                                <select id="containerType" 
+                                        name="containerType" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        data-selected="{{ formData.containerType ?? '' }}">
+                                    <option value="">Loading...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="containerSize" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Container Size
+                                </label>
+                                <select id="containerSize" 
+                                        name="containerSize" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        data-selected="{{ formData.containerSize ?? '' }}">
+                                    <option value="">Loading...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Commodity Information Section -->
+                    <div class="border-t border-gray-200 pt-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Commodity Information</h3>
+                        
+                        <!-- Commodity -->
+                        <div class="mb-4">
+                            <label for="commodity" class="block text-sm font-medium text-gray-700 mb-1">
+                                Commodity
+                            </label>
+                            <input type="text" 
+                                   id="commodity" 
+                                   name="commodity" 
+                                   value="{{ formData.commodity ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="e.g., Electronics, Textiles, Machinery">
+                        </div>
+
+                        <!-- Commodity PCS and QTY (side by side) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="commodityPcs" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Commodity PCS
+                                </label>
+                                <input type="text" 
+                                       id="commodityPcs" 
+                                       name="commodityPcs" 
+                                       value="{{ formData.commodityPcs ?? '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       placeholder="Number of pieces">
+                            </div>
+                            <div>
+                                <label for="commodityQty" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Commodity QTY
+                                </label>
+                                <input type="text" 
+                                       id="commodityQty" 
+                                       name="commodityQty" 
+                                       value="{{ formData.commodityQty ?? '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       placeholder="Quantity">
+                            </div>
+                        </div>
+
+                        <!-- NET WT (KGM) and MEAS/CBM (side by side) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="netWtKgm" class="block text-sm font-medium text-gray-700 mb-1">
+                                    NET WT (KGM)
+                                </label>
+                                <input type="text" 
+                                       id="netWtKgm" 
+                                       name="netWtKgm" 
+                                       value="{{ formData.netWtKgm ?? '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       placeholder="Net weight in kilograms">
+                            </div>
+                            <div>
+                                <label for="measCbm" class="block text-sm font-medium text-gray-700 mb-1">
+                                    MEAS/CBM
+                                </label>
+                                <input type="text" 
+                                       id="measCbm" 
+                                       name="measCbm" 
+                                       value="{{ formData.measCbm ?? '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       placeholder="Measurement in cubic meters">
+                            </div>
+                        </div>
+
+                        <!-- Empty Return Address -->
+                        <div class="mb-4">
+                            <label for="containerYardSelect" class="block text-sm font-medium text-gray-700 mb-1">
+                                Empty Return Container Yard <span class="text-red-500">*</span>
+                            </label>
+                            <select id="containerYardSelect" 
+                                    name="containerYardId" 
+                                    required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">Select Container Yard...</option>
+                            </select>
+                            <input type="hidden" id="emptyReturnAddress" name="emptyReturnAddress" value="{{ formData.emptyReturnAddress ?? '' }}">
+                            <p class="mt-1 text-sm text-gray-500">Select the container yard where empty containers should be returned</p>
+                        </div>
+
+                        <!-- Container Yard Utilization Info -->
+                        <div id="containerYardInfo" class="hidden mt-4 p-4 bg-white border border-gray-200 rounded-lg">
+                            <h4 class="text-sm font-semibold text-gray-900 mb-3">Container Yard Utilization</h4>
+                            
+                            <!-- Capacity Overview -->
+                            <div class="grid grid-cols-3 gap-3 mb-4">
+                                <div class="bg-blue-50 p-3 rounded-lg">
+                                    <div class="text-xs text-blue-600 font-medium mb-1">Allocated Capacity</div>
+                                    <div class="text-lg font-bold text-blue-900" id="cyAllocatedCapacity">-</div>
+                                    <div class="text-xs text-blue-600 mt-1">
+                                        <span id="cyCapacity20ft">-</span> × 20ft + <span id="cyCapacity40ft">-</span> × 40ft
+                                    </div>
+                                </div>
+                                <div class="bg-green-50 p-3 rounded-lg">
+                                    <div class="text-xs text-green-600 font-medium mb-1">Available Space</div>
+                                    <div class="text-lg font-bold text-green-900" id="cyAvailableSpace">-</div>
+                                    <div class="text-xs text-green-600 mt-1">TEU remaining</div>
+                                </div>
+                                <div class="p-3 rounded-lg" id="cyUtilizationCard">
+                                    <div class="text-xs font-medium mb-1" id="cyUtilizationLabel">Current Utilization</div>
+                                    <div class="text-lg font-bold" id="cyUtilizationPercentage">-</div>
+                                    <div class="text-xs mt-1" id="cyCurrentUtilization">- / - TEU</div>
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="mb-3">
+                                <div class="flex justify-between text-xs text-gray-600 mb-1">
+                                    <span>Utilization</span>
+                                    <span id="cyProgressText">0%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div id="cyProgressBar" class="h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Location Info -->
+                            <div class="text-sm text-gray-600 space-y-1">
+                                <div class="flex items-start">
+                                    <svg class="w-4 h-4 mr-2 mt-0.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                    <span id="cyAddress" class="flex-1">-</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+                                    </svg>
+                                    <span id="cyLocation">-</span>
+                                </div>
+                            </div>
+
+                            <!-- Congestion Warning -->
+                            <div id="cyWarning" class="hidden mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <div class="flex items-start">
+                                    <svg class="w-5 h-5 text-yellow-600 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-yellow-800">High Utilization Warning</p>
+                                        <p class="text-xs text-yellow-700 mt-1">This container yard is approaching full capacity. Consider selecting an alternative yard to prevent congestion.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                        <a href="{{ path('shipment_list') }}" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </a>
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            Create NOA
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const consigneeSearch = document.getElementById('consigneeSearch');
+    const consigneeId = document.getElementById('consigneeId');
+    const resultsDiv = document.getElementById('consigneeResults');
+    const containerYardSelect = document.getElementById('containerYardSelect');
+    const containerYardInfo = document.getElementById('containerYardInfo');
+    const emptyReturnAddressInput = document.getElementById('emptyReturnAddress');
+    let searchTimeout;
+    let containerYards = [];
+
+    // Load container library data on page load
+    loadContainerTypes();
+    loadContainerSizes();
+    
+    // Load container yards on page load
+    loadContainerYards();
+
+    consigneeSearch.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        // Clear previous timeout
+        clearTimeout(searchTimeout);
+        
+        if (query.length < 2) {
+            resultsDiv.classList.add('hidden');
+            consigneeId.value = '';
+            return;
+        }
+
+        // Debounce search
+        searchTimeout = setTimeout(() => {
+            searchConsignees(query);
+        }, 300);
+    });
+
+    // Hide results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!consigneeSearch.contains(e.target) && !resultsDiv.contains(e.target)) {
+            resultsDiv.classList.add('hidden');
+        }
+    });
+
+    // Handle container yard selection
+    containerYardSelect.addEventListener('change', function() {
+        const selectedId = parseInt(this.value);
+        if (!selectedId) {
+            containerYardInfo.classList.add('hidden');
+            emptyReturnAddressInput.value = '';
+            return;
+        }
+
+        const yard = containerYards.find(cy => cy.id === selectedId);
+        if (yard) {
+            displayContainerYardInfo(yard);
+            // Set the address in hidden field for form submission
+            emptyReturnAddressInput.value = `${yard.name}\n${yard.address}\n${yard.city}, ${yard.region}`;
+        }
+    });
+
+    // Load container types from API
+    async function loadContainerTypes() {
+        const select = document.getElementById('containerType');
+        const selectedValue = select.dataset.selected || '';
+        
+        try {
+            const response = await fetch('/api/container-types/active');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const data = await response.json();
+            
+            select.innerHTML = '<option value="">Select Container Type</option>';
+            
+            data.containerTypes.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type.code;
+                option.textContent = type.name;
+                if (type.description) {
+                    option.title = type.description;
+                }
+                if (type.code === selectedValue) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Failed to load container types:', error);
+            select.innerHTML = '<option value="">Error loading types</option>';
+            showNotification('Failed to load container types. Please refresh the page.', 'error');
+        }
+    }
+
+    // Load container sizes from API
+    async function loadContainerSizes() {
+        const select = document.getElementById('containerSize');
+        const selectedValue = select.dataset.selected || '';
+        
+        try {
+            const response = await fetch('/api/container-sizes/active');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const data = await response.json();
+            
+            select.innerHTML = '<option value="">Select Container Size</option>';
+            
+            data.containerSizes.forEach(size => {
+                const option = document.createElement('option');
+                option.value = size.code;
+                option.textContent = size.name;
+                if (size.description) {
+                    option.title = size.description;
+                }
+                if (size.code === selectedValue) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Failed to load container sizes:', error);
+            select.innerHTML = '<option value="">Error loading sizes</option>';
+            showNotification('Failed to load container sizes. Please refresh the page.', 'error');
+        }
+    }
+
+    // Show notification helper
+    function showNotification(message, type) {
+        // Create a simple notification element
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg ${
+            type === 'error' ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-blue-50 border border-blue-200 text-blue-800'
+        }`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    }
+
+    function loadContainerYards() {
+        fetch('{{ path('shipment_container_yards') }}')
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        console.error('Full error response:', text);
+                        throw new Error(`HTTP ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Container yards data:', data);
+                if (data.error) {
+                    console.error('API Error:', data.message);
+                    if (data.trace) {
+                        console.error('Stack trace:', data.trace);
+                    }
+                    alert('Error loading container yards: ' + data.message);
+                    return;
+                }
+                containerYards = data.containerYards || [];
+                populateContainerYardDropdown(containerYards);
+            })
+            .catch(error => {
+                console.error('Error loading container yards:', error);
+                alert('Failed to load container yards. Please check the console for details.');
+            });
+    }
+
+    function populateContainerYardDropdown(yards) {
+        // Clear existing options except the first one
+        containerYardSelect.innerHTML = '<option value="">Select Container Yard...</option>';
+        
+        if (yards.length === 0) {
+            containerYardSelect.innerHTML += '<option value="" disabled>No container yards allocated</option>';
+            return;
+        }
+
+        yards.forEach(yard => {
+            const option = document.createElement('option');
+            option.value = yard.id;
+            option.textContent = `${yard.name} - ${yard.city}, ${yard.region} (${yard.utilizationPercentage}% utilized)`;
+            containerYardSelect.appendChild(option);
+        });
+    }
+
+    function displayContainerYardInfo(yard) {
+        // Show the info card
+        containerYardInfo.classList.remove('hidden');
+
+        // Update capacity info
+        document.getElementById('cyAllocatedCapacity').textContent = `${yard.allocatedCapacity} TEU`;
+        document.getElementById('cyCapacity20ft').textContent = yard.capacity20ft || 0;
+        document.getElementById('cyCapacity40ft').textContent = yard.capacity40ft || 0;
+        document.getElementById('cyAvailableSpace').textContent = `${yard.availableSpace} TEU`;
+        document.getElementById('cyUtilizationPercentage').textContent = `${yard.utilizationPercentage}%`;
+        document.getElementById('cyCurrentUtilization').textContent = `${yard.currentUtilization} / ${yard.allocatedCapacity} TEU`;
+        document.getElementById('cyProgressText').textContent = `${yard.utilizationPercentage}%`;
+
+        // Update location info
+        document.getElementById('cyAddress').textContent = yard.address;
+        document.getElementById('cyLocation').textContent = `${yard.city}, ${yard.region}`;
+
+        // Update progress bar and colors based on utilization
+        const progressBar = document.getElementById('cyProgressBar');
+        const utilizationCard = document.getElementById('cyUtilizationCard');
+        const utilizationLabel = document.getElementById('cyUtilizationLabel');
+        const warningDiv = document.getElementById('cyWarning');
+
+        progressBar.style.width = `${Math.min(yard.utilizationPercentage, 100)}%`;
+
+        if (yard.utilizationPercentage >= 100) {
+            // Full capacity - Red
+            progressBar.className = 'h-2 rounded-full transition-all duration-300 bg-red-500';
+            utilizationCard.className = 'p-3 rounded-lg bg-red-50';
+            utilizationLabel.className = 'text-xs font-medium mb-1 text-red-600';
+            document.getElementById('cyUtilizationPercentage').className = 'text-lg font-bold text-red-900';
+            document.getElementById('cyCurrentUtilization').className = 'text-xs mt-1 text-red-600';
+            warningDiv.classList.remove('hidden');
+        } else if (yard.utilizationPercentage >= 80) {
+            // High utilization - Orange
+            progressBar.className = 'h-2 rounded-full transition-all duration-300 bg-orange-500';
+            utilizationCard.className = 'p-3 rounded-lg bg-orange-50';
+            utilizationLabel.className = 'text-xs font-medium mb-1 text-orange-600';
+            document.getElementById('cyUtilizationPercentage').className = 'text-lg font-bold text-orange-900';
+            document.getElementById('cyCurrentUtilization').className = 'text-xs mt-1 text-orange-600';
+            warningDiv.classList.remove('hidden');
+        } else {
+            // Normal - Green
+            progressBar.className = 'h-2 rounded-full transition-all duration-300 bg-green-500';
+            utilizationCard.className = 'p-3 rounded-lg bg-gray-50';
+            utilizationLabel.className = 'text-xs font-medium mb-1 text-gray-600';
+            document.getElementById('cyUtilizationPercentage').className = 'text-lg font-bold text-gray-900';
+            document.getElementById('cyCurrentUtilization').className = 'text-xs mt-1 text-gray-600';
+            warningDiv.classList.add('hidden');
+        }
+    }
+
+    function searchConsignees(query) {
+        fetch(`{{ path('shipment_search_consignees') }}?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                displayResults(data.consignees || []);
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+                resultsDiv.innerHTML = '<div class="p-3 text-red-600">Error searching consignees</div>';
+                resultsDiv.classList.remove('hidden');
+            });
+    }
+
+    function displayResults(consignees) {
+        if (consignees.length === 0) {
+            resultsDiv.innerHTML = '<div class="p-3 text-gray-500">No consignees found</div>';
+        } else {
+            resultsDiv.innerHTML = consignees.map(consignee => `
+                <div class="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0" 
+                     onclick="selectConsignee(${consignee.id}, '${consignee.businessName.replace(/'/g, "\\'")}', ${consignee.linkedBroker ? `'${consignee.linkedBroker.fullName.replace(/'/g, "\\'")}'` : 'null'})">
+                    <div class="font-medium text-gray-900">${consignee.businessName}</div>
+                    <div class="text-sm text-gray-500">${consignee.email}</div>
+                    <div class="text-xs text-gray-400">Status: ${consignee.status}</div>
+                    ${consignee.linkedBroker ? `<div class="text-xs text-blue-600 mt-1">🔗 Linked to: ${consignee.linkedBroker.fullName}</div>` : ''}
+                </div>
+            `).join('');
+        }
+        resultsDiv.classList.remove('hidden');
+    }
+
+    window.selectConsignee = function(id, businessName, linkedBrokerName) {
+        consigneeSearch.value = businessName;
+        consigneeId.value = id;
+        resultsDiv.classList.add('hidden');
+        
+        // Show/hide linked broker information
+        const linkedBrokerInfo = document.getElementById('linkedBrokerInfo');
+        const linkedBrokerNameSpan = document.getElementById('linkedBrokerName');
+        
+        if (linkedBrokerName && linkedBrokerName !== 'null') {
+            linkedBrokerNameSpan.textContent = linkedBrokerName;
+            linkedBrokerInfo.classList.remove('hidden');
+        } else {
+            linkedBrokerInfo.classList.add('hidden');
+        }
+    };
+
+    // Container number lookup
+    const containerNumberInput = document.getElementById('containerNumber');
+    const containerTypeSelect = document.getElementById('containerType');
+    const containerSizeSelect = document.getElementById('containerSize');
+    let containerLookupTimeout;
+
+    containerNumberInput.addEventListener('input', function() {
+        const containerNumber = this.value.trim();
+        
+        // Clear previous timeout
+        clearTimeout(containerLookupTimeout);
+        
+        if (containerNumber.length < 4) {
+            return;
+        }
+
+        // Debounce lookup
+        containerLookupTimeout = setTimeout(() => {
+            lookupContainer(containerNumber);
+        }, 500);
+    });
+
+    function lookupContainer(containerNumber) {
+        fetch(`{{ path('shipment_lookup_container') }}?containerNumber=${encodeURIComponent(containerNumber)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.found) {
+                    // Auto-fill container type and size
+                    containerTypeSelect.value = data.container.type;
+                    containerSizeSelect.value = data.container.size;
+                    
+                    // Show success indicator
+                    containerNumberInput.classList.add('border-green-500');
+                    containerNumberInput.classList.remove('border-gray-300');
+                    
+                    // Optional: Show a small success message
+                    console.log('Container found:', data.container);
+                } else {
+                    // Container not found, user can manually enter details
+                    containerNumberInput.classList.remove('border-green-500');
+                    containerNumberInput.classList.add('border-gray-300');
+                }
+            })
+            .catch(error => {
+                console.error('Container lookup error:', error);
+                containerNumberInput.classList.remove('border-green-500');
+                containerNumberInput.classList.add('border-gray-300');
+            });
+    }
+});
+</script>
+{% endblock %}

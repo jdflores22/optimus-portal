@@ -1,0 +1,798 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Form Builder - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Top Navigation Bar -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-meta-blue">OPTIMUS</span>
+                    <span class="ml-4 text-gray-600">Form Builder</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="text-sm text-gray-600">System Admin</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">Form Configurations</h1>
+            <a href="{{ path('form_builder_create') }}" 
+               class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white transition-all duration-200"
+               style="background-color: #1877f2; hover:background-color: #166fe5;"
+               onmouseover="this.style.backgroundColor='#166fe5'"
+               onmouseout="this.style.backgroundColor='#1877f2'">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Create New Form
+            </a>
+        </div>
+
+        <!-- Flash Messages -->
+        {% for message in app.flashes('success') %}
+            <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-4">
+                {{ message }}
+            </div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-4">
+                {{ message }}
+            </div>
+        {% endfor %}
+
+        <!-- Forms List -->
+        <div class="bg-white rounded-lg shadow">
+            {% if forms|length > 0 %}
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Name
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Type
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Version
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Fields
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Created
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-80">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for form in forms %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">{{ form.name }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                        {{ form.type.value }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    v{{ form.version }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if form.status.value == 'ACTIVE' %}
+                                        <span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                            Active
+                                        </span>
+                                    {% elseif form.status.value == 'INACTIVE' %}
+                                        <span class="px-3 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+                                            Inactive
+                                        </span>
+                                    {% elseif form.status.value == 'PUBLISHED' %}
+                                        <span class="px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            Published
+                                        </span>
+                                    {% else %}
+                                        <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                                            Draft
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ form.fields.fields|length }} fields
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ form.createdAt|date('Y-m-d') }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium w-80">
+                                    <div class="flex items-center justify-end space-x-1">
+                                        <!-- Edit Button -->
+                                        <a href="{{ path('form_builder_edit', {id: form.id}) }}" 
+                                           class="inline-flex items-center px-2 py-1 border border-transparent shadow-sm text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all duration-200"
+                                           title="Edit form">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                            </svg>
+                                        </a>
+
+                                        <!-- Preview Button -->
+                                        <a href="{{ path('form_builder_preview', {id: form.id}) }}" 
+                                           class="inline-flex items-center px-2 py-1 border border-transparent shadow-sm text-xs font-medium rounded text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-500 transition-all duration-200"
+                                           title="Preview form">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                        </a>
+
+                                        <!-- Status-based Action Buttons -->
+                                        {% if form.status.value == 'DRAFT' %}
+                                            <a href="{{ path('form_builder_publish_confirm', {id: form.id}) }}" 
+                                               class="inline-flex items-center px-2 py-1 border border-transparent shadow-sm text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-1 focus:ring-green-500 transition-all duration-200"
+                                               title="Publish form">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                                </svg>
+                                            </a>
+                                        {% elseif form.status.value == 'PUBLISHED' %}
+                                            <button type="button" 
+                                                    class="activate-form-btn inline-flex items-center px-2 py-1 border border-transparent shadow-sm text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all duration-200"
+                                                    data-form-id="{{ form.id }}"
+                                                    data-form-name="{{ form.name }}"
+                                                    title="Activate form">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                            </button>
+                                        {% elseif form.status.value == 'ACTIVE' %}
+                                            <button type="button" 
+                                                    class="deactivate-form-btn inline-flex items-center px-2 py-1 border border-transparent shadow-sm text-xs font-medium rounded text-white transition-all duration-200"
+                                                    style="background-color: #f59e0b; hover:background-color: #d97706;"
+                                                    data-form-id="{{ form.id }}"
+                                                    data-form-name="{{ form.name }}"
+                                                    title="Deactivate form"
+                                                    onmouseover="this.style.backgroundColor='#d97706'"
+                                                    onmouseout="this.style.backgroundColor='#f59e0b'">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        {% elseif form.status.value == 'INACTIVE' %}
+                                            <button type="button" 
+                                                    class="activate-form-btn inline-flex items-center px-2 py-1 border border-transparent shadow-sm text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all duration-200"
+                                                    data-form-id="{{ form.id }}"
+                                                    data-form-name="{{ form.name }}"
+                                                    title="Activate form">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                            </button>
+                                        {% endif %}
+                                        
+                                        <!-- New Version Button -->
+                                        {% if form.status.value == 'PUBLISHED' or form.status.value == 'ACTIVE' or form.status.value == 'INACTIVE' %}
+                                            <form method="POST" action="{{ path('form_builder_new_version', {id: form.id}) }}" class="inline">
+                                                <button type="submit" 
+                                                        class="inline-flex items-center px-2 py-1 border border-transparent shadow-sm text-xs font-medium rounded text-white transition-all duration-200"
+                                                        style="background-color: #8b5cf6; hover:background-color: #7c3aed;"
+                                                        title="Create new version"
+                                                        onmouseover="this.style.backgroundColor='#7c3aed'"
+                                                        onmouseout="this.style.backgroundColor='#8b5cf6'">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                                    </svg>
+                                                </button>
+                                            </form>
+                                        {% endif %}
+
+                                        <!-- Delete Button -->
+                                        <button type="button" 
+                                                class="delete-form-btn inline-flex items-center px-2 py-1 border border-transparent shadow-sm text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all duration-200"
+                                                data-form-id="{{ form.id }}"
+                                                data-form-name="{{ form.name }}"
+                                                data-form-status="{{ form.status.value }}"
+                                                title="Delete form">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="text-center py-12">
+                    <p class="text-gray-500 text-lg mb-4">No form configurations found</p>
+                    <a href="{{ path('form_builder_create') }}" 
+                       class="text-meta-blue hover:text-blue-700 font-medium">
+                        Create your first form
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Activate Form Confirmation Modal -->
+<div id="activate-form-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-lg font-semibold text-gray-900">Activate Form</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-gray-600 mb-4">
+                    Are you sure you want to activate the form "<span id="activate-form-name" class="font-medium text-gray-900"></span>"?
+                </p>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-800">
+                                <strong>Note:</strong> This will deactivate any other active form of the same type and make this form the primary one used for accreditation submissions.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button type="button" id="cancel-activate-form" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition">
+                    Cancel
+                </button>
+                <button type="button" id="confirm-activate-form" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center">
+                    <svg id="activate-form-spinner" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white hidden" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="activate-form-text">Activate Form</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deactivate Form Confirmation Modal -->
+<div id="deactivate-form-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-lg font-semibold text-gray-900">Deactivate Form</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-gray-600 mb-4">
+                    Are you sure you want to deactivate the form "<span id="deactivate-form-name" class="font-medium text-gray-900"></span>"?
+                </p>
+                <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-800">
+                                <strong>Warning:</strong> Users will no longer be able to use this form for accreditation submissions. Make sure another form of the same type is active.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button type="button" id="cancel-deactivate-form" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition">
+                    Cancel
+                </button>
+                <button type="button" id="confirm-deactivate-form" class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition flex items-center">
+                    <svg id="deactivate-form-spinner" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white hidden" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="deactivate-form-text">Deactivate Form</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Form Confirmation Modal -->
+<div id="delete-form-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1-1H8a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-lg font-semibold text-gray-900">Delete Form</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-gray-600 mb-4">
+                    Are you sure you want to permanently delete the form "<span id="delete-form-name" class="font-medium text-gray-900"></span>"?
+                </p>
+                <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-800">
+                                <strong>Warning:</strong> This action cannot be undone. All form data and configurations will be permanently removed from the system.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button type="button" id="cancel-delete-form" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition">
+                    Cancel
+                </button>
+                <button type="button" id="confirm-delete-form" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition flex items-center">
+                    <svg id="delete-form-spinner" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white hidden" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="delete-form-text">Delete Form</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+console.log('Script loaded');
+
+let currentFormId = null;
+let currentFormName = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded');
+    
+    // Simple direct event listeners for activate buttons
+    const activateButtons = document.querySelectorAll('.activate-form-btn');
+    console.log('Found activate buttons:', activateButtons.length);
+    
+    activateButtons.forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Activate button clicked!');
+            
+            const formId = this.getAttribute('data-form-id');
+            const formName = this.getAttribute('data-form-name');
+            
+            console.log('Form ID:', formId, 'Form Name:', formName);
+            showActivateModal(formId, formName);
+        });
+    });
+    
+    // Simple direct event listeners for deactivate buttons
+    const deactivateButtons = document.querySelectorAll('.deactivate-form-btn');
+    console.log('Found deactivate buttons:', deactivateButtons.length);
+    
+    deactivateButtons.forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Deactivate button clicked!');
+            
+            const formId = this.getAttribute('data-form-id');
+            const formName = this.getAttribute('data-form-name');
+            
+            console.log('Form ID:', formId, 'Form Name:', formName);
+            showDeactivateModal(formId, formName);
+        });
+    });
+    
+    // Simple direct event listeners for delete buttons
+    const deleteButtons = document.querySelectorAll('.delete-form-btn');
+    console.log('Found delete buttons:', deleteButtons.length);
+    
+    deleteButtons.forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Delete button clicked!');
+            
+            const formId = this.getAttribute('data-form-id');
+            const formName = this.getAttribute('data-form-name');
+            
+            console.log('Form ID:', formId, 'Form Name:', formName);
+            showDeleteModal(formId, formName);
+        });
+    });
+    
+    // Modal event listeners
+    setupModalEventListeners();
+});
+
+function setupModalEventListeners() {
+    // Activate modal events
+    const cancelActivateBtn = document.getElementById('cancel-activate-form');
+    const confirmActivateBtn = document.getElementById('confirm-activate-form');
+    const activateModal = document.getElementById('activate-form-modal');
+    
+    if (cancelActivateBtn) {
+        cancelActivateBtn.addEventListener('click', closeActivateModal);
+    }
+    
+    if (confirmActivateBtn) {
+        confirmActivateBtn.addEventListener('click', confirmActivate);
+    }
+    
+    if (activateModal) {
+        activateModal.addEventListener('click', function(e) {
+            if (e.target === this) closeActivateModal();
+        });
+    }
+    
+    // Deactivate modal events
+    const cancelDeactivateBtn = document.getElementById('cancel-deactivate-form');
+    const confirmDeactivateBtn = document.getElementById('confirm-deactivate-form');
+    const deactivateModal = document.getElementById('deactivate-form-modal');
+    
+    if (cancelDeactivateBtn) {
+        cancelDeactivateBtn.addEventListener('click', closeDeactivateModal);
+    }
+    
+    if (confirmDeactivateBtn) {
+        confirmDeactivateBtn.addEventListener('click', confirmDeactivate);
+    }
+    
+    if (deactivateModal) {
+        deactivateModal.addEventListener('click', function(e) {
+            if (e.target === this) closeDeactivateModal();
+        });
+    }
+    
+    // Delete modal events
+    const cancelDeleteBtn = document.getElementById('cancel-delete-form');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-form');
+    const deleteModal = document.getElementById('delete-form-modal');
+    
+    if (cancelDeleteBtn) {
+        cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+    }
+    
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', confirmDelete);
+    }
+    
+    if (deleteModal) {
+        deleteModal.addEventListener('click', function(e) {
+            if (e.target === this) closeDeleteModal();
+        });
+    }
+    
+    console.log('Modal event listeners set up');
+}
+
+// Activate Modal Functions
+function showActivateModal(formId, formName) {
+    console.log('Showing activate modal for:', formId, formName);
+    currentFormId = formId;
+    currentFormName = formName;
+    
+    const nameElement = document.getElementById('activate-form-name');
+    const modal = document.getElementById('activate-form-modal');
+    
+    if (nameElement) {
+        nameElement.textContent = formName;
+    }
+    
+    if (modal) {
+        modal.classList.remove('hidden');
+        console.log('Activate modal should be visible now');
+    }
+}
+
+function closeActivateModal() {
+    console.log('Closing activate modal');
+    const modal = document.getElementById('activate-form-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    
+    // Reset button state
+    const confirmBtn = document.getElementById('confirm-activate-form');
+    const spinner = document.getElementById('activate-form-spinner');
+    const text = document.getElementById('activate-form-text');
+    
+    if (spinner) spinner.classList.add('hidden');
+    if (text) text.textContent = 'Activate Form';
+    if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+    }
+    
+    currentFormId = null;
+    currentFormName = null;
+}
+
+function confirmActivate() {
+    if (!currentFormId) return;
+    
+    console.log('Confirming activate for:', currentFormId);
+    
+    // Show loading state
+    const confirmBtn = document.getElementById('confirm-activate-form');
+    const spinner = document.getElementById('activate-form-spinner');
+    const text = document.getElementById('activate-form-text');
+    
+    if (spinner) spinner.classList.remove('hidden');
+    if (text) text.textContent = 'Activating...';
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.classList.add('opacity-75', 'cursor-not-allowed');
+    }
+    
+    activateFormNow(currentFormId);
+}
+
+// Deactivate Modal Functions
+function showDeactivateModal(formId, formName) {
+    console.log('Showing deactivate modal for:', formId, formName);
+    currentFormId = formId;
+    currentFormName = formName;
+    
+    const nameElement = document.getElementById('deactivate-form-name');
+    const modal = document.getElementById('deactivate-form-modal');
+    
+    if (nameElement) {
+        nameElement.textContent = formName;
+    }
+    
+    if (modal) {
+        modal.classList.remove('hidden');
+        console.log('Deactivate modal should be visible now');
+    }
+}
+
+function closeDeactivateModal() {
+    console.log('Closing deactivate modal');
+    const modal = document.getElementById('deactivate-form-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    
+    // Reset button state
+    const confirmBtn = document.getElementById('confirm-deactivate-form');
+    const spinner = document.getElementById('deactivate-form-spinner');
+    const text = document.getElementById('deactivate-form-text');
+    
+    if (spinner) spinner.classList.add('hidden');
+    if (text) text.textContent = 'Deactivate Form';
+    if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+    }
+    
+    currentFormId = null;
+    currentFormName = null;
+}
+
+function confirmDeactivate() {
+    if (!currentFormId) return;
+    
+    console.log('Confirming deactivate for:', currentFormId);
+    
+    // Show loading state
+    const confirmBtn = document.getElementById('confirm-deactivate-form');
+    const spinner = document.getElementById('deactivate-form-spinner');
+    const text = document.getElementById('deactivate-form-text');
+    
+    if (spinner) spinner.classList.remove('hidden');
+    if (text) text.textContent = 'Deactivating...';
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.classList.add('opacity-75', 'cursor-not-allowed');
+    }
+    
+    deactivateFormNow(currentFormId);
+}
+
+// Delete Modal Functions
+function showDeleteModal(formId, formName) {
+    console.log('Showing delete modal for:', formId, formName);
+    currentFormId = formId;
+    currentFormName = formName;
+    
+    const nameElement = document.getElementById('delete-form-name');
+    const modal = document.getElementById('delete-form-modal');
+    
+    if (nameElement) {
+        nameElement.textContent = formName;
+    }
+    
+    if (modal) {
+        modal.classList.remove('hidden');
+        console.log('Delete modal should be visible now');
+    }
+}
+
+function closeDeleteModal() {
+    console.log('Closing delete modal');
+    const modal = document.getElementById('delete-form-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    
+    // Reset button state
+    const confirmBtn = document.getElementById('confirm-delete-form');
+    const spinner = document.getElementById('delete-form-spinner');
+    const text = document.getElementById('delete-form-text');
+    
+    if (spinner) spinner.classList.add('hidden');
+    if (text) text.textContent = 'Delete Form';
+    if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+    }
+    
+    currentFormId = null;
+    currentFormName = null;
+}
+
+function confirmDelete() {
+    if (!currentFormId) return;
+    
+    console.log('Confirming delete for:', currentFormId);
+    
+    // Show loading state
+    const confirmBtn = document.getElementById('confirm-delete-form');
+    const spinner = document.getElementById('delete-form-spinner');
+    const text = document.getElementById('delete-form-text');
+    
+    if (spinner) spinner.classList.remove('hidden');
+    if (text) text.textContent = 'Deleting...';
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.classList.add('opacity-75', 'cursor-not-allowed');
+    }
+    
+    deleteFormNow(currentFormId);
+}
+
+// API Functions
+function activateFormNow(formId) {
+    console.log('Activating form:', formId);
+    
+    fetch(`/admin/form-builder/${formId}/activate`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            closeActivateModal();
+            showNotification('Form activated successfully!', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            closeActivateModal();
+            showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        closeActivateModal();
+        showNotification('Error activating form: ' + error.message, 'error');
+    });
+}
+
+function deactivateFormNow(formId) {
+    console.log('Deactivating form:', formId);
+    
+    fetch(`/admin/form-builder/${formId}/deactivate`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            closeDeactivateModal();
+            showNotification('Form deactivated successfully!', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            closeDeactivateModal();
+            showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        closeDeactivateModal();
+        showNotification('Error deactivating form: ' + error.message, 'error');
+    });
+}
+
+function deleteFormNow(formId) {
+    console.log('Deleting form:', formId);
+    
+    fetch(`/admin/form-builder/${formId}/delete`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            closeDeleteModal();
+            showNotification('Form deleted successfully!', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            closeDeleteModal();
+            showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        closeDeleteModal();
+        showNotification('Error deleting form: ' + error.message, 'error');
+    });
+}
+
+// Notification function
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' :
+        type === 'error' ? 'bg-red-50 border border-red-200 text-red-800' :
+        'bg-blue-50 border border-blue-200 text-blue-800'
+    }`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}

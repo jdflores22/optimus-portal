@@ -1,0 +1,352 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Apply Referral Code - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="max-w-2xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Apply Referral Code</h1>
+                <p class="mt-2 text-gray-600">Link with a consignee using their referral code</p>
+            </div>
+            <a href="{{ path('broker_workspace_selector') }}" 
+               class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to Workspaces
+            </a>
+        </div>
+    </div>
+
+    <!-- Info Card -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-800">How it works</h3>
+                <div class="mt-2 text-sm text-blue-700">
+                    <ul class="list-disc list-inside space-y-1">
+                        <li>Get a referral code from a consignee you want to work with</li>
+                        <li>Enter the code below to create a relationship</li>
+                        <li>Once linked, you'll be able to access their manifests</li>
+                        <li>The consignee can assign you to handle their shipments</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Apply Code Form -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="mb-6">
+            <label for="referral_code" class="block text-sm font-medium text-gray-700 mb-2">
+                Referral Code <span class="text-red-500">*</span>
+            </label>
+            <input type="text" 
+                   id="referral_code" 
+                   name="referral_code" 
+                   required
+                   autocomplete="off"
+                   class="w-full px-4 py-3 text-lg font-mono border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase"
+                   placeholder="Enter referral code"
+                   oninput="this.value = this.value.toUpperCase()">
+            <p class="mt-2 text-sm text-gray-500">
+                The referral code is provided by the consignee you want to work with
+            </p>
+            <div id="codeValidation" class="mt-2 hidden">
+                <p class="text-sm text-red-600">Please enter a valid referral code</p>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end space-x-4">
+            <a href="{{ path('broker_workspace_selector') }}" 
+               class="px-6 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                Cancel
+            </a>
+            <button type="button"
+                    onclick="showConfirmationModal()"
+                    id="applyBtn"
+                    class="px-6 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                </svg>
+                <span id="applyBtnText">Apply Code</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Help Section -->
+    <div class="mt-6 bg-gray-50 rounded-lg p-4">
+        <h3 class="text-sm font-medium text-gray-900 mb-2">Need help?</h3>
+        <p class="text-sm text-gray-600">
+            If you don't have a referral code, contact the consignee you want to work with and ask them to generate one for you. 
+            They can create referral codes from their dashboard.
+        </p>
+    </div>
+</div>
+
+<!-- Hidden Form -->
+<form method="POST" action="{{ path('broker_apply_referral_code') }}" id="applyCodeForm" style="display: none;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token('apply_referral_code') }}">
+    <input type="hidden" name="referral_code" id="hiddenReferralCode">
+</form>
+
+<!-- Confirmation Modal - Fixed positioning to overlay everything -->
+<div id="confirmationModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center" style="z-index: 9999;">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-blue-100 rounded-full mb-4">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Confirm Referral Code</h3>
+            <p class="text-sm text-gray-600 text-center mb-4">
+                Are you sure you want to apply this referral code?
+            </p>
+            <div class="bg-gray-50 rounded-lg p-3 mb-6">
+                <p class="text-xs text-gray-500 mb-1">Referral Code:</p>
+                <p id="modalCodeDisplay" class="text-lg font-mono font-bold text-gray-900"></p>
+            </div>
+            <p class="text-xs text-gray-500 text-center mb-6">
+                This will create a relationship with the consignee and allow you to access their manifests.
+            </p>
+            <div class="flex space-x-3">
+                <button type="button" 
+                        onclick="closeConfirmationModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="button" 
+                        onclick="confirmApply()"
+                        id="confirmBtn"
+                        class="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700">
+                    <span id="confirmBtnText">Confirm</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification Container -->
+<div id="toast-container" class="fixed top-20 right-4 z-50 space-y-2" style="max-width: 400px;">
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="toast-notification animate-slide-in bg-white border rounded-lg shadow-lg p-4 flex items-start space-x-3 {{ type == 'success' ? 'border-green-200' : type == 'error' ? 'border-red-200' : type == 'warning' ? 'border-yellow-200' : 'border-blue-200' }}" data-type="{{ type }}">
+                <div class="flex-shrink-0">
+                    {% if type == 'success' %}
+                        <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                    {% elseif type == 'error' %}
+                        <div class="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </div>
+                    {% elseif type == 'warning' %}
+                        <div class="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"></path>
+                            </svg>
+                        </div>
+                    {% else %}
+                        <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01"></path>
+                            </svg>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm font-semibold {{ type == 'success' ? 'text-green-800' : type == 'error' ? 'text-red-800' : type == 'warning' ? 'text-yellow-800' : 'text-blue-800' }}">
+                        {{ type == 'success' ? 'Successfully saved!' : type == 'error' ? 'Error' : type == 'warning' ? 'Warning' : 'Info' }}
+                    </p>
+                    <p class="text-sm text-gray-600 mt-1">{{ message }}</p>
+                </div>
+                <button onclick="this.parentElement.remove()" class="flex-shrink-0 text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        {% endfor %}
+    {% endfor %}
+</div>
+
+<style>
+@keyframes slide-in {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+}
+
+.toast-notification {
+    min-width: 300px;
+}
+</style>
+
+<!-- Toast Notification Container -->
+<div id="toast-container" class="fixed top-20 right-4 z-50 space-y-2" style="max-width: 400px;">
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="toast-notification animate-slide-in bg-white border rounded-lg shadow-lg p-4 flex items-start space-x-3 {{ type == 'success' ? 'border-green-200' : type == 'error' ? 'border-red-200' : type == 'warning' ? 'border-yellow-200' : 'border-blue-200' }}" data-type="{{ type }}">
+                <div class="flex-shrink-0">
+                    {% if type == 'success' %}
+                        <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                    {% elseif type == 'error' %}
+                        <div class="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </div>
+                    {% elseif type == 'warning' %}
+                        <div class="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"></path>
+                            </svg>
+                        </div>
+                    {% else %}
+                        <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01"></path>
+                            </svg>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm font-semibold {{ type == 'success' ? 'text-green-800' : type == 'error' ? 'text-red-800' : type == 'warning' ? 'text-yellow-800' : 'text-blue-800' }}">
+                        {{ type == 'success' ? 'Successfully saved!' : type == 'error' ? 'Error' : type == 'warning' ? 'Warning' : 'Info' }}
+                    </p>
+                    <p class="text-sm text-gray-600 mt-1">{{ message }}</p>
+                </div>
+                <button onclick="this.parentElement.remove()" class="flex-shrink-0 text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        {% endfor %}
+    {% endfor %}
+</div>
+
+<style>
+@keyframes slide-in {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+}
+
+.toast-notification {
+    min-width: 300px;
+}
+</style>
+
+<script>
+function showConfirmationModal() {
+    const codeInput = document.getElementById('referral_code');
+    const validation = document.getElementById('codeValidation');
+    const code = codeInput.value.trim();
+    
+    // Basic validation
+    if (code.length < 5) {
+        validation.classList.remove('hidden');
+        codeInput.classList.add('border-red-500');
+        return;
+    }
+    
+    // Show modal with code
+    document.getElementById('modalCodeDisplay').textContent = code;
+    document.getElementById('confirmationModal').classList.remove('hidden');
+    document.getElementById('confirmationModal').classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeConfirmationModal() {
+    document.getElementById('confirmationModal').classList.add('hidden');
+    document.getElementById('confirmationModal').classList.remove('flex');
+    document.body.style.overflow = '';
+}
+
+function confirmApply() {
+    const codeInput = document.getElementById('referral_code');
+    const confirmBtn = document.getElementById('confirmBtn');
+    const confirmBtnText = document.getElementById('confirmBtnText');
+    
+    // Disable button and show loading
+    confirmBtn.disabled = true;
+    confirmBtnText.textContent = 'Applying...';
+    
+    // Set hidden form value and submit
+    document.getElementById('hiddenReferralCode').value = codeInput.value.trim();
+    document.getElementById('applyCodeForm').submit();
+}
+
+// Remove validation error on input
+document.getElementById('referral_code').addEventListener('input', function() {
+    const validation = document.getElementById('codeValidation');
+    validation.classList.add('hidden');
+    this.classList.remove('border-red-500');
+});
+
+// Close modal on escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeConfirmationModal();
+    }
+});
+
+// Close modal when clicking outside
+document.getElementById('confirmationModal')?.addEventListener('click', function(event) {
+    if (event.target === this) {
+        closeConfirmationModal();
+    }
+});
+
+// Auto-dismiss toast notifications after 5 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    const toasts = document.querySelectorAll('.toast-notification');
+    toasts.forEach(function(toast) {
+        setTimeout(function() {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            toast.style.transition = 'all 0.3s ease-out';
+            setTimeout(function() {
+                toast.remove();
+            }, 300);
+        }, 5000);
+    });
+});
+</script>
+{% endblock %}

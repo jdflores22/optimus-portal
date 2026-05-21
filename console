@@ -1,0 +1,29 @@
+#!/usr/bin/env php
+<?php
+/**
+ * Clean console wrapper - suppresses vendor library warnings
+ * Usage: php console cache:clear
+ */
+
+// Suppress all output to stderr (where warnings go)
+$descriptors = [
+    0 => STDIN,
+    1 => STDOUT,
+    2 => ['pipe', 'w'] // Capture stderr
+];
+
+$process = proc_open(
+    'php bin/console ' . implode(' ', array_slice($argv, 1)),
+    $descriptors,
+    $pipes
+);
+
+if (is_resource($process)) {
+    // Discard stderr (warnings)
+    fclose($pipes[2]);
+    
+    $exitCode = proc_close($process);
+    exit($exitCode);
+}
+
+exit(1);

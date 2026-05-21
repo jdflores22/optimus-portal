@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role Invitation Expired - OPTIMUS Portal</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6; 
+            color: #1c1e21; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f0f2f5;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 20px auto; 
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header { 
+            background-color: #ffc107; 
+            color: #212529; 
+            padding: 32px 24px; 
+            text-align: center; 
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .content { 
+            padding: 32px 24px; 
+            background-color: #ffffff; 
+        }
+        .content p {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+        }
+        .expired-info {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 24px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .expired-info h3 {
+            margin: 0 0 12px 0;
+            color: #856404;
+            font-size: 18px;
+        }
+        .expired-info .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 4px 0;
+            border-bottom: 1px solid #ffeaa7;
+        }
+        .expired-info .detail-row:last-child {
+            border-bottom: none;
+        }
+        .expired-info .label {
+            font-weight: 600;
+            color: #856404;
+        }
+        .expired-info .value {
+            color: #997404;
+        }
+        .action-button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 24px 0;
+            text-align: center;
+        }
+        .action-button:hover {
+            background-color: #0056b3;
+        }
+        .next-steps {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 24px 0;
+        }
+        .next-steps h4 {
+            margin: 0 0 12px 0;
+            color: #495057;
+            font-size: 16px;
+        }
+        .next-steps ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .next-steps li {
+            margin: 8px 0;
+            font-size: 14px;
+            color: #6c757d;
+        }
+        .footer { 
+            padding: 24px; 
+            text-align: center; 
+            font-size: 14px; 
+            color: #65676b;
+            background-color: #f0f2f5;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                border-radius: 0;
+            }
+            .content {
+                padding: 20px 16px;
+            }
+            .action-button {
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .expired-info .detail-row {
+                flex-direction: column;
+            }
+            .expired-info .label {
+                margin-bottom: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏰ Role Invitation Expired</h1>
+        </div>
+        <div class="content">
+            <p>Hello {{ admin.email }},</p>
+            <p>This is to inform you that a role invitation you sent has expired without response from the recipient.</p>
+
+            <div class="expired-info">
+                <h3>📋 Expired Invitation Details</h3>
+                <div class="detail-row">
+                    <span class="label">Recipient Name:</span>
+                    <span class="value">{{ pendingUser.fullName }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Email Address:</span>
+                    <span class="value">{{ pendingUser.email }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Offered Role:</span>
+                    <span class="value">{{ pendingUser.role.value|title|replace({'_': ' '}) }}</span>
+                </div>
+                {% if pendingUser.shippingLine %}
+                <div class="detail-row">
+                    <span class="label">Shipping Line:</span>
+                    <span class="value">{{ pendingUser.shippingLine.brandName }}</span>
+                </div>
+                {% endif %}
+                <div class="detail-row">
+                    <span class="label">Invitation Sent:</span>
+                    <span class="value">{{ pendingUser.createdAt|date('F j, Y \\a\\t g:i A') }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Expired On:</span>
+                    <span class="value">{{ pendingUser.tokenExpiresAt|date('F j, Y \\a\\t g:i A') }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Status:</span>
+                    <span class="value">Expired</span>
+                </div>
+            </div>
+
+            <div style="text-align: center;">
+                <a href="{{ resendUrl }}" class="action-button">
+                    🔄 Send New Invitation
+                </a>
+            </div>
+
+            <div class="next-steps">
+                <h4>💡 Recommended Actions</h4>
+                <ul>
+                    <li><strong>Contact the recipient:</strong> Reach out to check if they received the invitation</li>
+                    <li><strong>Verify email address:</strong> Ensure the email address is correct and active</li>
+                    <li><strong>Resend invitation:</strong> Send a fresh invitation with a new 7-day expiration</li>
+                    <li><strong>Alternative contact:</strong> Try reaching out through other communication channels</li>
+                    <li><strong>Review urgency:</strong> Consider if this role assignment is still needed</li>
+                </ul>
+            </div>
+
+            <p><strong>Why Do Invitations Expire?</strong></p>
+            <ul>
+                <li><strong>Security:</strong> Prevents unauthorized access if emails are compromised</li>
+                <li><strong>Data hygiene:</strong> Keeps the system clean of stale invitations</li>
+                <li><strong>Relevance:</strong> Ensures role assignments are still current and needed</li>
+                <li><strong>Follow-up:</strong> Prompts admins to actively manage user onboarding</li>
+            </ul>
+
+            <p><strong>What Happened to the Invitation?</strong></p>
+            <ul>
+                <li>The invitation link is no longer valid</li>
+                <li>The pending user record has been marked as expired</li>
+                <li>No user account was created</li>
+                <li>You can send a new invitation to the same email address</li>
+            </ul>
+
+            <p>If you believe the recipient should still receive this role, please send a new invitation. If you have concerns about email delivery or need assistance, please contact the system administrator.</p>
+        </div>
+        <div class="footer">
+            <p><strong>OPTIMUS Shipping Portal</strong><br>
+            Administrative Notification System</p>
+            <p style="font-size: 12px; margin-top: 16px;">
+                This is an automated message. Please do not reply to this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

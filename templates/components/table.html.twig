@@ -1,0 +1,125 @@
+{# Table Component Macros #}
+{% macro table(headers, rows, responsive = true, hover = true) %}
+    {% if responsive %}
+        <div class="table-responsive">
+    {% endif %}
+    
+    <table class="table">
+        {% if headers %}
+            <thead>
+                <tr>
+                    {% for header in headers %}
+                        <th>{{ header }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+        {% endif %}
+        <tbody>
+            {% for row in rows %}
+                <tr>
+                    {% for cell in row %}
+                        <td>{{ cell|raw }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if responsive %}
+        </div>
+    {% endif %}
+{% endmacro %}
+
+{% macro data_table(data, columns, actions = null, empty_message = 'No data available') %}
+    {% if data|length > 0 %}
+        <div class="table-responsive">
+            <table class="table min-w-full">
+                <thead>
+                    <tr>
+                        {% for column in columns %}
+                            <th class="whitespace-nowrap">{{ column.label }}</th>
+                        {% endfor %}
+                        {% if actions %}
+                            <th class="text-right whitespace-nowrap">Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data %}
+                        <tr>
+                            {% for column in columns %}
+                                <td class="whitespace-nowrap">
+                                    {% if column.type is defined and column.type == 'badge' %}
+                                        {% from 'components/badge.html.twig' import status_badge %}
+                                        {{ status_badge(attribute(item, column.field)) }}
+                                    {% elseif column.type is defined and column.type == 'date' %}
+                                        {{ attribute(item, column.field) ? attribute(item, column.field)|date('M d, Y') : '-' }}
+                                    {% elseif column.type is defined and column.type == 'datetime' %}
+                                        {{ attribute(item, column.field) ? attribute(item, column.field)|date('M d, Y H:i') : '-' }}
+                                    {% elseif column.type is defined and column.type == 'currency' %}
+                                        ${{ attribute(item, column.field)|number_format(2) }}
+                                    {% elseif column.type is defined and column.type == 'html' %}
+                                        {{ attribute(item, column.field)|raw }}
+                                    {% else %}
+                                        {{ attribute(item, column.field) ?? '-' }}
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                            {% if actions %}
+                                <td class="text-right whitespace-nowrap">
+                                    <div class="flex justify-end space-x-2">
+                                        {% for action in actions %}
+                                            {% if action.condition is not defined or attribute(item, action.condition) %}
+                                                {% from 'components/button.html.twig' import icon_button %}
+                                                {{ icon_button(
+                                                    action.icon, 
+                                                    action.type ?? 'secondary', 
+                                                    'md', 
+                                                    action.href ? action.href|replace({'__ID__': item.id}) : null,
+                                                    action.onclick is defined ? action.onclick|replace({'__ID__': item.id}) : null,
+                                                    false,
+                                                    action.title ?? null
+                                                ) }}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="card-md text-center text-meta-text-secondary">
+            <div class="py-8">
+                <svg class="mx-auto h-12 w-12 text-meta-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-meta-text-secondary">{{ empty_message }}</h3>
+            </div>
+        </div>
+    {% endif %}
+{% endmacro %}
+
+{% macro simple_table(items, title = null) %}
+    {% if title %}
+        <h3 class="text-lg font-medium text-meta-text-primary mb-4">{{ title }}</h3>
+    {% endif %}
+    
+    <div class="card-md">
+        {% if items|length > 0 %}
+            <div class="divide-y divide-meta-gray-200">
+                {% for item in items %}
+                    <div class="py-3 flex justify-between items-center">
+                        {{ item|raw }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-8 text-meta-text-secondary">
+                No items to display
+            </div>
+        {% endif %}
+    </div>
+{% endmacro %}

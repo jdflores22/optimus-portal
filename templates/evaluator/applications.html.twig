@@ -1,0 +1,287 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Applications - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="w-full px-4 py-6 bg-base-200 min-h-screen">
+    <!-- Breadcrumbs -->
+    <div class="breadcrumbs text-sm mb-4">
+        <ul>
+            <li><a href="{{ path('app_evaluator_dashboard') }}"><span class="icon-[tabler--home] size-4"></span>Dashboard</a></li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li aria-current="page">Applications</li>
+        </ul>
+    </div>
+
+    <!-- Flash Messages -->
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success mb-4">
+            <span class="icon-[tabler--circle-check] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error mb-4">
+            <span class="icon-[tabler--circle-x] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+
+    <!-- Page Header -->
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-base-content">All Applications</h1>
+        <p class="mt-2 text-base-content/70">Review and evaluate accreditation applications</p>
+    </div>
+
+    <!-- Analytics Cards -->
+    <div class="stats stats-vertical lg:stats-horizontal shadow mb-6 w-full">
+        <div class="stat">
+            <div class="stat-figure text-base-content size-8">
+                <span class="icon-[tabler--file-text] size-8"></span>
+            </div>
+            <div class="stat-title">Total Applications</div>
+            <div class="stat-value text-4xl">{{ applications|length }}</div>
+            <div class="stat-desc">All applications in system</div>
+        </div>
+        
+        <div class="stat">
+            <div class="stat-figure text-warning size-8">
+                <span class="icon-[tabler--clock] size-8"></span>
+            </div>
+            <div class="stat-title">Pending Review</div>
+            <div class="stat-value text-warning text-4xl">
+                {% set pendingCount = applications|filter(app => app.status.value == 'PENDING')|length %}
+                {{ pendingCount }}
+            </div>
+            <div class="stat-desc">Awaiting evaluation</div>
+        </div>
+        
+        <div class="stat">
+            <div class="stat-figure text-success size-8">
+                <span class="icon-[tabler--circle-check] size-8"></span>
+            </div>
+            <div class="stat-title">Approved</div>
+            <div class="stat-value text-success text-4xl">
+                {% set approvedCount = applications|filter(app => app.status.value == 'APPROVED')|length %}
+                {{ approvedCount }}
+            </div>
+            <div class="stat-desc">Successfully approved</div>
+        </div>
+        
+        <div class="stat">
+            <div class="stat-figure text-error size-8">
+                <span class="icon-[tabler--circle-x] size-8"></span>
+            </div>
+            <div class="stat-title">Denied/Rejected</div>
+            <div class="stat-value text-error text-4xl">
+                {% set deniedCount = applications|filter(app => app.status.value in ['DENIED', 'REJECTED'])|length %}
+                {{ deniedCount }}
+            </div>
+            <div class="stat-desc">Not approved</div>
+        </div>
+    </div>
+
+    <!-- Applications List -->
+    {% if applications|length > 0 %}
+        <div class="card">
+            <div class="card-body">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="card-title">
+                        Applications 
+                        <span class="badge badge-neutral badge-sm ml-2">
+                            {{ applications|length }}
+                        </span>
+                    </h3>
+                </div>
+                
+                <!-- Skeleton Loader -->
+                <div id="table-skeleton">
+                    <div class="overflow-x-auto">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Application</th>
+                                    <th>Applicant</th>
+                                    <th>Status</th>
+                                    <th>Evaluator</th>
+                                    <th>Submitted</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i in 1..5 %}
+                                <tr>
+                                    <td>
+                                        <div class="flex items-center gap-3">
+                                            <div class="skeleton skeleton-animated w-10 h-10 rounded-full shrink-0"></div>
+                                            <div class="flex flex-col gap-2">
+                                                <div class="skeleton skeleton-animated h-4 w-32"></div>
+                                                <div class="skeleton skeleton-animated h-3 w-24"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="flex flex-col gap-2">
+                                            <div class="skeleton skeleton-animated h-4 w-40"></div>
+                                            <div class="skeleton skeleton-animated h-3 w-32"></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="skeleton skeleton-animated h-6 w-24 rounded-full"></div>
+                                    </td>
+                                    <td>
+                                        <div class="flex items-center gap-3">
+                                            <div class="skeleton skeleton-animated w-10 h-10 rounded-full shrink-0"></div>
+                                            <div class="flex flex-col gap-2">
+                                                <div class="skeleton skeleton-animated h-4 w-36"></div>
+                                                <div class="skeleton skeleton-animated h-3 w-28"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="flex flex-col gap-2">
+                                            <div class="skeleton skeleton-animated h-4 w-24"></div>
+                                            <div class="skeleton skeleton-animated h-3 w-16"></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="skeleton skeleton-animated h-8 w-20 rounded-lg"></div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Actual Table Content -->
+                <div class="overflow-x-auto hidden" id="table-content">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Application</th>
+                                <th>Applicant</th>
+                                <th>Status</th>
+                                <th>Evaluator</th>
+                                <th>Submitted</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for application in applications %}
+                                <tr>
+                                    <td>
+                                        <div class="flex items-center gap-3">
+                                            <div class="avatar avatar-placeholder">
+                                                <div class="w-10 rounded-full bg-secondary text-secondary-content flex items-center justify-center">
+                                                    <span class="icon-[tabler--file-text] size-5"></span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="font-semibold">Application #{{ application.id }}</div>
+                                                <div class="text-sm opacity-60">{{ application.applicant.role.value|title }} Application</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="font-medium">{{ application.applicant.email }}</div>
+                                        {% if application.applicant.role.value == 'BROKER' %}
+                                            <div class="text-sm opacity-60">{{ application.applicant.fullName }}</div>
+                                        {% elseif application.applicant.role.value == 'CONSIGNEE' %}
+                                            <div class="text-sm opacity-60">{{ application.applicant.businessName }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if application.status.value == 'PENDING' %}
+                                            <span class="badge badge-warning badge-soft">
+                                                Pending Review
+                                            </span>
+                                        {% elseif application.status.value == 'APPROVED' %}
+                                            <span class="badge badge-success badge-soft">
+                                                Approved
+                                            </span>
+                                        {% elseif application.status.value == 'DENIED' %}
+                                            <span class="badge badge-error badge-soft">
+                                                Denied
+                                            </span>
+                                        {% elseif application.status.value == 'REJECTED' %}
+                                            <span class="badge badge-error badge-soft">
+                                                Rejected
+                                            </span>
+                                        {% elseif application.status.value == 'COMPLIANCE_REQUIRED' %}
+                                            <span class="badge badge-warning badge-soft">
+                                                Compliance Required
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-neutral badge-soft">
+                                                {{ application.status.value|title }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if application.evaluator %}
+                                            <div class="flex items-center gap-3">
+                                                <div class="avatar avatar-placeholder">
+                                                    <div class="w-10 rounded-full bg-success text-success-content flex items-center justify-center">
+                                                        <span class="text-sm uppercase font-bold">{{ application.evaluator.email|slice(0, 2) }}</span>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div class="font-medium text-sm">{{ application.evaluator.email }}</div>
+                                                    {% if application.evaluatedAt %}
+                                                        <div class="text-xs opacity-60">{{ application.evaluatedAt|date('M j, Y g:i A') }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-sm opacity-50 italic">Not evaluated</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="text-sm">{{ application.submittedAt|date('M j, Y') }}</div>
+                                        <div class="text-xs opacity-60">{{ application.submittedAt|date('g:i A') }}</div>
+                                    </td>
+                                    <td>
+                                        <a href="{{ path('app_evaluator_application_detail', {id: application.id}) }}" 
+                                           class="btn btn-primary btn-sm">
+                                            {% if application.status.value == 'PENDING' %}
+                                                <span class="icon-[tabler--eye] size-4"></span>
+                                                Review
+                                            {% else %}
+                                                <span class="icon-[tabler--eye] size-4"></span>
+                                                View
+                                            {% endif %}
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="card">
+            <div class="card-body text-center py-12">
+                <span class="icon-[tabler--file-text] size-16 mx-auto opacity-40"></span>
+                <h3 class="card-title justify-center mt-4">No applications found</h3>
+                <p class="opacity-60 mt-2">There are currently no applications to review.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    // Show skeleton on page load, hide when content is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        const skeleton = document.getElementById('table-skeleton');
+        const content = document.getElementById('table-content');
+        
+        // Hide skeleton and show content after a brief delay to simulate loading
+        setTimeout(function() {
+            if (skeleton) skeleton.classList.add('hidden');
+            if (content) content.classList.remove('hidden');
+        }, 300);
+    });
+</script>
+{% endblock %}

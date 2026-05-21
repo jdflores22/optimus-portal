@@ -1,0 +1,60 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Preview Form - {{ form.name }} - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Top Navigation Bar -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-meta-blue">OPTIMUS</span>
+                    <span class="ml-4 text-gray-600">Form Preview</span>
+                </div>
+                <div class="flex items-center">
+                    <a href="{{ path('form_builder_edit', {id: form.id}) }}" class="text-gray-600 hover:text-gray-800">
+                        ← Back to Edit
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">{{ form.name }}</h1>
+            <p class="text-gray-600 mt-1">
+                Type: {{ form.type.value }} | Version: {{ form.version }}
+            </p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-8">
+            <h2 class="text-xl font-bold text-gray-900 mb-6">Form Preview</h2>
+            
+            {% if form.fields.fields|length > 0 %}
+                {{ renderedForm|raw }}
+                
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <button type="button" 
+                            class="bg-meta-blue text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition">
+                        Submit (Preview Only)
+                    </button>
+                </div>
+            {% else %}
+                <p class="text-gray-500 text-center py-8">
+                    No fields have been added to this form yet.
+                </p>
+            {% endif %}
+        </div>
+
+        <div class="mt-6 text-center">
+            <a href="{{ path('form_builder_edit', {id: form.id}) }}" 
+               class="text-meta-blue hover:text-blue-700 font-medium">
+                ← Back to Edit Form
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,407 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Container Search - OPTIMUS{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">Container Search</h1>
+                        <p class="mt-2 text-gray-600">Search for containers and create FREE-ADVICE requests</p>
+                    </div>
+                    <div>
+                        <a href="{{ path('trucker_dashboard') }}" 
+                           class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                            Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Flash Messages -->
+        {% for message in app.flashes('success') %}
+            <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg">
+                {{ message }}
+            </div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg">
+                {{ message }}
+            </div>
+        {% endfor %}
+
+        <!-- Container Search Form -->
+        <div class="max-w-2xl mx-auto mb-8">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-medium text-gray-900">Search for Container</h2>
+                    <p class="text-sm text-gray-500">Enter the container number to find available terminals</p>
+                </div>
+                <div class="p-6">
+                    <form id="containerSearchForm" class="space-y-6">
+                        <div>
+                            <label for="containerNumber" class="block text-sm font-medium text-gray-700 mb-2">
+                                Container Number
+                            </label>
+                            <div class="relative">
+                                <input type="text" 
+                                       class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
+                                       id="containerNumber" 
+                                       name="container_number" 
+                                       placeholder="Enter container number (e.g., ABCD1234567)"
+                                       pattern="[A-Z]{4}[0-9]{7}"
+                                       maxlength="11"
+                                       required>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <p class="mt-2 text-sm text-gray-500">
+                                Container number should be 11 characters: 4 letters followed by 7 digits
+                            </p>
+                        </div>
+                        <div>
+                            <button type="submit" 
+                                    class="w-full flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed" 
+                                    id="searchButton">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                                Search Container
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="max-w-2xl mx-auto text-center mb-8" id="loadingSpinner" style="display: none;">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+                <div class="flex items-center justify-center">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <span class="ml-3 text-gray-600">Searching for container...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Display -->
+        <div class="max-w-2xl mx-auto mb-8" id="errorDisplay" style="display: none;">
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">Error</h3>
+                        <p class="mt-1 text-sm text-red-700" id="errorMessage"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Results -->
+        <div id="searchResults" style="display: none;">
+            <!-- Container Details -->
+            <div class="mb-8" id="containerDetails">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200 bg-green-50">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h2 class="text-lg font-medium text-green-800">Container Found</h2>
+                                <p class="text-sm text-green-600">Container details and available terminals</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900 mb-4">Container Information</h3>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm font-medium text-gray-500">Container Number:</span>
+                                        <span class="text-sm text-gray-900 font-mono" id="containerNumberDisplay"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm font-medium text-gray-500">Size:</span>
+                                        <span class="text-sm text-gray-900" id="containerSize"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm font-medium text-gray-500">Type:</span>
+                                        <span class="text-sm text-gray-900" id="containerType"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm font-medium text-gray-500">Status:</span>
+                                        <span id="containerStatus"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900 mb-4">Return Information</h3>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm font-medium text-gray-500">Current Location:</span>
+                                        <span class="text-sm text-gray-900" id="containerLocation"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm font-medium text-gray-500">Expected Return Date:</span>
+                                        <span class="text-sm text-gray-900" id="expectedReturnDate"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm font-medium text-gray-500">Available for Return:</span>
+                                        <span id="availableForReturn"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compatible Terminals -->
+            <div id="terminalSelection">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h2 class="text-lg font-medium text-gray-900">Available Terminals</h2>
+                                <p class="text-sm text-gray-500">Select a terminal to create your FREE-ADVICE request</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="terminalList">
+                            <!-- Terminal cards will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('containerSearchForm');
+    const containerNumberInput = document.getElementById('containerNumber');
+    const searchButton = document.getElementById('searchButton');
+    const searchResults = document.getElementById('searchResults');
+    const errorDisplay = document.getElementById('errorDisplay');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+
+    // Auto-uppercase container number input
+    containerNumberInput.addEventListener('input', function() {
+        this.value = this.value.toUpperCase();
+    });
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const containerNumber = containerNumberInput.value.trim();
+        
+        if (!containerNumber) {
+            showError('Please enter a container number');
+            return;
+        }
+
+        searchContainer(containerNumber);
+    });
+
+    function searchContainer(containerNumber) {
+        // Hide previous results
+        searchResults.style.display = 'none';
+        errorDisplay.style.display = 'none';
+        loadingSpinner.style.display = 'block';
+        
+        // Disable search button
+        searchButton.disabled = true;
+
+        // Make API request
+        fetch('{{ path('trucker_container_search_api') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: 'container_number=' + encodeURIComponent(containerNumber)
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadingSpinner.style.display = 'none';
+            searchButton.disabled = false;
+
+            if (data.success) {
+                displaySearchResults(data.container, data.compatible_terminals);
+            } else {
+                showError(data.error);
+            }
+        })
+        .catch(error => {
+            loadingSpinner.style.display = 'none';
+            searchButton.disabled = false;
+            showError('An error occurred while searching. Please try again.');
+            console.error('Search error:', error);
+        });
+    }
+
+    function displaySearchResults(container, terminals) {
+        // Populate container details
+        document.getElementById('containerNumberDisplay').textContent = container.containerNumber;
+        document.getElementById('containerSize').textContent = container.size;
+        document.getElementById('containerType').textContent = container.type;
+        document.getElementById('containerStatus').innerHTML = 
+            '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">' + container.status + '</span>';
+        document.getElementById('containerLocation').textContent = container.currentLocation || 'Not specified';
+        document.getElementById('expectedReturnDate').textContent = container.expectedReturnDate;
+        document.getElementById('availableForReturn').innerHTML = 
+            container.isAvailableForReturn 
+                ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Yes</span>' 
+                : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">No</span>';
+
+        // Populate terminal list
+        const terminalList = document.getElementById('terminalList');
+        terminalList.innerHTML = '';
+
+        if (terminals.length === 0) {
+            terminalList.innerHTML = `
+                <div class="col-span-full">
+                    <div class="text-center py-8">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No compatible terminals</h3>
+                        <p class="mt-1 text-sm text-gray-500">No terminals are available for this container type.</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            terminals.forEach(terminal => {
+                const terminalCard = createTerminalCard(terminal, container);
+                terminalList.appendChild(terminalCard);
+            });
+        }
+
+        searchResults.style.display = 'block';
+    }
+
+    function createTerminalCard(terminal, container) {
+        const div = document.createElement('div');
+        
+        const availableSlots = terminal.todayCapacity.available;
+        const capacityClass = availableSlots > 0 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+        
+        const currentTEUs = terminal.shippingLineUtilization.currentTEUs;
+        const allocatedTEUs = terminal.shippingLineUtilization.allocatedTEUs;
+        const percentage = terminal.shippingLineUtilization.percentage;
+        const container20ft = terminal.shippingLineUtilization.container20ft;
+        const container40ft = terminal.shippingLineUtilization.container40ft;
+        
+        // Determine color based on percentage
+        let percentageColor = 'text-green-600';
+        let progressColor = 'bg-green-500';
+        if (percentage >= 100) {
+            percentageColor = 'text-red-600';
+            progressColor = 'bg-red-500';
+        } else if (percentage >= 80) {
+            percentageColor = 'text-orange-500';
+            progressColor = 'bg-orange-500';
+        }
+        
+        const progressWidth = percentage > 100 ? 100 : (percentage < 5 ? 5 : percentage);
+
+        div.innerHTML = `
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">${terminal.name}</h3>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${capacityClass}">
+                            ${availableSlots}/${terminal.todayCapacity.capacity} slots
+                        </span>
+                    </div>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-500">Type:</span>
+                            <span class="text-sm text-gray-900">${terminal.type}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-500">Location:</span>
+                            <span class="text-sm text-gray-900">${terminal.location}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Yard Capacity Section -->
+                    <div class="mb-3 pt-3 border-t border-gray-200">
+                        <p class="text-sm text-gray-600 mb-2">Yard Capacity</p>
+                        <div class="flex items-baseline justify-between mb-2">
+                            <div class="flex items-baseline space-x-2">
+                                <span class="text-2xl font-bold text-gray-900">${currentTEUs}</span>
+                                <span class="text-sm text-gray-500">/ ${allocatedTEUs} TEUs</span>
+                            </div>
+                            <span class="text-2xl font-bold ${percentageColor}">${percentage}%</span>
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        <div class="mb-3">
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="${progressColor} h-2 rounded-full" style="width: ${progressWidth}%"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Container Size Breakdown -->
+                        <div class="flex justify-between text-sm text-gray-500 mb-4">
+                            <span>20ft: ${container20ft}</span>
+                            <span>40ft: ${container40ft}</span>
+                        </div>
+                    </div>
+                    
+                    <a href="{{ path('trucker_pre_advice_create') }}?container_number=${container.containerNumber}&terminal_id=${terminal.id}" 
+                       class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Create FREE-ADVICE
+                    </a>
+                </div>
+            </div>
+        `;
+
+        return div;
+    }
+
+    function showError(message) {
+        document.getElementById('errorMessage').textContent = message;
+        errorDisplay.style.display = 'block';
+        searchResults.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

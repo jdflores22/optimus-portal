@@ -1,0 +1,679 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}User Management - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="card bg-base-100 shadow-sm mb-6">
+        <div class="card-body">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-base-content">User Management</h1>
+                    <p class="mt-1 text-sm text-base-content/70">Manage system users and their roles</p>
+                </div>
+                <a href="{{ path('app_admin_dashboard') }}" class="btn btn-outline btn-sm sm:btn-md w-full sm:w-auto">
+                    <span class="icon-[tabler--arrow-left] size-5"></span>
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success mb-6">
+            <span class="icon-[tabler--check] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error mb-6">
+            <span class="icon-[tabler--alert-circle] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    
+    <!-- Filters -->
+    <div class="card bg-base-100 shadow-sm mb-6">
+        <div class="card-body">
+            <form method="GET" class="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+                <div class="w-full sm:flex-1">
+                    <label for="role" class="label">
+                        <span class="label-text">Filter by Role</span>
+                    </label>
+                    <select name="role" id="role" class="select select-bordered w-full">
+                        <option value="all" {% if currentFilter == 'all' or not currentFilter %}selected{% endif %}>All Roles</option>
+                        {% for role in allRoles %}
+                            <option value="{{ role.value }}" {% if currentFilter == role.value %}selected{% endif %}>
+                                {{ role.value|replace({'_': ' '})|title }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-full sm:w-auto">
+                    <span class="icon-[tabler--filter] size-5"></span>
+                    Filter
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users by Role -->
+    {% for role, users in usersByRole %}
+        <div class="card bg-base-100 shadow-sm mb-6">
+            <div class="card-body">
+                <div class="flex items-center gap-2 mb-4">
+                    <h3 class="card-title text-lg">{{ role|replace({'_': ' '})|title }}</h3>
+                    <span class="badge badge-soft badge-ghost">{{ users|length }}</span>
+                </div>
+                
+                {% if users|length > 0 %}
+                    <!-- Desktop Table -->
+                    <div class="hidden lg:block overflow-x-auto">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Failed Logins</th>
+                                    <th>Locked Until</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                    <tr>
+                                        <td>
+                                            <div class="flex items-center gap-3">
+                                                <div class="avatar placeholder">
+                                                    <div class="w-10 rounded-full {{ avatar_colors(user) }}">
+                                                        <span class="text-sm">{{ user.email|slice(0, 2)|upper }}</span>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div class="font-medium">{{ user.email }}</div>
+                                                    {% if user.role.value == 'CONSIGNEE' %}
+                                                        <div class="text-sm text-base-content/60">{{ user.businessName }}</div>
+                                                    {% elseif user.role.value == 'BROKER' %}
+                                                        <div class="text-sm text-base-content/60">{{ user.fullName }}</div>
+                                                    {% elseif user.role.value in ['EVALUATOR', 'SHIPPING_LINES_ADMIN', 'SL_STAFF', 'ACCOUNTING', 'SYSTEM_ADMIN'] and user.firstName is defined %}
+                                                        <div class="text-sm text-base-content/60">{{ user.firstName }} {{ user.lastName }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if user.status.value == 'APPROVED' %}
+                                                <span class="badge badge-soft badge-success badge-sm">Approved</span>
+                                            {% elseif user.status.value == 'DENIED' %}
+                                                <span class="badge badge-soft badge-error badge-sm">Denied</span>
+                                            {% elseif user.status.value == 'LOCKED' %}
+                                                <span class="badge badge-soft badge-error badge-sm">Locked</span>
+                                            {% elseif user.status.value == 'PENDING' %}
+                                                <span class="badge badge-soft badge-info badge-sm">Pending</span>
+                                            {% else %}
+                                                <span class="badge badge-soft badge-ghost badge-sm">{{ user.status.value|title }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-sm">{{ user.createdAt|date('M j, Y') }}</td>
+                                        <td class="text-sm">
+                                            {% if user.failedLoginAttempts > 0 %}
+                                                <span class="text-error font-medium">{{ user.failedLoginAttempts }}</span>
+                                            {% else %}
+                                                {{ user.failedLoginAttempts }}
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-sm">
+                                            {% if user.lockedUntil %}
+                                                <span class="text-error">{{ user.lockedUntil|date('M j, Y H:i') }}</span>
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="flex items-center gap-2">
+                                                {% if user.status.value == 'LOCKED' %}
+                                                    <form method="POST" action="{{ path('app_admin_unlock_user', {id: user.id}) }}" class="inline-block" onsubmit="return confirm('Are you sure you want to unlock this user account?');">
+                                                        <input type="hidden" name="_token" value="{{ csrf_token('unlock_user_' ~ user.id) }}">
+                                                        <button type="submit" class="btn btn-success btn-xs">
+                                                            <span class="icon-[tabler--lock-open] size-3"></span>
+                                                            Unlock
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                                
+                                                {% if user.status.value in ['APPROVED', 'DENIED'] %}
+                                                    {% set isBroker = user.role.value == 'BROKER' %}
+                                                    {% set isSystemAdmin = user.role.value == 'SYSTEM_ADMIN' %}
+                                                    {% set isCurrentUserSystemAdmin = is_granted('ROLE_SYSTEM_ADMIN') %}
+                                                    {% set canToggle = not isBroker or isCurrentUserSystemAdmin %}
+                                                    
+                                                    {% if isSystemAdmin %}
+                                                        <span class="badge badge-soft badge-ghost badge-xs">
+                                                            <span class="icon-[tabler--shield-lock] size-3"></span>
+                                                            Protected
+                                                        </span>
+                                                    {% elseif user.status.value == 'APPROVED' %}
+                                                        <button 
+                                                            onclick="toggleUserStatus({{ user.id }}, '{{ user.email }}', 'suspend', {{ isBroker ? 'true' : 'false' }}, this)"
+                                                            class="btn btn-error btn-xs {{ not canToggle ? 'btn-disabled' : '' }}"
+                                                            {{ not canToggle ? 'disabled title="Only System Administrators can suspend broker accounts"' : '' }}>
+                                                            <span class="icon-[tabler--ban] size-3"></span>
+                                                            Suspend
+                                                        </button>
+                                                    {% else %}
+                                                        <button 
+                                                            onclick="toggleUserStatus({{ user.id }}, '{{ user.email }}', 'activate', {{ isBroker ? 'true' : 'false' }}, this)"
+                                                            class="btn btn-success btn-xs {{ not canToggle ? 'btn-disabled' : '' }}"
+                                                            {{ not canToggle ? 'disabled title="Only System Administrators can activate broker accounts"' : '' }}>
+                                                            <span class="icon-[tabler--check] size-3"></span>
+                                                            Activate
+                                                        </button>
+                                                    {% endif %}
+                                                {% endif %}
+                                                
+                                                {% if user.status.value not in ['LOCKED', 'APPROVED', 'DENIED'] %}
+                                                    <span class="text-base-content/40 text-xs">No actions</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Mobile Cards -->
+                    <div class="lg:hidden space-y-3">
+                        {% for user in users %}
+                            <div class="card bg-base-200">
+                                <div class="card-body p-4 space-y-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="avatar placeholder">
+                                            <div class="w-10 rounded-full {{ avatar_colors(user) }}">
+                                                <span class="text-sm">{{ user.email|slice(0, 2)|upper }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="font-medium truncate">{{ user.email }}</div>
+                                            {% if user.role.value == 'CONSIGNEE' %}
+                                                <div class="text-sm text-base-content/60 truncate">{{ user.businessName }}</div>
+                                            {% elseif user.role.value == 'BROKER' %}
+                                                <div class="text-sm text-base-content/60 truncate">{{ user.fullName }}</div>
+                                            {% elseif user.role.value in ['EVALUATOR', 'SHIPPING_LINES_ADMIN', 'SL_STAFF', 'ACCOUNTING', 'SYSTEM_ADMIN'] and user.firstName is defined %}
+                                                <div class="text-sm text-base-content/60 truncate">{{ user.firstName }} {{ user.lastName }}</div>
+                                            {% endif %}
+                                        </div>
+                                        {% if user.status.value == 'APPROVED' %}
+                                            <span class="badge badge-soft badge-success badge-sm">Approved</span>
+                                        {% elseif user.status.value == 'DENIED' %}
+                                            <span class="badge badge-soft badge-error badge-sm">Denied</span>
+                                        {% elseif user.status.value == 'LOCKED' %}
+                                            <span class="badge badge-soft badge-error badge-sm">Locked</span>
+                                        {% elseif user.status.value == 'PENDING' %}
+                                            <span class="badge badge-soft badge-info badge-sm">Pending</span>
+                                        {% else %}
+                                            <span class="badge badge-soft badge-ghost badge-sm">{{ user.status.value|title }}</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-2 gap-2 text-sm">
+                                        <div>
+                                            <span class="text-base-content/60">Created:</span>
+                                            <span class="font-medium">{{ user.createdAt|date('M j, Y') }}</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-base-content/60">Failed Logins:</span>
+                                            {% if user.failedLoginAttempts > 0 %}
+                                                <span class="font-medium text-error">{{ user.failedLoginAttempts }}</span>
+                                            {% else %}
+                                                <span class="font-medium">{{ user.failedLoginAttempts }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    {% if user.lockedUntil %}
+                                        <div class="text-sm">
+                                            <span class="text-base-content/60">Locked Until:</span>
+                                            <span class="font-medium text-error">{{ user.lockedUntil|date('M j, Y H:i') }}</span>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div class="flex flex-wrap gap-2">
+                                        {% if user.status.value == 'LOCKED' %}
+                                            <form method="POST" action="{{ path('app_admin_unlock_user', {id: user.id}) }}" class="flex-1" onsubmit="return confirm('Are you sure you want to unlock this user account?');">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('unlock_user_' ~ user.id) }}">
+                                                <button type="submit" class="btn btn-success btn-sm w-full">
+                                                    <span class="icon-[tabler--lock-open] size-4"></span>
+                                                    Unlock
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                        
+                                        {% if user.status.value in ['APPROVED', 'DENIED'] %}
+                                            {% set isBroker = user.role.value == 'BROKER' %}
+                                            {% set isSystemAdmin = user.role.value == 'SYSTEM_ADMIN' %}
+                                            {% set isCurrentUserSystemAdmin = is_granted('ROLE_SYSTEM_ADMIN') %}
+                                            {% set canToggle = not isBroker or isCurrentUserSystemAdmin %}
+                                            
+                                            {% if isSystemAdmin %}
+                                                <span class="badge badge-soft badge-ghost flex-1 justify-center">
+                                                    <span class="icon-[tabler--shield-lock] size-4"></span>
+                                                    Protected
+                                                </span>
+                                            {% elseif user.status.value == 'APPROVED' %}
+                                                <button 
+                                                    onclick="toggleUserStatus({{ user.id }}, '{{ user.email }}', 'suspend', {{ isBroker ? 'true' : 'false' }}, this)"
+                                                    class="btn btn-error btn-sm flex-1 {{ not canToggle ? 'btn-disabled' : '' }}"
+                                                    {{ not canToggle ? 'disabled' : '' }}>
+                                                    <span class="icon-[tabler--ban] size-4"></span>
+                                                    Suspend
+                                                </button>
+                                            {% else %}
+                                                <button 
+                                                    onclick="toggleUserStatus({{ user.id }}, '{{ user.email }}', 'activate', {{ isBroker ? 'true' : 'false' }}, this)"
+                                                    class="btn btn-success btn-sm flex-1 {{ not canToggle ? 'btn-disabled' : '' }}"
+                                                    {{ not canToggle ? 'disabled' : '' }}>
+                                                    <span class="icon-[tabler--check] size-4"></span>
+                                                    Activate
+                                                </button>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8">
+                        <span class="icon-[tabler--user-x] size-12 mx-auto text-base-content/40"></span>
+                        <p class="mt-2 text-sm text-base-content/60">No users found for this role.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+
+    {% if usersByRole|length == 0 %}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body text-center py-12">
+                <span class="icon-[tabler--user-x] size-12 mx-auto text-base-content/40"></span>
+                <h3 class="mt-2 text-sm font-medium">No users found</h3>
+                <p class="mt-1 text-sm text-base-content/60">No users match the current filter criteria.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Toast Notification Container -->
+<div id="toast-container" class="toast toast-top toast-end z-50"></div>
+
+<!-- Confirmation Modal -->
+<div id="confirmModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999]">
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-[500px] shadow-lg rounded-md bg-base-100">
+        <div class="mt-3">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-warning/20 rounded-full">
+                <span class="icon-[tabler--alert-triangle] size-6 text-warning"></span>
+            </div>
+            <h3 class="text-lg font-medium text-base-content text-center mt-4" id="modalTitle">Confirm Action</h3>
+            <p class="text-sm text-base-content/70 text-center mt-2" id="modalMessage"></p>
+            
+            <!-- Suspension Form -->
+            <div id="suspensionForm" class="hidden mt-4">
+                <div class="mb-4">
+                    <label for="suspensionReason" class="block text-sm font-medium text-base-content mb-2">
+                        Reason for Suspension <span class="text-error">*</span>
+                    </label>
+                    <textarea 
+                        id="suspensionReason" 
+                        rows="4" 
+                        class="textarea textarea-bordered w-full"
+                        placeholder="Please provide a detailed reason for suspending this user..."
+                        required></textarea>
+                    <p class="text-xs text-base-content/60 mt-1">This reason will be recorded in the audit log.</p>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="suspensionAttachments" class="block text-sm font-medium text-base-content mb-2">
+                        Attachments <span class="text-base-content/60">(Optional)</span>
+                    </label>
+                    <input 
+                        type="file" 
+                        id="suspensionAttachments" 
+                        multiple
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        class="file-input file-input-bordered w-full"
+                    />
+                    <p class="text-xs text-base-content/60 mt-1">Accepted formats: PDF, DOC, DOCX, JPG, PNG (Max 5 files)</p>
+                    <div id="fileList" class="mt-2 space-y-1"></div>
+                </div>
+            </div>
+            
+            <!-- Activation Form -->
+            <div id="activationForm" class="hidden mt-4">
+                <div class="mb-4">
+                    <label for="activationRemarks" class="block text-sm font-medium text-base-content mb-2">
+                        Activation Remarks <span class="text-error">*</span>
+                    </label>
+                    <textarea 
+                        id="activationRemarks" 
+                        rows="4" 
+                        class="textarea textarea-bordered w-full"
+                        placeholder="Please provide remarks for activating this user (e.g., issue resolved, appeal approved, etc.)..."
+                        required></textarea>
+                    <p class="text-xs text-base-content/60 mt-1">Explain why this account is being reactivated.</p>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="activationAttachments" class="block text-sm font-medium text-base-content mb-2">
+                        Supporting Documents <span class="text-error">*</span>
+                    </label>
+                    <input 
+                        type="file" 
+                        id="activationAttachments" 
+                        multiple
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        class="file-input file-input-bordered w-full"
+                        required
+                    />
+                    <p class="text-xs text-base-content/60 mt-1">Required: Upload proof/documents supporting the activation (Max 5 files)</p>
+                    <div id="activationFileList" class="mt-2 space-y-1"></div>
+                </div>
+            </div>
+            
+            <div class="flex space-x-3 mt-6">
+                <button onclick="closeModal()" class="btn btn-ghost flex-1">
+                    Cancel
+                </button>
+                <button onclick="confirmAction()" id="confirmButton" class="btn btn-primary flex-1">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let pendingAction = null;
+let currentActionType = null;
+let actionButton = null;
+
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    
+    const alertClass = type === 'success' ? 'alert-success' : 
+                       type === 'error' ? 'alert-error' : 
+                       'alert-info';
+    
+    const icon = type === 'success' 
+        ? '<span class="icon-[tabler--check] size-5"></span>'
+        : type === 'error'
+        ? '<span class="icon-[tabler--x] size-5"></span>'
+        : '<span class="icon-[tabler--info-circle] size-5"></span>';
+    
+    toast.className = `alert ${alertClass} shadow-lg`;
+    toast.innerHTML = `
+        ${icon}
+        <span class="text-sm font-medium">${message}</span>
+        <button type="button" onclick="this.parentElement.remove()" class="btn btn-sm btn-circle btn-ghost">
+            <span class="icon-[tabler--x] size-4"></span>
+        </button>
+    `;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+
+function showModal(title, message, action, actionType, button) {
+    const modal = document.getElementById('confirmModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMessage = document.getElementById('modalMessage');
+    
+    modalTitle.textContent = title;
+    modalMessage.textContent = message;
+    actionButton = button;
+    
+    const suspensionForm = document.getElementById('suspensionForm');
+    const activationForm = document.getElementById('activationForm');
+    const confirmButton = document.getElementById('confirmButton');
+    
+    if (actionType === 'suspend') {
+        suspensionForm.classList.remove('hidden');
+        activationForm.classList.add('hidden');
+        confirmButton.textContent = 'Suspend User';
+        confirmButton.className = 'btn btn-error flex-1';
+        document.getElementById('suspensionReason').value = '';
+        document.getElementById('suspensionAttachments').value = '';
+        document.getElementById('fileList').innerHTML = '';
+    } else {
+        suspensionForm.classList.add('hidden');
+        activationForm.classList.remove('hidden');
+        confirmButton.textContent = 'Activate User';
+        confirmButton.className = 'btn btn-success flex-1';
+        document.getElementById('activationRemarks').value = '';
+        document.getElementById('activationAttachments').value = '';
+        document.getElementById('activationFileList').innerHTML = '';
+    }
+    
+    pendingAction = action;
+    currentActionType = actionType;
+    
+    // Show modal - simple approach that works
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    const modal = document.getElementById('confirmModal');
+    pendingAction = null;
+    currentActionType = null;
+    actionButton = null;
+    
+    // Hide modal
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+function confirmAction() {
+    if (currentActionType === 'suspend') {
+        const reason = document.getElementById('suspensionReason').value.trim();
+        if (!reason) {
+            showToast('Please provide a reason for suspension', 'error');
+            return;
+        }
+    }
+    
+    if (currentActionType === 'activate') {
+        const remarks = document.getElementById('activationRemarks').value.trim();
+        if (!remarks) {
+            showToast('Please provide activation remarks', 'error');
+            return;
+        }
+        
+        const fileInput = document.getElementById('activationAttachments');
+        if (fileInput.files.length === 0) {
+            showToast('Please upload at least one supporting document', 'error');
+            return;
+        }
+    }
+    
+    const confirmButton = document.getElementById('confirmButton');
+    const originalButtonContent = confirmButton.innerHTML;
+    confirmButton.disabled = true;
+    confirmButton.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Processing...';
+    
+    if (pendingAction) {
+        pendingAction().catch(() => {
+            confirmButton.disabled = false;
+            confirmButton.innerHTML = originalButtonContent;
+        });
+    }
+}
+
+function toggleUserStatus(userId, userEmail, action, isBroker, button) {
+    const actionText = action === 'suspend' ? 'suspend' : 'activate';
+    const actionTitle = action === 'suspend' ? 'Suspend User' : 'Activate User';
+    const message = `Are you sure you want to ${actionText} ${userEmail}?${isBroker ? ' This is a broker account.' : ''}`;
+    
+    showModal(actionTitle, message, () => {
+        return performToggleStatus(userId, userEmail, action);
+    }, action, button);
+}
+
+function performToggleStatus(userId, userEmail, action) {
+    return new Promise((resolve, reject) => {
+        const button = actionButton;
+        const originalContent = button ? button.innerHTML : '';
+        
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Processing...';
+        }
+        
+        const formData = new FormData();
+        
+        if (action === 'suspend') {
+            const reason = document.getElementById('suspensionReason').value.trim();
+            formData.append('reason', reason);
+            
+            const fileInput = document.getElementById('suspensionAttachments');
+            if (fileInput.files.length > 0) {
+                for (let i = 0; i < Math.min(fileInput.files.length, 5); i++) {
+                    formData.append('attachments[]', fileInput.files[i]);
+                }
+            }
+        } else if (action === 'activate') {
+            const remarks = document.getElementById('activationRemarks').value.trim();
+            formData.append('remarks', remarks);
+            
+            const fileInput = document.getElementById('activationAttachments');
+            if (fileInput.files.length > 0) {
+                for (let i = 0; i < Math.min(fileInput.files.length, 5); i++) {
+                    formData.append('attachments[]', fileInput.files[i]);
+                }
+            }
+        }
+        
+        fetch(`/admin/dashboard/users/${userId}/toggle-status`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message, 'success');
+                closeModal();
+                setTimeout(() => location.reload(), 1000);
+                resolve();
+            } else {
+                showToast(data.message, 'error');
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = originalContent;
+                }
+                closeModal();
+                reject();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An error occurred. Please try again.', 'error');
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = originalContent;
+            }
+            closeModal();
+            reject(error);
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('suspensionAttachments');
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            
+            if (this.files.length > 0) {
+                for (let i = 0; i < Math.min(this.files.length, 5); i++) {
+                    const file = this.files[i];
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'flex items-center text-xs text-base-content/70';
+                    fileItem.innerHTML = `
+                        <span class="icon-[tabler--paperclip] size-3 mr-1"></span>
+                        ${file.name} (${(file.size / 1024).toFixed(1)} KB)
+                    `;
+                    fileList.appendChild(fileItem);
+                }
+                
+                if (this.files.length > 5) {
+                    const warning = document.createElement('div');
+                    warning.className = 'text-xs text-warning mt-1';
+                    warning.textContent = 'Only first 5 files will be uploaded';
+                    fileList.appendChild(warning);
+                }
+            }
+        });
+    }
+    
+    const activationFileInput = document.getElementById('activationAttachments');
+    if (activationFileInput) {
+        activationFileInput.addEventListener('change', function() {
+            const fileList = document.getElementById('activationFileList');
+            fileList.innerHTML = '';
+            
+            if (this.files.length > 0) {
+                for (let i = 0; i < Math.min(this.files.length, 5); i++) {
+                    const file = this.files[i];
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'flex items-center text-xs text-success';
+                    fileItem.innerHTML = `
+                        <span class="icon-[tabler--paperclip] size-3 mr-1"></span>
+                        ${file.name} (${(file.size / 1024).toFixed(1)} KB)
+                    `;
+                    fileList.appendChild(fileItem);
+                }
+                
+                if (this.files.length > 5) {
+                    const warning = document.createElement('div');
+                    warning.className = 'text-xs text-warning mt-1';
+                    warning.textContent = 'Only first 5 files will be uploaded';
+                    fileList.appendChild(warning);
+                }
+            }
+        });
+    }
+    
+    // Close modal when clicking outside
+    const modal = document.getElementById('confirmModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            // Close if clicking on the backdrop (not the modal content)
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    }
+});
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('confirmModal');
+        if (modal && !modal.classList.contains('hidden')) {
+            closeModal();
+        }
+    }
+});
+</script>
+{% endblock %}

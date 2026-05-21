@@ -1,0 +1,6 @@
+framework:
+    mailer:
+        # In development, use real SMTP for testing
+        dsn: '%env(MAILER_DSN)%'
+        # envelope:
+        #     recipients: ['dev@optimus-portal.local'] # Disabled - use real recipients for testing

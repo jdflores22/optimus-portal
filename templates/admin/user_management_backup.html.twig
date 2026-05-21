@@ -1,0 +1,625 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}User Management - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="card bg-base-100 shadow-sm mb-6">
+        <div class="card-body">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-base-content">User Management</h1>
+                    <p class="mt-1 text-sm text-base-content/70">Manage system users and their roles</p>
+                </div>
+                <a href="{{ path('app_admin_dashboard') }}" class="btn btn-outline btn-sm sm:btn-md w-full sm:w-auto">
+                    <span class="icon-[tabler--arrow-left] size-5"></span>
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success mb-6">
+            <span class="icon-[tabler--check] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error mb-6">
+            <span class="icon-[tabler--alert-circle] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    
+    <!-- Filters -->
+    <div class="card bg-base-100 shadow-sm mb-6">
+        <div class="card-body">
+            <form method="GET" class="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+                <div class="w-full sm:flex-1">
+                    <label for="role" class="label">
+                        <span class="label-text">Filter by Role</span>
+                    </label>
+                    <select name="role" id="role" class="select select-bordered w-full">
+                        <option value="all" {% if currentFilter == 'all' or not currentFilter %}selected{% endif %}>All Roles</option>
+                        {% for role in allRoles %}
+                            <option value="{{ role.value }}" {% if currentFilter == role.value %}selected{% endif %}>
+                                {{ role.value|replace({'_': ' '})|title }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-full sm:w-auto">
+                    <span class="icon-[tabler--filter] size-5"></span>
+                    Filter
+                </button>
+            </form>
+        </div>
+    </div>
+
+        <!-- Users by Role -->
+        {% for role, users in usersByRole %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">
+                        {{ role|replace({'_': ' '})|title }} 
+                        <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            {{ users|length }}
+                        </span>
+                    </h3>
+                </div>
+                <div class="overflow-hidden">
+                    {% if users|length > 0 %}
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        User
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Status
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Created
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Failed Logins
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Locked Until
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for user in users %}
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-10 w-10">
+                                                    <div class="h-10 w-10 rounded-full {{ avatar_colors(user) }} flex items-center justify-center">
+                                                        <span class="text-sm font-medium">
+                                                            {{ user.email|slice(0, 2)|upper }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="ml-4">
+                                                    <div class="text-sm font-medium text-gray-900">{{ user.email }}</div>
+                                                    {% if user.role.value == 'CONSIGNEE' %}
+                                                        <div class="text-sm text-gray-500">{{ user.businessName }}</div>
+                                                    {% elseif user.role.value == 'BROKER' %}
+                                                        <div class="text-sm text-gray-500">{{ user.fullName }}</div>
+                                                    {% elseif user.role.value in ['EVALUATOR', 'SHIPPING_LINES_ADMIN', 'SL_STAFF', 'ACCOUNTING', 'SYSTEM_ADMIN'] and user.firstName is defined %}
+                                                        <div class="text-sm text-gray-500">{{ user.firstName }} {{ user.lastName }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            {% set statusClass = 'bg-gray-100 text-gray-800' %}
+                                            {% if user.status.value == 'APPROVED' %}
+                                                {% set statusClass = 'bg-green-100 text-green-800' %}
+                                            {% elseif user.status.value == 'DENIED' %}
+                                                {% set statusClass = 'bg-red-100 text-red-800' %}
+                                            {% elseif user.status.value == 'LOCKED' %}
+                                                {% set statusClass = 'bg-red-100 text-red-800' %}
+                                            {% elseif user.status.value == 'PENDING' %}
+                                                {% set statusClass = 'bg-blue-100 text-blue-800' %}
+                                            {% endif %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ statusClass }}">
+                                                {{ user.status.value|title }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {{ user.createdAt|date('M j, Y') }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {% if user.failedLoginAttempts > 0 %}
+                                                <span class="text-red-600 font-medium">{{ user.failedLoginAttempts }}</span>
+                                            {% else %}
+                                                {{ user.failedLoginAttempts }}
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {% if user.lockedUntil %}
+                                                <span class="text-red-600">{{ user.lockedUntil|date('M j, Y H:i') }}</span>
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <div class="flex items-center space-x-2">
+                                                {% if user.status.value == 'LOCKED' %}
+                                                    <form method="POST" action="{{ path('app_admin_unlock_user', {id: user.id}) }}" class="inline-block" onsubmit="return confirm('Are you sure you want to unlock this user account?');">
+                                                        <input type="hidden" name="_token" value="{{ csrf_token('unlock_user_' ~ user.id) }}">
+                                                        <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+                                                            </svg>
+                                                            Unlock
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                                
+                                                {% if user.status.value in ['APPROVED', 'DENIED'] %}
+                                                    {% set isBroker = user.role.value == 'BROKER' %}
+                                                    {% set isSystemAdmin = user.role.value == 'SYSTEM_ADMIN' %}
+                                                    {% set isCurrentUserSystemAdmin = is_granted('ROLE_SYSTEM_ADMIN') %}
+                                                    {% set canToggle = not isBroker or isCurrentUserSystemAdmin %}
+                                                    
+                                                    {# System Admins cannot be suspended #}
+                                                    {% if isSystemAdmin %}
+                                                        <span class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-500 bg-gray-100 rounded-md">
+                                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                                            </svg>
+                                                            Protected
+                                                        </span>
+                                                    {% elseif user.status.value == 'APPROVED' %}
+                                                        <button 
+                                                            onclick="toggleUserStatus({{ user.id }}, '{{ user.email }}', 'suspend', {{ isBroker ? 'true' : 'false' }}, this)"
+                                                            class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200 {{ not canToggle ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                                            {{ not canToggle ? 'disabled title="Only System Administrators can suspend broker accounts"' : '' }}>
+                                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                                            </svg>
+                                                            Suspend
+                                                        </button>
+                                                    {% else %}
+                                                        <button 
+                                                            onclick="toggleUserStatus({{ user.id }}, '{{ user.email }}', 'activate', {{ isBroker ? 'true' : 'false' }}, this)"
+                                                            class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 {{ not canToggle ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                                            {{ not canToggle ? 'disabled title="Only System Administrators can activate broker accounts"' : '' }}>
+                                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                            </svg>
+                                                            Activate
+                                                        </button>
+                                                    {% endif %}
+                                                {% endif %}
+                                                
+                                                {% if user.status.value not in ['LOCKED', 'APPROVED', 'DENIED'] %}
+                                                    <span class="text-gray-400 text-xs">No actions</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <div class="px-6 py-8 text-center">
+                            <p class="text-gray-500">No users found for this role.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+
+        {% if usersByRole|length == 0 %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-8 text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No users found</h3>
+                    <p class="mt-1 text-sm text-gray-500">No users match the current filter criteria.</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Toast Notification Container -->
+<div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+<!-- Confirmation Modal -->
+<div id="confirmModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999]">
+    <div class="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-yellow-100 rounded-full">
+                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 text-center mt-4" id="modalTitle">Confirm Action</h3>
+            <p class="text-sm text-gray-500 text-center mt-2" id="modalMessage"></p>
+            
+            <!-- Suspension Form (only shown when suspending) -->
+            <div id="suspensionForm" class="hidden mt-4">
+                <div class="mb-4">
+                    <label for="suspensionReason" class="block text-sm font-medium text-gray-700 mb-2">
+                        Reason for Suspension <span class="text-red-500">*</span>
+                    </label>
+                    <textarea 
+                        id="suspensionReason" 
+                        rows="4" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder="Please provide a detailed reason for suspending this user..."
+                        required></textarea>
+                    <p class="text-xs text-gray-500 mt-1">This reason will be recorded in the audit log.</p>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="suspensionAttachments" class="block text-sm font-medium text-gray-700 mb-2">
+                        Attachments <span class="text-gray-500">(Optional)</span>
+                    </label>
+                    <input 
+                        type="file" 
+                        id="suspensionAttachments" 
+                        multiple
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">Accepted formats: PDF, DOC, DOCX, JPG, PNG (Max 5 files)</p>
+                    <div id="fileList" class="mt-2 space-y-1"></div>
+                </div>
+            </div>
+            
+            <!-- Activation Form (only shown when activating) -->
+            <div id="activationForm" class="hidden mt-4">
+                <div class="mb-4">
+                    <label for="activationRemarks" class="block text-sm font-medium text-gray-700 mb-2">
+                        Activation Remarks <span class="text-red-500">*</span>
+                    </label>
+                    <textarea 
+                        id="activationRemarks" 
+                        rows="4" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                        placeholder="Please provide remarks for activating this user (e.g., issue resolved, appeal approved, etc.)..."
+                        required></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Explain why this account is being reactivated.</p>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="activationAttachments" class="block text-sm font-medium text-gray-700 mb-2">
+                        Supporting Documents <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="file" 
+                        id="activationAttachments" 
+                        multiple
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                        required
+                    />
+                    <p class="text-xs text-gray-500 mt-1">Required: Upload proof/documents supporting the activation (Max 5 files)</p>
+                    <div id="activationFileList" class="mt-2 space-y-1"></div>
+                </div>
+            </div>
+            
+            <div class="flex space-x-3 mt-6">
+                <button onclick="closeModal()" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
+                    Cancel
+                </button>
+                <button onclick="confirmAction()" id="confirmButton" class="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let pendingAction = null;
+let currentActionType = null;
+let actionButton = null; // Store button reference
+
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    
+    const bgColor = type === 'success' ? 'bg-green-50 border-green-200' : 
+                    type === 'error' ? 'bg-red-50 border-red-200' : 
+                    'bg-blue-50 border-blue-200';
+    const textColor = type === 'success' ? 'text-green-800' : 
+                      type === 'error' ? 'text-red-800' : 
+                      'text-blue-800';
+    const iconColor = type === 'success' ? 'text-green-400' : 
+                      type === 'error' ? 'text-red-400' : 
+                      'text-blue-400';
+    
+    const icon = type === 'success' 
+        ? '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>'
+        : '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>';
+    
+    toast.className = `${bgColor} border ${textColor} px-4 py-3 rounded-lg shadow-lg flex items-center space-x-3 min-w-[300px] transform transition-all duration-300 ease-in-out`;
+    toast.innerHTML = `
+        <svg class="w-5 h-5 ${iconColor} flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            ${icon}
+        </svg>
+        <span class="flex-1 text-sm font-medium">${message}</span>
+        <button onclick="this.parentElement.remove()" class="flex-shrink-0 ${textColor} hover:${textColor} focus:outline-none">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+            </svg>
+        </button>
+    `;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+
+function showModal(title, message, action, actionType, button) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalMessage').textContent = message;
+    actionButton = button; // Store button reference
+    
+    // Show/hide forms based on action type
+    const suspensionForm = document.getElementById('suspensionForm');
+    const activationForm = document.getElementById('activationForm');
+    const confirmButton = document.getElementById('confirmButton');
+    
+    if (actionType === 'suspend') {
+        suspensionForm.classList.remove('hidden');
+        activationForm.classList.add('hidden');
+        confirmButton.innerHTML = 'Suspend User';
+        confirmButton.className = 'flex-1 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500';
+        // Clear previous values
+        document.getElementById('suspensionReason').value = '';
+        document.getElementById('suspensionAttachments').value = '';
+        document.getElementById('fileList').innerHTML = '';
+    } else {
+        suspensionForm.classList.add('hidden');
+        activationForm.classList.remove('hidden');
+        confirmButton.innerHTML = 'Activate User';
+        confirmButton.className = 'flex-1 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500';
+        // Clear previous values
+        document.getElementById('activationRemarks').value = '';
+        document.getElementById('activationAttachments').value = '';
+        document.getElementById('activationFileList').innerHTML = '';
+    }
+    
+    document.getElementById('confirmModal').classList.remove('hidden');
+    pendingAction = action;
+    currentActionType = actionType;
+}
+
+function closeModal() {
+    document.getElementById('confirmModal').classList.add('hidden');
+    pendingAction = null;
+    currentActionType = null;
+    actionButton = null;
+}
+
+function confirmAction() {
+    // Validate suspension reason if suspending
+    if (currentActionType === 'suspend') {
+        const reason = document.getElementById('suspensionReason').value.trim();
+        if (!reason) {
+            showToast('Please provide a reason for suspension', 'error');
+            return;
+        }
+    }
+    
+    // Validate activation remarks and attachments if activating
+    if (currentActionType === 'activate') {
+        const remarks = document.getElementById('activationRemarks').value.trim();
+        if (!remarks) {
+            showToast('Please provide activation remarks', 'error');
+            return;
+        }
+        
+        const fileInput = document.getElementById('activationAttachments');
+        if (fileInput.files.length === 0) {
+            showToast('Please upload at least one supporting document', 'error');
+            return;
+        }
+    }
+    
+    // Show loading spinner in modal
+    const confirmButton = document.getElementById('confirmButton');
+    const originalButtonContent = confirmButton.innerHTML;
+    confirmButton.disabled = true;
+    confirmButton.innerHTML = `
+        <svg class="animate-spin h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+    `;
+    
+    if (pendingAction) {
+        pendingAction().catch(() => {
+            // Restore button on error
+            confirmButton.disabled = false;
+            confirmButton.innerHTML = originalButtonContent;
+        });
+    }
+}
+
+function toggleUserStatus(userId, userEmail, action, isBroker, button) {
+    const actionText = action === 'suspend' ? 'suspend' : 'activate';
+    const actionTitle = action === 'suspend' ? 'Suspend User' : 'Activate User';
+    const message = `Are you sure you want to ${actionText} ${userEmail}?${isBroker ? ' This is a broker account.' : ''}`;
+    
+    showModal(actionTitle, message, () => {
+        return performToggleStatus(userId, userEmail, action);
+    }, action, button);
+}
+
+function performToggleStatus(userId, userEmail, action) {
+    return new Promise((resolve, reject) => {
+        const button = actionButton;
+        const originalContent = button ? button.innerHTML : '';
+        
+        // Show loading state on action button
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = `
+                <svg class="animate-spin h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+            `;
+        }
+        
+        // Prepare form data
+        const formData = new FormData();
+        
+        if (action === 'suspend') {
+            const reason = document.getElementById('suspensionReason').value.trim();
+            formData.append('reason', reason);
+            
+            // Add file attachments
+            const fileInput = document.getElementById('suspensionAttachments');
+            if (fileInput.files.length > 0) {
+                for (let i = 0; i < Math.min(fileInput.files.length, 5); i++) {
+                    formData.append('attachments[]', fileInput.files[i]);
+                }
+            }
+        } else if (action === 'activate') {
+            const remarks = document.getElementById('activationRemarks').value.trim();
+            formData.append('remarks', remarks);
+            
+            // Add file attachments (required for activation)
+            const fileInput = document.getElementById('activationAttachments');
+            if (fileInput.files.length > 0) {
+                for (let i = 0; i < Math.min(fileInput.files.length, 5); i++) {
+                    formData.append('attachments[]', fileInput.files[i]);
+                }
+            }
+        }
+        
+        fetch(`/admin/dashboard/users/${userId}/toggle-status`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message, 'success');
+                closeModal();
+                
+                // Update the UI
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+                resolve();
+            } else {
+                showToast(data.message, 'error');
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = originalContent;
+                }
+                closeModal();
+                reject();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An error occurred. Please try again.', 'error');
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = originalContent;
+            }
+            closeModal();
+            reject(error);
+        });
+    });
+}
+
+// File input change handler to show selected files
+document.addEventListener('DOMContentLoaded', function() {
+    // Suspension attachments
+    const fileInput = document.getElementById('suspensionAttachments');
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            
+            if (this.files.length > 0) {
+                for (let i = 0; i < Math.min(this.files.length, 5); i++) {
+                    const file = this.files[i];
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'flex items-center text-xs text-gray-600';
+                    fileItem.innerHTML = `
+                        <svg class="w-3 h-3 mr-1 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z" clip-rule="evenodd"/>
+                        </svg>
+                        ${file.name} (${(file.size / 1024).toFixed(1)} KB)
+                    `;
+                    fileList.appendChild(fileItem);
+                }
+                
+                if (this.files.length > 5) {
+                    const warning = document.createElement('div');
+                    warning.className = 'text-xs text-yellow-600 mt-1';
+                    warning.textContent = 'Only first 5 files will be uploaded';
+                    fileList.appendChild(warning);
+                }
+            }
+        });
+    }
+    
+    // Activation attachments
+    const activationFileInput = document.getElementById('activationAttachments');
+    if (activationFileInput) {
+        activationFileInput.addEventListener('change', function() {
+            const fileList = document.getElementById('activationFileList');
+            fileList.innerHTML = '';
+            
+            if (this.files.length > 0) {
+                for (let i = 0; i < Math.min(this.files.length, 5); i++) {
+                    const file = this.files[i];
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'flex items-center text-xs text-gray-600';
+                    fileItem.innerHTML = `
+                        <svg class="w-3 h-3 mr-1 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z" clip-rule="evenodd"/>
+                        </svg>
+                        ${file.name} (${(file.size / 1024).toFixed(1)} KB)
+                    `;
+                    fileList.appendChild(fileItem);
+                }
+                
+                if (this.files.length > 5) {
+                    const warning = document.createElement('div');
+                    warning.className = 'text-xs text-yellow-600 mt-1';
+                    warning.textContent = 'Only first 5 files will be uploaded';
+                    fileList.appendChild(warning);
+                }
+            }
+        });
+    }
+});
+
+// Close modal on escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeModal();
+    }
+});
+</script>
+{% endblock %}

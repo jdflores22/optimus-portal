@@ -1,0 +1,148 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Accreditation Pending{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Top Navigation -->
+    <nav class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-blue-600">OPTIMUS</span>
+                    <span class="ml-4 text-gray-600">Broker Portal</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div class="text-center">
+            <!-- Status Icon -->
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-6
+                {% if status == 'PENDING' %}
+                    bg-blue-100
+                {% elseif status == 'DENIED' %}
+                    bg-red-100
+                {% else %}
+                    bg-gray-100
+                {% endif %}">
+                {% if status == 'PENDING' %}
+                    <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                {% elseif status == 'DENIED' %}
+                    <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                {% else %}
+                    <svg class="h-8 w-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                {% endif %}
+            </div>
+
+            <!-- Status Message -->
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">
+                {% if status == 'PENDING' %}
+                    Accreditation Under Review
+                {% elseif status == 'DENIED' %}
+                    Accreditation Denied
+                {% elseif status == 'REJECTED' %}
+                    Accreditation Rejected
+                {% elseif status == 'COMPLIANCE_REQUIRED' %}
+                    Compliance Required
+                {% elseif status == 'NOT_SUBMITTED' %}
+                    Accreditation Not Submitted
+                {% else %}
+                    Accreditation Status: {{ status }}
+                {% endif %}
+            </h1>
+
+            <div class="max-w-md mx-auto">
+                {% if status == 'NOT_SUBMITTED' %}
+                    <p class="text-gray-600 mb-6">
+                        You need to submit your broker accreditation application before you can access shipment operations.
+                    </p>
+                    
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                        <h3 class="text-sm font-semibold text-blue-900 mb-2">Get Started</h3>
+                        <p class="text-sm text-blue-800">
+                            Submit your accreditation application to begin the approval process and gain access to shipment operations.
+                        </p>
+                    </div>
+
+                {% elseif status == 'PENDING' %}
+                    <p class="text-gray-600 mb-6">
+                        Your broker accreditation application is currently being reviewed by our evaluation team. 
+                        You will receive an email notification once the review is complete.
+                    </p>
+                    
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                        <h3 class="text-sm font-semibold text-blue-900 mb-2">What happens next?</h3>
+                        <ul class="text-sm text-blue-800 text-left space-y-1">
+                            <li>• Evaluator reviews your application</li>
+                            <li>• Shipping Lines Admin provides final approval</li>
+                            <li>• You'll receive email notification of the decision</li>
+                            <li>• Once approved, you can access shipment operations</li>
+                        </ul>
+                    </div>
+
+                {% elseif status == 'DENIED' or status == 'REJECTED' %}
+                    <p class="text-gray-600 mb-6">
+                        Your broker accreditation application has been {{ status|lower }}. 
+                        Please contact the shipping lines administration for more information about reapplying.
+                    </p>
+                    
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                        <h3 class="text-sm font-semibold text-red-900 mb-2">Next Steps</h3>
+                        <p class="text-sm text-red-800">
+                            Contact shipping lines administration to understand the reasons for {{ status|lower }} and 
+                            requirements for reapplication.
+                        </p>
+                    </div>
+
+                {% elseif status == 'COMPLIANCE_REQUIRED' %}
+                    <p class="text-gray-600 mb-6">
+                        Your accreditation application requires additional compliance documentation. 
+                        Please review the requirements and submit the necessary documents.
+                    </p>
+                    
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+                        <h3 class="text-sm font-semibold text-orange-900 mb-2">Action Required</h3>
+                        <p class="text-sm text-orange-800">
+                            Submit the required compliance documentation to continue the approval process.
+                        </p>
+                    </div>
+
+                {% else %}
+                    <p class="text-gray-600 mb-6">
+                        Your accreditation status is currently {{ status }}. Please contact system administration 
+                        for assistance with accessing shipment operations.
+                    </p>
+                {% endif %}
+
+                <!-- Action Buttons -->
+                <div class="space-y-3">
+                    {% if status == 'NOT_SUBMITTED' %}
+                        <a href="{{ path('accreditation_index') }}" 
+                           class="w-full inline-flex justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            Submit Accreditation
+                        </a>
+                    {% elseif status == 'PENDING' or status == 'COMPLIANCE_REQUIRED' %}
+                        <a href="{{ path('accreditation_index') }}" 
+                           class="w-full inline-flex justify-center px-6 py-3 border border-blue-300 rounded-lg text-blue-700 bg-white hover:bg-blue-50">
+                            View Application Status
+                        </a>
+                    {% endif %}
+                    
+                    <a href="{{ path('app_logout') }}" 
+                       class="w-full inline-flex justify-center px-6 py-3 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

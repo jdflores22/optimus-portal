@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix PWA Installation - Optimus</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        .error-code {
+            background: #fee;
+            border-left: 4px solid #f44;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .step {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        button {
+            width: 100%;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 0;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .danger {
+            background: #dc3545;
+        }
+        .success {
+            background: #28a745;
+        }
+        #status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            display: none;
+        }
+        #status.show {
+            display: block;
+        }
+        #status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        #status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix PWA Installation Error</h1>
+        <p style="color: #666; margin-bottom: 20px;">If you're seeing an error, follow these steps:</p>
+        
+        <div class="error-code">
+            ERR_FAILED<br>
+            http://127.0.0.6:8000/
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ Important:</strong> You must uninstall the PWA from your home screen first, then follow the steps below.
+        </div>
+        
+        <div class="step">
+            <span class="step-number">1</span>
+            <strong>Uninstall PWA</strong><br>
+            Long press the app icon → Uninstall
+        </div>
+        
+        <div class="step">
+            <span class="step-number">2</span>
+            <strong>Clear Everything</strong><br>
+            Click the button below to clear all cached data
+        </div>
+        
+        <button onclick="clearEverything()" class="danger">
+            🔥 Clear All Data
+        </button>
+        
+        <div id="status"></div>
+        
+        <div class="step">
+            <span class="step-number">3</span>
+            <strong>Reinstall PWA</strong><br>
+            After clearing, go to home page and install again
+        </div>
+        
+        <button onclick="goHome()" class="success" style="display: none;" id="homeBtn">
+            ✅ Go to Home & Reinstall
+        </button>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        
+        <details style="margin-top: 20px;">
+            <summary style="cursor: pointer; color: #667eea; font-weight: 600;">Advanced Options</summary>
+            <div style="margin-top: 15px;">
+                <button onclick="clearCache()">Clear Cache Only</button>
+                <button onclick="unregisterSW()">Unregister Service Worker</button>
+                <button onclick="clearStorage()">Clear Storage Only</button>
+            </div>
+        </details>
+    </div>
+    
+    <script>
+        function showStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'show ' + (isError ? 'error' : 'success');
+        }
+        
+        async function clearEverything() {
+            showStatus('🔄 Clearing all data... Please wait...');
+            
+            try {
+                let cleared = [];
+                
+                // Clear all caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    cleared.push(`${cacheNames.length} caches`);
+                }
+                
+                // Unregister all service workers
+                if ('serviceWorker' in navigator) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(regs.map(reg => reg.unregister()));
+                    cleared.push(`${regs.length} service workers`);
+                }
+                
+                // Clear storage
+                localStorage.clear();
+                sessionStorage.clear();
+                cleared.push('localStorage & sessionStorage');
+                
+                // Clear IndexedDB
+                if ('indexedDB' in window) {
+                    try {
+                        const dbs = await indexedDB.databases();
+                        dbs.forEach(db => indexedDB.deleteDatabase(db.name));
+                        cleared.push('IndexedDB');
+                    } catch (e) {
+                        console.log('IndexedDB clear skipped:', e);
+                    }
+                }
+                
+                showStatus(`✅ Cleared: ${cleared.join(', ')}`);
+                document.getElementById('homeBtn').style.display = 'block';
+                
+            } catch (error) {
+                showStatus(`❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        async function clearCache() {
+            try {
+                const names = await caches.keys();
+                await Promise.all(names.map(name => caches.delete(name)));
+                showStatus(`✅ Cleared ${names.length} cache(s)`);
+            } catch (error) {
+                showStatus(`❌ ${error.message}`, true);
+            }
+        }
+        
+        async function unregisterSW() {
+            try {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(regs.map(reg => reg.unregister()));
+                showStatus(`✅ Unregistered ${regs.length} service worker(s)`);
+            } catch (error) {
+                showStatus(`❌ ${error.message}`, true);
+            }
+        }
+        
+        function clearStorage() {
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+                showStatus('✅ Cleared storage');
+            } catch (error) {
+                showStatus(`❌ ${error.message}`, true);
+            }
+        }
+        
+        function goHome() {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

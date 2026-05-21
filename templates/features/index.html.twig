@@ -1,0 +1,748 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}OPTIMUS - Complete Shipping Management Platform{% endblock %}
+
+{% block body %}
+</div> {# Close the centered wrapper from base.html.twig #}
+
+<div class="fixed inset-0 overflow-y-auto bg-white">
+    <!-- Hero Section -->
+    <div class="relative bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+            <div class="text-center max-w-4xl mx-auto">
+                <div class="mb-8">
+                    <h1 class="text-6xl md:text-8xl font-extrabold mb-2 tracking-tight">
+                        <span class="bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                            OPTIMUS
+                        </span>
+                    </h1>
+                    <p class="text-sm text-gray-400 tracking-wider">
+                        Developed By: Trans-net Software Development Services
+                    </p>
+                </div>
+                <div class="inline-block mb-6">
+                    <span class="px-4 py-2 rounded-full text-sm font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                        Enterprise Shipping Management
+                    </span>
+                </div>
+                <h2 class="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+                    Automate Container Management.<br>
+                    <span class="text-cyan-400">Streamline Your Workflow.</span>
+                </h2>
+                <p class="text-xl md:text-2xl text-gray-300 mb-12 leading-relaxed">
+                    Container-level eDO management that automates workflows, eliminates delays, and keeps cargo moving 24/7.
+                </p>
+                
+                <a href="{{ path('app_login') }}" class="inline-flex items-center px-10 py-5 bg-cyan-500 hover:bg-cyan-600 text-white text-lg font-bold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-xl shadow-cyan-500/30">
+                    Access System
+                    <svg class="w-6 h-6 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="bg-slate-50 border-y border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                <div>
+                    <div class="text-4xl font-bold text-slate-900 mb-2">99.9%</div>
+                    <div class="text-sm text-gray-600 uppercase tracking-wide">Uptime SLA</div>
+                </div>
+                <div>
+                    <div class="text-4xl font-bold text-slate-900 mb-2">24/7</div>
+                    <div class="text-sm text-gray-600 uppercase tracking-wide">System Availability</div>
+                </div>
+                <div>
+                    <div class="text-4xl font-bold text-slate-900 mb-2">50K+</div>
+                    <div class="text-sm text-gray-600 uppercase tracking-wide">Containers/Month</div>
+                </div>
+                <div>
+                    <div class="text-4xl font-bold text-slate-900 mb-2">&lt;60s</div>
+                    <div class="text-sm text-gray-600 uppercase tracking-wide">eDO Generation Time</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Features Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
+                Power Up Your Operations
+            </h2>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                Eight core capabilities that automate workflows, eliminate bottlenecks, and scale revenue—on autopilot.
+            </p>
+        </div>
+
+        <!-- Feature Grid -->
+        <div class="space-y-24">
+            <!-- Feature 1: Container-Level eDO -->
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-block px-4 py-2 bg-cyan-100 text-cyan-700 rounded-full text-sm font-semibold mb-4">
+                        eDO Management
+                    </div>
+                    <h3 class="text-3xl font-bold text-slate-900 mb-4">
+                        Container-Level eDO Generation
+                    </h3>
+                    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+                        Individual eDO for each container with unique tracking numbers and independent payment processing. No more batch delays or payment bottlenecks—release cargo as soon as it's ready.
+                    </p>
+                    <div class="space-y-3">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Unique eDO number per container</span>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Independent payment workflows</span>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Automated document generation</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl p-12 border border-cyan-200">
+                    <div class="text-center">
+                        <div class="text-6xl font-bold text-cyan-600 mb-2">&lt;60s</div>
+                        <div class="text-gray-600 mb-8">Average eDO generation time</div>
+                        <div class="text-5xl font-bold text-slate-900 mb-2">100%</div>
+                        <div class="text-gray-600">Automated processing</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 2: Expiration Detection -->
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="order-2 md:order-1 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-12 border border-purple-200">
+                    <div class="text-center">
+                        <div class="text-6xl font-bold text-purple-600 mb-2">0</div>
+                        <div class="text-gray-600 mb-8">Expired eDOs missed</div>
+                        <div class="text-5xl font-bold text-slate-900 mb-2">24/7</div>
+                        <div class="text-gray-600">Automated monitoring</div>
+                    </div>
+                </div>
+                <div class="order-1 md:order-2">
+                    <div class="inline-block px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold mb-4">
+                        Smart Monitoring
+                    </div>
+                    <h3 class="text-3xl font-bold text-slate-900 mb-4">
+                        Auto Expiration Detection
+                    </h3>
+                    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+                        Real-time monitoring with automatic expiration checks and instant notifications to all stakeholders. Never miss a deadline or lose cargo to expired documents again.
+                    </p>
+                    <div class="space-y-3">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Automated expiration tracking</span>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Multi-channel notifications</span>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Proactive alerts before expiration</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 3: Smart Regeneration -->
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-block px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-semibold mb-4">
+                        Self-Service
+                    </div>
+                    <h3 class="text-3xl font-bold text-slate-900 mb-4">
+                        Smart Regeneration Workflow
+                    </h3>
+                    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+                        Self-service regeneration workflow with automated routing and admin override capabilities. Empower users while maintaining control and compliance.
+                    </p>
+                    <div class="space-y-3">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Automated approval workflows</span>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Admin override controls</span>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Full audit trail</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-12 border border-green-200">
+                    <div class="text-center">
+                        <div class="text-6xl font-bold text-green-600 mb-2">80%</div>
+                        <div class="text-gray-600 mb-8">Faster regeneration process</div>
+                        <div class="text-5xl font-bold text-slate-900 mb-2">100%</div>
+                        <div class="text-gray-600">Compliance maintained</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 4: Manifest & NOA Management -->
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="order-2 md:order-1 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-12 border border-orange-200">
+                    <div class="text-center">
+                        <div class="text-6xl font-bold text-orange-600 mb-2">₱500</div>
+                        <div class="text-gray-600 mb-8">Manifest access fee</div>
+                        <div class="text-5xl font-bold text-slate-900 mb-2">2-Stage</div>
+                        <div class="text-gray-600">Payment validation</div>
+                    </div>
+                </div>
+                <div class="order-1 md:order-2">
+                    <div class="inline-block px-4 py-2 bg-orange-100 text-orange-700 rounded-full text-sm font-semibold mb-4">
+                        Workflow Management
+                    </div>
+                    <h3 class="text-3xl font-bold text-slate-900 mb-4">
+                        Manifest & NOA Management
+                    </h3>
+                    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+                        Complete lifecycle management from manifest upload through NOA generation to final eDO. Two-stage payment validation ensures proper authorization at every step.
+                    </p>
+                    <div class="space-y-3">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Automated manifest processing</span>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Two-stage payment validation</span>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Automated NOA generation</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 5: Broker-Consignee Management -->
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-block px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full text-sm font-semibold mb-4">
+                        Relationship Management
+                    </div>
+                    <h3 class="text-3xl font-bold text-slate-900 mb-4">
+                        Broker-Consignee Network
+                    </h3>
+                    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+                        Referral-based broker registration with workspace isolation. Consignees control their broker network while brokers manage multiple clients with complete data separation.
+                    </p>
+                    <div class="space-y-3">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Referral code authorization</span>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Workspace isolation per consignee</span>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Broker transfer workflows</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-12 border border-indigo-200">
+                    <div class="text-center">
+                        <div class="text-6xl font-bold text-indigo-600 mb-2">100%</div>
+                        <div class="text-gray-600 mb-8">Data isolation</div>
+                        <div class="text-5xl font-bold text-slate-900 mb-2">Multi</div>
+                        <div class="text-gray-600">Workspace support</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 6: Container Dwell Time -->
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="order-2 md:order-1 bg-gradient-to-br from-red-50 to-rose-50 rounded-2xl p-12 border border-red-200">
+                    <div class="text-center">
+                        <div class="text-6xl font-bold text-red-600 mb-2">60/90</div>
+                        <div class="text-gray-600 mb-8">Day alert system</div>
+                        <div class="text-5xl font-bold text-slate-900 mb-2">Auto</div>
+                        <div class="text-gray-600">Terminal return</div>
+                    </div>
+                </div>
+                <div class="order-1 md:order-2">
+                    <div class="inline-block px-4 py-2 bg-red-100 text-red-700 rounded-full text-sm font-semibold mb-4">
+                        Dwell Time Management
+                    </div>
+                    <h3 class="text-3xl font-bold text-slate-900 mb-4">
+                        Automated Dwell Time Monitoring
+                    </h3>
+                    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+                        Intelligent monitoring with 60-day warnings and automatic 90-day terminal returns. Alert status pauses counting for containers under investigation.
+                    </p>
+                    <div class="space-y-3">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">60-day proactive alerts</span>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">90-day automatic return</span>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Pause/resume for alerts</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 7: Mobile Push Notifications -->
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="inline-block px-4 py-2 bg-pink-100 text-pink-700 rounded-full text-sm font-semibold mb-4">
+                        Mobile Experience
+                    </div>
+                    <h3 class="text-3xl font-bold text-slate-900 mb-4">
+                        Progressive Web App & Push Notifications
+                    </h3>
+                    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+                        Install as a native app with real-time push notifications. Stay informed even when offline with persistent login sessions and background sync.
+                    </p>
+                    <div class="space-y-3">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Native app experience</span>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Real-time push notifications</span>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Offline functionality</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl p-12 border border-pink-200">
+                    <div class="text-center">
+                        <div class="text-6xl font-bold text-pink-600 mb-2">&lt;5s</div>
+                        <div class="text-gray-600 mb-8">Notification delivery</div>
+                        <div class="text-5xl font-bold text-slate-900 mb-2">24/7</div>
+                        <div class="text-gray-600">Always connected</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 8: Multi-Tenant Shipping Lines -->
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="order-2 md:order-1 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-12 border border-teal-200">
+                    <div class="text-center">
+                        <div class="text-6xl font-bold text-teal-600 mb-2">50+</div>
+                        <div class="text-gray-600 mb-8">Shipping lines supported</div>
+                        <div class="text-5xl font-bold text-slate-900 mb-2">100%</div>
+                        <div class="text-gray-600">Data isolation</div>
+                    </div>
+                </div>
+                <div class="order-1 md:order-2">
+                    <div class="inline-block px-4 py-2 bg-teal-100 text-teal-700 rounded-full text-sm font-semibold mb-4">
+                        Multi-Tenant Platform
+                    </div>
+                    <h3 class="text-3xl font-bold text-slate-900 mb-4">
+                        Multi-Tenant Shipping Line Support
+                    </h3>
+                    <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+                        Support multiple shipping lines on a single platform with complete data isolation. Per-line accreditation, branding, and independent operations.
+                    </p>
+                    <div class="space-y-3">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Complete data isolation</span>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Per-line accreditation</span>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-gray-700">Unified client dashboard</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Why Choose Section -->
+    <div class="bg-slate-50 py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
+                    Why Choose OPTIMUS?
+                </h2>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white rounded-xl p-8 border border-gray-200">
+                    <div class="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Container-First Platform</h3>
+                    <p class="text-gray-600 mb-4">
+                        Built from the ground up for container-level operations. Every eDO, payment, and workflow is independent and scalable.
+                    </p>
+                    <div class="text-sm font-semibold text-cyan-600">Impact: One system for every container.</div>
+                </div>
+
+                <div class="bg-white rounded-xl p-8 border border-gray-200">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Real-Time Processing</h3>
+                    <p class="text-gray-600 mb-4">
+                        Generate eDOs in under 60 seconds. Monitor expirations 24/7. Process payments instantly. No delays, no bottlenecks.
+                    </p>
+                    <div class="text-sm font-semibold text-purple-600">Impact: Speed without compromise.</div>
+                </div>
+
+                <div class="bg-white rounded-xl p-8 border border-gray-200">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Enterprise Security</h3>
+                    <p class="text-gray-600 mb-4">
+                        Role-based access control, complete audit trails, and compliance-ready workflows. Security that scales with your operations.
+                    </p>
+                    <div class="text-sm font-semibold text-green-600">Impact: Trust at every level.</div>
+                </div>
+
+                <div class="bg-white rounded-xl p-8 border border-gray-200">
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Complete Automation</h3>
+                    <p class="text-gray-600 mb-4">
+                        From manifest creation to eDO generation to payment processing—automate the entire workflow without manual intervention.
+                    </p>
+                    <div class="text-sm font-semibold text-orange-600">Impact: More output, same headcount.</div>
+                </div>
+
+                <div class="bg-white rounded-xl p-8 border border-gray-200">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Revenue-Grade Analytics</h3>
+                    <p class="text-gray-600 mb-4">
+                        Track container throughput, payment cycles, dwell times, and operational efficiency. See what drives revenue in real time.
+                    </p>
+                    <div class="text-sm font-semibold text-blue-600">Impact: Outcomes over activity.</div>
+                </div>
+
+                <div class="bg-white rounded-xl p-8 border border-gray-200">
+                    <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Multi-Tenant Ready</h3>
+                    <p class="text-gray-600 mb-4">
+                        Support multiple shipping lines, brokers, and consignees on a single platform. Complete workspace isolation and data security.
+                    </p>
+                    <div class="text-sm font-semibold text-red-600">Impact: Scale without limits.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white py-24">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-4xl md:text-5xl font-bold mb-6">
+                Ready to Transform Your Operations?
+            </h2>
+            <p class="text-xl text-gray-300 mb-12">
+                Join leading shipping lines worldwide and experience the future of maritime logistics.
+            </p>
+            
+            <a href="{{ path('app_login') }}" class="inline-flex items-center px-12 py-6 bg-cyan-500 hover:bg-cyan-600 text-white text-xl font-bold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-xl shadow-cyan-500/30">
+                Access System
+                <svg class="w-6 h-6 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                </svg>
+            </a>
+
+            <div class="mt-12 flex items-center justify-center space-x-12 text-sm text-gray-400">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    Secure Access
+                </div>
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    24/7 Support
+                </div>
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    Enterprise Ready
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="bg-slate-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <div class="text-3xl font-bold mb-2 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                    OPTIMUS
+                </div>
+                <p class="text-gray-400 text-sm mb-4">
+                    Complete Shipping Management Platform
+                </p>
+                <div class="border-t border-gray-700 pt-6 mt-6">
+                    <p class="text-gray-500 text-sm">
+                        Developed By: <span class="text-cyan-400 font-semibold">Trans-net Software Development Services</span>
+                    </p>
+                    <p class="text-gray-600 text-xs mt-2">
+                        © {{ 'now'|date('Y') }} OPTIMUS. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Scroll Animation Observer
+document.addEventListener('DOMContentLoaded', function() {
+    // Fade-in animation on scroll
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('animate-fade-in');
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+
+    // Observe all feature sections
+    document.querySelectorAll('.grid.md\\:grid-cols-2, .grid.md\\:grid-cols-3, .grid.md\\:grid-cols-4').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(30px)';
+        el.style.transition = 'all 0.8s ease-out';
+        observer.observe(el);
+    });
+
+    // Number counter animation
+    function animateCounter(element, target, duration = 2000) {
+        const start = 0;
+        const increment = target / (duration / 16);
+        let current = start;
+
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= target) {
+                element.textContent = target;
+                clearInterval(timer);
+            } else {
+                element.textContent = Math.floor(current);
+            }
+        }, 16);
+    }
+
+    // Animate stats when visible
+    const statsObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && !entry.target.dataset.animated) {
+                entry.target.dataset.animated = 'true';
+                const numbers = entry.target.querySelectorAll('.text-4xl, .text-5xl, .text-6xl');
+                numbers.forEach(num => {
+                    const text = num.textContent.trim();
+                    if (text.includes('K+')) {
+                        animateCounter(num, 50);
+                        setTimeout(() => num.textContent = '50K+', 2000);
+                    } else if (text === '100%') {
+                        animateCounter(num, 100);
+                        setTimeout(() => num.textContent = '100%', 2000);
+                    } else if (text === '80%') {
+                        animateCounter(num, 80);
+                        setTimeout(() => num.textContent = '80%', 2000);
+                    } else if (text === '0') {
+                        num.textContent = '0';
+                    }
+                });
+            }
+        });
+    }, { threshold: 0.3 });
+
+    document.querySelectorAll('.bg-gradient-to-br').forEach(el => {
+        if (el.querySelector('.text-6xl, .text-5xl')) {
+            statsObserver.observe(el);
+        }
+    });
+
+    // Floating animation for hero section
+    const heroLogo = document.querySelector('h1 span');
+    if (heroLogo) {
+        heroLogo.style.animation = 'float 3s ease-in-out infinite';
+    }
+
+    // Pulse animation for badges
+    document.querySelectorAll('.inline-block.px-4.py-2').forEach(badge => {
+        badge.style.animation = 'pulse-subtle 2s ease-in-out infinite';
+    });
+
+    // Card hover effects
+    document.querySelectorAll('.bg-white.rounded-xl').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-8px)';
+            this.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+        });
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '';
+        });
+        card.style.transition = 'all 0.3s ease';
+    });
+});
+</script>
+
+<style>
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-subtle {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.9; }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.8s ease-out forwards;
+}
+
+/* Gradient animation for hero background */
+@keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.bg-gradient-to-br {
+    background-size: 200% 200%;
+    animation: gradient-shift 15s ease infinite;
+}
+
+/* Button glow effect */
+.bg-cyan-500 {
+    position: relative;
+    overflow: hidden;
+}
+
+.bg-cyan-500::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.bg-cyan-500:hover::before {
+    width: 300px;
+    height: 300px;
+}
+</style>
+
+<div class="min-h-screen flex items-center justify-center"> {# Re-open the wrapper for base.html.twig #}
+{% endblock %}

@@ -1,0 +1,441 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}eDO Release Queue - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="card">
+        <div class="card-body">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                <div class="flex-1 min-w-0">
+                    <h1 class="card-title text-xl sm:text-2xl">eDO Release Queue</h1>
+                    <p class="text-sm sm:text-base text-base-content/70 mt-1">Review and release pending electronic delivery orders</p>
+                </div>
+                <a href="{{ path('admin_payment_fee_config') }}" 
+                   class="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto">
+                    <span class="icon-[tabler--settings] size-5"></span>
+                    <span class="hidden sm:inline">Configure Payment Fee</span>
+                    <span class="sm:hidden">Configure Fee</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success">
+            <span class="icon-[tabler--check] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error">
+            <span class="icon-[tabler--alert-circle] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+
+    <!-- Analytics Stats -->
+    <div class="card">
+        <div class="card-body">
+            <div class="stats stats-vertical sm:stats-horizontal shadow w-full">
+                <div class="stat">
+                    <div class="stat-figure text-primary">
+                        <span class="icon-[tabler--file-text] size-8"></span>
+                    </div>
+                    <div class="stat-title">Total EDOs</div>
+                    <div class="stat-value text-primary">{{ stats.total }}</div>
+                    <div class="stat-desc">All pending orders</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-figure text-warning">
+                        <span class="icon-[tabler--clock] size-8"></span>
+                    </div>
+                    <div class="stat-title">Pending Validation</div>
+                    <div class="stat-value text-warning">{{ stats.pendingValidation }}</div>
+                    <div class="stat-desc">Awaiting review</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-figure text-success">
+                        <span class="icon-[tabler--circle-check] size-8"></span>
+                    </div>
+                    <div class="stat-title">Ready to Release</div>
+                    <div class="stat-value text-success">{{ stats.readyToRelease }}</div>
+                    <div class="stat-desc">Verified payments</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-figure text-info">
+                        <span class="icon-[tabler--currency-dollar] size-8"></span>
+                    </div>
+                    <div class="stat-title">Awaiting Payment</div>
+                    <div class="stat-value text-info">{{ stats.awaitingPayment }}</div>
+                    <div class="stat-desc">No payment yet</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="card">
+        <div class="card-body p-2">
+            <!-- Desktop Tabs -->
+            <div role="tablist" class="tabs tabs-boxed hidden md:flex">
+                <a href="{{ path('admin_edo_release_queue', {tab: 'all'}) }}" 
+                   role="tab" 
+                   class="tab {% if activeTab == 'all' %}tab-active{% endif %}">
+                    All EDOs
+                    <span class="badge badge-sm ml-2">{{ stats.total }}</span>
+                </a>
+                <a href="{{ path('admin_edo_release_queue', {tab: 'pending'}) }}" 
+                   role="tab" 
+                   class="tab {% if activeTab == 'pending' %}tab-active{% endif %}">
+                    Pending Validation
+                    <span class="badge badge-sm badge-warning ml-2">{{ stats.pendingValidation }}</span>
+                </a>
+                <a href="{{ path('admin_edo_release_queue', {tab: 'verified'}) }}" 
+                   role="tab" 
+                   class="tab {% if activeTab == 'verified' %}tab-active{% endif %}">
+                    Verified Payments
+                    <span class="badge badge-sm badge-success ml-2">{{ stats.readyToRelease }}</span>
+                </a>
+                <a href="{{ path('admin_edo_release_queue', {tab: 'awaiting'}) }}" 
+                   role="tab" 
+                   class="tab {% if activeTab == 'awaiting' %}tab-active{% endif %}">
+                    Awaiting Payment
+                    <span class="badge badge-sm badge-info ml-2">{{ stats.awaitingPayment }}</span>
+                </a>
+            </div>
+            
+            <!-- Mobile Tabs -->
+            <div role="tablist" class="tabs tabs-boxed md:hidden grid grid-cols-2 gap-1">
+                <a href="{{ path('admin_edo_release_queue', {tab: 'all'}) }}" 
+                   role="tab" 
+                   class="tab tab-sm {% if activeTab == 'all' %}tab-active{% endif %}">
+                    All
+                    <span class="badge badge-xs ml-1">{{ stats.total }}</span>
+                </a>
+                <a href="{{ path('admin_edo_release_queue', {tab: 'pending'}) }}" 
+                   role="tab" 
+                   class="tab tab-sm {% if activeTab == 'pending' %}tab-active{% endif %}">
+                    Pending
+                    <span class="badge badge-xs badge-warning ml-1">{{ stats.pendingValidation }}</span>
+                </a>
+                <a href="{{ path('admin_edo_release_queue', {tab: 'verified'}) }}" 
+                   role="tab" 
+                   class="tab tab-sm {% if activeTab == 'verified' %}tab-active{% endif %}">
+                    Verified
+                    <span class="badge badge-xs badge-success ml-1">{{ stats.readyToRelease }}</span>
+                </a>
+                <a href="{{ path('admin_edo_release_queue', {tab: 'awaiting'}) }}" 
+                   role="tab" 
+                   class="tab tab-sm {% if activeTab == 'awaiting' %}tab-active{% endif %}">
+                    Awaiting
+                    <span class="badge badge-xs badge-info ml-1">{{ stats.awaitingPayment }}</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Desktop Table View -->
+    <div class="card hidden md:block">
+        <div class="overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Manifest / eDO</th>
+                        <th>Consignee</th>
+                        <th>Broker</th>
+                        <th>Payment Status</th>
+                        <th>Generated</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if edos|length > 0 %}
+                        {% for edo in edos %}
+                            <tr class="hover">
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        <div class="avatar placeholder">
+                                            <div class="w-10 h-10 rounded-lg bg-primary text-primary-content">
+                                                <span class="icon-[tabler--file-text] size-5"></span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold">{{ edo.manifest.manifestNumber }}</div>
+                                            <div class="text-xs text-base-content/70">{{ edo.edoNumber }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="font-medium">
+                                        {% if edo.manifest.consignee %}
+                                            {{ edo.manifest.consignee.businessName }}
+                                        {% else %}
+                                            <span class="text-base-content/40 italic">Not declared</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if edo.manifest.broker %}
+                                        {{ edo.manifest.broker.fullName }}
+                                    {% else %}
+                                        <span class="text-base-content/40 italic">None</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% set payment = edo.currentPayment %}
+                                    {% if payment %}
+                                        {% if payment.status.value == 'pending_validation' %}
+                                            <span class="badge badge-warning badge-soft">
+                                                <span class="badge-icon icon-[tabler--clock]"></span>
+                                                Pending
+                                            </span>
+                                            <div class="text-xs font-semibold mt-1">₱{{ payment.amount|number_format(2) }}</div>
+                                        {% elseif payment.status.value == 'verified' %}
+                                            <span class="badge badge-success badge-soft">
+                                                <span class="badge-icon icon-[tabler--check]"></span>
+                                                Verified
+                                            </span>
+                                            <div class="text-xs font-semibold mt-1">₱{{ payment.amount|number_format(2) }}</div>
+                                        {% elseif payment.status.value == 'rejected' %}
+                                            <span class="badge badge-error badge-soft">
+                                                <span class="badge-icon icon-[tabler--x]"></span>
+                                                Rejected
+                                            </span>
+                                            <div class="text-xs font-semibold mt-1">₱{{ payment.amount|number_format(2) }}</div>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge badge-soft">
+                                            <span class="badge-icon icon-[tabler--plus]"></span>
+                                            Not Submitted
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="font-medium">{{ edo.generatedAt|date('M j, Y') }}</div>
+                                    <div class="text-xs text-base-content/50">{{ edo.generatedAt|date('g:i A') }}</div>
+                                </td>
+                                <td>
+                                    <div class="flex items-center justify-end gap-2">
+                                        {% set payment = edo.currentPayment %}
+                                        <button onclick="viewEDODetails({{ edo.id }})" 
+                                                class="btn btn-sm btn-primary btn-soft">
+                                            <span class="icon-[tabler--eye] size-4"></span>
+                                            View
+                                        </button>
+                                        
+                                        {% if payment and payment.status.value == 'pending_validation' %}
+                                            <button onclick="showValidatePaymentModal({{ payment.id }})" 
+                                                    class="btn btn-sm btn-success">
+                                                <span class="icon-[tabler--check] size-4"></span>
+                                                Validate
+                                            </button>
+                                        {% elseif payment and payment.status.value == 'verified' %}
+                                            {% if edo.status.value == 'pending_release' %}
+                                                <button onclick="releaseEDO({{ edo.id }})" 
+                                                        class="btn btn-sm btn-success">
+                                                    <span class="icon-[tabler--send] size-4"></span>
+                                                    Release
+                                                </button>
+                                            {% else %}
+                                                <span class="badge badge-success">Released</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-base-content/40 text-xs italic">Awaiting Payment</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-12">
+                                <span class="icon-[tabler--circle-check] size-12 text-success/40 mx-auto"></span>
+                                <h3 class="text-lg font-semibold mt-4">No pending eDOs</h3>
+                                <p class="text-sm text-base-content/70">All eDOs have been processed</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if totalPages > 1 %}
+            <div class="card-body border-t border-base-content/10">
+                <div class="flex items-center justify-between">
+                    <div class="hidden sm:block">
+                        <p class="text-sm text-base-content/70">
+                            Showing <span class="font-medium">{{ (page - 1) * perPage + 1 }}</span> to <span class="font-medium">{{ min(page * perPage, total) }}</span> of <span class="font-medium">{{ total }}</span> results
+                        </p>
+                    </div>
+                    <div class="join">
+                        {% if page > 1 %}
+                            <a href="{{ path('admin_edo_release_queue', {page: page - 1, tab: activeTab}) }}" class="join-item btn btn-sm">
+                                <span class="icon-[tabler--chevron-left] size-4"></span>
+                                Previous
+                            </a>
+                        {% endif %}
+                        
+                        {% for p in 1..totalPages %}
+                            {% if p == page %}
+                                <button class="join-item btn btn-sm btn-primary">{{ p }}</button>
+                            {% elseif p == 1 or p == totalPages or (p >= page - 2 and p <= page + 2) %}
+                                <a href="{{ path('admin_edo_release_queue', {page: p, tab: activeTab}) }}" class="join-item btn btn-sm">{{ p }}</a>
+                            {% elseif p == page - 3 or p == page + 3 %}
+                                <button class="join-item btn btn-sm btn-disabled">...</button>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page < totalPages %}
+                            <a href="{{ path('admin_edo_release_queue', {page: page + 1, tab: activeTab}) }}" class="join-item btn btn-sm">
+                                Next
+                                <span class="icon-[tabler--chevron-right] size-4"></span>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Mobile Card View -->
+    <div class="md:hidden space-y-3">
+        {% if edos|length > 0 %}
+            {% for edo in edos %}
+                {% set payment = edo.currentPayment %}
+                <div class="card bg-base-100 shadow">
+                    <div class="card-body p-4">
+                        <!-- Header -->
+                        <div class="flex items-start justify-between gap-3 mb-3">
+                            <div class="flex items-center gap-2 flex-1 min-w-0">
+                                <div class="avatar placeholder flex-shrink-0">
+                                    <div class="w-8 h-8 rounded-lg bg-primary text-primary-content">
+                                        <span class="icon-[tabler--file-text] size-4"></span>
+                                    </div>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-bold truncate">{{ edo.manifest.manifestNumber }}</p>
+                                    <p class="text-xs text-base-content/70 truncate">{{ edo.edoNumber }}</p>
+                                </div>
+                            </div>
+                            {% if payment %}
+                                {% if payment.status.value == 'pending_validation' %}
+                                    <span class="badge badge-warning badge-sm flex-shrink-0">Pending</span>
+                                {% elseif payment.status.value == 'verified' %}
+                                    <span class="badge badge-success badge-sm flex-shrink-0">Verified</span>
+                                {% elseif payment.status.value == 'rejected' %}
+                                    <span class="badge badge-error badge-sm flex-shrink-0">Rejected</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge badge-sm flex-shrink-0">No Payment</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Details -->
+                        <div class="space-y-2 text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="icon-[tabler--building] size-4 text-base-content/50"></span>
+                                <span class="text-base-content/70">Consignee:</span>
+                                <span class="font-medium truncate">
+                                    {% if edo.manifest.consignee %}
+                                        {{ edo.manifest.consignee.businessName }}
+                                    {% else %}
+                                        <span class="italic">Not declared</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+                                <span class="icon-[tabler--user] size-4 text-base-content/50"></span>
+                                <span class="text-base-content/70">Broker:</span>
+                                <span class="font-medium truncate">
+                                    {% if edo.manifest.broker %}
+                                        {{ edo.manifest.broker.fullName }}
+                                    {% else %}
+                                        <span class="italic">None</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            
+                            {% if payment %}
+                                <div class="flex items-center gap-2">
+                                    <span class="icon-[tabler--currency-peso] size-4 text-base-content/50"></span>
+                                    <span class="text-base-content/70">Amount:</span>
+                                    <span class="font-bold">₱{{ payment.amount|number_format(2) }}</span>
+                                </div>
+                            {% endif %}
+                            
+                            <div class="flex items-center gap-2">
+                                <span class="icon-[tabler--calendar] size-4 text-base-content/50"></span>
+                                <span class="text-base-content/70">Generated:</span>
+                                <span class="font-medium">{{ edo.generatedAt|date('M j, Y g:i A') }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex gap-2 pt-3 border-t border-base-content/10 mt-3">
+                            <button onclick="viewEDODetails({{ edo.id }})" 
+                                    class="btn btn-sm btn-primary btn-soft flex-1">
+                                <span class="icon-[tabler--eye] size-4"></span>
+                                View
+                            </button>
+                            
+                            {% if payment and payment.status.value == 'pending_validation' %}
+                                <button onclick="showValidatePaymentModal({{ payment.id }})" 
+                                        class="btn btn-sm btn-success flex-1">
+                                    <span class="icon-[tabler--check] size-4"></span>
+                                    Validate
+                                </button>
+                            {% elseif payment and payment.status.value == 'verified' %}
+                                {% if edo.status.value == 'pending_release' %}
+                                    <button onclick="releaseEDO({{ edo.id }})" 
+                                            class="btn btn-sm btn-success flex-1">
+                                        <span class="icon-[tabler--send] size-4"></span>
+                                        Release
+                                    </button>
+                                {% else %}
+                                    <span class="badge badge-success flex-1 justify-center">Released</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-base-content/40 text-xs italic flex-1 text-center py-2">Awaiting Payment</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="card bg-base-100 shadow">
+                <div class="card-body text-center py-12">
+                    <span class="icon-[tabler--circle-check] size-12 text-success/40 mx-auto"></span>
+                    <h3 class="text-base font-semibold mt-4">No pending eDOs</h3>
+                    <p class="text-sm text-base-content/70">All eDOs have been processed</p>
+                </div>
+            </div>
+        {% endif %}
+        
+        <!-- Mobile Pagination -->
+        {% if totalPages > 1 %}
+            <div class="flex items-center justify-between pt-4">
+                <div class="text-xs text-base-content/70">
+                    Page {{ page }} of {{ totalPages }}
+                </div>
+                <div class="join">
+                    {% if page > 1 %}
+                        <a href="{{ path('admin_edo_release_queue', {page: page - 1, tab: activeTab}) }}" 
+                           class="join-item btn btn-sm">Previous</a>
+                    {% endif %}
+                    {% if page < totalPages %}
+                        <a href="{{ path('admin_edo_release_queue', {page: page + 1, tab: activeTab}) }}" 
+                           class="join-item btn btn-sm">Next</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% include 'admin/edo_release/_modals_and_scripts.html.twig' %}
+{% endblock %}

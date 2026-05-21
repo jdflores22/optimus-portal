@@ -1,0 +1,1203 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ shippingLine.brandName }} - Shipping Line Details{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="py-6">
+                <nav class="flex mb-4" aria-label="Breadcrumb">
+                    <ol class="flex items-center space-x-4">
+                        <li>
+                            <a href="{{ path('admin_shipping_lines_list') }}" class="text-gray-400 hover:text-gray-500">
+                                <span class="sr-only">Shipping Lines</span>
+                                <svg class="flex-shrink-0 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </a>
+                        </li>
+                        <li>
+                            <div class="flex items-center">
+                                <svg class="flex-shrink-0 h-5 w-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="ml-4 text-sm font-medium text-gray-500">{{ shippingLine.brandName }}</span>
+                            </div>
+                        </li>
+                    </ol>
+                </nav>
+                <div class="md:flex md:items-center md:justify-between">
+                    <div class="flex-1 min-w-0">
+                        <h1 class="text-3xl font-bold text-gray-900">{{ shippingLine.brandName }}</h1>
+                        <p class="mt-2 text-gray-600">Shipping line management and configuration</p>
+                        <div class="mt-3 flex flex-col sm:flex-row sm:flex-wrap sm:space-x-6">
+                            <div class="flex items-center text-sm text-gray-500">
+                                {% if shippingLine.isActive %}
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                        Active
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                        Inactive
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="mt-2 sm:mt-0 flex items-center text-sm text-gray-500">
+                                <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0V6a2 2 0 012-2h4a2 2 0 012 2v1m-6 0h6m-6 0l-.5 3.5A2 2 0 0013.5 15H16a2 2 0 002-2V9a2 2 0 00-2-2h-2.5m-6 0L7.5 15H4a2 2 0 01-2-2V9a2 2 0 012-2h2.5"/>
+                                </svg>
+                                Created {{ statistics.createdAt|date('M d, Y') }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex md:mt-0 md:ml-4 space-x-2">
+                        <a href="{{ path('admin_shipping_lines_edit', {id: shippingLine.id}) }}" 
+                           class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                            <svg class="-ml-0.5 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            Edit
+                        </a>
+                        {% if shippingLine.isActive %}
+                            <button onclick="deactivateShippingLine()" 
+                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                Deactivate
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Flash Messages -->
+        {% for message in app.flashes('success') %}
+            <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg">
+                {{ message }}
+            </div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg">
+                {{ message }}
+            </div>
+        {% endfor %}
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <!-- Main Content -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Statistics Cards -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Total Admins</p>
+                                <p class="text-3xl font-bold text-gray-900">{{ statistics.totalAdmins }}</p>
+                                <p class="text-xs text-gray-600 font-medium">All administrators</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Active Admins</p>
+                                <p class="text-3xl font-bold text-gray-900">{{ statistics.activeAdmins }}</p>
+                                <p class="text-xs text-green-600 font-medium">Currently active</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Total Users</p>
+                                <p class="text-3xl font-bold text-gray-900">{{ statistics.totalUsers }}</p>
+                                <p class="text-xs text-blue-600 font-medium">All users</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-600">Last Updated</p>
+                                <p class="text-3xl font-bold text-gray-900">
+                                    {% if statistics.lastUpdated %}
+                                        {{ statistics.lastUpdated|date('M d') }}
+                                    {% else %}
+                                        Never
+                                    {% endif %}
+                                </p>
+                                <p class="text-xs text-purple-600 font-medium">Recent activity</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admins List -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                                    <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                                    </svg>
+                                    Shipping Line Administrators
+                                </h3>
+                                <p class="text-sm text-gray-600 mt-1">Manage administrators for this shipping line</p>
+                            </div>
+                            <button onclick="openAssignAdminModal()" 
+                                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 shadow-sm transition-colors">
+                                <svg class="-ml-0.5 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                Assign Admin
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        {% if shippingLine.shippingLineAdmins is empty %}
+                            <div class="text-center py-12">
+                                <div class="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-4">
+                                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-sm font-medium text-gray-900">No administrators assigned</h3>
+                                <p class="text-sm text-gray-500 mt-1">Get started by assigning an administrator to this shipping line.</p>
+                                <button onclick="openAssignAdminModal()" 
+                                        class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                                    <svg class="-ml-0.5 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                    </svg>
+                                    Assign First Admin
+                                </button>
+                            </div>
+                        {% else %}
+                            <div class="space-y-3">
+                                {% for admin in shippingLine.shippingLineAdmins %}
+                                    <div class="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-10 h-10 {{ avatar_colors(admin) }} rounded-full flex items-center justify-center shadow-sm">
+                                                <span class="text-sm font-semibold">{{ admin.email|slice(0, 2)|upper }}</span>
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-semibold text-gray-900">{{ admin.email }}</p>
+                                                <p class="text-xs text-gray-500 flex items-center mt-1">
+                                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                                    </svg>
+                                                    {% if admin.subordinateUsers|length > 0 %}
+                                                        Manages {{ admin.subordinateUsers|length }} user(s)
+                                                    {% else %}
+                                                        No subordinates
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-3">
+                                            {% if admin.isActive %}
+                                                <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 shadow-sm">
+                                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    Active
+                                                </span>
+                                            {% else %}
+                                                <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 shadow-sm">
+                                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    Inactive
+                                                </span>
+                                            {% endif %}
+                                            <button onclick="removeAdmin({{ admin.id }})" 
+                                                    class="text-red-600 hover:text-red-800 text-xs font-medium px-3 py-1 rounded-md hover:bg-red-50 transition-colors">
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- User Hierarchy (System Admin Only) -->
+                {% if canViewUserHierarchy %}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Complete User Hierarchy</h3>
+                        <p class="text-sm text-gray-500">All users associated with this shipping line</p>
+                    </div>
+                    <div class="p-6">
+                        {% if userHierarchy is empty %}
+                            <div class="text-center py-8">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900">No user hierarchy</h3>
+                                <p class="mt-1 text-sm text-gray-500">No administrators or users are assigned to this shipping line.</p>
+                            </div>
+                        {% else %}
+                            <div class="space-y-6">
+                                {% for hierarchy in userHierarchy %}
+                                    <div class="border border-gray-200 rounded-lg p-4">
+                                        <!-- Admin Header -->
+                                        <div class="flex items-center justify-between mb-4">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-10 h-10 {{ avatar_colors(hierarchy.admin) }} rounded-full flex items-center justify-center">
+                                                    <span class="text-sm font-medium">{{ hierarchy.admin.email|slice(0, 2)|upper }}</span>
+                                                </div>
+                                                <div>
+                                                    <h4 class="text-sm font-semibold text-gray-900">
+                                                        {% if hierarchy.admin.firstName is defined and hierarchy.admin.lastName is defined %}
+                                                            {{ hierarchy.admin.firstName }} {{ hierarchy.admin.lastName }}
+                                                        {% else %}
+                                                            {{ hierarchy.admin.email|split('@')[0]|title }}
+                                                        {% endif %}
+                                                    </h4>
+                                                    <p class="text-xs text-gray-500">
+                                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                            {{ hierarchy.admin.role.value }}
+                                                        </span>
+                                                        • {{ hierarchy.admin.email }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                {% if hierarchy.admin.isActive %}
+                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                                        Active
+                                                    </span>
+                                                {% else %}
+                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                                        Inactive
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <!-- Subordinates -->
+                                        {% if hierarchy.subordinates is not empty %}
+                                            <div class="ml-6 border-l-2 border-gray-200 pl-4">
+                                                <h5 class="text-xs font-medium text-gray-700 mb-3 uppercase tracking-wide">
+                                                    Subordinate Users ({{ hierarchy.subordinates|length }})
+                                                </h5>
+                                                <div class="space-y-2">
+                                                    {% for subordinate in hierarchy.subordinates %}
+                                                        <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                                            <div class="flex items-center space-x-2">
+                                                                <div class="w-6 h-6 {{ avatar_colors(subordinate) }} rounded-full flex items-center justify-center">
+                                                                    <span class="text-xs font-medium">{{ subordinate.email|slice(0, 1)|upper }}</span>
+                                                                </div>
+                                                                <div>
+                                                                    <p class="text-xs font-medium text-gray-900">
+                                                                        {% if subordinate.firstName is defined and subordinate.lastName is defined %}
+                                                                            {{ subordinate.firstName }} {{ subordinate.lastName }}
+                                                                        {% else %}
+                                                                            {{ subordinate.email|split('@')[0]|title }}
+                                                                        {% endif %}
+                                                                    </p>
+                                                                    <p class="text-xs text-gray-500">
+                                                                        <span class="inline-flex px-1.5 py-0.5 text-xs font-semibold rounded bg-gray-100 text-gray-800">
+                                                                            {{ subordinate.role.value }}
+                                                                        </span>
+                                                                        • {{ subordinate.email }}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                {% if subordinate.isActive %}
+                                                                    <span class="inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                                                        Active
+                                                                    </span>
+                                                                {% else %}
+                                                                    <span class="inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                                                        Inactive
+                                                                    </span>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <div class="ml-6 border-l-2 border-gray-200 pl-4">
+                                                <p class="text-xs text-gray-500 italic">No subordinate users</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Container Yard Allocations -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                    </svg>
+                                    Container Yard Allocations
+                                </h3>
+                                <p class="text-sm text-gray-600 mt-1">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-md bg-blue-100 text-blue-800 text-xs font-medium mr-2">
+                                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M10 2a8 8 0 100 16 8 8 0 000-16zM9 9a1 1 0 112 0v4a1 1 0 11-2 0V9zm1-5a1 1 0 100 2 1 1 0 000-2z"/>
+                                        </svg>
+                                        Shipping Line Level
+                                    </span>
+                                    Shared across all staff users in {{ shippingLine.brandName }}
+                                </p>
+                            </div>
+                            <button onclick="openAddContainerYardModal()" 
+                                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm transition-colors">
+                                <svg class="-ml-0.5 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                Add Container Yard
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div id="containerYardAllocations">
+                            <div class="text-center py-12">
+                                <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-sm font-medium text-gray-900">Loading allocations...</h3>
+                                <p class="text-sm text-gray-500 mt-1">Please wait while we fetch the data</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Portal Configuration -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Portal Configuration</h3>
+                        <p class="text-sm text-gray-500">Branding and portal settings</p>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-4">
+                            {% if shippingLine.portalConfig.primaryColor is defined %}
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500 mb-1">Primary Color</dt>
+                                    <dd class="flex items-center">
+                                        <div class="w-6 h-6 rounded border border-gray-300 mr-2" 
+                                             style="background-color: {{ shippingLine.portalConfig.primaryColor }}"></div>
+                                        <span class="text-sm text-gray-900">{{ shippingLine.portalConfig.primaryColor }}</span>
+                                    </dd>
+                                </div>
+                            {% endif %}
+                            
+                            {% if shippingLine.portalConfig.logoUrl is defined and shippingLine.portalConfig.logoUrl %}
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500 mb-1">Logo</dt>
+                                    <dd class="text-sm text-gray-900">
+                                        <div class="flex items-center space-x-3">
+                                            <img src="{{ shippingLine.portalConfig.logoUrl }}" 
+                                                 alt="{{ shippingLine.brandName }} Logo" 
+                                                 class="h-16 w-auto border border-gray-300 rounded-lg shadow-sm"
+                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                            <div style="display: none;" class="text-red-500 text-xs">
+                                                Logo not found: {{ shippingLine.portalConfig.logoUrl }}
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-gray-500 mt-1">
+                                            <a href="{{ shippingLine.portalConfig.logoUrl }}" target="_blank" class="text-blue-600 hover:text-blue-500">
+                                                {{ shippingLine.portalConfig.logoUrl|slice(0, 50) }}{% if shippingLine.portalConfig.logoUrl|length > 50 %}...{% endif %}
+                                            </a>
+                                        </p>
+                                    </dd>
+                                </div>
+                            {% endif %}
+                            
+                            {% if shippingLine.portalConfig.contactEmail is defined %}
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500 mb-1">Contact Email</dt>
+                                    <dd class="text-sm text-gray-900">{{ shippingLine.portalConfig.contactEmail }}</dd>
+                                </div>
+                            {% endif %}
+                            
+                            {% if shippingLine.portalConfig.contactPhone is defined %}
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500 mb-1">Contact Phone</dt>
+                                    <dd class="text-sm text-gray-900">{{ shippingLine.portalConfig.contactPhone }}</dd>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Container Yard Allocation Functions
+let allTerminals = [];
+
+function loadContainerYardAllocations() {
+    fetch(`/admin/shipping-lines/{{ shippingLine.id }}/container-yards`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                allTerminals = data.terminals || [];
+                displayContainerYardAllocations(allTerminals);
+            } else {
+                showError('Error loading container yard allocations: ' + data.message);
+            }
+        })
+        .catch(error => {
+            showError('An error occurred while loading container yard allocations.');
+        });
+}
+
+function displayContainerYardAllocations(terminals) {
+    const container = document.getElementById('containerYardAllocations');
+    const allocations = terminals.filter(t => t.allocation !== null);
+    
+    if (allocations.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                </div>
+                <h3 class="text-sm font-medium text-gray-900">No container yards allocated</h3>
+                <p class="text-sm text-gray-500 mt-1">Get started by adding a container yard allocation.</p>
+                <button onclick="openAddContainerYardModal()" 
+                        class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <svg class="-ml-0.5 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                    Add First Container Yard
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    const allocationsHtml = allocations.map(terminal => {
+        const allocation = terminal.allocation;
+        const utilization = allocation.utilization || { currentTEUs: 0, allocatedTEUs: allocation.allocatedTEUs, percentage: 0, container20ft: 0, container40ft: 0 };
+        const percentage = utilization.percentage;
+        
+        // Determine color based on utilization
+        let colorClass = 'bg-green-500';
+        let bgColorClass = 'bg-green-50';
+        let textColorClass = 'text-green-700';
+        let borderColorClass = 'border-green-200';
+        
+        if (percentage >= 100) {
+            colorClass = 'bg-red-500';
+            bgColorClass = 'bg-red-50';
+            textColorClass = 'text-red-700';
+            borderColorClass = 'border-red-200';
+        } else if (percentage >= 80) {
+            colorClass = 'bg-orange-500';
+            bgColorClass = 'bg-orange-50';
+            textColorClass = 'text-orange-700';
+            borderColorClass = 'border-orange-200';
+        }
+        
+        return `
+            <div class="bg-white border-2 ${borderColorClass} rounded-xl p-5 hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
+                <!-- Header -->
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex-1">
+                        <h4 class="text-lg font-bold text-gray-900 mb-1">${terminal.name}</h4>
+                        <p class="text-sm text-gray-500 flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            ${terminal.location || 'N/A'} • ${terminal.type}
+                        </p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="openEditContainerYardModal(${allocation.id}, ${terminal.id}, '${terminal.name}', ${allocation.allocatedTEUs}, ${allocation.capacity20ft || 0}, ${allocation.capacity40ft || 0})" 
+                                class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                        </button>
+                        <button onclick="removeContainerYard(${allocation.id}, '${terminal.name}')" 
+                                class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Remove">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Capacity Info -->
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                        <p class="text-xs text-blue-600 font-medium mb-1">Allocated TEUs</p>
+                        <p class="text-2xl font-bold text-blue-900">${allocation.allocatedTEUs}</p>
+                    </div>
+                    <div class="${bgColorClass} rounded-lg p-3 border ${borderColorClass}">
+                        <p class="text-xs ${textColorClass} font-medium mb-1">Utilization</p>
+                        <p class="text-2xl font-bold ${textColorClass}">${percentage}%</p>
+                    </div>
+                </div>
+                
+                <!-- Container Breakdown -->
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-600 font-medium">20ft</span>
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                            </svg>
+                        </div>
+                        <p class="text-lg font-bold text-gray-900 mt-1">${allocation.capacity20ft || 0} <span class="text-sm font-normal text-gray-500">units</span></p>
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-600 font-medium">40ft</span>
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                            </svg>
+                        </div>
+                        <p class="text-lg font-bold text-gray-900 mt-1">${allocation.capacity40ft || 0} <span class="text-sm font-normal text-gray-500">units</span></p>
+                    </div>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="mb-3">
+                    <div class="flex justify-between text-xs text-gray-600 mb-1">
+                        <span>Current: ${utilization.currentTEUs} TEUs</span>
+                        <span>Target: ${allocation.allocatedTEUs} TEUs</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                        <div class="${colorClass} h-2.5 rounded-full transition-all duration-300" style="width: ${Math.min(percentage, 100)}%"></div>
+                    </div>
+                </div>
+                
+                <!-- Current Usage -->
+                <div class="flex justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
+                    <span class="flex items-center">
+                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>
+                        </svg>
+                        20ft: ${utilization.container20ft} in use
+                    </span>
+                    <span class="flex items-center">
+                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>
+                        </svg>
+                        40ft: ${utilization.container40ft} in use
+                    </span>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">${allocationsHtml}</div>`;
+}
+
+
+function openAddContainerYardModal() {
+    const availableTerminals = allTerminals.filter(t => t.allocation === null && t.isActive);
+    
+    const modalHtml = `
+        <div id="containerYardModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center">
+            <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Add Container Yard Allocation</h3>
+                        <button onclick="closeContainerYardModal()" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    ${availableTerminals.length === 0 ? `
+                        <div class="text-center py-8">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No available container yards</h3>
+                            <p class="mt-1 text-sm text-gray-500">All active container yards are already allocated.</p>
+                        </div>
+                    ` : `
+                        <form id="containerYardForm" onsubmit="submitContainerYardAllocation(event)">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Container Yard</label>
+                                <select id="terminalSelect" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    <option value="">Choose a container yard...</option>
+                                    ${availableTerminals.map(terminal => `
+                                        <option value="${terminal.id}">${terminal.name} - ${terminal.location || 'N/A'}</option>
+                                    `).join('')}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">20ft Container Capacity</label>
+                                <input type="number" id="capacity20ft" required min="0" step="1" value="0"
+                                       oninput="calculateTEU()"
+                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                       placeholder="Enter number of 20ft containers">
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">40ft Container Capacity</label>
+                                <input type="number" id="capacity40ft" required min="0" step="1" value="0"
+                                       oninput="calculateTEU()"
+                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                       placeholder="Enter number of 40ft containers">
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Allocated TEU Capacity (Auto-calculated)</label>
+                                <input type="number" id="allocatedTEUs" required min="1" step="1" readonly
+                                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-100 sm:text-sm"
+                                       placeholder="Auto-calculated from container sizes">
+                                <p class="mt-1 text-xs text-gray-500">Formula: 20ft + 40ft = Total Capacity</p>
+                            </div>
+                            
+                            <div id="modalError" class="mb-4 hidden p-3 bg-red-50 border border-red-200 text-red-800 rounded-lg text-sm"></div>
+                            
+                            <div class="flex justify-end space-x-3">
+                                <button type="button" onclick="closeContainerYardModal()" 
+                                        class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    Cancel
+                                </button>
+                                <button type="submit" id="submitButton"
+                                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    Save Allocation
+                                </button>
+                            </div>
+                        </form>
+                    `}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function openEditContainerYardModal(allocationId, terminalId, terminalName, currentCapacity, capacity20ft = 0, capacity40ft = 0) {
+    const modalHtml = `
+        <div id="containerYardModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center">
+            <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Edit Container Yard Allocation</h3>
+                        <button onclick="closeContainerYardModal()" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <form id="containerYardForm" onsubmit="submitContainerYardAllocation(event, ${terminalId})">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Container Yard</label>
+                            <input type="text" value="${terminalName}" disabled 
+                                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-100 sm:text-sm">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">20ft Container Capacity</label>
+                            <input type="number" id="capacity20ft" required min="0" step="1" value="${capacity20ft}"
+                                   oninput="calculateTEU()"
+                                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                   placeholder="Enter number of 20ft containers">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">40ft Container Capacity</label>
+                            <input type="number" id="capacity40ft" required min="0" step="1" value="${capacity40ft}"
+                                   oninput="calculateTEU()"
+                                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                   placeholder="Enter number of 40ft containers">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Allocated TEU Capacity (Auto-calculated)</label>
+                            <input type="number" id="allocatedTEUs" required min="1" step="1" value="${currentCapacity}" readonly
+                                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-100 sm:text-sm"
+                                   placeholder="Auto-calculated from container sizes">
+                            <p class="mt-1 text-xs text-gray-500">Formula: 20ft + 40ft = Total Capacity</p>
+                        </div>
+                        
+                        <div id="modalError" class="mb-4 hidden p-3 bg-red-50 border border-red-200 text-red-800 rounded-lg text-sm"></div>
+                        
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" onclick="closeContainerYardModal()" 
+                                    class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                Cancel
+                            </button>
+                            <button type="submit" id="submitButton"
+                                    class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                Update Allocation
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    // Trigger initial calculation
+    calculateTEU();
+}
+
+function calculateTEU() {
+    const capacity20ft = parseInt(document.getElementById('capacity20ft').value) || 0;
+    const capacity40ft = parseInt(document.getElementById('capacity40ft').value) || 0;
+    
+    // Total capacity: both 20ft and 40ft count as 1 unit each
+    const totalTEU = capacity20ft + capacity40ft;
+    
+    document.getElementById('allocatedTEUs').value = totalTEU;
+}
+
+function closeContainerYardModal() {
+    const modal = document.getElementById('containerYardModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function submitContainerYardAllocation(event, terminalId = null) {
+    event.preventDefault();
+    
+    const terminalIdValue = terminalId || document.getElementById('terminalSelect').value;
+    const allocatedTEUs = document.getElementById('allocatedTEUs').value;
+    const capacity20ft = document.getElementById('capacity20ft').value;
+    const capacity40ft = document.getElementById('capacity40ft').value;
+    
+    if (!terminalIdValue) {
+        showModalError('Please select a container yard.');
+        return;
+    }
+    
+    if (!allocatedTEUs || allocatedTEUs <= 0) {
+        showModalError('Allocated capacity must be greater than zero.');
+        return;
+    }
+    
+    const submitButton = document.getElementById('submitButton');
+    const originalText = submitButton.textContent;
+    submitButton.textContent = 'Saving...';
+    submitButton.disabled = true;
+    
+    const formData = new FormData();
+    formData.append('terminalId', terminalIdValue);
+    formData.append('allocatedTEUs', allocatedTEUs);
+    formData.append('capacity20ft', capacity20ft);
+    formData.append('capacity40ft', capacity40ft);
+    
+    fetch(`/admin/shipping-lines/{{ shippingLine.id }}/container-yards/allocate`, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeContainerYardModal();
+            showSuccess(data.message || 'Container yard allocated successfully');
+            loadContainerYardAllocations();
+        } else {
+            showModalError(data.message || 'Error allocating container yard');
+            submitButton.textContent = originalText;
+            submitButton.disabled = false;
+        }
+    })
+    .catch(error => {
+        showModalError('An error occurred while allocating the container yard.');
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
+    });
+}
+
+function removeContainerYard(allocationId, terminalName) {
+    openRemoveConfirmationModal(allocationId, terminalName);
+}
+
+function openRemoveConfirmationModal(allocationId, terminalName) {
+    const modalHtml = `
+        <div id="removeConfirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center">
+            <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <div class="flex items-center justify-center mb-4">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Remove Container Yard Allocation</h3>
+                        <p class="text-sm text-gray-500 mb-4">
+                            Are you sure you want to remove the allocation for <strong>${terminalName}</strong>? This action cannot be undone.
+                        </p>
+                    </div>
+                    
+                    <div class="flex justify-center space-x-3 mt-5">
+                        <button onclick="closeRemoveConfirmModal()" 
+                                class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                            Cancel
+                        </button>
+                        <button onclick="confirmRemoveContainerYard(${allocationId})" 
+                                class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                            Remove
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeRemoveConfirmModal() {
+    const modal = document.getElementById('removeConfirmModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function confirmRemoveContainerYard(allocationId) {
+    closeRemoveConfirmModal();
+    
+    fetch(`/admin/shipping-lines/{{ shippingLine.id }}/container-yards/${allocationId}/remove`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess(data.message || 'Container yard allocation removed successfully');
+            loadContainerYardAllocations();
+        } else {
+            showError(data.message || 'Error removing container yard allocation');
+        }
+    })
+    .catch(error => {
+        showError('An error occurred while removing the container yard allocation.');
+    });
+}
+
+function showModalError(message) {
+    const errorDiv = document.getElementById('modalError');
+    if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.classList.remove('hidden');
+    }
+}
+
+function showError(message) {
+    showNotification(message, 'error');
+}
+
+function showSuccess(message) {
+    showNotification(message, 'success');
+}
+
+function showNotification(message, type = 'success') {
+    const notificationId = 'notification-' + Date.now();
+    
+    const config = {
+        success: {
+            bgColor: 'bg-white',
+            iconBg: 'bg-green-100',
+            iconColor: 'text-green-600',
+            textColor: 'text-gray-900',
+            iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+        },
+        error: {
+            bgColor: 'bg-white',
+            iconBg: 'bg-red-100',
+            iconColor: 'text-red-600',
+            textColor: 'text-gray-900',
+            iconPath: 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'
+        },
+        info: {
+            bgColor: 'bg-white',
+            iconBg: 'bg-blue-100',
+            iconColor: 'text-blue-600',
+            textColor: 'text-gray-900',
+            iconPath: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+        }
+    };
+    
+    const style = config[type] || config.success;
+    
+    const notificationHtml = `
+        <div id="${notificationId}" class="fixed top-20 right-4 z-[9999] w-full max-w-sm pointer-events-auto transform transition-all duration-500 ease-out translate-x-0 opacity-100">
+            <div class="${style.bgColor} rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden">
+                <div class="p-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="${style.iconBg} rounded-full p-2">
+                                <svg class="h-5 w-5 ${style.iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${style.iconPath}"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-3 w-0 flex-1 pt-0.5">
+                            <p class="text-sm font-medium ${style.textColor}">${message}</p>
+                        </div>
+                        <div class="ml-4 flex-shrink-0 flex">
+                            <button onclick="closeNotification('${notificationId}')" class="inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-md">
+                                <span class="sr-only">Close</span>
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', notificationHtml);
+    
+    setTimeout(() => {
+        closeNotification(notificationId);
+    }, 5000);
+}
+
+function closeNotification(notificationId) {
+    const notification = document.getElementById(notificationId);
+    if (notification) {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+    }
+}
+
+// Load allocations when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadContainerYardAllocations();
+});
+
+function openAssignAdminModal() {
+    // Fetch available admins
+    fetch(`/admin/shipping-lines/{{ shippingLine.id }}/available-admins`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAssignAdminModal(data.admins);
+            } else {
+                alert('Error loading available admins: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('An error occurred while loading available admins.');
+        });
+}
+
+function showAssignAdminModal(admins) {
+    // Create modal HTML
+    const modalHtml = `
+        <div id="assignAdminModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center">
+            <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Assign Administrator</h3>
+                        <button onclick="closeAssignAdminModal()" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    ${admins.length === 0 ? `
+                        <div class="text-center py-8">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No available administrators</h3>
+                            <p class="mt-1 text-sm text-gray-500">All shipping line administrators are already assigned to other shipping lines.</p>
+                        </div>
+                    ` : `
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Select Administrator</label>
+                            <select id="adminSelect" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                <option value="">Choose an administrator...</option>
+                                ${admins.map(admin => `
+                                    <option value="${admin.id}">${admin.name} (${admin.email})</option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3">
+                            <button onclick="closeAssignAdminModal()" 
+                                    class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                Cancel
+                            </button>
+                            <button onclick="assignSelectedAdmin()" 
+                                    class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                Assign Admin
+                            </button>
+                        </div>
+                    `}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeAssignAdminModal() {
+    const modal = document.getElementById('assignAdminModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function assignSelectedAdmin() {
+    const adminSelect = document.getElementById('adminSelect');
+    const adminId = adminSelect.value;
+    
+    if (!adminId) {
+        alert('Please select an administrator.');
+        return;
+    }
+    
+    // Show loading state
+    const assignButton = event.target;
+    const originalText = assignButton.textContent;
+    assignButton.textContent = 'Assigning...';
+    assignButton.disabled = true;
+    
+    // Send assignment request
+    fetch(`/admin/shipping-lines/{{ shippingLine.id }}/assign-admin`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: `adminId=${adminId}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeAssignAdminModal();
+            location.reload(); // Reload to show the new admin
+        } else {
+            alert('Error assigning admin: ' + data.message);
+            assignButton.textContent = originalText;
+            assignButton.disabled = false;
+        }
+    })
+    .catch(error => {
+        alert('An error occurred while assigning the admin.');
+        assignButton.textContent = originalText;
+        assignButton.disabled = false;
+    });
+}
+
+function removeAdmin(adminId) {
+    if (confirm('Are you sure you want to remove this administrator from the shipping line?')) {
+        fetch(`/admin/shipping-lines/{{ shippingLine.id }}/remove-admin/${adminId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Reload to update the admin list
+            } else {
+                alert('Error removing admin: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('An error occurred while removing the admin.');
+        });
+    }
+}
+
+function deactivateShippingLine() {
+    if (confirm('Are you sure you want to deactivate this shipping line? This will restrict access for all associated users.')) {
+        fetch(`/admin/shipping-lines/{{ shippingLine.id }}/deactivate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('An error occurred while deactivating the shipping line.');
+        });
+    }
+}
+</script>
+{% endblock %}

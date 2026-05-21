@@ -1,0 +1,363 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit NOA {{ noa.noaNumber }} - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <!-- Header Section -->
+    <div class="bg-base-100 shadow-md">
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div class="flex-1">
+                    <a href="{{ path('manifest_workflow_noa_detail', {id: noa.id}) }}" 
+                       class="inline-flex items-center text-xs sm:text-sm text-base-content/60 hover:text-primary mb-2">
+                        <span class="icon-[tabler--arrow-left] size-4 mr-1.5"></span>
+                        Back to NOA Details
+                    </a>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-xl sm:text-2xl font-bold text-base-content">Edit NOA: {{ noa.noaNumber }}</h1>
+                        <span class="badge badge-warning">Editing Mode</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form id="editNoaForm" method="POST" action="{{ path('manifest_workflow_noa_update', {id: noa.id}) }}">
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col lg:flex-row gap-6">
+                <!-- Main Content -->
+                <div class="flex-1 space-y-6">
+                    
+                    <!-- NOA Information -->
+                    <div class="card bg-base-100 shadow-md">
+                        <div class="card-body">
+                            <h3 class="card-title text-lg mb-4">NOA Information</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- NOA Number (Read-only) -->
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text font-medium">NOA Number</span>
+                                    </label>
+                                    <input type="text" 
+                                           value="{{ noa.noaNumber }}" 
+                                           class="input input-bordered bg-base-200" 
+                                           readonly>
+                                </div>
+
+                                <!-- BL Number -->
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text font-medium">BL Number <span class="text-error">*</span></span>
+                                    </label>
+                                    <input type="text" 
+                                           name="blNumber" 
+                                           value="{{ noa.blNumber }}" 
+                                           class="input input-bordered" 
+                                           required>
+                                </div>
+
+                                <!-- Vessel Number -->
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text font-medium">Vessel Number <span class="text-error">*</span></span>
+                                    </label>
+                                    <input type="text" 
+                                           name="vesselNumber" 
+                                           value="{{ noa.vesselNumber }}" 
+                                           class="input input-bordered" 
+                                           required>
+                                </div>
+
+                                <!-- ETA -->
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text font-medium">ETA <span class="text-error">*</span></span>
+                                    </label>
+                                    <input type="datetime-local" 
+                                           name="eta" 
+                                           value="{{ noa.eta|date('Y-m-d\\TH:i') }}" 
+                                           class="input input-bordered" 
+                                           required>
+                                </div>
+
+                                <!-- CY Location -->
+                                <div class="form-control md:col-span-2">
+                                    <label class="label">
+                                        <span class="label-text font-medium">CY Location <span class="text-error">*</span></span>
+                                    </label>
+                                    <input type="text" 
+                                           name="cyLocation" 
+                                           value="{{ noa.cyLocation }}" 
+                                           class="input input-bordered" 
+                                           required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Consignee Information -->
+                    <div class="card bg-base-100 shadow-md">
+                        <div class="card-body">
+                            <h3 class="card-title text-lg mb-4">Consignee</h3>
+                            
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text font-medium">Select Consignee <span class="text-error">*</span></span>
+                                </label>
+                                <select name="consigneeId" class="select select-bordered w-full" required>
+                                    <option value="">Select a consignee...</option>
+                                    {% for consignee in consignees %}
+                                        <option value="{{ consignee.id }}" 
+                                                {% if noa.consignee and consignee.id == noa.consignee.id %}selected{% endif %}>
+                                            {{ consignee.businessName }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Containers -->
+                    <div class="card bg-base-100 shadow-md">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="card-title text-lg">Containers</h3>
+                                <button type="button" 
+                                        onclick="addContainerRow()" 
+                                        class="btn btn-sm btn-primary gap-1">
+                                    <span class="icon-[tabler--plus] size-4"></span>
+                                    Add Container
+                                </button>
+                            </div>
+
+                            <div id="containersSection" class="space-y-3">
+                                {% for container in noa.containers %}
+                                <div class="container-row border border-base-300 rounded-lg p-4 relative" data-container-id="{{ container.id }}">
+                                    <button type="button" 
+                                            onclick="removeContainerRow(this)" 
+                                            class="btn btn-sm btn-circle btn-ghost absolute top-2 right-2">
+                                        <span class="icon-[tabler--x] size-4"></span>
+                                    </button>
+                                    
+                                    <input type="hidden" name="containers[{{ loop.index0 }}][id]" value="{{ container.id }}">
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        <!-- Container Number -->
+                                        <div class="form-control">
+                                            <label class="label">
+                                                <span class="label-text text-xs font-medium">Container Number <span class="text-error">*</span></span>
+                                            </label>
+                                            <input type="text" 
+                                                   name="containers[{{ loop.index0 }}][containerNumber]" 
+                                                   value="{{ container.containerNumber }}" 
+                                                   class="input input-sm input-bordered" 
+                                                   required>
+                                        </div>
+
+                                        <!-- Container Size -->
+                                        <div class="form-control">
+                                            <label class="label">
+                                                <span class="label-text text-xs font-medium">Size <span class="text-error">*</span></span>
+                                            </label>
+                                            <select name="containers[{{ loop.index0 }}][containerSizeId]" 
+                                                    class="select select-sm select-bordered" 
+                                                    required>
+                                                <option value="">Select size...</option>
+                                                {% for size in containerSizes %}
+                                                    <option value="{{ size.id }}" 
+                                                            {% if container.containerSize and size.id == container.containerSize.id %}selected{% endif %}>
+                                                        {{ size.name }} ({{ size.teuValue }} TEU)
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+
+                                        <!-- Container Type -->
+                                        <div class="form-control">
+                                            <label class="label">
+                                                <span class="label-text text-xs font-medium">Type <span class="text-error">*</span></span>
+                                            </label>
+                                            <select name="containers[{{ loop.index0 }}][containerTypeId]" 
+                                                    class="select select-sm select-bordered" 
+                                                    required>
+                                                <option value="">Select type...</option>
+                                                {% for type in containerTypes %}
+                                                    <option value="{{ type.id }}" 
+                                                            {% if container.containerType and type.id == container.containerType.id %}selected{% endif %}>
+                                                        {{ type.name }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            {% if noa.containers|length == 0 %}
+                            <div class="text-center py-8 text-base-content/60">
+                                <span class="icon-[tabler--container-off] size-12 mx-auto mb-2"></span>
+                                <p class="text-sm">No containers yet. Click "Add Container" to add one.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Actions Sidebar -->
+                <div class="w-full lg:w-80 lg:flex-shrink-0">
+                    <div class="card bg-base-100 shadow-md lg:sticky lg:top-6">
+                        <div class="card-body">
+                            <h3 class="card-title text-lg mb-4">Actions</h3>
+                            
+                            <div class="space-y-3">
+                                <button type="submit" 
+                                        class="btn btn-success w-full gap-2">
+                                    <span class="icon-[tabler--device-floppy] size-5"></span>
+                                    Save Changes
+                                </button>
+                                
+                                <a href="{{ path('manifest_workflow_noa_detail', {id: noa.id}) }}" 
+                                   class="btn btn-ghost w-full gap-2">
+                                    <span class="icon-[tabler--x] size-5"></span>
+                                    Cancel
+                                </a>
+                            </div>
+
+                            <div class="divider"></div>
+
+                            <div class="alert alert-warning">
+                                <span class="icon-[tabler--alert-triangle] size-5"></span>
+                                <div class="text-xs">
+                                    <p class="font-semibold">Important</p>
+                                    <p class="mt-1">Changes will notify all affected parties including consignee, broker, and shipping line staff.</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 space-y-2 text-xs text-base-content/60">
+                                <div class="flex justify-between">
+                                    <span>Created:</span>
+                                    <span class="font-medium">{{ noa.createdAt|date('M j, Y') }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Last Updated:</span>
+                                    <span class="font-medium">{{ noa.updatedAt ? noa.updatedAt|date('M j, Y') : 'Never' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Container Row Template (hidden) -->
+<template id="containerRowTemplate">
+    <div class="container-row border border-base-300 rounded-lg p-4 relative">
+        <button type="button" 
+                onclick="removeContainerRow(this)" 
+                class="btn btn-sm btn-circle btn-ghost absolute top-2 right-2">
+            <span class="icon-[tabler--x] size-4"></span>
+        </button>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <!-- Container Number -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text text-xs font-medium">Container Number <span class="text-error">*</span></span>
+                </label>
+                <input type="text" 
+                       name="containers[INDEX][containerNumber]" 
+                       class="input input-sm input-bordered" 
+                       required>
+            </div>
+
+            <!-- Container Size -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text text-xs font-medium">Size <span class="text-error">*</span></span>
+                </label>
+                <select name="containers[INDEX][containerSizeId]" 
+                        class="select select-sm select-bordered" 
+                        required>
+                    <option value="">Select size...</option>
+                    {% for size in containerSizes %}
+                        <option value="{{ size.id }}">{{ size.name }} ({{ size.teuValue }} TEU)</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Container Type -->
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text text-xs font-medium">Type <span class="text-error">*</span></span>
+                </label>
+                <select name="containers[INDEX][containerTypeId]" 
+                        class="select select-sm select-bordered" 
+                        required>
+                    <option value="">Select type...</option>
+                    {% for type in containerTypes %}
+                        <option value="{{ type.id }}">{{ type.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+let containerIndex = {{ noa.containers|length }};
+
+function addContainerRow() {
+    const template = document.getElementById('containerRowTemplate');
+    const clone = template.content.cloneNode(true);
+    
+    // Replace INDEX placeholder with actual index
+    const html = clone.firstElementChild.outerHTML.replace(/INDEX/g, containerIndex);
+    
+    const containersSection = document.getElementById('containersSection');
+    containersSection.insertAdjacentHTML('beforeend', html);
+    
+    containerIndex++;
+}
+
+function removeContainerRow(button) {
+    const row = button.closest('.container-row');
+    const containerId = row.dataset.containerId;
+    
+    if (containerId) {
+        // Existing container - confirm deletion
+        if (!confirm('Are you sure you want to remove this container? This action cannot be undone.')) {
+            return;
+        }
+        
+        // Add hidden input to mark for deletion
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'deletedContainers[]';
+        input.value = containerId;
+        document.getElementById('editNoaForm').appendChild(input);
+    }
+    
+    row.remove();
+}
+
+// Form submission with loading state
+document.getElementById('editNoaForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Saving...';
+    
+    // Disable cancel button during save
+    const cancelBtn = document.querySelector('a[href*="noa_detail"]');
+    if (cancelBtn) {
+        cancelBtn.classList.add('btn-disabled', 'pointer-events-none');
+    }
+});
+</script>
+
+{% endblock %}

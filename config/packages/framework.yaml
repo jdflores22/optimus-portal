@@ -1,0 +1,31 @@
+# see https://symfony.com/doc/current/reference/configuration/framework.html
+framework:
+    secret: '%env(APP_SECRET)%'
+    
+    # Error handling configuration
+    error_controller: App\Controller\ErrorController::show
+
+    # Note that the session will be started ONLY if you read or write from it.
+    session:
+        # Session idle timeout: 30 minutes (1800 seconds)
+        gc_maxlifetime: 1800
+        cookie_lifetime: 1800
+        # Session name for security
+        name: OPTIMUS_SESSION
+        # Cookie settings for PWA compatibility
+        cookie_secure: auto
+        cookie_samesite: lax
+        cookie_httponly: true
+        # Let Symfony use default file handler in development
+
+    # Enable CSRF protection for all forms
+    csrf_protection: true
+
+    #esi: true
+    #fragments: true
+
+when@test:
+    framework:
+        test: true
+        session:
+            storage_factory_id: session.storage.factory.mock_file

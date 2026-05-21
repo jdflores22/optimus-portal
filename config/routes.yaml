@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=../vendor/symfony/routing/Loader/schema/routing.schema.json
+
+# This file is the entry point to configure the routes of your app.
+# Methods with the #[Route] attribute are automatically imported.
+# See also https://symfony.com/doc/current/routing.html
+
+# To list all registered routes, run the following command:
+#   bin/console debug:router
+
+controllers:
+    resource:
+        path: ../src/Controller/
+        namespace: App\Controller
+    type: attribute
+
+# Notification Preferences Routes (manual registration as fallback)
+notification_preferences:
+    path: /settings/notifications
+    controller: App\Controller\NotificationPreferencesController::getPreferences
+    methods: [GET]
+
+notification_preferences_update:
+    path: /settings/notifications
+    controller: App\Controller\NotificationPreferencesController::updatePreferences
+    methods: [POST]
+
+notification_preferences_remove_device:
+    path: /settings/notifications/device/{id}
+    controller: App\Controller\NotificationPreferencesController::removeDevice
+    methods: [DELETE]
+    requirements:
+        id: '\d+'
+
+# Push Subscription API Routes (manual registration as fallback)
+api_push_subscribe:
+    path: /api/push/subscribe
+    controller: App\Controller\Api\PushSubscriptionController::subscribe
+    methods: [POST]
+
+api_push_unsubscribe:
+    path: /api/push/unsubscribe/{id}
+    controller: App\Controller\Api\PushSubscriptionController::unsubscribe
+    methods: [DELETE]
+    requirements:
+        id: '\d+'
+
+api_push_subscriptions:
+    path: /api/push/subscriptions
+    controller: App\Controller\Api\PushSubscriptionController::listSubscriptions
+    methods: [GET]
+
+api_push_vapid_key:
+    path: /api/push/vapid-public-key
+    controller: App\Controller\Api\PushSubscriptionController::getVapidPublicKey
+    methods: [GET]

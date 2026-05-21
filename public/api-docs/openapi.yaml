@@ -1,0 +1,652 @@
+openapi: 3.0.3
+info:
+  title: Optimus Terminal Team FREE-ADVICE API
+  description: |
+    RESTful API for mobile applications to interact with the Terminal Team FREE-ADVICE system.
+    This API allows truckers to search for containers, select terminals, upload geotag photos,
+    and submit FREE-ADVICE requests for container returns.
+  version: 1.0.0
+  contact:
+    name: Optimus Portal Support
+    email: support@optimus-portal.com
+  license:
+    name: Proprietary
+    url: https://optimus-portal.com/license
+
+servers:
+  - url: https://api.optimus-portal.com/api/v1
+    description: Production server
+  - url: https://staging-api.optimus-portal.com/api/v1
+    description: Staging server
+  - url: http://localhost:8000/api/v1
+    description: Development server
+
+security:
+  - ApiTokenAuth: []
+
+paths:
+  /token/generate:
+    post:
+      tags:
+        - Authentication
+      summary: Generate API token
+      description: Generate a new API token for authenticated trucker
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                validity_days:
+                  type: integer
+                  minimum: 1
+                  maximum: 365
+                  default: 30
+                  description: Number of days the token should be valid
+      responses:
+        '200':
+          description: Token generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /token/status:
+    get:
+      tags:
+        - Authentication
+      summary: Get token status
+      description: Get current API token status and statistics
+      responses:
+        '200':
+          description: Token status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /free-advice/container/search:
+    post:
+      tags:
+        - Container Search
+      summary: Search container
+      description: Search for a container by container number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - container_number
+              properties:
+                container_number:
+                  type: string
+                  pattern: '^[A-Z]{4}[0-9]{7}$'
+                  example: 'ABCD1234567'
+                  description: Container number in format AAAA1234567
+      responses:
+        '200':
+          description: Container found successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContainerSearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/ContainerNotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /free-advice/container/{containerId}/terminals:
+    get:
+      tags:
+        - Terminal Selection
+      summary: Get compatible terminals
+      description: Get list of terminals compatible with the specified container
+      parameters:
+        - name: containerId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Container ID
+      responses:
+        '200':
+          description: Compatible terminals retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TerminalsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/ContainerNotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /pre-advice/terminal/{terminalId}/slots:
+    get:
+      tags:
+        - Terminal Selection
+      summary: Get terminal slots
+      description: Get available time slots for the specified terminal for FREE-ADVICE requests
+      parameters:
+        - name: terminalId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Terminal ID
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Start date for slot search (YYYY-MM-DD)
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: End date for slot search (YYYY-MM-DD)
+      responses:
+        '200':
+          description: Terminal slots retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TerminalSlotsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/TerminalNotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /pre-advice/photo/upload:
+    post:
+      tags:
+        - Photo Management
+      summary: Upload geotag photo
+      description: Upload a geotag photo with GPS coordinates for FREE-ADVICE verification
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - photo
+              properties:
+                photo:
+                  type: string
+                  format: binary
+                  description: Photo file with GPS coordinates (JPEG/PNG, max 10MB)
+      responses:
+        '200':
+          description: Photo uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhotoUploadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /pre-advice/submit:
+    post:
+      tags:
+        - FREE-ADVICE
+      summary: Submit FREE-ADVICE request
+      description: Submit a FREE-ADVICE request for container return
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreAdviceSubmissionRequest'
+      responses:
+        '200':
+          description: FREE-ADVICE submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreAdviceSubmissionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /pre-advice/{preAdviceId}/status:
+    get:
+      tags:
+        - FREE-ADVICE
+      summary: Get FREE-ADVICE status
+      description: Get the current status of a FREE-ADVICE request
+      parameters:
+        - name: preAdviceId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: FREE-ADVICE request ID
+      responses:
+        '200':
+          description: FREE-ADVICE status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreAdviceStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /pre-advice/list:
+    get:
+      tags:
+        - FREE-ADVICE
+      summary: Get FREE-ADVICE list
+      description: Get list of FREE-ADVICE requests for the authenticated trucker
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, pending, verified, rejected, completed]
+            default: all
+          description: Filter by FREE-ADVICE status
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number for pagination
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+          description: Number of items per page
+      responses:
+        '200':
+          description: FREE-ADVICE list retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreAdviceListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    ApiTokenAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API Token
+      description: |
+        API token authentication. Include the token in the Authorization header:
+        `Authorization: Bearer YOUR_API_TOKEN`
+        
+        Alternative methods:
+        - X-API-Token header: `X-API-Token: YOUR_API_TOKEN`
+        - Query parameter (development only): `?api_token=YOUR_API_TOKEN`
+
+  schemas:
+    TokenResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            api_token:
+              type: string
+              example: 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2'
+            expires_at:
+              type: string
+              format: date-time
+              example: '2024-02-28 15:30:00'
+            validity_days:
+              type: integer
+              example: 30
+            message:
+              type: string
+              example: 'API token generated successfully'
+
+    TokenStatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            has_token:
+              type: boolean
+              example: true
+            is_valid:
+              type: boolean
+              example: true
+            expires_at:
+              type: string
+              format: date-time
+              nullable: true
+              example: '2024-02-28 15:30:00'
+            last_activity:
+              type: string
+              format: date-time
+              nullable: true
+              example: '2024-01-29 10:15:00'
+            days_until_expiry:
+              type: integer
+              nullable: true
+              example: 15
+            is_expired:
+              type: boolean
+              example: false
+
+    ContainerSearchResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            container:
+              $ref: '#/components/schemas/Container'
+
+    Container:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 123
+        containerNumber:
+          type: string
+          example: 'ABCD1234567'
+        size:
+          type: string
+          example: '40ft'
+        type:
+          type: string
+          example: 'Dry'
+        status:
+          type: string
+          example: 'available_for_return'
+        currentLocation:
+          type: string
+          nullable: true
+          example: 'Port of Los Angeles'
+        expectedReturnDate:
+          type: string
+          format: date
+          example: '2024-02-15'
+        isAvailableForReturn:
+          type: boolean
+          example: true
+
+    TerminalsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            container_id:
+              type: integer
+              example: 123
+            container_number:
+              type: string
+              example: 'ABCD1234567'
+            compatible_terminals:
+              type: array
+              items:
+                $ref: '#/components/schemas/Terminal'
+            total_terminals:
+              type: integer
+              example: 3
+
+    Terminal:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: 'CY Terminal A'
+        type:
+          type: string
+          enum: [CY, ATI, ICTSI]
+          example: 'CY'
+        location:
+          type: string
+          example: 'Port of Los Angeles, Berth 100'
+        dailyCapacity:
+          type: integer
+          example: 50
+        isActive:
+          type: boolean
+          example: true
+        available_slots_count:
+          type: integer
+          example: 15
+        has_availability:
+          type: boolean
+          example: true
+
+    PreAdviceSubmissionRequest:
+      type: object
+      required:
+        - container_id
+        - terminal_id
+        - photo_ids
+        - payment_reference
+      properties:
+        container_id:
+          type: integer
+          example: 123
+        terminal_id:
+          type: integer
+          example: 1
+        photo_ids:
+          type: array
+          items:
+            type: integer
+          example: [456, 457]
+        payment_reference:
+          type: string
+          example: 'PAY_20240129_ABC123'
+
+    PreAdviceSubmissionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            pre_advice_id:
+              type: integer
+              example: 789
+            reference_number:
+              type: integer
+              example: 789
+            status:
+              type: string
+              example: 'pending'
+            container_number:
+              type: string
+              example: 'ABCD1234567'
+            terminal_name:
+              type: string
+              example: 'CY Terminal A'
+            submitted_at:
+              type: string
+              format: date-time
+              example: '2024-01-29 14:30:00'
+            message:
+              type: string
+              example: 'FREE-ADVICE request submitted successfully'
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: 'Error message'
+        code:
+          type: string
+          example: 'ERROR_CODE'
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: 'Invalid request parameters'
+            code: 'BAD_REQUEST'
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: 'Authentication failed'
+            code: 'AUTHENTICATION_FAILED'
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: 'Access denied'
+            code: 'ACCESS_DENIED'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: 'Resource not found'
+            code: 'NOT_FOUND'
+
+    ContainerNotFound:
+      description: Container not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: 'Container not found in the system'
+            code: 'CONTAINER_NOT_FOUND'
+
+    TerminalNotFound:
+      description: Terminal not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: 'Terminal not found'
+            code: 'TERMINAL_NOT_FOUND'
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  retry_after:
+                    type: integer
+                    description: Timestamp when the client can retry
+          example:
+            success: false
+            error: 'Rate limit exceeded'
+            code: 'RATE_LIMIT_EXCEEDED'
+            retry_after: 1643472000
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: 'Internal server error occurred'
+            code: 'INTERNAL_ERROR'

@@ -1,0 +1,273 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Profile Settings - OPTIMUS{% endblock %}
+{% block page_title %}Profile Settings{% endblock %}
+
+{% block body %}
+<div class="max-w-2xl mx-auto space-y-6">
+
+    {# Page header #}
+    <div class="flex items-center gap-4">
+        <div class="size-14 rounded-full overflow-hidden {{ avatar_colors(user) }} flex items-center justify-center flex-shrink-0">
+            {% if user.profilePhoto %}
+                <img src="{{ path('profile_photo', {userId: user.id, filename: user.profilePhoto}) }}"
+                     alt="Profile Photo" class="size-full object-cover">
+            {% else %}
+                <span class="text-xl font-bold">{{ user.email|slice(0,1)|upper }}</span>
+            {% endif %}
+        </div>
+        <div>
+            <h1 class="text-2xl font-bold text-base-content">Profile Settings</h1>
+            <p class="text-sm text-base-content/60">Manage your personal information and preferences</p>
+        </div>
+    </div>
+
+    {# Flash messages #}
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success">
+            <span class="icon-[tabler--circle-check] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error">
+            <span class="icon-[tabler--alert-circle] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+
+    {# Skeleton Loader #}
+    <div id="profile-skeleton" class="card bg-base-100 shadow-md">
+        <div class="card-body p-0">
+            <div class="px-6 py-4 border-b border-base-300">
+                <div class="skeleton skeleton-animated h-5 w-40 mb-2"></div>
+                <div class="skeleton skeleton-animated h-4 w-64"></div>
+            </div>
+            
+            <div class="px-6 py-5 space-y-6">
+                {# Avatar skeleton #}
+                <div class="flex flex-col sm:flex-row items-start gap-5">
+                    <div class="skeleton skeleton-animated size-16 rounded-full flex-shrink-0"></div>
+                    <div class="flex-1 space-y-2">
+                        <div class="skeleton skeleton-animated h-4 w-32"></div>
+                        <div class="skeleton skeleton-animated h-3 w-full max-w-md"></div>
+                        <div class="flex gap-2">
+                            <div class="skeleton skeleton-animated h-8 w-32"></div>
+                            <div class="skeleton skeleton-animated h-8 w-32"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="divider my-0"></div>
+                
+                {# Form fields skeleton #}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    {% for i in 1..4 %}
+                    <div>
+                        <div class="skeleton skeleton-animated h-4 w-24 mb-2"></div>
+                        <div class="skeleton skeleton-animated h-12 w-full"></div>
+                        <div class="skeleton skeleton-animated h-3 w-full mt-2"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {# Button skeleton #}
+                <div class="flex justify-end pt-2 border-t border-base-300">
+                    <div class="skeleton skeleton-animated h-10 w-36"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Main card #}
+    <div id="profile-content" class="hidden card bg-base-100 shadow-md">
+        <div class="card-body p-0">
+
+            {# Card header #}
+            <div class="px-6 py-4 border-b border-base-300">
+                <h2 class="font-semibold text-base text-base-content">Profile Information</h2>
+                <p class="text-sm text-base-content/60">Update your personal information and how others see you.</p>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data" class="px-6 py-5 space-y-6">
+
+                {# Avatar section #}
+                <div class="flex flex-col sm:flex-row items-start gap-5">
+                    <div id="avatarPreview"
+                         class="size-16 rounded-full overflow-hidden {{ avatar_colors(user) }} flex items-center justify-center flex-shrink-0">
+                        {% if user.profilePhoto %}
+                            <img src="{{ path('profile_photo', {userId: user.id, filename: user.profilePhoto}) }}"
+                                 alt="Profile Photo" class="size-full object-cover">
+                        {% else %}
+                            <span class="text-xl font-bold">{{ user.email|slice(0,1)|upper }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex-1 space-y-2">
+                        <div>
+                            <p class="text-sm font-medium text-base-content">Profile Photo</p>
+                            <p class="text-xs text-base-content/50">Displayed across the platform. JPG, PNG, GIF or WebP — max 5MB.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <input type="file" id="profile_photo" name="profile_photo"
+                                   accept="image/*" class="hidden" onchange="handlePhotoSelect(this)">
+                            <button type="button"
+                                    onclick="document.getElementById('profile_photo').click()"
+                                    class="btn btn-sm gap-2">
+                                <span class="icon-[tabler--photo] size-4"></span>
+                                Choose Photo
+                            </button>
+                            <button type="submit" name="action" value="upload_photo"
+                                    id="upload_button"
+                                    class="btn btn-primary btn-sm gap-2 hidden">
+                                <span class="icon-[tabler--upload] size-4"></span>
+                                Upload Photo
+                            </button>
+                            {% if user.profilePhoto %}
+                                <button type="submit" name="action" value="remove_photo"
+                                        onclick="return confirm('Remove your profile photo?')"
+                                        class="btn btn-sm gap-2">
+                                    <span class="icon-[tabler--trash] size-4"></span>
+                                    Remove
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider my-0"></div>
+
+                {# Account info grid #}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+                    {# Email #}
+                    <div class="form-control">
+                        <label class="label pb-1">
+                            <span class="label-text font-medium">Email Address</span>
+                        </label>
+                        <input type="email" id="email" name="email"
+                               value="{{ user.email }}" readonly
+                               class="input input-bordered bg-base-200 cursor-not-allowed text-base-content/60">
+                        <label class="label pt-1">
+                            <span class="label-text-alt text-base-content/40">Email cannot be changed. Contact administrator if needed.</span>
+                        </label>
+                    </div>
+
+                    {# Role #}
+                    <div class="form-control">
+                        <label class="label pb-1">
+                            <span class="label-text font-medium">Role</span>
+                        </label>
+                        <div class="flex items-center h-12">
+                            {% set roleDisplay = user.role.value|replace({'_': ' '})|title %}
+                            {% if user.role.value == 'SYSTEM_ADMIN' %}
+                                <span class="badge badge-secondary badge-lg">{{ roleDisplay }}</span>
+                            {% elseif user.role.value == 'SHIPPING_LINES_ADMIN' %}
+                                <span class="badge badge-primary badge-lg">{{ roleDisplay }}</span>
+                            {% elseif user.role.value == 'EVALUATOR' %}
+                                <span class="badge badge-info badge-lg">{{ roleDisplay }}</span>
+                            {% elseif user.role.value == 'SL_STAFF' %}
+                                <span class="badge badge-success badge-lg">{{ roleDisplay }}</span>
+                            {% elseif user.role.value == 'ACCOUNTING' %}
+                                <span class="badge badge-warning badge-lg">{{ roleDisplay }}</span>
+                            {% elseif user.role.value == 'BROKER' %}
+                                <span class="badge badge-accent badge-lg">{{ roleDisplay }}</span>
+                            {% elseif user.role.value == 'CONSIGNEE' %}
+                                <span class="badge badge-error badge-lg">{{ roleDisplay }}</span>
+                            {% else %}
+                                <span class="badge badge-ghost badge-lg">{{ roleDisplay }}</span>
+                            {% endif %}
+                        </div>
+                        <label class="label pt-1">
+                            <span class="label-text-alt text-base-content/40">Assigned by system administrator.</span>
+                        </label>
+                    </div>
+
+                    {# Account status #}
+                    <div class="form-control">
+                        <label class="label pb-1">
+                            <span class="label-text font-medium">Account Status</span>
+                        </label>
+                        <div class="flex items-center h-12">
+                            {% if user.status.value == 'APPROVED' %}
+                                <span class="badge badge-success badge-lg gap-1">
+                                    <span class="icon-[tabler--circle-check] size-3"></span>
+                                    Active
+                                </span>
+                            {% else %}
+                                <span class="badge badge-warning badge-lg gap-1">
+                                    <span class="icon-[tabler--clock] size-3"></span>
+                                    {{ user.status.value|title }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {# Member since #}
+                    <div class="form-control">
+                        <label class="label pb-1">
+                            <span class="label-text font-medium">Member Since</span>
+                        </label>
+                        <div class="flex items-center h-12">
+                            <div>
+                                <p class="text-sm text-base-content font-medium">{{ user.createdAt|date('F j, Y') }}</p>
+                                <p class="text-xs text-base-content/40">{{ user.createdAt|date('Y-m-d H:i:s') }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                {# Save button #}
+                <div class="flex justify-end pt-2 border-t border-base-300">
+                    <button type="submit" name="action" value="save_profile"
+                            id="save_button" class="btn btn-primary gap-2">
+                        <span class="icon-[tabler--device-floppy] size-4"></span>
+                        Save Changes
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// Show skeleton on page load, hide when content is ready
+document.addEventListener('DOMContentLoaded', function() {
+    const skeleton = document.getElementById('profile-skeleton');
+    const content = document.getElementById('profile-content');
+    
+    setTimeout(function() {
+        if (skeleton) skeleton.classList.add('hidden');
+        if (content) content.classList.remove('hidden');
+    }, 300);
+});
+
+function handlePhotoSelect(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+        alert('Please select a valid image file (JPEG, PNG, GIF, or WebP).');
+        input.value = '';
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB.');
+        input.value = '';
+        return;
+    }
+
+    document.getElementById('upload_button').classList.remove('hidden');
+
+    const reader = new FileReader();
+    reader.onload = e => {
+        const preview = document.getElementById('avatarPreview');
+        preview.innerHTML = `<img src="${e.target.result}" alt="Preview" class="size-full object-cover">`;
+    };
+    reader.readAsDataURL(file);
+}
+</script>
+{% endblock %}

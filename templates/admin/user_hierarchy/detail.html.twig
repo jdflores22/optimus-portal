@@ -1,0 +1,353 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}User Details - {{ user.firstName }} {{ user.lastName }} - OPTIMUS{% endblock %}
+{% block page_title %}User Details{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/js/user-hierarchy-detail.js') }}?v={{ random() }}"></script>
+{% endblock %}
+
+{% block body %}
+<div class="space-y-5">
+
+    {# Breadcrumb #}
+    <div class="text-sm breadcrumbs text-base-content/50">
+        <ul>
+            <li><a href="{{ path('admin_user_hierarchy_list') }}" class="hover:text-base-content">User Hierarchy</a></li>
+            <li class="text-base-content">{{ user.email }}</li>
+        </ul>
+    </div>
+
+    {# Header #}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div class="flex items-center gap-4">
+            <div class="size-14 rounded-full {{ avatar_colors(user) }} flex items-center justify-center flex-shrink-0">
+                <span class="text-lg font-bold">{{ (user.firstName ~ user.lastName)|slice(0,2)|upper }}</span>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-base-content">{{ user.firstName }} {{ user.lastName }}</h1>
+                <p class="text-sm text-base-content/60">{{ user.email }} · {{ user.role.value|replace({'_': ' '})|title }}</p>
+            </div>
+        </div>
+        {% if user.isActive %}
+            <span class="badge badge-soft badge-success gap-1 self-start sm:self-auto">
+                <span class="size-2 rounded-full bg-success"></span>Active
+            </span>
+        {% else %}
+            <span class="badge badge-soft badge-error gap-1 self-start sm:self-auto">
+                <span class="size-2 rounded-full bg-error"></span>Inactive
+            </span>
+        {% endif %}
+    </div>
+
+    {# Flash messages #}
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success"><span class="icon-[tabler--circle-check] size-5"></span><span>{{ message }}</span></div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error"><span class="icon-[tabler--alert-circle] size-5"></span><span>{{ message }}</span></div>
+    {% endfor %}
+
+    {# Broker info note #}
+    {% if user.role.value == 'BROKER' and not is_granted('ROLE_SYSTEM_ADMIN') %}
+        <div class="flex items-start gap-3 p-4 rounded-xl bg-info/10 border border-info/20 text-sm text-info">
+            <span class="icon-[tabler--info-circle] size-5 flex-shrink-0 mt-0.5"></span>
+            <div>
+                <span class="font-semibold">Broker Account Management</span> —
+                Only System Administrators can suspend or activate broker accounts.
+            </div>
+        </div>
+    {% endif %}
+
+    {# Quick Actions #}
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-5">
+            <h3 class="font-semibold text-sm text-base-content mb-3">Quick Actions</h3>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ path('admin_user_hierarchy_edit', {id: user.id}) }}" class="btn btn-outline btn-sm gap-2">
+                    <span class="icon-[tabler--edit] size-4"></span>Edit User
+                </a>
+                <button onclick="viewActivityLogs()" class="btn btn-outline btn-sm gap-2">
+                    <span class="icon-[tabler--clipboard-list] size-4"></span>Activity Logs
+                </button>
+                {% if user.isActive %}
+                    {% if user.role.value == 'BROKER' and not is_granted('ROLE_SYSTEM_ADMIN') %}
+                        <button disabled class="btn btn-outline btn-sm gap-2 opacity-40 cursor-not-allowed" title="Only System Administrators can suspend broker accounts">
+                            <span class="icon-[tabler--ban] size-4"></span>Deactivate (Admin Only)
+                        </button>
+                    {% else %}
+                        <button onclick="deactivateUser()" class="btn btn-soft btn-error btn-sm gap-2">
+                            <span class="icon-[tabler--ban] size-4"></span>Deactivate User
+                        </button>
+                    {% endif %}
+                {% else %}
+                    {% if user.role.value == 'BROKER' and not is_granted('ROLE_SYSTEM_ADMIN') %}
+                        <button disabled class="btn btn-outline btn-sm gap-2 opacity-40 cursor-not-allowed">
+                            <span class="icon-[tabler--circle-check] size-4"></span>Activate (Admin Only)
+                        </button>
+                    {% else %}
+                        <button onclick="activateUser()" class="btn btn-soft btn-success btn-sm gap-2">
+                            <span class="icon-[tabler--circle-check] size-4"></span>Activate User
+                        </button>
+                    {% endif %}
+                {% endif %}
+                {% if is_granted('ROLE_SYSTEM_ADMIN') and (user.isLocked() or user.failedLoginAttempts > 0) %}
+                    <button onclick="unlockAccount()" class="btn btn-soft btn-warning btn-sm gap-2">
+                        <span class="icon-[tabler--lock-open] size-4"></span>Unlock Account
+                    </button>
+                {% endif %}
+                {% if user.role.value != 'SHIPPING_LINES_ADMIN' or subordinates|length == 0 %}
+                    <button onclick="removeFromHierarchy()" class="btn btn-soft btn-error btn-sm gap-2">
+                        <span class="icon-[tabler--trash] size-4"></span>Remove from Hierarchy
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        {# Left: User info + hierarchy #}
+        <div class="lg:col-span-2 space-y-5">
+
+            {# User Information #}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="px-5 py-4 border-b border-base-300">
+                        <h3 class="font-semibold text-base text-base-content">User Information</h3>
+                        <p class="text-xs text-base-content/50">Personal details and account information</p>
+                    </div>
+                    <div class="p-5">
+                        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div>
+                                <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Email</dt>
+                                <dd class="text-sm text-base-content">{{ user.email }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Full Name</dt>
+                                <dd class="text-sm text-base-content">{{ user.firstName }} {{ user.lastName }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Role</dt>
+                                <dd class="mt-1">
+                                    {% if user.role.value == 'SHIPPING_LINES_ADMIN' %}
+                                        <span class="badge badge-soft badge-secondary badge-sm">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                                    {% elseif user.role.value == 'SL_STAFF' %}
+                                        <span class="badge badge-soft badge-primary badge-sm">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                                    {% elseif user.role.value == 'EVALUATOR' %}
+                                        <span class="badge badge-soft badge-info badge-sm">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                                    {% elseif user.role.value == 'ACCOUNTING' %}
+                                        <span class="badge badge-soft badge-warning badge-sm">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                                    {% elseif user.role.value == 'TERMINAL_TEAM' %}
+                                        <span class="badge badge-soft badge-accent badge-sm">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                                    {% else %}
+                                        <span class="badge badge-soft badge-ghost badge-sm">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                                    {% endif %}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Status</dt>
+                                <dd class="mt-1">
+                                    {% if user.isActive %}
+                                        <span class="badge badge-soft badge-success badge-sm gap-1"><span class="size-1.5 rounded-full bg-success"></span>Active</span>
+                                    {% else %}
+                                        <span class="badge badge-soft badge-error badge-sm gap-1"><span class="size-1.5 rounded-full bg-error"></span>Inactive</span>
+                                    {% endif %}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Account Lock Status</dt>
+                                <dd class="mt-1">
+                                    {% if user.status.value == 'LOCKED' %}
+                                        <span class="badge badge-soft badge-error badge-sm gap-1"><span class="icon-[tabler--lock] size-3"></span>Locked by Administrator</span>
+                                    {% elseif user.lockedUntil and user.lockedUntil > date() %}
+                                        <span class="badge badge-soft badge-warning badge-sm gap-1"><span class="icon-[tabler--alert-triangle] size-3"></span>Locked — Failed Logins</span>
+                                    {% elseif user.failedLoginAttempts > 0 %}
+                                        <span class="badge badge-soft badge-warning badge-sm gap-1"><span class="icon-[tabler--alert-triangle] size-3"></span>{{ user.failedLoginAttempts }} Failed Attempts</span>
+                                    {% else %}
+                                        <span class="badge badge-soft badge-success badge-sm gap-1"><span class="icon-[tabler--circle-check] size-3"></span>No Lock Issues</span>
+                                    {% endif %}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Shipping Line</dt>
+                                <dd class="text-sm mt-1">
+                                    {% if user.role.value == 'SHIPPING_LINES_ADMIN' and user.managedShippingLine %}
+                                        <a href="{{ path('admin_shipping_lines_detail', {id: user.managedShippingLine.id}) }}" class="text-primary hover:underline">{{ user.managedShippingLine.brandName }}</a>
+                                        <span class="text-base-content/40 ml-1">(Managed)</span>
+                                    {% elseif user.shippingLineAdmin and user.shippingLineAdmin.managedShippingLine %}
+                                        <a href="{{ path('admin_shipping_lines_detail', {id: user.shippingLineAdmin.managedShippingLine.id}) }}" class="text-primary hover:underline">{{ user.shippingLineAdmin.managedShippingLine.brandName }}</a>
+                                    {% else %}
+                                        <span class="text-base-content/40">None assigned</span>
+                                    {% endif %}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Created</dt>
+                                <dd class="text-sm text-base-content">{{ user.createdAt|date('F j, Y \\a\\t g:i A') }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            {# Hierarchy info #}
+            {% if user.role.value != 'SHIPPING_LINES_ADMIN' and user.shippingLineAdmin %}
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-0">
+                        <div class="px-5 py-4 border-b border-base-300">
+                            <h3 class="font-semibold text-base text-base-content">Hierarchy Information</h3>
+                            <p class="text-xs text-base-content/50">Reporting structure and management chain</p>
+                        </div>
+                        <div class="p-5">
+                            <div class="flex items-center gap-4">
+                                <div class="size-10 rounded-full {{ avatar_colors(user.shippingLineAdmin) }} flex items-center justify-center flex-shrink-0">
+                                    <span class="text-sm font-medium">{{ (user.shippingLineAdmin.firstName ~ user.shippingLineAdmin.lastName)|slice(0,2)|upper }}</span>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-base-content/60">Reports to:</p>
+                                    <a href="{{ path('admin_user_hierarchy_detail', {id: user.shippingLineAdmin.id}) }}" class="text-sm font-semibold text-primary hover:underline">
+                                        {{ user.shippingLineAdmin.firstName }} {{ user.shippingLineAdmin.lastName }}
+                                    </a>
+                                    <p class="text-xs text-base-content/50">{{ user.shippingLineAdmin.email }} · Shipping Lines Admin</p>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <button onclick="changeAdmin()" class="btn btn-outline btn-sm gap-2">
+                                    <span class="icon-[tabler--arrows-exchange] size-4"></span>Change Admin
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        {# Right: Subordinates + Additional info #}
+        <div class="space-y-5">
+
+            {# Subordinates #}
+            {% if user.role.value == 'SHIPPING_LINES_ADMIN' %}
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-0">
+                        <div class="flex items-center justify-between px-5 py-4 border-b border-base-300">
+                            <div>
+                                <h3 class="font-semibold text-base text-base-content">Subordinates</h3>
+                                <p class="text-xs text-base-content/50">{{ subordinates|length }} users reporting to this admin</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <a href="{{ path('admin_user_hierarchy_create', {admin_id: user.id}) }}" class="btn btn-primary btn-xs gap-1">
+                                    <span class="icon-[tabler--plus] size-3"></span>Add
+                                </a>
+                                {% if subordinates|length > 0 %}
+                                    <button onclick="transferUsers()" class="btn btn-ghost btn-xs">Transfer</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            {% if subordinates is empty %}
+                                <div class="flex flex-col items-center justify-center py-8 text-base-content/40 gap-2">
+                                    <span class="icon-[tabler--users] size-10"></span>
+                                    <p class="text-sm">No subordinates assigned</p>
+                                </div>
+                            {% else %}
+                                <div class="space-y-2">
+                                    {% for sub in subordinates %}
+                                        <div class="flex items-center justify-between p-3 rounded-xl bg-base-200 hover:bg-base-300/50 transition-colors">
+                                            <div class="flex items-center gap-3 min-w-0">
+                                                <div class="size-8 rounded-full {{ avatar_colors(sub) }} flex items-center justify-center flex-shrink-0">
+                                                    <span class="text-xs font-medium">
+                                                        {% if sub.firstName is defined %}{{ (sub.firstName ~ sub.lastName)|slice(0,2)|upper }}{% else %}{{ sub.email|slice(0,2)|upper }}{% endif %}
+                                                    </span>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <p class="text-sm font-medium text-base-content truncate">
+                                                        {% if sub.firstName is defined %}{{ sub.firstName }} {{ sub.lastName }}{% else %}{{ sub.email|split('@')[0]|title }}{% endif %}
+                                                    </p>
+                                                    <p class="text-xs text-base-content/50">{{ sub.role.value|replace({'_': ' '})|title }}</p>
+                                                </div>
+                                            </div>
+                                            <a href="{{ path('admin_user_hierarchy_detail', {id: sub.id}) }}" class="btn btn-ghost btn-xs flex-shrink-0">View</a>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {# Additional info #}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-0">
+                    <div class="px-5 py-4 border-b border-base-300">
+                        <h3 class="font-semibold text-base text-base-content">Additional Information</h3>
+                    </div>
+                    <div class="p-5">
+                        <dl class="space-y-4">
+                            <div>
+                                <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Account Created</dt>
+                                <dd class="text-sm text-base-content">{{ user.createdAt|date('F j, Y') }}</dd>
+                            </div>
+                            {% if user.role.value == 'SHIPPING_LINES_ADMIN' %}
+                                <div>
+                                    <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Managed Users</dt>
+                                    <dd class="text-sm text-base-content">{{ subordinates|length }} users</dd>
+                                </div>
+                            {% endif %}
+                            <div class="pt-4 border-t border-base-300">
+                                <h4 class="text-xs font-semibold text-base-content uppercase tracking-wide mb-3">Security</h4>
+                                <div class="space-y-3">
+                                    <div>
+                                        <dt class="text-xs text-base-content/50 mb-1">Failed Login Attempts</dt>
+                                        <dd class="text-sm">
+                                            {% if user.failedLoginAttempts > 0 %}
+                                                <span class="text-error font-semibold">{{ user.failedLoginAttempts }}</span>
+                                                {% if user.failedLoginAttempts >= 3 %}
+                                                    <span class="text-xs text-error/70 ml-1">(High Risk)</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-success">0</span>
+                                            {% endif %}
+                                        </dd>
+                                    </div>
+                                    {% if user.lockedUntil %}
+                                        <div>
+                                            <dt class="text-xs text-base-content/50 mb-1">Auto Lock Until</dt>
+                                            <dd class="text-sm">
+                                                {% if user.lockedUntil > date() %}
+                                                    <span class="text-error font-semibold">{{ user.lockedUntil|date('M j, Y g:i A') }}</span>
+                                                {% else %}
+                                                    <span class="text-base-content/40">{{ user.lockedUntil|date('M j, Y g:i A') }} (expired)</span>
+                                                {% endif %}
+                                            </dd>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <dt class="text-xs text-base-content/50 mb-1">Account Status</dt>
+                                        <dd class="text-sm">
+                                            {% if user.status.value == 'LOCKED' %}
+                                                <span class="text-error font-semibold">Locked by Administrator</span>
+                                            {% elseif user.status.value == 'DENIED' %}
+                                                <span class="text-error font-semibold">Denied</span>
+                                            {% elseif user.status.value == 'PENDING' %}
+                                                <span class="text-warning font-semibold">Pending Approval</span>
+                                            {% elseif user.status.value == 'EMAIL_UNVERIFIED' %}
+                                                <span class="text-warning font-semibold">Email Unverified</span>
+                                            {% else %}
+                                                <span class="text-success font-semibold">Approved</span>
+                                            {% endif %}
+                                        </dd>
+                                    </div>
+                                </div>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

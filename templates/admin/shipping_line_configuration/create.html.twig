@@ -1,0 +1,183 @@
+{% extends 'layout/admin_base.html.twig' %}
+
+{% block title %}Create Configuration - {{ shipping_line.brandName }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-plus"></i>
+                        Create Configuration - {{ shipping_line.brandName }}
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{{ path('admin_shipping_line_configuration_index', {id: shipping_line.id}) }}" 
+                           class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to Configurations
+                        </a>
+                    </div>
+                </div>
+                <form method="POST">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="config_key">Configuration Key <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="config_key" name="config_key" required>
+                                    <small class="form-text text-muted">
+                                        Use a descriptive key like 'portal_theme', 'notification_settings', etc.
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="description">Description</label>
+                                    <input type="text" class="form-control" id="description" name="description">
+                                    <small class="form-text text-muted">
+                                        Optional description of what this configuration controls.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="config_value">Configuration Value (JSON) <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="config_value" name="config_value" rows="10" required></textarea>
+                            <small class="form-text text-muted">
+                                Enter the configuration as valid JSON. Example: {"primaryColor": "#007bff", "secondaryColor": "#6c757d"}
+                            </small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Common Configuration Templates</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="btn-group-vertical w-100">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                    onclick="loadTemplate('portal_theme')">
+                                                Portal Theme
+                                            </button>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                    onclick="loadTemplate('notification_settings')">
+                                                Notification Settings
+                                            </button>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                    onclick="loadTemplate('security_settings')">
+                                                Security Settings
+                                            </button>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                    onclick="loadTemplate('feature_flags')">
+                                                Feature Flags
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>JSON Validation</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="json-validation" class="alert alert-info">
+                                            <i class="fas fa-info-circle"></i>
+                                            Enter JSON to validate
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Create Configuration
+                        </button>
+                        <a href="{{ path('admin_shipping_line_configuration_index', {id: shipping_line.id}) }}" 
+                           class="btn btn-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+const templates = {
+    portal_theme: {
+        key: 'portal_theme',
+        value: {
+            primaryColor: '#007bff',
+            secondaryColor: '#6c757d',
+            logoUrl: null,
+            faviconUrl: null
+        }
+    },
+    notification_settings: {
+        key: 'notification_settings',
+        value: {
+            emailNotifications: true,
+            smsNotifications: false,
+            pushNotifications: true
+        }
+    },
+    security_settings: {
+        key: 'security_settings',
+        value: {
+            sessionTimeout: 1800,
+            maxLoginAttempts: 5,
+            passwordExpiry: 90
+        }
+    },
+    feature_flags: {
+        key: 'feature_flags',
+        value: {
+            enableAdvancedReporting: true,
+            enableBulkOperations: true,
+            enableApiAccess: false
+        }
+    }
+};
+
+function loadTemplate(templateName) {
+    const template = templates[templateName];
+    if (template) {
+        document.getElementById('config_key').value = template.key;
+        document.getElementById('config_value').value = JSON.stringify(template.value, null, 2);
+        validateJson();
+    }
+}
+
+function validateJson() {
+    const textarea = document.getElementById('config_value');
+    const validation = document.getElementById('json-validation');
+    
+    try {
+        const value = textarea.value.trim();
+        if (!value) {
+            validation.className = 'alert alert-info';
+            validation.innerHTML = '<i class="fas fa-info-circle"></i> Enter JSON to validate';
+            return;
+        }
+        
+        JSON.parse(value);
+        validation.className = 'alert alert-success';
+        validation.innerHTML = '<i class="fas fa-check-circle"></i> Valid JSON';
+    } catch (e) {
+        validation.className = 'alert alert-danger';
+        validation.innerHTML = '<i class="fas fa-exclamation-circle"></i> Invalid JSON: ' + e.message;
+    }
+}
+
+document.getElementById('config_value').addEventListener('input', validateJson);
+</script>
+{% endblock %}

@@ -1,0 +1,301 @@
+{% extends 'base.html.twig' %}
+{% block title %}Admin Dashboard - OPTIMUS{% endblock %}
+{% block stylesheets %}
+{{ parent() }}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+{% endblock %}
+{% block body %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="card">
+        <div class="card-body">
+            <h1 class="card-title text-xl sm:text-2xl">Dashboard</h1>
+            <p class="text-sm sm:text-base text-base-content/70 mt-1">Welcome back! Here's what's happening with your system today.</p>
+        </div>
+    </div>
+
+    <!-- eDO Payment Overview -->
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title text-lg mb-4">eDO Payment Overview</h2>
+            <div class="stats stats-vertical sm:stats-horizontal shadow w-full">
+                <div class="stat">
+                    <div class="stat-figure text-primary">
+                        <span class="icon-[tabler--currency-peso] size-8"></span>
+                    </div>
+                    <div class="stat-title">Total Fees</div>
+                    <div class="stat-value text-primary">₱{{ edoPaymentStats.total_fees|number_format(2, '.', ',') }}</div>
+                    <div class="stat-desc">All verified payments</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-figure text-success">
+                        <span class="icon-[tabler--calendar-check] size-8"></span>
+                    </div>
+                    <div class="stat-title">Daily Fees</div>
+                    <div class="stat-value text-success">₱{{ edoPaymentStats.daily_fees|number_format(2, '.', ',') }}</div>
+                    <div class="stat-desc">Today collections</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-figure text-warning">
+                        <span class="icon-[tabler--clock-pause] size-8"></span>
+                    </div>
+                    <div class="stat-title">Awaiting Payment</div>
+                    <div class="stat-value text-warning">{{ edoPaymentStats.awaiting_payment_count }}</div>
+                    <div class="stat-desc">₱{{ edoPaymentStats.awaiting_payment_amount|number_format(2, '.', ',') }}</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-figure text-secondary">
+                        <span class="icon-[tabler--circle-check-filled] size-8"></span>
+                    </div>
+                    <div class="stat-title">Completed</div>
+                    <div class="stat-value text-secondary">{{ edoPaymentStats.completed_payment_count }}</div>
+                    <div class="stat-desc">₱{{ edoPaymentStats.completed_payment_amount|number_format(2, '.', ',') }}</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-figure text-info">
+                        <span class="icon-[tabler--receipt] size-8"></span>
+                    </div>
+                    <div class="stat-title">Total Payments</div>
+                    <div class="stat-value text-info">{{ edoPaymentStats.total_payment_count }}</div>
+                    <div class="stat-desc">₱{{ edoPaymentStats.total_payment_amount|number_format(2, '.', ',') }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title text-lg mb-4">Key Metrics</h2>
+            <div class="stats stats-vertical sm:stats-horizontal shadow w-full">
+                <div class="stat">
+                    <div class="stat-figure text-primary">
+                        <span class="icon-[tabler--users] size-8"></span>
+                    </div>
+                    <div class="stat-title">Total Users</div>
+                    <div class="stat-value text-primary">{{ stats.total_users }}</div>
+                    <div class="stat-desc">All registered users</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-figure text-success">
+                        <span class="icon-[tabler--circle-check] size-8"></span>
+                    </div>
+                    <div class="stat-title">Active Users</div>
+                    <div class="stat-value text-success">{{ stats.active_users }}</div>
+                    <div class="stat-desc">Currently active</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-figure text-secondary">
+                        <span class="icon-[tabler--package] size-8"></span>
+                    </div>
+                    <div class="stat-title">Total Shipments</div>
+                    <div class="stat-value text-secondary">{{ stats.total_shipments }}</div>
+                    <div class="stat-desc">All shipments</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-figure text-info">
+                        <span class="icon-[tabler--currency-dollar] size-8"></span>
+                    </div>
+                    <div class="stat-title">Total Payments</div>
+                    <div class="stat-value text-info">{{ stats.total_payments }}</div>
+                    <div class="stat-desc">All transactions</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attention Required -->
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title text-lg mb-4">Attention Required</h2>
+            <div class="stats stats-vertical sm:stats-horizontal shadow w-full">
+                <div class="stat">
+                    <div class="stat-figure text-warning">
+                        <span class="icon-[tabler--user-question] size-8"></span>
+                    </div>
+                    <div class="stat-title">Pending Users</div>
+                    <div class="stat-value text-warning">{{ stats.pending_users }}</div>
+                    <div class="stat-actions mt-2">
+                        <a href="{{ path('app_admin_users') }}" class="btn btn-xs btn-warning btn-soft">
+                            Review Now
+                            <span class="icon-[tabler--arrow-right] size-3"></span>
+                        </a>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="stat-figure text-error">
+                        <span class="icon-[tabler--lock] size-8"></span>
+                    </div>
+                    <div class="stat-title">Locked Users</div>
+                    <div class="stat-value text-error">{{ stats.locked_users }}</div>
+                    <div class="stat-actions mt-2">
+                        <a href="{{ path('app_admin_users') }}" class="btn btn-xs btn-error btn-soft">
+                            View Details
+                            <span class="icon-[tabler--arrow-right] size-3"></span>
+                        </a>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="stat-figure text-info">
+                        <span class="icon-[tabler--certificate] size-8"></span>
+                    </div>
+                    <div class="stat-title">Pending Accreditations</div>
+                    <div class="stat-value text-info">{{ stats.pending_accreditations }}</div>
+                    <div class="stat-desc">Awaiting review</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-figure text-success">
+                        <span class="icon-[tabler--credit-card] size-8"></span>
+                    </div>
+                    <div class="stat-title">Pending Payments</div>
+                    <div class="stat-value text-success">{{ stats.pending_payments }}</div>
+                    <div class="stat-desc">To be processed</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Lists -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title text-base sm:text-lg mb-4">User Distribution</h3>
+                <div id="userChart" style="height:320px"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title text-base sm:text-lg mb-4">System Activity</h3>
+                <div id="activityChart" style="height:320px"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title text-base sm:text-lg mb-4">Recent Registrations</h3>
+                {% if recentUsers|length > 0 %}
+                    <div class="space-y-3">
+                        {% for user in recentUsers %}
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-base-200/50 rounded-lg hover:bg-base-200 transition-colors">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="avatar placeholder flex-shrink-0">
+                                        <div class="w-10 h-10 rounded-full bg-primary text-primary-content">
+                                            <span class="text-sm">{{ user.email|slice(0,2)|upper }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-medium text-base-content truncate">{{ user.email }}</p>
+                                        <p class="text-xs text-base-content/70">{{ user.role.value }} • {{ user.createdAt|date('M j, Y') }}</p>
+                                    </div>
+                                </div>
+                                {% if user.status.value == 'APPROVED' %}
+                                    <span class="badge badge-success badge-soft badge-sm flex-shrink-0">Approved</span>
+                                {% elseif user.status.value == 'PENDING' %}
+                                    <span class="badge badge-warning badge-soft badge-sm flex-shrink-0">Pending</span>
+                                {% elseif user.status.value == 'LOCKED' %}
+                                    <span class="badge badge-error badge-soft badge-sm flex-shrink-0">Locked</span>
+                                {% else %}
+                                    <span class="badge badge-soft badge-sm flex-shrink-0">{{ user.status.value|title }}</span>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8">
+                        <span class="icon-[tabler--user-off] size-12 text-base-content/40 mx-auto"></span>
+                        <p class="text-base-content/70 mt-2">No recent registrations</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title text-base sm:text-lg mb-4">Applications</h3>
+                {% if applications|length > 0 %}
+                    <div class="space-y-3">
+                        {% for app in applications|slice(0,5) %}
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-base-200/50 rounded-lg hover:bg-base-200 transition-colors">
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-medium text-base-content truncate">{{ app.applicant.email }}</p>
+                                    <p class="text-xs text-base-content/70">{{ app.applicant.role.value }} • {{ app.submittedAt|date('M j, Y') }}</p>
+                                </div>
+                                <a href="{{ path('app_admin_application_detail', {id: app.id}) }}" class="btn btn-sm btn-primary w-full sm:w-auto flex-shrink-0">
+                                    <span class="icon-[tabler--eye] size-4"></span>
+                                    Review
+                                </a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8">
+                        <span class="icon-[tabler--circle-check] size-12 text-success/40 mx-auto"></span>
+                        <p class="text-base-content/70 mt-2">All caught up!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-title text-base sm:text-lg mb-6">Quick Actions</h3>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <a href="{{ path('app_admin_users') }}" class="flex flex-col items-center p-4 sm:p-6 bg-base-200/50 rounded-lg hover:bg-primary/10 hover:border-primary border-2 border-transparent transition-all">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3">
+                        <span class="icon-[tabler--users] size-5 sm:size-6 text-primary"></span>
+                    </div>
+                    <span class="text-xs sm:text-sm font-medium text-base-content text-center">Manage Users</span>
+                </a>
+                <a href="{{ path('app_admin_approved_accreditations') }}" class="flex flex-col items-center p-4 sm:p-6 bg-base-200/50 rounded-lg hover:bg-success/10 hover:border-success border-2 border-transparent transition-all">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-success/10 rounded-lg flex items-center justify-center mb-3">
+                        <span class="icon-[tabler--certificate] size-5 sm:size-6 text-success"></span>
+                    </div>
+                    <span class="text-xs sm:text-sm font-medium text-base-content text-center">Accreditations</span>
+                </a>
+                <a href="{{ path('app_admin_audit_logs') }}" class="flex flex-col items-center p-4 sm:p-6 bg-base-200/50 rounded-lg hover:bg-secondary/10 hover:border-secondary border-2 border-transparent transition-all">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-secondary/10 rounded-lg flex items-center justify-center mb-3">
+                        <span class="icon-[tabler--clipboard-list] size-5 sm:size-6 text-secondary"></span>
+                    </div>
+                    <span class="text-xs sm:text-sm font-medium text-base-content text-center">Audit Logs</span>
+                </a>
+                <a href="{{ path('admin_system_settings') }}" class="flex flex-col items-center p-4 sm:p-6 bg-base-200/50 rounded-lg hover:bg-warning/10 hover:border-warning border-2 border-transparent transition-all">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-warning/10 rounded-lg flex items-center justify-center mb-3">
+                        <span class="icon-[tabler--settings] size-5 sm:size-6 text-warning"></span>
+                    </div>
+                    <span class="text-xs sm:text-sm font-medium text-base-content text-center">Settings</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+    new ApexCharts(document.querySelector("#userChart"),{
+        series:[{% for r in usersByRole %}{{ r.count }}{% if not loop.last %},{% endif %}{% endfor %}],
+        chart:{type:'donut',height:320},
+        labels:[{% for r in usersByRole %}'{{ r.role }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        colors:['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6'],
+        legend:{position:'bottom'}
+    }).render();
+    
+    new ApexCharts(document.querySelector("#activityChart"),{
+        series:[
+            {name:'Users',data:[{{ stats.total_users }},{{ stats.active_users }},{{ stats.pending_users }},{{ stats.locked_users }}]},
+            {name:'Shipments',data:[{{ stats.total_shipments }},0,0,0]},
+            {name:'Payments',data:[{{ stats.total_payments }},{{ stats.verified_payments|default(0) }},{{ stats.pending_payments }},0]}
+        ],
+        chart:{type:'bar',height:320},
+        plotOptions:{bar:{horizontal:false,columnWidth:'55%',borderRadius:8}},
+        xaxis:{categories:['Total','Active/Verified','Pending','Locked']},
+        colors:['#6366f1','#10b981','#f59e0b']
+    }).render();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,245 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Bulk Import Manifests - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+    {# Breadcrumb #}
+    <div class="breadcrumbs text-sm">
+        <ul>
+            <li>
+                <a href="{{ path('manifest_workflow_list') }}" class="inline-flex items-center gap-2">
+                    <span class="icon-[tabler--file-text] size-4"></span>
+                    NOA Workflow
+                </a>
+            </li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li aria-current="page">Bulk Import Manifests</li>
+        </ul>
+    </div>
+
+    {# Header #}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <div class="size-12 rounded-xl bg-success/10 flex items-center justify-center flex-shrink-0">
+                <span class="icon-[tabler--file-spreadsheet] size-7 text-success"></span>
+            </div>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-base-content">Bulk Import Manifests</h1>
+                <p class="text-sm text-base-content/60 mt-1">Upload a CSV or Excel file to generate manifests for existing NOAs</p>
+            </div>
+        </div>
+        <a href="{{ path('manifest_workflow_list') }}" class="btn btn-ghost btn-sm gap-2 rounded-full">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back to List
+        </a>
+    </div>
+
+    {# Flash messages #}
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success">
+            <span class="icon-[tabler--circle-check] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error">
+            <span class="icon-[tabler--alert-circle] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+
+    {# 2 Column Layout #}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {# Left Column - Upload Form #}
+        <div class="space-y-6">
+            <form id="bulkImportForm" method="POST" enctype="multipart/form-data" class="space-y-6">
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-6">
+                        <h3 class="text-lg font-semibold text-base-content mb-4 flex items-center gap-2">
+                            <span class="icon-[tabler--upload] size-5 text-success"></span>
+                            1. Upload File
+                        </h3>
+                        
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-medium">Select CSV or Excel file <span class="text-error">*</span></span>
+                            </label>
+                            <input type="file" 
+                                   name="import_file" 
+                                   id="importFile" 
+                                   accept=".csv,.xlsx,.xls"
+                                   required
+                                   class="block cursor-pointer text-sm text-base-content file:uppercase file:text-success-content file:bg-success file:px-4 file:h-9.5 file:rounded-field file:cursor-pointer file:font-medium file:text-base file:me-3 file:border-0 focus:outline-none w-full"
+                                   aria-label="file-input">
+                            <label class="label">
+                                <span class="label-text-alt text-base-content/60">Accepted formats: CSV, XLSX, XLS (Max 5MB)</span>
+                            </label>
+                        </div>
+
+                        <div class="form-control mt-4">
+                            <label class="label cursor-pointer justify-start gap-3">
+                                <input type="checkbox" name="skip_existing" class="checkbox checkbox-success" checked>
+                                <span class="label-text">Skip NOAs that already have manifests (recommended)</span>
+                            </label>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label cursor-pointer justify-start gap-3">
+                                <input type="checkbox" name="validate_only" id="validateOnly" class="checkbox checkbox-success">
+                                <span class="label-text">Validate only (don't import, just check for errors)</span>
+                            </label>
+                        </div>
+
+                        <div class="divider"></div>
+
+                        {# Actions #}
+                        <div class="flex items-center justify-end gap-3">
+                            <a href="{{ path('manifest_workflow_list') }}" class="btn btn-ghost rounded-full">Cancel</a>
+                            <button type="submit" class="btn btn-success gap-2 rounded-full">
+                                <span class="icon-[tabler--upload] size-5"></span>
+                                <span id="submitText">Upload & Preview</span>
+                                <span id="submitSpinner" class="loading loading-spinner loading-sm hidden"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            {# CSV Format Reference #}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-6">
+                    <h3 class="text-lg font-semibold text-base-content mb-4 flex items-center gap-2">
+                        <span class="icon-[tabler--table] size-5 text-success"></span>
+                        CSV Format Reference
+                    </h3>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Column</th>
+                                    <th>Format</th>
+                                    <th>Example</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="badge badge-soft badge-success badge-sm">bl_number</span></td>
+                                    <td class="text-xs">Text (must match existing NOA)</td>
+                                    <td><code class="text-xs">BL-2024-001</code></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge badge-soft badge-success badge-sm">manifest_number</span></td>
+                                    <td class="text-xs">Text (unique, max 50)</td>
+                                    <td><code class="text-xs">MAN-2024-001</code></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge badge-soft badge-info badge-sm">actual_arrival_date</span></td>
+                                    <td class="text-xs">YYYY-MM-DD HH:MM:SS (optional)</td>
+                                    <td><code class="text-xs">2024-12-31 14:30:00</code></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4 p-4 rounded-xl bg-success/10 border border-success/20">
+                        <div class="flex items-start gap-2">
+                            <span class="icon-[tabler--info-circle] size-5 text-success flex-shrink-0 mt-0.5"></span>
+                            <div class="text-sm text-success">
+                                <p class="font-semibold mb-1">Important Notes:</p>
+                                <p class="text-success/80">• BL Number must match an existing NOA in the system</p>
+                                <p class="text-success/80 mt-1">• Manifest Number must be unique across all manifests</p>
+                                <p class="text-success/80 mt-1">• Actual Arrival Date is optional - if not provided, NOA's ETA will be used</p>
+                                <p class="text-success/80 mt-1">• Manifests will be generated as PDFs automatically</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Right Column - Instructions & Template #}
+        <div class="space-y-6">
+            
+            {# Instructions #}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-6">
+                    <h3 class="text-lg font-semibold text-base-content mb-4 flex items-center gap-2">
+                        <span class="icon-[tabler--info-circle] size-5 text-info"></span>
+                        2. How to use Bulk Import
+                    </h3>
+                    <ol class="list-decimal list-inside space-y-3 text-sm text-base-content/70">
+                        <li class="pl-2">Download the CSV template below</li>
+                        <li class="pl-2">Fill in the manifest details for existing NOAs</li>
+                        <li class="pl-2">Ensure BL numbers match existing NOAs in the system</li>
+                        <li class="pl-2">Save your file as CSV or Excel format</li>
+                        <li class="pl-2">Upload the file using the form on the left</li>
+                        <li class="pl-2">Review the preview and confirm the import</li>
+                    </ol>
+                </div>
+            </div>
+
+            {# Download Template #}
+            <div class="card bg-gradient-to-br from-success/10 to-info/10 border-2 border-success/20 shadow-sm">
+                <div class="card-body p-6">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="size-12 rounded-xl bg-success/20 flex items-center justify-center flex-shrink-0">
+                            <span class="icon-[tabler--file-spreadsheet] size-6 text-success"></span>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-base-content mb-1">Download CSV Template</h3>
+                            <p class="text-sm text-base-content/60">Use this template to format your manifest data correctly</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-2 text-xs mb-4">
+                        <span class="badge badge-soft badge-success">BL Number</span>
+                        <span class="badge badge-soft badge-success">Manifest Number</span>
+                        <span class="badge badge-soft badge-info">Actual Arrival Date</span>
+                    </div>
+
+                    <a href="{{ path('manifest_workflow_download_manifest_template') }}" 
+                       class="btn btn-success btn-block gap-2 rounded-full">
+                        <span class="icon-[tabler--download] size-5"></span>
+                        Download Template
+                    </a>
+                </div>
+            </div>
+
+            {# Template Preview #}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-6">
+                    <h3 class="text-lg font-semibold text-base-content mb-4 flex items-center gap-2">
+                        <span class="icon-[tabler--eye] size-5 text-success"></span>
+                        Template Preview
+                    </h3>
+                    <div class="mockup-code text-xs">
+                        <pre><code>bl_number,manifest_number,actual_arrival_date</code></pre>
+                        <pre><code>BL-2024-001,MAN-2024-001,2024-12-31 14:30:00</code></pre>
+                        <pre><code>BL-2024-002,MAN-2024-002,2024-12-31 16:00:00</code></pre>
+                        <pre><code>BL-2024-003,MAN-2024-003,</code></pre>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+document.getElementById('bulkImportForm').addEventListener('submit', function(e) {
+    const submitText = document.getElementById('submitText');
+    const submitSpinner = document.getElementById('submitSpinner');
+    const validateOnly = document.getElementById('validateOnly');
+    
+    submitText.textContent = validateOnly.checked ? 'Validating...' : 'Uploading...';
+    submitSpinner.classList.remove('hidden');
+});
+</script>
+
+{% endblock %}

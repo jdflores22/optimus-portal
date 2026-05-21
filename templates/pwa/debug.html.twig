@@ -1,0 +1,133 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}PWA Debug - Optimus Shipping{% endblock %}
+
+{% block body %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">PWA Installation Debug</h1>
+        
+        <div class="bg-white shadow rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Current Status</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <span class="font-medium">Current URL:</span>
+                    <code class="ml-2 bg-gray-100 px-2 py-1 rounded" id="current-url"></code>
+                </div>
+                
+                <div>
+                    <span class="font-medium">Display Mode:</span>
+                    <code class="ml-2 bg-gray-100 px-2 py-1 rounded" id="display-mode"></code>
+                </div>
+                
+                <div>
+                    <span class="font-medium">Service Worker:</span>
+                    <code class="ml-2 bg-gray-100 px-2 py-1 rounded" id="sw-status"></code>
+                </div>
+                
+                <div>
+                    <span class="font-medium">Notification Permission:</span>
+                    <code class="ml-2 bg-gray-100 px-2 py-1 rounded" id="notification-permission"></code>
+                </div>
+                
+                <div>
+                    <span class="font-medium">Is PWA:</span>
+                    <code class="ml-2 bg-gray-100 px-2 py-1 rounded" id="is-pwa"></code>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white shadow rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Installation Links</h2>
+            
+            <div class="space-y-2">
+                <div>
+                    <a href="/manifest.json" target="_blank" class="text-blue-600 hover:underline">View Manifest</a>
+                </div>
+                <div>
+                    <a href="/.well-known/assetlinks.json" target="_blank" class="text-blue-600 hover:underline">View Asset Links</a>
+                </div>
+                <div>
+                    <a href="/sw.js" target="_blank" class="text-blue-600 hover:underline">View Service Worker</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Actions</h2>
+            
+            <div class="space-y-2">
+                <button id="install-btn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                    Install PWA
+                </button>
+                
+                <button id="request-notification" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 ml-2">
+                    Request Notification Permission
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Display current URL
+    document.getElementById('current-url').textContent = window.location.href;
+    
+    // Check display mode
+    const displayMode = window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser';
+    document.getElementById('display-mode').textContent = displayMode;
+    
+    // Check if PWA
+    const isPWA = displayMode === 'standalone' || window.navigator.standalone === true;
+    document.getElementById('is-pwa').textContent = isPWA ? 'Yes' : 'No';
+    
+    // Check service worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then(registration => {
+            if (registration) {
+                document.getElementById('sw-status').textContent = 'Registered';
+            } else {
+                document.getElementById('sw-status').textContent = 'Not Registered';
+            }
+        });
+    } else {
+        document.getElementById('sw-status').textContent = 'Not Supported';
+    }
+    
+    // Check notification permission
+    if ('Notification' in window) {
+        document.getElementById('notification-permission').textContent = Notification.permission;
+    } else {
+        document.getElementById('notification-permission').textContent = 'Not Supported';
+    }
+    
+    // Install button
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        document.getElementById('install-btn').disabled = false;
+    });
+    
+    document.getElementById('install-btn').addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log('Install outcome:', outcome);
+            deferredPrompt = null;
+            document.getElementById('install-btn').disabled = true;
+        }
+    });
+    
+    // Request notification permission
+    document.getElementById('request-notification').addEventListener('click', async () => {
+        if ('Notification' in window) {
+            const permission = await Notification.requestPermission();
+            document.getElementById('notification-permission').textContent = permission;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Select Workspace - OPTIMUS{% endblock %}
+
+{% block body %}
+<!-- Toast Notification Container -->
+<div id="toast-container" class="toast toast-top toast-end z-50">
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert {% if type == 'success' %}alert-success{% elseif type == 'error' %}alert-error{% elseif type == 'warning' %}alert-warning{% else %}alert-info{% endif %}">
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endfor %}
+</div>
+
+<div class="min-h-screen bg-base-200 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="flex justify-center mb-4">
+                <div class="size-16 bg-primary rounded-2xl flex items-center justify-center shadow-lg">
+                    <span class="icon-[tabler--briefcase] size-8 text-primary-content"></span>
+                </div>
+            </div>
+            <h2 class="text-3xl font-bold text-base-content mb-2">
+                Select Your Workspace
+            </h2>
+            <p class="text-base-content/60">
+                Choose which consignee you'd like to work with
+            </p>
+        </div>
+
+        {% if workspaces|length == 0 %}
+            <!-- No Workspaces State -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body items-center text-center py-16">
+                    <div class="size-20 bg-base-200 rounded-full flex items-center justify-center mb-6">
+                        <span class="icon-[tabler--briefcase] size-10 text-base-content/40"></span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-base-content mb-3">No Workspaces Available</h3>
+                    <p class="text-base-content/60 mb-8 max-w-md">
+                        You don't have any active relationships with consignees yet. Use a referral code to link with a consignee.
+                    </p>
+                    <div class="flex flex-col sm:flex-row items-center gap-4">
+                        <a href="{{ path('broker_apply_referral_code') }}" 
+                           class="btn btn-primary gap-2">
+                            <span class="icon-[tabler--link] size-5"></span>
+                            Apply Referral Code
+                        </a>
+                        <a href="{{ path('app_logout') }}" 
+                           class="btn btn-ghost gap-2">
+                            <span class="icon-[tabler--logout] size-5"></span>
+                            Sign Out
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- Workspaces Grid -->
+            <div class="card bg-base-100 shadow-xl">
+                <div class="card-body p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for workspace in workspaces %}
+                            <a href="{{ path('broker_switch_workspace', {consigneeId: workspace.id}) }}" 
+                               class="card bg-base-100 shadow-sm hover:shadow-lg transition-all duration-300 group">
+                                <div class="card-body p-5">
+                                    <!-- Workspace Card -->
+                                    <div class="flex items-center justify-between mb-4">
+                                        <div class="flex items-center gap-3 flex-1 min-w-0">
+                                            <div class="size-12 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-primary transition-colors">
+                                                <span class="icon-[tabler--briefcase] size-6 text-primary group-hover:text-primary-content transition-colors"></span>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <h3 class="text-lg font-bold text-base-content group-hover:text-primary transition-colors truncate">
+                                                    {{ workspace.name }}
+                                                </h3>
+                                                <p class="text-sm text-base-content/50 truncate">
+                                                    {{ workspace.email }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <span class="icon-[tabler--chevron-right] size-5 text-base-content/30 group-hover:text-primary group-hover:translate-x-1 transition-all"></span>
+                                    </div>
+
+                                    <!-- Stats -->
+                                    <div class="flex items-center gap-3 pt-3 border-t border-base-300">
+                                        <div class="flex items-center gap-1.5 text-sm text-base-content/60">
+                                            <span class="icon-[tabler--file-text] size-4"></span>
+                                            <span class="font-medium">{{ workspace.manifestCount }}</span>
+                                            <span>manifest{{ workspace.manifestCount != 1 ? 's' : '' }}</span>
+                                        </div>
+                                        <span class="badge badge-sm {% if workspace.source == 'referral_code' %}badge-primary{% else %}badge-ghost{% endif %}">
+                                            {{ workspace.source == 'referral_code' ? 'Referral' : 'Legacy' }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Info Box -->
+                    <div class="alert alert-info mt-6">
+                        <span class="icon-[tabler--info-circle] size-5"></span>
+                        <div>
+                            <p class="font-semibold">Tip</p>
+                            <p class="text-sm">Switch between workspaces anytime using the workspace switcher in the top navigation bar.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Add More Workspaces -->
+                    <div class="mt-4">
+                        <a href="{{ path('broker_apply_referral_code') }}" 
+                           class="btn btn-outline btn-block gap-2">
+                            <span class="icon-[tabler--plus] size-5"></span>
+                            Add More Consignees
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="card-footer bg-base-200 px-6 py-4 flex items-center justify-between">
+                    <p class="text-sm text-base-content/60">
+                        {{ workspaces|length }} workspace{{ workspaces|length != 1 ? 's' : '' }} available
+                    </p>
+                    <a href="{{ path('app_logout') }}" 
+                       class="text-sm text-base-content/60 hover:text-base-content flex items-center gap-1.5 transition-colors">
+                        <span class="icon-[tabler--logout] size-4"></span>
+                        Sign Out
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Auto-dismiss toast notifications after 5 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    const toasts = document.querySelectorAll('.alert');
+    toasts.forEach(function(toast) {
+        setTimeout(function() {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            toast.style.transition = 'all 0.3s ease-out';
+            setTimeout(function() {
+                toast.remove();
+            }, 300);
+        }, 5000);
+    });
+});
+</script>
+{% endblock %}

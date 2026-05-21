@@ -1,0 +1,277 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ consignee.businessName }} - Consignee Profile{% endblock %}
+
+{% block body %}
+<div class="space-y-6">
+    <!-- Breadcrumb -->
+    <div class="breadcrumbs text-sm text-base-content/60">
+        <ul>
+            <li>
+                <a href="{{ path('app_shipping_admin_dashboard') }}" class="inline-flex items-center gap-2 hover:text-primary">
+                    <span class="icon-[tabler--home] size-4"></span>
+                    Dashboard
+                </a>
+            </li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li>
+                <a href="{{ path('app_shipping_admin_consignees') }}" class="hover:text-primary">
+                    Consignees
+                </a>
+            </li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li class="text-base-content font-medium">{{ consignee.businessName }}</li>
+        </ul>
+    </div>
+
+    <!-- Page Header -->
+    <div class="flex items-start justify-between">
+        <div class="flex items-center gap-4">
+            <div class="avatar avatar-placeholder">
+                <div class="bg-primary text-primary-content size-16 rounded-full">
+                    <span class="text-2xl font-semibold">{{ consignee.businessName|slice(0, 2)|upper }}</span>
+                </div>
+            </div>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-base-content">{{ consignee.businessName }}</h1>
+                <p class="text-base-content/60 mt-1">{{ consignee.email }}</p>
+                <div class="flex items-center gap-2 mt-2">
+                    {% if consignee.isActive %}
+                        <span class="badge badge-success badge-sm gap-1">
+                            <span class="icon-[tabler--circle-check] size-3"></span>
+                            Active
+                        </span>
+                    {% else %}
+                        <span class="badge badge-error badge-sm gap-1">
+                            <span class="icon-[tabler--circle-x] size-3"></span>
+                            Inactive
+                        </span>
+                    {% endif %}
+                    <span class="badge badge-ghost badge-sm">ID: {{ consignee.id }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-base-content/60">Total NOAs</p>
+                        <p class="text-2xl font-bold text-base-content">{{ stats.total_noas }}</p>
+                    </div>
+                    <span class="icon-[tabler--file-text] size-10 text-primary opacity-20"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-base-content/60">Total Manifests</p>
+                        <p class="text-2xl font-bold text-base-content">{{ stats.total_manifests }}</p>
+                    </div>
+                    <span class="icon-[tabler--file-description] size-10 text-info opacity-20"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-base-content/60">Total Containers</p>
+                        <p class="text-2xl font-bold text-base-content">{{ stats.total_containers }}</p>
+                    </div>
+                    <span class="icon-[tabler--container] size-10 text-secondary opacity-20"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-md">
+            <div class="card-body p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-base-content/60">Total eDOs</p>
+                        <p class="text-2xl font-bold text-base-content">{{ stats.total_edos }}</p>
+                    </div>
+                    <span class="icon-[tabler--file-certificate] size-10 text-warning opacity-20"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column - Details -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Account Information -->
+            <div class="card bg-base-100 shadow-md">
+                <div class="card-body">
+                    <h3 class="card-title text-lg mb-4">
+                        <span class="icon-[tabler--info-circle] size-5"></span>
+                        Account Information
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-base-content/60">Business Name</p>
+                            <p class="font-medium">{{ consignee.businessName }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-base-content/60">Email</p>
+                            <p class="font-medium">{{ consignee.email }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-base-content/60">Account Status</p>
+                            <p class="font-medium">{{ consignee.status.value|replace({'_': ' '})|title }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-base-content/60">Created At</p>
+                            <p class="font-medium">{{ consignee.createdAt|date('M j, Y g:i A') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent NOAs -->
+            <div class="card bg-base-100 shadow-md">
+                <div class="card-body">
+                    <h3 class="card-title text-lg mb-4">
+                        <span class="icon-[tabler--file-text] size-5"></span>
+                        Recent NOAs
+                    </h3>
+                    {% if noas|length > 0 %}
+                        <div class="overflow-x-auto">
+                            <table class="table table-zebra w-full">
+                                <thead>
+                                    <tr>
+                                        <th>NOA Number</th>
+                                        <th>BL Number</th>
+                                        <th>Vessel</th>
+                                        <th>Containers</th>
+                                        <th>Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for noa in noas|slice(0, 10) %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ path('manifest_workflow_noa_detail', {id: noa.id}) }}" class="link link-primary">
+                                                {{ noa.noaNumber }}
+                                            </a>
+                                        </td>
+                                        <td>{{ noa.blNumber }}</td>
+                                        <td>{{ noa.vesselNumber }}</td>
+                                        <td>{{ noa.containers|length }}</td>
+                                        <td>{{ noa.createdAt|date('M j, Y') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-center py-8 text-base-content/60">No NOAs found</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Manifests -->
+            <div class="card bg-base-100 shadow-md">
+                <div class="card-body">
+                    <h3 class="card-title text-lg mb-4">
+                        <span class="icon-[tabler--file-description] size-5"></span>
+                        Recent Manifests
+                    </h3>
+                    {% if manifests|length > 0 %}
+                        <div class="overflow-x-auto">
+                            <table class="table table-zebra w-full">
+                                <thead>
+                                    <tr>
+                                        <th>Manifest ID</th>
+                                        <th>Broker</th>
+                                        <th>Workflow State</th>
+                                        <th>Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for manifest in manifests|slice(0, 10) %}
+                                    <tr>
+                                        <td>#{{ manifest.id }}</td>
+                                        <td>{{ manifest.broker ? manifest.broker.fullName : 'N/A' }}</td>
+                                        <td>
+                                            <span class="badge badge-sm">{{ manifest.workflowState.value|replace({'_': ' '})|title }}</span>
+                                        </td>
+                                        <td>{{ manifest.createdAt|date('M j, Y') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-center py-8 text-base-content/60">No manifests found</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Sidebar -->
+        <div class="space-y-6">
+            <!-- Linked Broker -->
+            <div class="card bg-base-100 shadow-md">
+                <div class="card-body">
+                    <h3 class="card-title text-lg mb-4">
+                        <span class="icon-[tabler--briefcase] size-5"></span>
+                        Linked Broker
+                    </h3>
+                    {% if consignee.linkedBroker %}
+                        <a href="{{ path('app_shipping_admin_broker_detail', {id: consignee.linkedBroker.id}) }}" class="flex items-center gap-3 p-3 rounded-lg hover:bg-base-200 transition-colors">
+                            <div class="avatar avatar-placeholder">
+                                <div class="bg-secondary text-secondary-content size-12 rounded-full">
+                                    <span class="text-sm font-semibold">{{ consignee.linkedBroker.fullName|slice(0, 2)|upper }}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="font-semibold">{{ consignee.linkedBroker.fullName }}</div>
+                                <div class="text-xs text-base-content/60">{{ consignee.linkedBroker.email }}</div>
+                            </div>
+                        </a>
+                    {% else %}
+                        <div class="text-center py-4 text-base-content/60">
+                            <span class="icon-[tabler--unlink] size-8 mx-auto mb-2 opacity-50"></span>
+                            <p class="text-sm">No broker linked</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card bg-base-100 shadow-md">
+                <div class="card-body">
+                    <h3 class="card-title text-lg mb-4">
+                        <span class="icon-[tabler--bolt] size-5"></span>
+                        Quick Actions
+                    </h3>
+                    <div class="space-y-2">
+                        <button class="btn btn-outline btn-sm w-full justify-start gap-2" disabled>
+                            <span class="icon-[tabler--edit] size-4"></span>
+                            Edit Profile
+                        </button>
+                        <button class="btn btn-outline btn-sm w-full justify-start gap-2" disabled>
+                            <span class="icon-[tabler--link] size-4"></span>
+                            Manage Broker Link
+                        </button>
+                        <button class="btn btn-outline btn-sm w-full justify-start gap-2" disabled>
+                            <span class="icon-[tabler--mail] size-4"></span>
+                            Send Email
+                        </button>
+                    </div>
+                    <p class="text-xs text-base-content/60 mt-4">* Actions coming soon</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

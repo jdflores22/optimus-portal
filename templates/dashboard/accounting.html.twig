@@ -1,0 +1,371 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Accounting Dashboard - OPTIMUS{% endblock %}
+
+{% block body %}
+<!-- Toast Notification Container -->
+<div class="toast toast-top toast-end z-50">
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert {% if type == 'success' %}alert-success{% elseif type == 'error' %}alert-error{% elseif type == 'warning' %}alert-warning{% else %}alert-info{% endif %}">
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endfor %}
+</div>
+
+<div class="min-h-screen bg-base-200">
+    <!-- Header Section -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-base-content">Accounting Dashboard</h1>
+                    <p class="text-base-content/60 mt-1">Payment validation and financial operations</p>
+                </div>
+                <div class="hidden md:flex items-center gap-3 bg-primary/10 rounded-xl px-4 py-3">
+                    <span class="icon-[tabler--calendar] size-6 text-primary"></span>
+                    <div>
+                        <p class="text-xs text-primary/70 font-medium">{{ "now"|date("l, F j, Y") }}</p>
+                        <p class="text-xs text-primary">{{ "now"|date("g:i A") }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Key Metrics Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <!-- Billing Generation Pending -->
+            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-all">
+                <div class="card-body p-4 sm:p-6">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="size-10 sm:size-12 bg-secondary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <span class="icon-[tabler--receipt] size-5 sm:size-6 text-secondary"></span>
+                        </div>
+                    </div>
+                    <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-1">Billing Generation</p>
+                    <p class="text-3xl sm:text-4xl font-bold text-base-content">{{ stats.billing_pending_count }}</p>
+                    <p class="text-xs sm:text-sm text-base-content/60 mt-1">Awaiting billing</p>
+                </div>
+            </div>
+            
+            <!-- Billing Generated -->
+            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-all">
+                <div class="card-body p-4 sm:p-6">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="size-10 sm:size-12 bg-info/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <span class="icon-[tabler--file-invoice] size-5 sm:size-6 text-info"></span>
+                        </div>
+                    </div>
+                    <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-1">Billing Generated</p>
+                    <p class="text-3xl sm:text-4xl font-bold text-base-content">{{ stats.billing_generated_count }}</p>
+                    <p class="text-xs sm:text-sm text-base-content/60 mt-1">Awaiting payment</p>
+                </div>
+            </div>
+            
+            <!-- Payment Pending -->
+            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-all">
+                <div class="card-body p-4 sm:p-6">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="size-10 sm:size-12 bg-warning/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <span class="icon-[tabler--clock] size-5 sm:size-6 text-warning"></span>
+                        </div>
+                    </div>
+                    <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-1">Payment Validation</p>
+                    <p class="text-3xl sm:text-4xl font-bold text-base-content">{{ stats.edo_pending_count }}</p>
+                    <p class="text-xs sm:text-sm text-base-content/60 mt-1">Requires validation</p>
+                </div>
+            </div>
+
+            <!-- Billing Verified Today -->
+            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-all">
+                <div class="card-body p-4 sm:p-6">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="size-10 sm:size-12 bg-success/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <span class="icon-[tabler--circle-check] size-5 sm:size-6 text-success"></span>
+                        </div>
+                    </div>
+                    <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-1">Verified Today</p>
+                    <p class="text-3xl sm:text-4xl font-bold text-base-content">{{ stats.edo_verified_today }}</p>
+                    <p class="text-xs sm:text-sm text-base-content/60 mt-1">By you</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Billing Generation Section -->
+        {% if pendingBillingManifests|length > 0 %}
+        <div class="card bg-base-100 shadow-sm mb-6 sm:mb-8">
+            <div class="card-body p-0">
+                <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-base-300 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg font-semibold text-base-content">Pending Billing Generation</h3>
+                        <p class="text-sm text-base-content/60 mt-1">Manifests awaiting billing document generation</p>
+                    </div>
+                    <span class="badge badge-secondary badge-lg">
+                        {{ pendingBillingManifests|length }} Pending
+                    </span>
+                </div>
+            
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>Manifest #</th>
+                                <th>BL Number</th>
+                                <th>Broker</th>
+                                <th>Consignee</th>
+                                <th>BL Uploaded</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for manifest in pendingBillingManifests|slice(0, 10) %}
+                            <tr class="hover">
+                                <td>
+                                    <div class="font-medium text-base-content">{{ manifest.manifestNumber }}</div>
+                                </td>
+                                <td>
+                                    <div class="text-base-content">{{ manifest.blNumber }}</div>
+                                </td>
+                                <td>
+                                    <div class="text-base-content">{{ manifest.broker ? manifest.broker.fullName : 'N/A' }}</div>
+                                    {% if manifest.broker %}
+                                    <div class="text-xs text-base-content/60">{{ manifest.broker.email }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="text-base-content">{{ manifest.consignee ? manifest.consignee.businessName : 'N/A' }}</div>
+                                </td>
+                                <td>
+                                    <div class="text-sm text-base-content/60">{{ manifest.updatedAt|date('M d, Y H:i') }}</div>
+                                </td>
+                                <td class="text-right">
+                                    <a href="{{ path('manifest_workflow_generate_billing', {id: manifest.id}) }}" class="btn btn-secondary btn-sm gap-2">
+                                        <span class="icon-[tabler--file-invoice] size-4"></span>
+                                        Generate Billing
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Billing Generated Section -->
+        {% if billingGeneratedManifests|length > 0 %}
+        <div class="card bg-base-100 shadow-sm mb-6 sm:mb-8">
+            <div class="card-body p-0">
+                <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-base-300 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg font-semibold text-base-content">Billing Generated</h3>
+                        <p class="text-sm text-base-content/60 mt-1">Manifests with billing documents generated, awaiting payment</p>
+                    </div>
+                    <span class="badge badge-info badge-lg">
+                        {{ billingGeneratedManifests|length }} Generated
+                    </span>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>Manifest #</th>
+                                <th>BL Number</th>
+                                <th>Broker</th>
+                                <th>Consignee</th>
+                                <th>Total Amount</th>
+                                <th>Generated</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for manifest in billingGeneratedManifests %}
+                            <tr class="hover">
+                                <td>
+                                    <div class="font-medium text-base-content">{{ manifest.manifestNumber }}</div>
+                                </td>
+                                <td>
+                                    <div class="text-base-content">{{ manifest.blNumber }}</div>
+                                </td>
+                                <td>
+                                    <div class="text-base-content">{{ manifest.broker ? manifest.broker.fullName : 'N/A' }}</div>
+                                    {% if manifest.broker %}
+                                    <div class="text-xs text-base-content/60">{{ manifest.broker.email }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="text-base-content">{{ manifest.consignee ? manifest.consignee.businessName : 'N/A' }}</div>
+                                </td>
+                                <td>
+                                    <div class="font-medium text-base-content">₱{{ manifest.billing.totalAmount|number_format(2) }}</div>
+                                    <div class="text-xs text-base-content/60">
+                                        Freight: ₱{{ manifest.billing.freightCharges|number_format(2) }} | 
+                                        THC: ₱{{ manifest.billing.thcCharges|number_format(2) }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="text-sm text-base-content/60">{{ manifest.billing.createdAt|date('M d, Y H:i') }}</div>
+                                </td>
+                                <td class="text-right">
+                                    <div class="flex gap-2 justify-end">
+                                        <a href="{{ path('manifest_workflow_detail', {id: manifest.id}) }}" class="btn btn-ghost btn-sm gap-2">
+                                            <span class="icon-[tabler--eye] size-4"></span>
+                                            View
+                                        </a>
+                                        {% if manifest.billing.pdfPath %}
+                                        <a href="{{ path('api_billing_download', {billingId: manifest.billing.id}) }}?inline=false" class="btn btn-info btn-sm gap-2" target="_blank">
+                                            <span class="icon-[tabler--download] size-4"></span>
+                                            PDF
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Billing Payments Section -->
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-0">
+                <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-base-300 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg font-semibold text-base-content">Recent Billing Payments</h3>
+                        <p class="text-sm text-base-content/60 mt-1">Shipping line billing payments pending validation</p>
+                    </div>
+                    <a href="{{ path('accounting_billing_payments_index') }}" class="btn btn-ghost btn-sm gap-2">
+                        View All
+                        <span class="icon-[tabler--arrow-right] size-4"></span>
+                    </a>
+                </div>
+            
+            {% if pendingEdoPayments|length > 0 %}
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>Manifest #</th>
+                                <th>Broker</th>
+                                <th>Shipping Line</th>
+                                <th>Amount</th>
+                                <th>Submitted</th>
+                                <th>Status</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for edoPayment in pendingEdoPayments|slice(0, 10) %}
+                            <tr class="hover">
+                                <td>
+                                    <div class="font-medium text-base-content">{{ edoPayment.manifest.manifestNumber }}</div>
+                                </td>
+                                <td>
+                                    <div class="text-base-content">{{ edoPayment.manifest.broker.fullName }}</div>
+                                    <div class="text-xs text-base-content/60">{{ edoPayment.manifest.broker.email }}</div>
+                                </td>
+                                <td>
+                                    <div class="text-base-content">{{ edoPayment.shippingLine.brandName }}</div>
+                                </td>
+                                <td>
+                                    <div class="font-medium text-base-content">₱{{ edoPayment.amount|number_format(2) }}</div>
+                                </td>
+                                <td>
+                                    <div class="text-sm text-base-content/60">{{ edoPayment.createdAt|date('M d, Y H:i') }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge badge-warning badge-sm">
+                                        Pending
+                                    </span>
+                                </td>
+                                <td class="text-right">
+                                    <a href="{{ path('accounting_billing_payments_index') }}" class="btn btn-primary btn-sm">Review</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-16">
+                    <div class="inline-flex items-center justify-center size-16 bg-base-200 rounded-full mb-4">
+                        <span class="icon-[tabler--circle-check] size-8 text-base-content/40"></span>
+                    </div>
+                    <h3 class="text-base font-medium text-base-content">No pending billing payments</h3>
+                    <p class="mt-2 text-sm text-base-content/60">All billing payments have been processed.</p>
+                </div>
+            {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Links Card -->
+        <div class="mt-6 sm:mt-8 card bg-gradient-to-br from-primary/5 to-secondary/5 shadow-sm border border-primary/10">
+            <div class="card-body p-4 sm:p-6">
+                <h3 class="text-base font-semibold text-base-content mb-4">Quick Links</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    <a href="{{ path('accounting_billing_payments_index') }}" class="flex items-center justify-between p-3 bg-base-100 rounded-lg hover:shadow-md transition-all group">
+                        <div class="flex items-center gap-3">
+                            <div class="size-8 bg-info/10 rounded-lg flex items-center justify-center group-hover:bg-info/20 transition-colors">
+                                <span class="icon-[tabler--file-invoice] size-4 text-info"></span>
+                            </div>
+                            <span class="text-sm font-medium text-base-content">All Payments</span>
+                        </div>
+                        <span class="icon-[tabler--arrow-right] size-4 text-base-content/40 group-hover:text-base-content/60 transition-colors"></span>
+                    </a>
+
+                    <a href="{{ path('app_accounting_dashboard_new') }}" class="flex items-center justify-between p-3 bg-base-100 rounded-lg hover:shadow-md transition-all group">
+                        <div class="flex items-center gap-3">
+                            <div class="size-8 bg-success/10 rounded-lg flex items-center justify-center group-hover:bg-success/20 transition-colors">
+                                <span class="icon-[tabler--refresh] size-4 text-success"></span>
+                            </div>
+                            <span class="text-sm font-medium text-base-content">Refresh</span>
+                        </div>
+                        <span class="icon-[tabler--arrow-right] size-4 text-base-content/40 group-hover:text-base-content/60 transition-colors"></span>
+                    </a>
+
+                    <button onclick="exportDashboardData()" class="flex items-center justify-between p-3 bg-base-100 rounded-lg hover:shadow-md transition-all group">
+                        <div class="flex items-center gap-3">
+                            <div class="size-8 bg-base-content/10 rounded-lg flex items-center justify-center group-hover:bg-base-content/20 transition-colors">
+                                <span class="icon-[tabler--download] size-4 text-base-content"></span>
+                            </div>
+                            <span class="text-sm font-medium text-base-content">Export Data</span>
+                        </div>
+                        <span class="icon-[tabler--arrow-right] size-4 text-base-content/40 group-hover:text-base-content/60 transition-colors"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportDashboardData() {
+    const csvData = [
+        ['Metric', 'Value'],
+        ['Pending Validation', '{{ stats.edo_pending_count }}'],
+        ['Verified Today', '{{ stats.edo_verified_today }}'],
+        ['Total Verified', '{{ stats.edo_total_verified }}'],
+        ['Rejected', '{{ stats.edo_rejected_count }}']
+    ];
+    
+    const csvContent = csvData.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'accounting-dashboard-' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

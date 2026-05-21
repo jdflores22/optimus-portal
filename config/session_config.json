@@ -1,0 +1,5 @@
+{
+    "desktop_timeout_minutes": 30,
+    "check_interval_seconds": 60,
+    "pwa_ping_interval_minutes": 5
+}

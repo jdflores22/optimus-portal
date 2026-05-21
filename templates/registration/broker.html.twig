@@ -1,0 +1,465 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Broker Registration - OPTIMUS{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .gradient-animate {
+            background-size: 200% 200%;
+            animation: gradient-shift 15s ease infinite;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+</div> {# Close the centered wrapper from base.html.twig #}
+
+<div class="fixed inset-0 overflow-hidden">
+    <!-- Split Screen Layout -->
+    <div class="h-screen flex overflow-hidden">
+        <!-- Left Side - Branding & Benefits -->
+        <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-orange-900 via-amber-900 to-orange-900 gradient-animate relative overflow-hidden">
+            <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAtMi4yMSAxLjc5LTQgNC00czQgMS43OSA0IDQtMS43OSA0LTQgNC00LTEuNzktNC00em0wIDI0YzAtMi4yMSAxLjc5LTQgNC00czQgMS43OSA0IDQtMS43OSA0LTQgNC00LTEuNzktNC00ek0xMiAxNmMwLTIuMjEgMS43OS00IDQtNHM0IDEuNzkgNCA0LTEuNzkgNC00IDQtNC0xLjc5LTQtNHptMCAyNGMwLTIuMjEgMS43OS00IDQtNHM0IDEuNzkgNCA0LTEuNzkgNC00IDQtNC0xLjc5LTQtNHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30"></div>
+            
+            <div class="relative z-10 flex flex-col justify-center px-12 w-full overflow-y-auto py-12">
+                <div class="animate-float">
+                    <h1 class="text-6xl font-extrabold mb-4">
+                        <span class="bg-gradient-to-r from-orange-300 via-amber-300 to-orange-200 bg-clip-text text-transparent">
+                            OPTIMUS
+                        </span>
+                    </h1>
+                    <p class="text-sm text-gray-400 mb-8 tracking-wider">
+                        Developed By: Trans-net Software Development Services
+                    </p>
+                </div>
+                
+                <h2 class="text-3xl font-bold text-white mb-6 leading-tight">
+                    Join as a Broker
+                </h2>
+                
+                <p class="text-xl text-gray-300 mb-12 leading-relaxed">
+                    Manage multiple clients, earn referral rewards, and streamline your shipping operations with powerful broker tools.
+                </p>
+                
+                <!-- Benefits -->
+                <div class="space-y-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-orange-300" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-white">Multi-Client Management</h3>
+                            <p class="text-gray-400 text-sm">Handle multiple consignees from one dashboard</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-amber-300" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-white">Referral System</h3>
+                            <p class="text-gray-400 text-sm">Earn rewards for bringing new clients</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-yellow-300" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-white">Streamlined Workflows</h3>
+                            <p class="text-gray-400 text-sm">Efficient tools for faster processing</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Trust Indicators -->
+                <div class="mt-12 pt-8 border-t border-orange-700/50">
+                    <p class="text-sm text-gray-400 mb-4">Trusted by professional brokers</p>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <div class="text-2xl font-bold text-orange-300">200+</div>
+                            <div class="text-xs text-gray-400">Active Brokers</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-orange-300">1K+</div>
+                            <div class="text-xs text-gray-400">Connections</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-orange-300">24/7</div>
+                            <div class="text-xs text-gray-400">Support</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side - Registration Form -->
+        <div class="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-base-100 overflow-y-auto">
+            <div class="mx-auto w-full max-w-md py-12">
+                <!-- Mobile Logo -->
+                <div class="lg:hidden text-center mb-8">
+                    <h1 class="text-5xl font-extrabold">
+                        <span class="bg-gradient-to-r from-orange-600 via-amber-600 to-orange-500 bg-clip-text text-transparent">
+                            OPTIMUS
+                        </span>
+                    </h1>
+                    <p class="text-xs text-base-content/50 mt-2">
+                        Developed By: Trans-net Software Development Services
+                    </p>
+                </div>
+
+                <div>
+                    <h2 class="text-3xl font-bold text-base-content">
+                        Create your broker account
+                    </h2>
+                    <p class="mt-2 text-sm text-base-content/60">
+                        Register as a broker to manage shipping operations
+                    </p>
+                </div>
+
+                <div class="mt-8">
+                    {% for message in app.flashes('error') %}
+                        <div class="alert alert-error mb-4">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+
+                    <form method="post" action="{{ path('broker_register') }}" class="space-y-6">
+                        <div class="form-control">
+                            <label for="fullName" class="label">
+                                <span class="label-text font-semibold">Full Name <span class="text-error">*</span></span>
+                            </label>
+                            <input 
+                                type="text" 
+                                name="fullName" 
+                                id="fullName" 
+                                required 
+                                autofocus
+                                class="input input-bordered w-full"
+                                placeholder="Your Full Name"
+                            >
+                        </div>
+
+                        <div class="form-control">
+                            <label for="email" class="label">
+                                <span class="label-text font-semibold">Email address <span class="text-error">*</span></span>
+                            </label>
+                            <input 
+                                type="email" 
+                                name="email" 
+                                id="email" 
+                                required
+                                autocomplete="email"
+                                class="input input-bordered w-full"
+                                placeholder="you@example.com"
+                            >
+                        </div>
+
+                        <div class="form-control">
+                            <label for="referralCode" class="label">
+                                <span class="label-text font-semibold">Referral Code <span class="text-error">*</span></span>
+                            </label>
+                            <label class="input input-bordered flex items-center gap-2">
+                                <input 
+                                    type="text" 
+                                    name="referralCode" 
+                                    id="referralCode" 
+                                    required
+                                    maxlength="10"
+                                    class="grow uppercase"
+                                    placeholder="XXXXXXXXXX"
+                                    style="text-transform: uppercase;"
+                                >
+                                <svg class="h-5 w-5 opacity-50" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                </svg>
+                            </label>
+                            <label class="label">
+                                <span class="label-text-alt">Enter the referral code provided by your consignee</span>
+                            </label>
+                        </div>
+
+                        <div class="form-control">
+                            <label for="password" class="label">
+                                <span class="label-text font-semibold">Password <span class="text-error">*</span></span>
+                            </label>
+                            <label class="input input-bordered flex items-center gap-2">
+                                <input 
+                                    type="password" 
+                                    name="password" 
+                                    id="password" 
+                                    required
+                                    minlength="8"
+                                    autocomplete="new-password"
+                                    class="grow"
+                                    placeholder="••••••••"
+                                >
+                                <button 
+                                    type="button" 
+                                    id="togglePassword"
+                                    class="text-base-content/50 hover:text-base-content transition-colors"
+                                >
+                                    <svg id="eyeIcon" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    <svg id="eyeOffIcon" class="h-5 w-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                    </svg>
+                                </button>
+                            </label>
+                            <div id="passwordStrength" class="mt-3 hidden">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex-1 h-2 bg-base-300 rounded-full overflow-hidden">
+                                        <div id="strengthBar" class="h-full transition-all duration-300"></div>
+                                    </div>
+                                    <span id="strengthText" class="text-xs font-medium"></span>
+                                </div>
+                                <ul id="passwordRequirements" class="mt-3 text-xs space-y-1.5">
+                                    <li id="req-length" class="opacity-60 flex items-center">
+                                        <span class="inline-block w-4 mr-1">✗</span> At least 8 characters
+                                    </li>
+                                    <li id="req-uppercase" class="opacity-60 flex items-center">
+                                        <span class="inline-block w-4 mr-1">✗</span> One uppercase letter
+                                    </li>
+                                    <li id="req-lowercase" class="opacity-60 flex items-center">
+                                        <span class="inline-block w-4 mr-1">✗</span> One lowercase letter
+                                    </li>
+                                    <li id="req-number" class="opacity-60 flex items-center">
+                                        <span class="inline-block w-4 mr-1">✗</span> One number
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="form-control">
+                            <label for="confirmPassword" class="label">
+                                <span class="label-text font-semibold">Confirm Password <span class="text-error">*</span></span>
+                            </label>
+                            <label class="input input-bordered flex items-center gap-2">
+                                <input 
+                                    type="password" 
+                                    name="confirmPassword" 
+                                    id="confirmPassword" 
+                                    required
+                                    autocomplete="new-password"
+                                    class="grow"
+                                    placeholder="••••••••"
+                                >
+                                <button 
+                                    type="button" 
+                                    id="toggleConfirmPassword"
+                                    class="text-base-content/50 hover:text-base-content transition-colors"
+                                >
+                                    <svg id="eyeIconConfirm" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    <svg id="eyeOffIconConfirm" class="h-5 w-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                    </svg>
+                                </button>
+                            </label>
+                            <p id="passwordMatch" class="label-text-alt mt-2 hidden"></p>
+                        </div>
+
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('broker_register') }}">
+
+                        <div>
+                            <button 
+                                type="submit"
+                                class="btn btn-primary w-full"
+                            >
+                                Create Account
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="mt-6">
+                        <div class="divider">Already have an account?</div>
+
+                        <div class="text-center">
+                            <a 
+                                href="{{ path('app_login') }}" 
+                                class="link link-primary font-medium"
+                            >
+                                Sign in here
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Password visibility toggle
+            document.getElementById('togglePassword').addEventListener('click', function() {
+            const password = document.getElementById('password');
+            const eyeIcon = document.getElementById('eyeIcon');
+            const eyeOffIcon = document.getElementById('eyeOffIcon');
+            
+            if (password.type === 'password') {
+                password.type = 'text';
+                eyeIcon.classList.add('hidden');
+                eyeOffIcon.classList.remove('hidden');
+            } else {
+                password.type = 'password';
+                eyeIcon.classList.remove('hidden');
+                eyeOffIcon.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
+            const confirmPassword = document.getElementById('confirmPassword');
+            const eyeIconConfirm = document.getElementById('eyeIconConfirm');
+            const eyeOffIconConfirm = document.getElementById('eyeOffIconConfirm');
+            
+            if (confirmPassword.type === 'password') {
+                confirmPassword.type = 'text';
+                eyeIconConfirm.classList.add('hidden');
+                eyeOffIconConfirm.classList.remove('hidden');
+            } else {
+                confirmPassword.type = 'password';
+                eyeIconConfirm.classList.remove('hidden');
+                eyeOffIconConfirm.classList.add('hidden');
+            }
+        });
+
+        // Password strength checker
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirmPassword');
+        const strengthBar = document.getElementById('strengthBar');
+        const strengthText = document.getElementById('strengthText');
+        const passwordStrength = document.getElementById('passwordStrength');
+        const passwordMatch = document.getElementById('passwordMatch');
+
+        password.addEventListener('input', function() {
+            const value = this.value;
+            
+            if (value.length > 0) {
+                passwordStrength.classList.remove('hidden');
+            } else {
+                passwordStrength.classList.add('hidden');
+                return;
+            }
+
+            // Check requirements
+            const hasLength = value.length >= 8;
+            const hasUppercase = /[A-Z]/.test(value);
+            const hasLowercase = /[a-z]/.test(value);
+            const hasNumber = /[0-9]/.test(value);
+
+            // Update requirement indicators
+            updateRequirement('req-length', hasLength);
+            updateRequirement('req-uppercase', hasUppercase);
+            updateRequirement('req-lowercase', hasLowercase);
+            updateRequirement('req-number', hasNumber);
+
+            // Calculate strength
+            let strength = 0;
+            if (hasLength) strength++;
+            if (hasUppercase) strength++;
+            if (hasLowercase) strength++;
+            if (hasNumber) strength++;
+            if (value.length >= 12) strength++;
+            if (/[!@#$%^&*(),.?":{}|<>]/.test(value)) strength++;
+
+            // Update strength bar
+            const percentage = (strength / 6) * 100;
+            strengthBar.style.width = percentage + '%';
+
+            if (strength <= 2) {
+                strengthBar.className = 'h-full transition-all duration-300 bg-error';
+                strengthText.textContent = 'Weak';
+                strengthText.className = 'text-xs font-medium text-error';
+            } else if (strength <= 4) {
+                strengthBar.className = 'h-full transition-all duration-300 bg-warning';
+                strengthText.textContent = 'Medium';
+                strengthText.className = 'text-xs font-medium text-warning';
+            } else {
+                strengthBar.className = 'h-full transition-all duration-300 bg-success';
+                strengthText.textContent = 'Strong';
+                strengthText.className = 'text-xs font-medium text-success';
+            }
+
+            checkPasswordMatch();
+        });
+
+        confirmPassword.addEventListener('input', checkPasswordMatch);
+
+        function updateRequirement(id, met) {
+            const element = document.getElementById(id);
+            if (met) {
+                element.className = 'text-success flex items-center';
+                element.querySelector('span').textContent = '✓';
+            } else {
+                element.className = 'opacity-60 flex items-center';
+                element.querySelector('span').textContent = '✗';
+            }
+        }
+
+        function checkPasswordMatch() {
+            if (confirmPassword.value.length > 0) {
+                passwordMatch.classList.remove('hidden');
+                if (password.value === confirmPassword.value) {
+                    passwordMatch.textContent = '✓ Passwords match';
+                    passwordMatch.className = 'label-text-alt mt-2 text-success';
+                    confirmPassword.setCustomValidity('');
+                } else {
+                    passwordMatch.textContent = '✗ Passwords do not match';
+                    passwordMatch.className = 'label-text-alt mt-2 text-error';
+                    confirmPassword.setCustomValidity('Passwords do not match');
+                }
+            } else {
+                passwordMatch.classList.add('hidden');
+                confirmPassword.setCustomValidity('');
+            }
+        }
+
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            if (password.value !== confirmPassword.value) {
+                e.preventDefault();
+                alert('Passwords do not match!');
+                return false;
+            }
+        });
+        });
+    </script>
+{% endblock %}

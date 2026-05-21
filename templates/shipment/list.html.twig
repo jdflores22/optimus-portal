@@ -1,0 +1,687 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Shipment Management{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Top Navigation -->
+    <nav class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-blue-600">OPTIMUS</span>
+                    {% if isConsignee %}
+                        <span class="ml-4 text-gray-600">Consignee Portal</span>
+                    {% elseif not isShippingLinesAdmin %}
+                        <span class="ml-4 text-gray-600">SL-Staff Portal</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="mb-6 flex justify-between items-center">
+            {% if isConsignee %}
+                <div class="flex items-center space-x-4">
+                    <a href="{{ path('app_consignee_dashboard') }}" class="text-blue-600 hover:text-blue-800 flex items-center text-sm">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        Back to Dashboard
+                    </a>
+                    <div class="h-4 w-px bg-gray-300"></div>
+                    <h1 class="text-3xl font-bold text-gray-900">My Shipments</h1>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        View Only
+                    </span>
+                </div>
+                <div class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-600 text-sm font-medium rounded-md">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Read-Only Access
+                </div>
+            {% else %}
+                <h1 class="text-3xl font-bold text-gray-900">Shipment Management</h1>
+                <a href="{{ path('shipment_create') }}" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+                    Create New Shipment
+                </a>
+            {% endif %}
+        </div>
+
+        <!-- Flash Messages -->
+        {% for message in app.flashes('success') %}
+            <div class="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+                {{ message }}
+            </div>
+        {% endfor %}
+
+        {% for message in app.flashes('error') %}
+            <div class="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+                {{ message }}
+            </div>
+        {% endfor %}
+
+        {% if not isConsignee %}
+            <!-- Dashboard Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2 2v-5m16 0h-2M4 13h2m13-8V4a1 1 0 00-1-1H7a1 1 0 00-1 1v1m8 0V4a1 1 0 00-1-1H9a1 1 0 00-1 1v1"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Shipments</p>
+                        <p class="text-2xl font-bold text-gray-900" id="totalShipments">{{ shipments|length }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Verified Payments</p>
+                        <p class="text-2xl font-bold text-gray-900" id="verifiedPayments">
+                            {% set verifiedCount = 0 %}
+                            {% for shipment in shipments %}
+                                {% if shipment.payment and shipment.payment.status.value == 'VERIFIED' %}
+                                    {% set verifiedCount = verifiedCount + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ verifiedCount }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-yellow-100 rounded-lg">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Pending Payments</p>
+                        <p class="text-2xl font-bold text-gray-900" id="pendingPayments">
+                            {% set pendingCount = 0 %}
+                            {% for shipment in shipments %}
+                                {% if not shipment.payment or shipment.payment.status.value == 'PENDING' %}
+                                    {% set pendingCount = pendingCount + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ pendingCount }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="p-2 bg-red-100 rounded-lg">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Rejected Payments</p>
+                        <p class="text-2xl font-bold text-gray-900" id="rejectedPayments">
+                            {% set rejectedCount = 0 %}
+                            {% for shipment in shipments %}
+                                {% if shipment.payment and shipment.payment.status.value == 'REJECTED' %}
+                                    {% set rejectedCount = rejectedCount + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ rejectedCount }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Payment Status Chart -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Payment Status Distribution</h3>
+                <div id="statusChart" class="h-64"></div>
+            </div>
+
+            <!-- Monthly Trends Chart -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Monthly Shipment Trends</h3>
+                <div id="monthlyChart" class="h-64"></div>
+            </div>
+        </div>
+
+        <!-- Additional Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Top Vessels Chart -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Vessels</h3>
+                <div id="vesselChart" class="h-64"></div>
+            </div>
+
+            <!-- Container Types Chart -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Container Types</h3>
+                <div id="containerChart" class="h-64"></div>
+            </div>
+
+            <!-- Weekly Activity Chart -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Weekly Activity</h3>
+                <div id="weeklyChart" class="h-64"></div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Search Filters -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Search Filters</h2>
+            <form method="GET" action="{{ path('shipment_list') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="blNumber" class="block text-sm font-medium text-gray-700 mb-1">B/L Number</label>
+                    <input type="text" 
+                           id="blNumber" 
+                           name="blNumber" 
+                           value="{{ filters.blNumber }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           placeholder="Search by B/L number">
+                </div>
+                <div>
+                    <label for="dateFrom" class="block text-sm font-medium text-gray-700 mb-1">Date From</label>
+                    <input type="date" 
+                           id="dateFrom" 
+                           name="dateFrom" 
+                           value="{{ filters.dateFrom }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label for="dateTo" class="block text-sm font-medium text-gray-700 mb-1">Date To</label>
+                    <input type="date" 
+                           id="dateTo" 
+                           name="dateTo" 
+                           value="{{ filters.dateTo }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div class="md:col-span-3 flex justify-end space-x-2">
+                    <a href="{{ path('shipment_list') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        Clear
+                    </a>
+                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Search
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Verified Payments Table -->
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
+            <div class="px-6 py-4 border-b border-gray-200 bg-green-50">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h3 class="text-lg font-semibold text-green-800">Verified Payments</h3>
+                    <span class="ml-2 px-2 py-1 text-xs font-medium bg-green-200 text-green-800 rounded-full">
+                        {% set verifiedShipments = [] %}
+                        {% for shipment in shipments %}
+                            {% if shipment.payment and shipment.payment.status.value == 'VERIFIED' %}
+                                {% set verifiedShipments = verifiedShipments|merge([shipment]) %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ verifiedShipments|length }}
+                    </span>
+                </div>
+            </div>
+            <div style="overflow-x: scroll;">
+                <table class="divide-y divide-gray-200" style="width: 1200px; min-width: 100%;">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" style="width: 150px;">
+                                B/L No
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" style="width: 180px;">
+                                Container No
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" style="width: 160px;">
+                                Notice of Arrival
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" style="width: 160px;">
+                                Verified Date
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" style="width: 150px;">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% if verifiedShipments is empty %}
+                            <tr>
+                                <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                                    No verified payments found.
+                                </td>
+                            </tr>
+                        {% else %}
+                            {% for shipment in verifiedShipments %}
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ shipment.blNo ?: 'N/A' }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-mono text-gray-900">
+                                            {{ shipment.containerNumber ?: 'N/A' }}
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ shipment.noticeOfArrivalDate|date('Y-m-d') }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">
+                                            {% if shipment.payment.verifiedAt %}
+                                                {{ shipment.payment.verifiedAt|date('Y-m-d H:i') }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <a href="{{ path('shipment_detail', {id: shipment.id}) }}" class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 transition-colors">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                            View Details
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pending/Unverified Payments Table -->
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 bg-yellow-50">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h3 class="text-lg font-semibold text-yellow-800">Pending & Unverified Payments</h3>
+                    <span class="ml-2 px-2 py-1 text-xs font-medium bg-yellow-200 text-yellow-800 rounded-full">
+                        {% set pendingShipments = [] %}
+                        {% for shipment in shipments %}
+                            {% if not shipment.payment or shipment.payment.status.value != 'VERIFIED' %}
+                                {% set pendingShipments = pendingShipments|merge([shipment]) %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ pendingShipments|length }}
+                    </span>
+                </div>
+            </div>
+            <div style="overflow-x: scroll;">
+                <table class="divide-y divide-gray-200" style="width: 1200px; min-width: 100%;">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" style="width: 150px;">
+                                B/L No
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" style="width: 180px;">
+                                Container No
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" style="width: 160px;">
+                                Notice of Arrival
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" style="width: 160px;">
+                                Payment Status
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap" style="width: 150px;">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% if pendingShipments is empty %}
+                            <tr>
+                                <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                                    No pending payments found.
+                                </td>
+                            </tr>
+                        {% else %}
+                            {% for shipment in pendingShipments %}
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ shipment.blNo ?: 'N/A' }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-mono text-gray-900">
+                                            {{ shipment.containerNumber ?: 'N/A' }}
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ shipment.noticeOfArrivalDate|date('Y-m-d') }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {% if shipment.payment %}
+                                            {% if shipment.payment.status.value == 'REJECTED' %}
+                                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                                    Rejected
+                                                </span>
+                                            {% else %}
+                                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                    Pending
+                                                </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                                No Payment
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <a href="{{ path('shipment_detail', {id: shipment.id}) }}" class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 transition-colors">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                            View Details
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if not isConsignee %}
+<!-- ApexCharts CDN -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Prepare data from Twig - use the prepared chart data
+    const shipments = {{ chartData|json_encode|raw }};
+    
+    // Debug: Log the shipment data
+    console.log('Chart data:', shipments);
+    
+    // Process payment status data for charts
+    let verifiedCount = 0;
+    let pendingCount = 0;
+    let rejectedCount = 0;
+    let noPaymentCount = 0;
+    
+    shipments.forEach((shipment, index) => {
+        console.log(`Shipment ${index + 1} (ID: ${shipment.id}):`, {
+            payment: shipment.payment,
+            hasPayment: !!shipment.payment,
+            paymentStatus: shipment.payment?.status
+        });
+        
+        if (shipment.payment) {
+            const status = shipment.payment.status;
+            console.log('Payment status for shipment', shipment.id, ':', status);
+            switch(status) {
+                case 'VERIFIED':
+                    verifiedCount++;
+                    break;
+                case 'REJECTED':
+                    rejectedCount++;
+                    break;
+                case 'PENDING':
+                default:
+                    pendingCount++;
+                    break;
+            }
+        } else {
+            console.log('No payment found for shipment', shipment.id);
+            noPaymentCount++;
+        }
+    });
+    
+    // Debug: Log the counts
+    console.log('Payment status counts:', {
+        verified: verifiedCount,
+        pending: pendingCount,
+        rejected: rejectedCount,
+        noPayment: noPaymentCount
+    });
+    
+    // 1. Payment Status Distribution Donut Chart
+    const statusOptions = {
+        series: [verifiedCount, pendingCount, rejectedCount, noPaymentCount],
+        chart: {
+            type: 'donut',
+            height: 250
+        },
+        labels: ['Verified', 'Pending', 'Rejected', 'No Payment'],
+        colors: ['#10B981', '#F59E0B', '#EF4444', '#6B7280'],
+        legend: {
+            position: 'bottom',
+            fontSize: '12px'
+        },
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: '70%',
+                    labels: {
+                        show: true,
+                        total: {
+                            show: true,
+                            label: 'Total',
+                            formatter: function (w) {
+                                return w.globals.seriesTotals.reduce((a, b) => {
+                                    return a + b
+                                }, 0)
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        dataLabels: {
+            enabled: true,
+            formatter: function (val, opts) {
+                return opts.w.config.series[opts.seriesIndex]
+            }
+        },
+        tooltip: {
+            y: {
+                formatter: function (val) {
+                    return val + " shipments"
+                }
+            }
+        },
+        noData: {
+            text: 'No payment data available'
+        }
+    };
+    
+    try {
+        new ApexCharts(document.querySelector("#statusChart"), statusOptions).render();
+    } catch (error) {
+        console.error('Error rendering payment status chart:', error);
+        document.querySelector("#statusChart").innerHTML = '<div class="flex items-center justify-center h-64 text-gray-500">Chart could not be loaded</div>';
+    }
+
+    // 2. Monthly Trends Line Chart
+    const monthlyData = {};
+    shipments.forEach(shipment => {
+        const date = new Date(shipment.noticeOfArrivalDate);
+        const monthKey = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+        monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
+    });
+    
+    const sortedMonths = Object.keys(monthlyData).sort();
+    const monthlyOptions = {
+        series: [{
+            name: 'Shipments',
+            data: sortedMonths.map(month => monthlyData[month])
+        }],
+        chart: {
+            type: 'line',
+            height: 250,
+            toolbar: {
+                show: false
+            }
+        },
+        xaxis: {
+            categories: sortedMonths.map(month => {
+                const [year, monthNum] = month.split('-');
+                const date = new Date(year, monthNum - 1);
+                return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            })
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 3
+        },
+        colors: ['#3B82F6'],
+        grid: {
+            show: true,
+            strokeDashArray: 3
+        }
+    };
+    new ApexCharts(document.querySelector("#monthlyChart"), monthlyOptions).render();
+
+    // 3. Top Vessels Bar Chart
+    const vesselData = {};
+    shipments.forEach(shipment => {
+        if (shipment.vessel) {
+            vesselData[shipment.vessel] = (vesselData[shipment.vessel] || 0) + 1;
+        }
+    });
+    
+    const topVessels = Object.entries(vesselData)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 5);
+    
+    const vesselOptions = {
+        series: [{
+            name: 'Shipments',
+            data: topVessels.map(([vessel, count]) => count)
+        }],
+        chart: {
+            type: 'bar',
+            height: 250,
+            toolbar: {
+                show: false
+            }
+        },
+        xaxis: {
+            categories: topVessels.map(([vessel, count]) => vessel),
+            labels: {
+                rotate: -45
+            }
+        },
+        colors: ['#8B5CF6'],
+        plotOptions: {
+            bar: {
+                borderRadius: 4
+            }
+        }
+    };
+    new ApexCharts(document.querySelector("#vesselChart"), vesselOptions).render();
+
+    // 4. Container Types Pie Chart
+    const containerData = {};
+    
+    shipments.forEach(shipment => {
+        const containerType = shipment.containerType || 'Unknown';
+        containerData[containerType] = (containerData[containerType] || 0) + 1;
+    });
+    
+    const containerOptions = {
+        series: Object.values(containerData),
+        chart: {
+            type: 'pie',
+            height: 250
+        },
+        labels: Object.keys(containerData),
+        colors: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'],
+        legend: {
+            position: 'bottom'
+        },
+        tooltip: {
+            y: {
+                formatter: function (val) {
+                    return val + " containers"
+                }
+            }
+        }
+    };
+    new ApexCharts(document.querySelector("#containerChart"), containerOptions).render();
+
+    // 5. Weekly Activity Chart
+    const weeklyData = {};
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dayKey = date.toISOString().split('T')[0];
+        weeklyData[dayKey] = 0;
+    }
+    
+    shipments.forEach(shipment => {
+        const createdDate = shipment.createdAt ? new Date(shipment.createdAt).toISOString().split('T')[0] : null;
+        if (createdDate && weeklyData.hasOwnProperty(createdDate)) {
+            weeklyData[createdDate]++;
+        }
+    });
+    
+    const weeklyOptions = {
+        series: [{
+            name: 'New Shipments',
+            data: Object.values(weeklyData)
+        }],
+        chart: {
+            type: 'area',
+            height: 250,
+            toolbar: {
+                show: false
+            }
+        },
+        xaxis: {
+            categories: Object.keys(weeklyData).map(date => {
+                const d = new Date(date);
+                return d.toLocaleDateString('en-US', { weekday: 'short' });
+            })
+        },
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.7,
+                opacityTo: 0.3
+            }
+        },
+        colors: ['#06B6D4'],
+        stroke: {
+            curve: 'smooth'
+        }
+    };
+    new ApexCharts(document.querySelector("#weeklyChart"), weeklyOptions).render();
+});
+</script>
+{% endif %}
+{% endblock %}

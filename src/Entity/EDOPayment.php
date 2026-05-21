@@ -1,0 +1,216 @@
+<?php
+
+namespace App\Entity;
+
+use App\Entity\Enum\PaymentStatus;
+use App\Repository\EDOPaymentRepository;
+use Doctrine\ORM\Mapping as ORM;
+
+#[ORM\Entity(repositoryClass: EDOPaymentRepository::class)]
+#[ORM\Table(name: 'payments_edo')]
+#[ORM\Index(name: 'idx_payments_edo_manifest', columns: ['manifest_id'])]
+#[ORM\Index(name: 'idx_payments_edo_status', columns: ['status'])]
+#[ORM\Index(name: 'idx_payments_edo_submitted_by', columns: ['submitted_by_id'])]
+#[ORM\Index(name: 'idx_payments_edo_shipping_line', columns: ['shipping_line_id'])]
+#[ORM\Index(name: 'idx_payments_edo_created_at', columns: ['created_at'])]
+class EDOPayment
+{
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
+    private ?int $id = null;
+
+    #[ORM\ManyToOne(targetEntity: Manifest::class, inversedBy: 'edoPayments')]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    private Manifest $manifest;
+
+    #[ORM\ManyToOne(targetEntity: ElectronicDeliveryOrder::class, inversedBy: 'payments')]
+    #[ORM\JoinColumn(name: 'edo_id', nullable: true, onDelete: 'CASCADE')]
+    private ?ElectronicDeliveryOrder $edo = null;
+
+    #[ORM\ManyToOne(targetEntity: ShippingLine::class, inversedBy: 'edoPayments')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ShippingLine $shippingLine;
+
+    #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
+    private float $amount;
+
+    #[ORM\Column(type: 'string', length: 500, nullable: true)]
+    private ?string $receiptFilePath = null;
+
+    #[ORM\Column(type: 'string', length: 500, nullable: true)]
+    private ?string $officialReceiptPath = null;
+
+    #[ORM\Column(type: 'string', enumType: PaymentStatus::class)]
+    private PaymentStatus $status;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: false)]
+    private User $submittedBy;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?User $validatedBy = null;
+
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $validatedAt = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $rejectionReason = null;
+
+    #[ORM\Column(type: 'datetime')]
+    private \DateTimeInterface $createdAt;
+
+    public function __construct()
+    {
+        $this->status = PaymentStatus::PENDING_VALIDATION;
+        $this->createdAt = new \DateTime();
+    }
+
+    public function verify(User $validator): void
+    {
+        $this->status = PaymentStatus::VERIFIED;
+        $this->validatedBy = $validator;
+        $this->validatedAt = new \DateTime();
+        $this->rejectionReason = null;
+    }
+
+    public function reject(User $validator, string $reason): void
+    {
+        $this->status = PaymentStatus::REJECTED;
+        $this->validatedBy = $validator;
+        $this->validatedAt = new \DateTime();
+        $this->rejectionReason = $reason;
+    }
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getManifest(): Manifest
+    {
+        return $this->manifest;
+    }
+
+    public function setManifest(Manifest $manifest): self
+    {
+        $this->manifest = $manifest;
+        return $this;
+    }
+
+    public function getShippingLine(): ShippingLine
+    {
+        return $this->shippingLine;
+    }
+
+    public function setShippingLine(ShippingLine $shippingLine): self
+    {
+        $this->shippingLine = $shippingLine;
+        return $this;
+    }
+
+    public function getAmount(): float
+    {
+        return $this->amount;
+    }
+
+    public function setAmount(float $amount): self
+    {
+        $this->amount = $amount;
+        return $this;
+    }
+
+    public function getReceiptFilePath(): ?string
+    {
+        return $this->receiptFilePath;
+    }
+
+    public function setReceiptFilePath(?string $receiptFilePath): self
+    {
+        $this->receiptFilePath = $receiptFilePath;
+        return $this;
+    }
+
+    public function getStatus(): PaymentStatus
+    {
+        return $this->status;
+    }
+
+    public function setStatus(PaymentStatus $status): self
+    {
+        $this->status = $status;
+        return $this;
+    }
+
+    public function getSubmittedBy(): User
+    {
+        return $this->submittedBy;
+    }
+
+    public function setSubmittedBy(User $submittedBy): self
+    {
+        $this->submittedBy = $submittedBy;
+        return $this;
+    }
+
+    public function getValidatedBy(): ?User
+    {
+        return $this->validatedBy;
+    }
+
+    public function setValidatedBy(?User $validatedBy): self
+    {
+        $this->validatedBy = $validatedBy;
+        return $this;
+    }
+
+    public function getValidatedAt(): ?\DateTimeInterface
+    {
+        return $this->validatedAt;
+    }
+
+    public function setValidatedAt(?\DateTimeInterface $validatedAt): self
+    {
+        $this->validatedAt = $validatedAt;
+        return $this;
+    }
+
+    public function getRejectionReason(): ?string
+    {
+        return $this->rejectionReason;
+    }
+
+    public function setRejectionReason(?string $rejectionReason): self
+    {
+        $this->rejectionReason = $rejectionReason;
+        return $this;
+    }
+
+    public function getCreatedAt(): \DateTimeInterface
+    {
+        return $this->createdAt;
+    }
+
+    public function getEdo(): ?ElectronicDeliveryOrder
+    {
+        return $this->edo;
+    }
+
+    public function setEdo(?ElectronicDeliveryOrder $edo): self
+    {
+        $this->edo = $edo;
+        return $this;
+    }
+
+    public function getOfficialReceiptPath(): ?string
+    {
+        return $this->officialReceiptPath;
+    }
+
+    public function setOfficialReceiptPath(?string $officialReceiptPath): self
+    {
+        $this->officialReceiptPath = $officialReceiptPath;
+        return $this;
+    }
+}

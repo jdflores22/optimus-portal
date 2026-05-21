@@ -1,0 +1,13 @@
+parameters:
+    # Audit log retention configuration
+    audit_log.retention_years: 7
+    audit_log.retention_days: 2555  # 7 years * 365 days
+    
+    # Archive configuration
+    audit_log.archive_enabled: true
+    audit_log.archive_after_days: 1825  # 5 years (archive after 5 years, keep for 7 total)
+    audit_log.archive_path: '%kernel.project_dir%/var/audit_archives'
+    
+    # Export configuration
+    audit_log.export_formats: ['csv', 'json', 'pdf']
+    audit_log.export_path: '%kernel.project_dir%/var/audit_exports'

@@ -1,0 +1,246 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Generate Manifest/BL - {{ noa.noaNumber }} - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="max-w-4xl mx-auto py-8">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Generate Manifest/BL</h1>
+                <p class="mt-2 text-gray-600">Confirm arrival details for {{ noa.noaNumber }}</p>
+            </div>
+            <a href="{{ path('manifest_workflow_noa_detail', {id: noa.id}) }}" 
+               class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Info Alert -->
+    <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex">
+            <svg class="w-5 h-5 text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-800">Required Information</h3>
+                <p class="mt-1 text-sm text-blue-700">
+                    Please enter the Manifest/BL Number and confirm the actual arrival date before generating the document.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Form -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <h3 class="text-lg font-medium text-gray-900">Generate Manifest/BL Document</h3>
+        </div>
+
+        <form method="POST" action="{{ path('manifest_workflow_generate_manifest', {id: noa.id}) }}" id="manifestForm" class="p-6 space-y-6">
+            <input type="hidden" name="_token" value="{{ csrf_token('generate_manifest_' ~ noa.id) }}">
+            
+            <!-- REQUIRED FIELDS AT TOP - Highlighted Section -->
+            <div class="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6 space-y-4">
+                <div class="flex items-center mb-4">
+                    <svg class="w-6 h-6 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    <h4 class="text-lg font-bold text-gray-900">Required Information - Please Fill Out</h4>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="manifest_number" class="block text-sm font-bold text-gray-900 mb-2">
+                            Manifest/BL Number
+                            <span class="text-red-600 text-lg">*</span>
+                        </label>
+                        <input type="text" 
+                               id="manifest_number" 
+                               name="manifest_number" 
+                               required
+                               placeholder="Enter Manifest/BL Number"
+                               class="block w-full px-4 py-3 border-2 border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium">
+                        <p class="mt-2 text-sm text-gray-600">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Enter the official Manifest/Bill of Lading number
+                        </p>
+                    </div>
+
+                    <div>
+                        <label for="actual_arrival_date" class="block text-sm font-bold text-gray-900 mb-2">
+                            Actual Arrival Date
+                            <span class="text-red-600 text-lg">*</span>
+                        </label>
+                        <input type="datetime-local" 
+                               id="actual_arrival_date" 
+                               name="actual_arrival_date" 
+                               value="{{ noa.eta|date('Y-m-d\\TH:i') }}"
+                               required
+                               class="block w-full px-4 py-3 border-2 border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium">
+                        <p class="mt-2 text-sm text-gray-600">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            Original ETA: {{ noa.eta|date('F j, Y g:i A') }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <!-- NOA Details (Read-only) -->
+            <div class="pt-4">
+                <h4 class="text-base font-medium text-gray-900 mb-4">NOA Information</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">NOA Number</label>
+                    <div class="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 font-mono">
+                        {{ noa.noaNumber }}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">B/L Number</label>
+                    <div class="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900">
+                        {{ noa.blNumber }}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Vessel Number</label>
+                    <div class="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900">
+                        {{ noa.vesselNumber }}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">CY Location</label>
+                    <div class="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900">
+                        {{ noa.cyLocation }}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Consignee</label>
+                    <div class="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900">
+                        {{ noa.consignee.businessName }}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Total Containers</label>
+                    <div class="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900">
+                        {{ noa.containers|length }} container(s)
+                    </div>
+                </div>
+            </div>
+            </div>
+
+            <!-- Container Summary -->
+            <div class="pt-6 border-t border-gray-200">
+                <h4 class="text-base font-medium text-gray-900 mb-4">Container Summary</h4>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Container Number</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Size</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">TEU</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% set totalTEU = 0 %}
+                            {% for container in noa.containers %}
+                                {% set totalTEU = totalTEU + container.containerSize.teuValue %}
+                                <tr>
+                                    <td class="px-4 py-3 text-sm text-gray-900">{{ loop.index }}</td>
+                                    <td class="px-4 py-3 text-sm font-medium text-gray-900 font-mono">{{ container.containerNumber }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-900">{{ container.containerType.name }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-900">{{ container.containerSize.name }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-900">{{ container.containerSize.teuValue }}</td>
+                                </tr>
+                            {% endfor %}
+                            <tr class="bg-gray-50 font-medium">
+                                <td colspan="4" class="px-4 py-3 text-sm text-gray-900 text-right">Total:</td>
+                                <td class="px-4 py-3 text-sm text-gray-900">{{ totalTEU }} TEU</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="pt-6 border-t border-gray-200 flex items-center justify-between">
+                <a href="{{ path('manifest_workflow_noa_detail', {id: noa.id}) }}" 
+                   class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                    Cancel
+                </a>
+                
+                <button type="submit" 
+                        id="submitBtn"
+                        class="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg class="w-4 h-4 mr-2" id="submitIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <!-- Loading Spinner (hidden by default) -->
+                    <svg class="animate-spin w-4 h-4 mr-2 hidden" id="loadingSpinner" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="submitText">Generate Manifest/BL PDF</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Warning Notice -->
+    <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div class="flex">
+            <svg class="w-5 h-5 text-yellow-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-yellow-800">Important Notice</h3>
+                <p class="mt-1 text-sm text-yellow-700">
+                    Once the Manifest/BL is generated, the arrival date will be updated in the system. 
+                    Please ensure all information is accurate before proceeding.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('manifestForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitText = document.getElementById('submitText');
+    const submitIcon = document.getElementById('submitIcon');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    
+    form.addEventListener('submit', function(e) {
+        // Disable submit button
+        submitBtn.disabled = true;
+        
+        // Hide icon, show spinner
+        submitIcon.classList.add('hidden');
+        loadingSpinner.classList.remove('hidden');
+        
+        // Change button text
+        submitText.textContent = 'Generating PDF...';
+        
+        // Change button color to indicate processing
+        submitBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+        submitBtn.classList.add('bg-blue-600');
+    });
+});
+</script>
+{% endblock %}

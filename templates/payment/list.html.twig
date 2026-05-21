@@ -1,0 +1,316 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Payment Verifications{% endblock %}
+
+{% block body %}
+<!-- Header -->
+<div class="bg-base-100">
+    <div class="w-full px-4 sm:px-6 lg:px-8">
+        <div class="py-6">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold">Payment Verifications</h1>
+                    <p class="mt-2 text-base-content/70">Review and manage payment proofs submitted by brokers</p>
+                </div>
+                {% if app.user.role.value == 'SYSTEM_ADMIN' %}
+                    <div class="alert alert-info w-full lg:w-auto">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                        <div>
+                            <p class="font-medium">Read-Only Access</p>
+                            <p class="text-sm">View only - Cannot verify payments</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8">
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="card bg-base-100 shadow-sm border-t-4 border-t-info">
+                    <div class="card-body p-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 rounded-full bg-info/10 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-base-content/60">Pending Review</p>
+                                <p class="text-3xl font-bold text-info">{{ statusCounts.PENDING }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card bg-base-100 shadow-sm border-t-4 border-t-success">
+                    <div class="card-body p-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-base-content/60">Verified</p>
+                                <p class="text-3xl font-bold text-success">{{ statusCounts.VERIFIED }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card bg-base-100 shadow-sm border-t-4 border-t-error">
+                    <div class="card-body p-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 rounded-full bg-error/10 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-base-content/60">Rejected</p>
+                                <p class="text-3xl font-bold text-error">{{ statusCounts.REJECTED }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Payments Table -->
+            <div class="mb-8">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
+                    <h2 class="text-lg font-semibold">Pending Payments ({{ statusCounts.PENDING }})</h2>
+                    <label class="input input-bordered flex items-center gap-2 w-full sm:w-80">
+                        <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <input type="text" 
+                               id="pending-search" 
+                               class="grow" 
+                               placeholder="Search pending payments..."
+                               onkeyup="filterTable('pending-table', this.value)">
+                    </label>
+                </div>
+
+                {% if pendingPayments|length > 0 %}
+                <div class="overflow-x-auto">
+                    <table id="pending-table" class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>B/L No</th>
+                                <th>Container No</th>
+                                <th>Broker</th>
+                                <th>Arrival Date</th>
+                                <th>Submitted</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in pendingPayments %}
+                            <tr>
+                                <td class="font-medium">{{ payment.shipment.blNo ?: 'N/A' }}</td>
+                                <td class="font-mono">{{ payment.shipment.containerNumber ?: 'N/A' }}</td>
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        <div class="avatar placeholder">
+                                            <div class="w-10 rounded-full bg-info/10 text-info">
+                                                <span class="text-sm">{{ payment.broker.fullName|slice(0, 2)|upper }}</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium">{{ payment.broker.fullName }}</div>
+                                            <div class="text-sm opacity-60">{{ payment.broker.email }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ payment.shipment.noticeOfArrivalDate|date('M j, Y') }}</td>
+                                <td class="text-sm opacity-60">{{ payment.createdAt|date('M j, Y g:i A') }}</td>
+                                <td>
+                                    <a href="{{ path('payment_verify', {paymentId: payment.id}) }}" 
+                                       class="btn btn-sm btn-info">
+                                        Review
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-12 bg-info/5 rounded-lg border-2 border-dashed border-info/20">
+                    <svg class="mx-auto h-12 w-12 text-info/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium">No pending payments</h3>
+                    <p class="mt-1 text-sm opacity-60">All payments have been reviewed.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Verified Payments Table -->
+            <div class="mb-8">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
+                    <h2 class="text-lg font-semibold">Verified Payments ({{ statusCounts.VERIFIED }})</h2>
+                    <label class="input input-bordered flex items-center gap-2 w-full sm:w-80">
+                        <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <input type="text" 
+                               id="verified-search" 
+                               class="grow" 
+                               placeholder="Search verified payments..."
+                               onkeyup="filterTable('verified-table', this.value)">
+                    </label>
+                </div>
+
+                {% if verifiedPayments|length > 0 %}
+                <div class="overflow-x-auto">
+                    <table id="verified-table" class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>B/L No</th>
+                                <th>Container No</th>
+                                <th>Broker</th>
+                                <th>Arrival Date</th>
+                                <th>Verified Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in verifiedPayments %}
+                            <tr>
+                                <td class="font-medium">{{ payment.shipment.blNo ?: 'N/A' }}</td>
+                                <td class="font-mono">{{ payment.shipment.containerNumber ?: 'N/A' }}</td>
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        <div class="avatar placeholder">
+                                            <div class="w-10 rounded-full bg-success/10 text-success">
+                                                <span class="text-sm">{{ payment.broker.fullName|slice(0, 2)|upper }}</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium">{{ payment.broker.fullName }}</div>
+                                            <div class="text-sm opacity-60">{{ payment.broker.email }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ payment.shipment.noticeOfArrivalDate|date('M j, Y') }}</td>
+                                <td class="text-sm opacity-60">{{ payment.verifiedAt|date('M j, Y g:i A') }}</td>
+                                <td>
+                                    <a href="{{ path('payment_verify', {paymentId: payment.id}) }}" 
+                                       class="btn btn-sm btn-outline">
+                                        View Details
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-12 bg-success/5 rounded-lg border-2 border-dashed border-success/20">
+                    <svg class="mx-auto h-12 w-12 text-success/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium">No verified payments</h3>
+                    <p class="mt-1 text-sm opacity-60">No payments have been verified yet.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Rejected Payments Table -->
+            {% if rejectedPayments|length > 0 %}
+            <div class="mb-8">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
+                    <h2 class="text-lg font-semibold">Rejected Payments ({{ statusCounts.REJECTED }})</h2>
+                    <label class="input input-bordered flex items-center gap-2 w-full sm:w-80">
+                        <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <input type="text" 
+                               id="rejected-search" 
+                               class="grow" 
+                               placeholder="Search rejected payments..."
+                               onkeyup="filterTable('rejected-table', this.value)">
+                    </label>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table id="rejected-table" class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th>B/L No</th>
+                                <th>Container No</th>
+                                <th>Broker</th>
+                                <th>Arrival Date</th>
+                                <th>Rejected Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in rejectedPayments %}
+                            <tr>
+                                <td class="font-medium">{{ payment.shipment.blNo ?: 'N/A' }}</td>
+                                <td class="font-mono">{{ payment.shipment.containerNumber ?: 'N/A' }}</td>
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        <div class="avatar placeholder">
+                                            <div class="w-10 rounded-full bg-error/10 text-error">
+                                                <span class="text-sm">{{ payment.broker.fullName|slice(0, 2)|upper }}</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium">{{ payment.broker.fullName }}</div>
+                                            <div class="text-sm opacity-60">{{ payment.broker.email }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ payment.shipment.noticeOfArrivalDate|date('M j, Y') }}</td>
+                                <td class="text-sm opacity-60">{{ payment.createdAt|date('M j, Y g:i A') }}</td>
+                                <td>
+                                    <a href="{{ path('payment_verify', {paymentId: payment.id}) }}" 
+                                       class="btn btn-sm btn-outline">
+                                        View Details
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+function filterTable(tableId, searchTerm) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    
+    const tbody = table.querySelector('tbody');
+    const rows = tbody.querySelectorAll('tr');
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(lowerSearchTerm) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

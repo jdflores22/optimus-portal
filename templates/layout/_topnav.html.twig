@@ -1,0 +1,783 @@
+<!-- Top Navigation Bar -->
+<header class="bg-white shadow-sm border-b border-gray-200 sticky top-0" style="z-index: 9998;">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <!-- Left side - Mobile menu button and breadcrumb -->
+            <div class="flex items-center">
+                <!-- Mobile menu button -->
+                <button type="button" class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-colors duration-200" onclick="toggleMobileSidebar()">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+                
+                <!-- Breadcrumb/Page title -->
+                <div class="ml-4 md:ml-0 flex items-center space-x-3">
+                    <h1 class="text-lg font-semibold text-gray-900">
+                        {% block page_title %}
+                            {% if app.user.role.value == 'SYSTEM_ADMIN' %}
+                                System Administration
+                            {% elseif app.user.role.value == 'CONSIGNEE' %}
+                                Consignee Portal
+                            {% elseif app.user.role.value == 'BROKER' %}
+                                Broker Portal
+                            {% elseif app.user.role.value == 'EVALUATOR' %}
+                                Evaluator Portal
+                            {% elseif app.user.role.value == 'SHIPPING_LINES_ADMIN' %}
+                                Shipping Lines Admin
+                            {% elseif app.user.role.value == 'SL_STAFF' %}
+                                SL Staff Portal
+                            {% elseif app.user.role.value == 'ACCOUNTING' %}
+                                Accounting Portal
+                            {% else %}
+                                OPTIMUS Portal
+                            {% endif %}
+                        {% endblock %}
+                    </h1>
+                    
+                    <!-- Active Workspace Badge (for Brokers) -->
+                    {% if app.user.role.value == 'BROKER' and app.session.get('active_workspace_consignee_id') %}
+                        <div class="hidden sm:flex items-center space-x-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5">
+                            <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                            <div class="flex flex-col">
+                                <span class="text-xs text-blue-600 font-medium leading-none">Active Workspace</span>
+                                <span class="text-sm font-semibold text-blue-900 leading-tight">{{ app.session.get('active_workspace_consignee_name', 'Workspace') }}</span>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Right side - User menu -->
+            <div class="flex items-center space-x-4">
+                <!-- Workspace Switcher (for Brokers only) -->
+                {% if app.user.role.value == 'BROKER' and app.session.get('active_workspace_consignee_id') %}
+                    <div class="relative">
+                        <button type="button" 
+                                id="workspaceSwitcherButton"
+                                class="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200"
+                                onclick="toggleWorkspaceSwitcher()">
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                            <span class="text-sm text-gray-700">{{ app.session.get('active_workspace_consignee_name', 'Workspace') }}</span>
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        
+                        <!-- Workspace Dropdown -->
+                        <div id="workspaceSwitcherDropdown" class="origin-top-right absolute right-0 top-full mt-2 w-64 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none transform opacity-0 scale-95 transition-all duration-200 ease-out z-[999999]" style="display: none;">
+                            <div class="px-4 py-3 border-b border-gray-100">
+                                <h3 class="text-sm font-medium text-gray-900">Switch Workspace</h3>
+                            </div>
+                            <div class="py-1 max-h-64 overflow-y-auto" id="workspaceList">
+                                <div class="flex items-center justify-center py-4">
+                                    <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                                </div>
+                            </div>
+                            <div class="px-4 py-3 border-t border-gray-100">
+                                <a href="{{ path('broker_workspace_selector') }}" class="text-xs text-gray-500 hover:text-gray-700">View all workspaces</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <!-- Notifications -->
+                <div class="relative">
+                    <button type="button" 
+                            id="notificationButton"
+                            class="p-2 rounded-full text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200" 
+                            onclick="toggleNotifications()">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM11 17H6l5 5v-5zM7 7a5 5 0 1110 0v3l2 2v1H5v-1l2-2V7z"></path>
+                        </svg>
+                    </button>
+                    <div id="notificationBadge" class="absolute -top-1 -right-1 block h-3 w-3 rounded-full bg-red-500 ring-2 ring-white hidden"></div>
+                    
+                    <!-- Notifications Dropdown -->
+                    <div id="notificationDropdown" class="origin-top-right absolute right-0 top-full mt-2 w-80 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none transform opacity-0 scale-95 transition-all duration-200 ease-out z-[999999]" style="display: none;">
+                        <!-- Header -->
+                        <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                            <h3 class="text-sm font-medium text-gray-900">Notifications</h3>
+                            <button id="markAllReadBtn" class="text-xs text-blue-600 hover:text-blue-800 font-medium" onclick="markAllNotificationsAsRead()">
+                                Mark all read
+                            </button>
+                        </div>
+                        
+                        <!-- Notifications List -->
+                        <div id="notificationsList" class="max-h-96 overflow-y-auto">
+                            <div class="flex items-center justify-center py-8">
+                                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="px-4 py-3 border-t border-gray-100 text-center">
+                            <a href="{{ path('notifications_page') }}" class="text-xs text-gray-500 hover:text-gray-700">View all notifications</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Profile Section -->
+                <div class="relative">
+                    <button type="button" 
+                            class="flex items-center space-x-3 p-2 rounded-lg text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200" 
+                            onclick="toggleUserMenu()">
+                        <!-- User Avatar -->
+                        <div class="flex-shrink-0">
+                            <div class="h-8 w-8 rounded-full overflow-hidden {{ avatar_colors(app.user) }} flex items-center justify-center">
+                                {% if app.user.profilePhoto %}
+                                    <img src="{{ path('profile_photo', {userId: app.user.id, filename: app.user.profilePhoto}) }}" 
+                                         alt="Profile Photo" 
+                                         class="h-full w-full object-cover">
+                                {% else %}
+                                    <span class="text-sm font-medium">
+                                        {{ app.user.email|slice(0, 1)|upper }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- User Info -->
+                        <div class="hidden md:block text-left">
+                            <div class="text-sm font-medium text-gray-900">{{ app.user.email }}</div>
+                            <div class="text-xs text-gray-500">
+                                {% set roleDisplay = app.user.role.value|replace({'_': ' '})|title %}
+                                {{ roleDisplay }}
+                            </div>
+                        </div>
+                        
+                        <!-- Dropdown Arrow -->
+                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    
+                    <!-- Dropdown menu -->
+                    <div id="user-menu" class="origin-top-right absolute right-0 top-full mt-2 w-64 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none transform opacity-0 scale-95 transition-all duration-200 ease-out z-[999999]" style="display: none;">
+                        <!-- User Info Header -->
+                        <div class="px-4 py-3 border-b border-gray-100">
+                            <div class="flex items-center space-x-3">
+                                <div class="h-10 w-10 rounded-full overflow-hidden {{ avatar_colors(app.user) }} flex items-center justify-center">
+                                    {% if app.user.profilePhoto %}
+                                        <img src="{{ path('profile_photo', {userId: app.user.id, filename: app.user.profilePhoto}) }}" 
+                                             alt="Profile Photo" 
+                                             class="h-full w-full object-cover">
+                                    {% else %}
+                                        <span class="text-sm font-medium">
+                                            {{ app.user.email|slice(0, 1)|upper }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">{{ app.user.email }}</div>
+                                    <div class="text-xs text-gray-500">
+                                        {% set roleDisplay = app.user.role.value|replace({'_': ' '})|title %}
+                                        {{ roleDisplay }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Role Badge -->
+                            <div class="mt-2">
+                                {% set roleClass = 'bg-gray-100 text-gray-800' %}
+                                {% if app.user.role.value == 'SYSTEM_ADMIN' %}
+                                    {% set roleClass = 'bg-purple-100 text-purple-800' %}
+                                {% elseif app.user.role.value == 'SHIPPING_LINES_ADMIN' %}
+                                    {% set roleClass = 'bg-indigo-100 text-indigo-800' %}
+                                {% elseif app.user.role.value == 'EVALUATOR' %}
+                                    {% set roleClass = 'bg-blue-100 text-blue-800' %}
+                                {% elseif app.user.role.value == 'SL_STAFF' %}
+                                    {% set roleClass = 'bg-green-100 text-green-800' %}
+                                {% elseif app.user.role.value == 'ACCOUNTING' %}
+                                    {% set roleClass = 'bg-yellow-100 text-yellow-800' %}
+                                {% elseif app.user.role.value == 'BROKER' %}
+                                    {% set roleClass = 'bg-orange-100 text-orange-800' %}
+                                {% elseif app.user.role.value == 'CONSIGNEE' %}
+                                    {% set roleClass = 'bg-pink-100 text-pink-800' %}
+                                {% endif %}
+                                
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ roleClass }}">
+                                    {{ roleDisplay }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Menu Items -->
+                        <div class="py-1">
+                            <a href="{{ path('profile_settings') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200">
+                                <svg class="w-4 h-4 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                </svg>
+                                Profile Settings
+                            </a>
+                            <a href="{{ path('account_settings') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200">
+                                <svg class="w-4 h-4 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                Account Settings
+                            </a>
+                            <div class="border-t border-gray-100 my-1"></div>
+                            <a href="{{ path('app_logout') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors duration-200">
+                                <svg class="w-4 h-4 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                </svg>
+                                Sign out
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Notification Detail Modal -->
+<div id="notificationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[10001]">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-auto">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900" id="modalNotificationTitle">Notification Details</h3>
+                <button type="button" onclick="closeNotificationModal()" class="text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-6">
+                <div class="flex items-start space-x-3 mb-4">
+                    <div class="flex-shrink-0">
+                        <div id="modalNotificationIcon" class="w-8 h-8 rounded-full flex items-center justify-center">
+                            <!-- Icon will be inserted here -->
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <div id="modalNotificationStatus" class="text-xs font-medium mb-2">
+                            <!-- Status will be inserted here -->
+                        </div>
+                        <h4 class="text-sm font-medium text-gray-900 mb-2" id="modalNotificationTitleText">
+                            <!-- Title will be inserted here -->
+                        </h4>
+                        <p class="text-sm text-gray-600 mb-3" id="modalNotificationMessage">
+                            <!-- Message will be inserted here -->
+                        </p>
+                        <div class="flex items-center justify-between text-xs text-gray-500">
+                            <span id="modalNotificationTime">
+                                <!-- Time will be inserted here -->
+                            </span>
+                            <span id="modalNotificationType" class="px-2 py-1 rounded-full text-xs font-medium">
+                                <!-- Type will be inserted here -->
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-end space-x-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+                <button type="button" onclick="closeNotificationModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Close
+                </button>
+                <button type="button" id="modalActionButton" onclick="handleModalAction()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" style="display: none;">
+                    <!-- Action text will be inserted here -->
+                </button>
+                <button type="button" id="modalMarkReadButton" onclick="markNotificationAsReadFromModal()" class="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" style="display: none;">
+                    Mark as Read
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let notificationDropdownOpen = false;
+let topnavNotifications = [];
+let currentModalNotification = null;
+
+function toggleUserMenu() {
+    const menu = document.getElementById('user-menu');
+    if (menu.style.display === 'none') {
+        menu.style.display = 'block';
+        menu.style.opacity = '1';
+        menu.style.transform = 'scale(1)';
+    } else {
+        menu.style.opacity = '0';
+        menu.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            menu.style.display = 'none';
+        }, 200);
+    }
+}
+
+function toggleNotifications() {
+    const dropdown = document.getElementById('notificationDropdown');
+    
+    // Check if dropdown element exists
+    if (!dropdown) {
+        console.error('Notification dropdown not found');
+        return;
+    }
+    
+    if (!notificationDropdownOpen) {
+        // Load notifications when opening
+        loadNotifications();
+        dropdown.style.display = 'block';
+        dropdown.style.opacity = '1';
+        dropdown.style.transform = 'scale(1)';
+        notificationDropdownOpen = true;
+    } else {
+        dropdown.style.opacity = '0';
+        dropdown.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            dropdown.style.display = 'none';
+        }, 200);
+        notificationDropdownOpen = false;
+    }
+}
+
+function loadNotifications() {
+    const notificationsList = document.getElementById('notificationsList');
+    
+    // Check if notifications list element exists
+    if (!notificationsList) {
+        console.error('Notifications list not found');
+        return;
+    }
+    
+    fetch('/notifications/api', {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            topnavNotifications = data.notifications;
+            renderNotifications(data.notifications);
+            updateNotificationBadge(data.unreadCount);
+        } else {
+            notificationsList.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500 text-center">Failed to load notifications</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading notifications:', error);
+        notificationsList.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500 text-center">Failed to load notifications</div>';
+    });
+}
+
+function renderNotifications(notificationsData) {
+    const notificationsList = document.getElementById('notificationsList');
+    
+    // Check if notifications list element exists
+    if (!notificationsList) {
+        console.error('Notifications list not found');
+        return;
+    }
+    
+    if (notificationsData.length === 0) {
+        notificationsList.innerHTML = `
+            <div class="px-4 py-8 text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM11 17H6l5 5v-5zM7 7a5 5 0 1110 0v3l2 2v1H5v-1l2-2V7z"></path>
+                </svg>
+                <p class="mt-2 text-sm text-gray-500">No notifications</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    notificationsData.forEach(notification => {
+        const typeColors = {
+            'success': 'text-green-600 bg-green-100',
+            'error': 'text-red-600 bg-red-100',
+            'warning': 'text-yellow-600 bg-yellow-100',
+            'info': 'text-blue-600 bg-blue-100'
+        };
+        
+        const typeColor = typeColors[notification.type] || typeColors['info'];
+        const readClass = notification.isRead ? 'bg-gray-50' : 'bg-white';
+        
+        html += `
+            <div class="px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${readClass}" onclick="showNotificationModal(${notification.id})">
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0">
+                        <div class="w-2 h-2 rounded-full ${typeColor} mt-2"></div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 ${notification.isRead ? 'opacity-75' : ''}">${notification.title}</p>
+                        <p class="text-xs text-gray-500 mt-1 line-clamp-2">${notification.message}</p>
+                        <div class="flex items-center justify-between mt-2">
+                            <span class="text-xs text-gray-400">${notification.timeAgo}</span>
+                            ${notification.actionText ? `<span class="text-xs text-blue-600 font-medium">${notification.actionText}</span>` : ''}
+                        </div>
+                    </div>
+                    ${!notification.isRead ? '<div class="flex-shrink-0"><div class="w-2 h-2 rounded-full bg-blue-600"></div></div>' : ''}
+                </div>
+            </div>
+        `;
+    });
+    
+    notificationsList.innerHTML = html;
+}
+
+function updateNotificationBadge(count) {
+    const badge = document.getElementById('notificationBadge');
+    const sidebarBadge = document.getElementById('sidebarNotificationBadge');
+    
+    if (count > 0) {
+        badge.classList.remove('hidden');
+        if (sidebarBadge) {
+            sidebarBadge.classList.remove('hidden');
+            sidebarBadge.textContent = count > 99 ? '99+' : count;
+        }
+    } else {
+        badge.classList.add('hidden');
+        if (sidebarBadge) {
+            sidebarBadge.classList.add('hidden');
+        }
+    }
+}
+
+function handleNotificationClick(notificationId, actionUrl) {
+    // Mark as read
+    fetch(`/notifications/${notificationId}/read`, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the notification in the list
+            const notification = topnavNotifications.find(n => n.id === notificationId);
+            if (notification) {
+                notification.isRead = true;
+            }
+            // Reload notifications to update badge
+            loadNotifications();
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notification as read:', error);
+    });
+    
+    // Navigate to action URL if provided
+    if (actionUrl && actionUrl !== '') {
+        window.location.href = actionUrl;
+    }
+}
+
+function markAllNotificationsAsRead() {
+    fetch('/notifications/mark-all-read', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Reload notifications
+            loadNotifications();
+        }
+    })
+    .catch(error => {
+        console.error('Error marking all notifications as read:', error);
+    });
+}
+
+// Notification Modal Functions
+function showNotificationModal(notificationId) {
+    const notification = topnavNotifications.find(n => n.id === notificationId);
+    if (!notification) {
+        console.error('Notification not found:', notificationId);
+        return;
+    }
+    
+    currentModalNotification = notification;
+    
+    // Set modal content
+    document.getElementById('modalNotificationTitleText').textContent = notification.title;
+    document.getElementById('modalNotificationMessage').textContent = notification.message;
+    document.getElementById('modalNotificationTime').textContent = notification.timeAgo;
+    
+    // Set notification type and styling
+    const typeColors = {
+        'success': { bg: 'bg-green-100', text: 'text-green-600', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+        'error': { bg: 'bg-red-100', text: 'text-red-600', icon: 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+        'warning': { bg: 'bg-yellow-100', text: 'text-yellow-600', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z' },
+        'info': { bg: 'bg-blue-100', text: 'text-blue-600', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' }
+    };
+    
+    const typeStyle = typeColors[notification.type] || typeColors['info'];
+    const iconElement = document.getElementById('modalNotificationIcon');
+    iconElement.className = `w-8 h-8 rounded-full flex items-center justify-center ${typeStyle.bg}`;
+    iconElement.innerHTML = `<svg class="w-5 h-5 ${typeStyle.text}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${typeStyle.icon}"/></svg>`;
+    
+    // Set type badge
+    const typeElement = document.getElementById('modalNotificationType');
+    typeElement.textContent = notification.type.charAt(0).toUpperCase() + notification.type.slice(1);
+    typeElement.className = `px-2 py-1 rounded-full text-xs font-medium ${typeStyle.bg} ${typeStyle.text}`;
+    
+    // Set status
+    const statusElement = document.getElementById('modalNotificationStatus');
+    if (notification.isRead) {
+        statusElement.innerHTML = '<span class="text-gray-500">● Read</span>';
+    } else {
+        statusElement.innerHTML = '<span class="text-blue-600">● Unread</span>';
+    }
+    
+    // Handle action button
+    const actionButton = document.getElementById('modalActionButton');
+    if (notification.actionText && notification.actionUrl) {
+        actionButton.textContent = notification.actionText;
+        actionButton.style.display = 'inline-flex';
+    } else {
+        actionButton.style.display = 'none';
+    }
+    
+    // Handle mark as read button
+    const markReadButton = document.getElementById('modalMarkReadButton');
+    if (!notification.isRead) {
+        markReadButton.style.display = 'inline-flex';
+    } else {
+        markReadButton.style.display = 'none';
+    }
+    
+    // Show modal
+    document.getElementById('notificationModal').classList.remove('hidden');
+    
+    // Close dropdown
+    toggleNotifications();
+}
+
+function closeNotificationModal() {
+    document.getElementById('notificationModal').classList.add('hidden');
+    currentModalNotification = null;
+}
+
+function handleModalAction() {
+    if (currentModalNotification && currentModalNotification.actionUrl) {
+        // Mark as read first
+        markNotificationAsReadFromModal(false);
+        // Navigate to action URL
+        window.location.href = currentModalNotification.actionUrl;
+    }
+}
+
+function markNotificationAsReadFromModal(closeModal = true) {
+    if (!currentModalNotification) return;
+    
+    fetch(`/notifications/${currentModalNotification.id}/read`, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the notification in the list
+            const notification = topnavNotifications.find(n => n.id === currentModalNotification.id);
+            if (notification) {
+                notification.isRead = true;
+            }
+            // Reload notifications to update badge
+            loadNotifications();
+            
+            if (closeModal) {
+                closeNotificationModal();
+            } else {
+                // Update modal status
+                const statusElement = document.getElementById('modalNotificationStatus');
+                statusElement.innerHTML = '<span class="text-gray-500">● Read</span>';
+                document.getElementById('modalMarkReadButton').style.display = 'none';
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notification as read:', error);
+    });
+}
+
+// Load notification count on page load
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/notifications/unread-count', {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateNotificationBadge(data.count);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading notification count:', error);
+    });
+});
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(event) {
+    const userMenu = document.getElementById('user-menu');
+    const notificationDropdown = document.getElementById('notificationDropdown');
+    const notificationModal = document.getElementById('notificationModal');
+    
+    if (!event.target.closest('.relative')) {
+        if (userMenu) {
+            userMenu.style.opacity = '0';
+            userMenu.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                userMenu.style.display = 'none';
+            }, 200);
+        }
+        
+        if (notificationDropdown && notificationDropdownOpen) {
+            notificationDropdown.style.opacity = '0';
+            notificationDropdown.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                notificationDropdown.style.display = 'none';
+            }, 200);
+            notificationDropdownOpen = false;
+        }
+    }
+    
+    // Close modal when clicking outside
+    if (notificationModal && !notificationModal.classList.contains('hidden')) {
+        if (event.target === notificationModal) {
+            closeNotificationModal();
+        }
+    }
+});
+
+// Refresh notifications every 30 seconds
+setInterval(() => {
+    fetch('/notifications/unread-count', {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateNotificationBadge(data.count);
+        }
+    })
+    .catch(error => {
+        // Silently fail for background updates
+    });
+}, 30000);
+
+// Keyboard support for modal
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const notificationModal = document.getElementById('notificationModal');
+        if (notificationModal && !notificationModal.classList.contains('hidden')) {
+            closeNotificationModal();
+        }
+    }
+});
+
+// Workspace Switcher Functions
+let workspaceSwitcherOpen = false;
+
+function toggleWorkspaceSwitcher() {
+    const dropdown = document.getElementById('workspaceSwitcherDropdown');
+    
+    if (!dropdown) {
+        return;
+    }
+    
+    if (!workspaceSwitcherOpen) {
+        loadWorkspaces();
+        dropdown.style.display = 'block';
+        dropdown.style.opacity = '1';
+        dropdown.style.transform = 'scale(1)';
+        workspaceSwitcherOpen = true;
+    } else {
+        dropdown.style.opacity = '0';
+        dropdown.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            dropdown.style.display = 'none';
+        }, 200);
+        workspaceSwitcherOpen = false;
+    }
+}
+
+function loadWorkspaces() {
+    const workspaceList = document.getElementById('workspaceList');
+    
+    if (!workspaceList) {
+        return;
+    }
+    
+    fetch('/broker/workspace/list', {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            renderWorkspaces(data.workspaces, data.activeWorkspaceId);
+        } else {
+            workspaceList.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500 text-center">Failed to load workspaces</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading workspaces:', error);
+        workspaceList.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500 text-center">Failed to load workspaces</div>';
+    });
+}
+
+function renderWorkspaces(workspaces, activeWorkspaceId) {
+    const workspaceList = document.getElementById('workspaceList');
+    
+    if (!workspaceList) {
+        return;
+    }
+    
+    if (workspaces.length === 0) {
+        workspaceList.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500 text-center">No workspaces available</div>';
+        return;
+    }
+    
+    let html = '';
+    workspaces.forEach(workspace => {
+        const isActive = workspace.consigneeId === activeWorkspaceId;
+        const activeClass = isActive ? 'bg-blue-50 border-l-4 border-blue-600' : 'hover:bg-gray-50';
+        
+        html += `
+            <a href="/broker/workspace/switch/${workspace.consigneeId}" 
+               class="block px-4 py-3 ${activeClass} transition-colors duration-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">${workspace.businessName}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">${workspace.activeManifestCount} active manifest${workspace.activeManifestCount !== 1 ? 's' : ''}</p>
+                    </div>
+                    ${isActive ? '<svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>' : ''}
+                </div>
+            </a>
+        `;
+    });
+    
+    workspaceList.innerHTML = html;
+}
+</script>

@@ -1,0 +1,716 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ depotName }} - Detailed Stack View - OPTIMUS{% endblock %}
+
+{% block body %}
+{# Determine the correct route based on user role #}
+{% if isTerminalTeam is defined and isTerminalTeam == true %}
+    {% set routeName = 'app_terminal_team_detailed_stack_view' %}
+    {% set dashboardRoute = 'app_terminal_team_dashboard' %}
+{% else %}
+    {% set routeName = 'app_detailed_stack_view' %}
+    {% set dashboardRoute = 'app_shipping_admin_dashboard' %}
+{% endif %}
+
+<!-- Header -->
+<div class="bg-base-100">
+    <div class="w-full px-4 sm:px-6 lg:px-8">
+        <div class="py-6">
+            <!-- Breadcrumb Navigation -->
+            <div class="breadcrumbs text-sm mb-4">
+                <ul>
+                    <li>
+                        <a href="{{ path(dashboardRoute) }}" class="inline-flex items-center hover:text-primary">
+                            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                            </svg>
+                            Dashboard
+                        </a>
+                    </li>
+                    {% if isContainerDetail %}
+                    <li>
+                        <a href="{{ path(routeName, {'depotId': depotId}) }}" class="hover:text-primary">{{ depotName }}</a>
+                    </li>
+                    <li>{{ containerNumber }}</li>
+                    {% else %}
+                    <li>{{ depotName }}</li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="mb-4 sm:mb-0 flex-1">
+                    <h1 class="text-2xl sm:text-3xl font-bold">
+                        {% if isContainerDetail %}
+                            Container {{ containerNumber }}
+                        {% else %}
+                            {{ depotName }}
+                        {% endif %}
+                    </h1>
+                    <p class="mt-2 text-base-content/70">
+                        {% if isContainerDetail %}
+                            Container Details
+                        {% else %}
+                            Detailed Container Stack View
+                        {% endif %}
+                    </p>
+                    {% if isContainerDetail %}
+                    <a href="{{ path(routeName, {'depotId': depotId}) }}" class="mt-2 inline-flex items-center text-sm text-primary hover:text-primary-focus">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        Back to Stack View
+                    </a>
+                    {% endif %}
+                </div>
+                
+                <div class="text-left sm:text-right">
+                    <p class="text-sm text-base-content/60">Total Containers</p>
+                    <p class="text-2xl font-bold">{{ containerCount }}</p>
+                    <p class="text-sm text-base-content/60">{{ totalTEU }} TEUs</p>
+                    {% if shippingLineName != 'All Shipping Lines' %}
+                    <p class="text-xs text-base-content/50 mt-1">{{ shippingLineName }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Main Content -->
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Summary Statistics -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+            <!-- Total Containers -->
+            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border-t-4 border-t-primary">
+                <div class="card-body p-5">
+                    <div class="flex justify-center mb-3">
+                        <div class="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                            <svg class="w-7 h-7 text-primary" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-xs font-medium text-base-content/60 text-center mb-2">Total Containers</p>
+                    <p class="text-4xl font-bold text-primary text-center mb-3">{{ containerCount }}</p>
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-primary"></span>
+                                <span class="text-base-content/60">20 ft</span>
+                            </div>
+                            <span class="font-semibold">{{ stats.total_20ft }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-primary"></span>
+                                <span class="text-base-content/60">40 ft</span>
+                            </div>
+                            <span class="font-semibold">{{ stats.total_40ft }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total TEUs -->
+            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border-t-4 border-t-success">
+                <div class="card-body p-5">
+                    <div class="flex justify-center mb-3">
+                        <div class="w-14 h-14 rounded-full bg-success/10 flex items-center justify-center">
+                            <svg class="w-7 h-7 text-success" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-xs font-medium text-base-content/60 text-center mb-2">Total TEUs</p>
+                    <p class="text-4xl font-bold text-success text-center mb-3">{{ totalTEU }}</p>
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-success"></span>
+                                <span class="text-base-content/60">20 ft ({{ stats.total_20ft }})</span>
+                            </div>
+                            <span class="font-semibold">{{ stats.total_20ft }} TEU{% if capacity.capacity_20ft > 0 %} / {{ capacity.capacity_20ft }}{% endif %}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-success"></span>
+                                <span class="text-base-content/60">40 ft ({{ stats.total_40ft }})</span>
+                            </div>
+                            <span class="font-semibold">{{ stats.total_40ft * 2 }} TEU{% if capacity.capacity_40ft > 0 %} / {{ capacity.capacity_40ft * 2 }}{% endif %}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 20ft Containers -->
+            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border-t-4 border-t-info">
+                <div class="card-body p-5">
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="text-sm font-semibold text-base-content">20ft Containers</h3>
+                        <span class="badge badge-sm badge-info">20ft</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-2 mb-4">
+                        <div class="text-center">
+                            <div class="flex justify-center mb-1">
+                                <svg class="w-5 h-5 text-info" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <p class="text-xs text-base-content/60 mb-1">Allocated</p>
+                            <p class="text-lg font-bold text-info">{{ stats.allocated_20ft }}</p>
+                        </div>
+                        
+                        <div class="text-center">
+                            <div class="flex justify-center mb-1">
+                                <svg class="w-5 h-5 text-warning" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <p class="text-xs text-base-content/60 mb-1">Pre-Forecast</p>
+                            <p class="text-lg font-bold text-warning">{{ stats.pre_forecast_20ft }}</p>
+                        </div>
+                        
+                        <div class="text-center">
+                            <div class="flex justify-center mb-1">
+                                <svg class="w-5 h-5 text-success" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <p class="text-xs text-base-content/60 mb-1">Available</p>
+                            <p class="text-lg font-bold text-success">{{ capacity.capacity_20ft > 0 ? (capacity.capacity_20ft - stats.allocated_20ft - stats.pre_forecast_20ft) : '-' }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between text-xs mb-1">
+                        <span class="text-base-content/60">Utilization</span>
+                        <span class="font-semibold">{{ capacity.capacity_20ft > 0 ? (((stats.allocated_20ft + stats.pre_forecast_20ft) / capacity.capacity_20ft) * 100)|round : 0 }}%</span>
+                    </div>
+                    <div class="w-full bg-base-300 rounded-full h-2">
+                        <div class="bg-info h-2 rounded-full transition-all" style="width: {{ capacity.capacity_20ft > 0 ? (((stats.allocated_20ft + stats.pre_forecast_20ft) / capacity.capacity_20ft) * 100)|round : 0 }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 40ft Containers -->
+            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border-t-4 border-t-secondary">
+                <div class="card-body p-5">
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="text-sm font-semibold text-base-content">40ft Containers</h3>
+                        <span class="badge badge-sm badge-secondary">40ft</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-2 mb-4">
+                        <div class="text-center">
+                            <div class="flex justify-center mb-1">
+                                <svg class="w-5 h-5 text-info" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <p class="text-xs text-base-content/60 mb-1">Allocated</p>
+                            <p class="text-lg font-bold text-info">{{ stats.allocated_40ft }}</p>
+                        </div>
+                        
+                        <div class="text-center">
+                            <div class="flex justify-center mb-1">
+                                <svg class="w-5 h-5 text-warning" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <p class="text-xs text-base-content/60 mb-1">Pre-Forecast</p>
+                            <p class="text-lg font-bold text-warning">{{ stats.pre_forecast_40ft }}</p>
+                        </div>
+                        
+                        <div class="text-center">
+                            <div class="flex justify-center mb-1">
+                                <svg class="w-5 h-5 text-success" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <p class="text-xs text-base-content/60 mb-1">Available</p>
+                            <p class="text-lg font-bold text-success">{{ capacity.capacity_40ft > 0 ? (capacity.capacity_40ft - stats.allocated_40ft - stats.pre_forecast_40ft) : '-' }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between text-xs mb-1">
+                        <span class="text-base-content/60">Utilization</span>
+                        <span class="font-semibold">{{ capacity.capacity_40ft > 0 ? (((stats.allocated_40ft + stats.pre_forecast_40ft) / capacity.capacity_40ft) * 100)|round : 0 }}%</span>
+                    </div>
+                    <div class="w-full bg-base-300 rounded-full h-2">
+                        <div class="bg-secondary h-2 rounded-full transition-all" style="width: {{ capacity.capacity_40ft > 0 ? (((stats.allocated_40ft + stats.pre_forecast_40ft) / capacity.capacity_40ft) * 100)|round : 0 }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pre-Forecast -->
+            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border-t-4 border-t-warning">
+                <div class="card-body p-5">
+                    <div class="flex justify-center mb-3">
+                        <div class="w-14 h-14 rounded-full bg-warning/10 flex items-center justify-center">
+                            <svg class="w-7 h-7 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-xs font-medium text-base-content/60 text-center mb-2">Pre-Forecast</p>
+                    <p class="text-4xl font-bold text-warning text-center mb-3">{{ stats.total_pre_forecast }}</p>
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-warning"></span>
+                                <span class="text-base-content/60">20 ft</span>
+                            </div>
+                            <span class="font-semibold">{{ stats.pre_forecast_20ft }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-warning"></span>
+                                <span class="text-base-content/60">40 ft</span>
+                            </div>
+                            <span class="font-semibold">{{ stats.pre_forecast_40ft }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- High Dwell Time (>60 days) -->
+            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border-t-4 border-t-error">
+                <div class="card-body p-5">
+                    <div class="flex justify-center mb-3">
+                        <div class="w-14 h-14 rounded-full bg-error/10 flex items-center justify-center">
+                            <svg class="w-7 h-7 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-xs font-medium text-base-content/60 text-center mb-2">High Dwell (>60d)</p>
+                    <p class="text-4xl font-bold text-error text-center mb-3">{{ stats.high_dwell_time }}</p>
+                    <div class="flex justify-center opacity-20">
+                        <svg class="w-16 h-16 text-error" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm13.5-9l1.96 2.5H17V9h2.5zm-1.5 9c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Container Table -->
+        <div class="card bg-base-100 shadow-sm mb-8">
+            <div class="card-body p-0">
+                <div class="px-4 sm:px-6 py-4">
+                    <h3 class="text-lg font-semibold">Container Details</h3>
+                    <p class="text-sm text-base-content/60">Individual container information and status</p>
+                </div>
+                
+                <!-- Mobile-friendly table wrapper -->
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra" id="containerTable">
+                        <thead>
+                            <tr>
+                                <th class="cursor-pointer hover:bg-base-200" onclick="sortTable(0)">
+                                    <div class="flex items-center gap-2">
+                                        <span class="hidden sm:inline">Container Number</span>
+                                        <span class="sm:hidden">Container</span>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </div>
+                                </th>
+                                <th class="cursor-pointer hover:bg-base-200" onclick="sortTable(1)">
+                                    <div class="flex items-center gap-2">
+                                        Size/Type
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </div>
+                                </th>
+                                <th class="cursor-pointer hover:bg-base-200" onclick="sortTable(2)">
+                                    <div class="flex items-center gap-2">
+                                        Gate In Date
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </div>
+                                </th>
+                                <th class="cursor-pointer hover:bg-base-200" onclick="sortTable(3)">
+                                    <div class="flex items-center gap-2">
+                                        <span class="hidden sm:inline">Dwell Time</span>
+                                        <span class="sm:hidden">Dwell</span>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </div>
+                                </th>
+                                <th class="cursor-pointer hover:bg-base-200" onclick="sortTable(4)">
+                                    <div class="flex items-center gap-2">
+                                        Condition
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </div>
+                                </th>
+                                <th class="cursor-pointer hover:bg-base-200" onclick="sortTable(5)">
+                                    <div class="flex items-center gap-2">
+                                        Status
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </div>
+                                </th>
+                                <th class="cursor-pointer hover:bg-base-200" onclick="sortTable(6)">
+                                    <div class="flex items-center gap-2">
+                                        Location
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for container in containers %}
+                                <tr>
+                                    <td>
+                                        <div class="truncate max-w-[120px] sm:max-w-none font-mono text-sm">
+                                            <a href="{{ path(isTerminalTeam is defined and isTerminalTeam ? 'app_terminal_team_container_detail' : 'app_container_detail', {'containerNumber': container.containerNumber}) }}" 
+                                               class="text-primary hover:text-primary-focus no-underline font-medium">
+                                                {{ container.containerNumber }}
+                                            </a>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% set size = container.sizeType|upper %}
+                                        <span class="badge badge-sm
+                                            {% if '20' in size %}badge-info
+                                            {% elseif '40' in size %}badge-warning
+                                            {% elseif '45' in size %}badge-error
+                                            {% else %}badge-neutral{% endif %}">
+                                            {{ container.sizeType }}
+                                        </span>
+                                    </td>
+                                    <td class="whitespace-nowrap text-sm">
+                                        {{ container.gateInDate|date('M j, Y') }}
+                                    </td>
+                                    <td>
+                                        <div class="flex flex-col gap-1">
+                                            <span class="badge badge-sm
+                                                {% if container.dwellTime <= 7 %}badge-success
+                                                {% elseif container.dwellTime <= 14 %}badge-warning
+                                                {% elseif container.dwellTime <= 21 %}badge-warning
+                                                {% else %}badge-error{% endif %}">
+                                                <span class="hidden sm:inline">{{ container.dwellTime }} days</span>
+                                                <span class="sm:hidden">{{ container.dwellTime }}d</span>
+                                            </span>
+                                            {% if container.totalPausedDays > 0 %}
+                                                <span class="badge badge-info badge-sm">
+                                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    {{ container.totalPausedDays }}d paused
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-sm
+                                            {% if container.condition == 'Good' %}badge-success
+                                            {% elseif container.condition == 'Fair' %}badge-warning
+                                            {% else %}badge-error{% endif %}">
+                                            {{ container.condition }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-sm
+                                            {% if container.status == 'Available' %}badge-success
+                                            {% elseif container.status == 'Pre-Forecast' %}badge-warning
+                                            {% elseif container.status == 'Reserved' %}badge-info
+                                            {% else %}badge-ghost{% endif %}">
+                                            {{ container.status }}
+                                        </span>
+                                    </td>
+                                    <td class="whitespace-nowrap text-sm">
+                                        {{ container.location }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Loading State Placeholder for Future API Integration -->
+                <div id="loadingState" class="hidden p-8 text-center">
+                    <span class="loading loading-spinner loading-lg text-primary"></span>
+                    <p class="mt-2 text-sm text-base-content/60">Loading container data...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if totalPages > 1 and not isContainerDetail %}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <!-- Mobile pagination -->
+                <div class="flex sm:hidden w-full justify-between items-center">
+                    {% if currentPage > 1 %}
+                    <a href="{{ path(routeName, {'depotId': depotId, 'page': currentPage - 1}) }}" 
+                       class="btn btn-sm btn-outline">
+                        Previous
+                    </a>
+                    {% else %}
+                    <button class="btn btn-sm btn-disabled">Previous</button>
+                    {% endif %}
+                    
+                    <span class="text-sm">
+                        Page {{ currentPage }} of {{ totalPages }}
+                    </span>
+                    
+                    {% if currentPage < totalPages %}
+                    <a href="{{ path(routeName, {'depotId': depotId, 'page': currentPage + 1}) }}" 
+                       class="btn btn-sm btn-outline">
+                        Next
+                    </a>
+                    {% else %}
+                    <button class="btn btn-sm btn-disabled">Next</button>
+                    {% endif %}
+                </div>
+                
+                <!-- Desktop pagination -->
+                <div class="hidden sm:block">
+                    <p class="text-sm text-base-content/70">
+                        Showing
+                        <span class="font-semibold text-base-content">{{ ((currentPage - 1) * itemsPerPage) + 1 }}</span>
+                        to
+                        <span class="font-semibold text-base-content">{{ min(currentPage * itemsPerPage, containerCount) }}</span>
+                        of
+                        <span class="font-semibold text-base-content">{{ containerCount }}</span>
+                        containers
+                    </p>
+                </div>
+                
+                <div class="hidden sm:block">
+                    <div class="join">
+                        <!-- Previous button -->
+                        {% if currentPage > 1 %}
+                        <a href="{{ path(routeName, {'depotId': depotId, 'page': currentPage - 1}) }}" 
+                           class="join-item btn btn-sm">
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        {% else %}
+                        <button class="join-item btn btn-sm btn-disabled">
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        {% endif %}
+                        
+                        <!-- Page numbers -->
+                        {% set startPage = max(1, currentPage - 2) %}
+                        {% set endPage = min(totalPages, currentPage + 2) %}
+                        
+                        {% if startPage > 1 %}
+                        <a href="{{ path(routeName, {'depotId': depotId, 'page': 1}) }}" 
+                           class="join-item btn btn-sm">
+                            1
+                        </a>
+                        {% if startPage > 2 %}
+                        <button class="join-item btn btn-sm btn-disabled">...</button>
+                        {% endif %}
+                        {% endif %}
+                        
+                        {% for page in startPage..endPage %}
+                        {% if page == currentPage %}
+                        <button class="join-item btn btn-sm btn-active">{{ page }}</button>
+                        {% else %}
+                        <a href="{{ path(routeName, {'depotId': depotId, 'page': page}) }}" 
+                           class="join-item btn btn-sm">
+                            {{ page }}
+                        </a>
+                        {% endif %}
+                        {% endfor %}
+                        
+                        {% if endPage < totalPages %}
+                        {% if endPage < totalPages - 1 %}
+                        <button class="join-item btn btn-sm btn-disabled">...</button>
+                        {% endif %}
+                        <a href="{{ path(routeName, {'depotId': depotId, 'page': totalPages}) }}" 
+                           class="join-item btn btn-sm">
+                            {{ totalPages }}
+                        </a>
+                        {% endif %}
+                        
+                        <!-- Next button -->
+                        {% if currentPage < totalPages %}
+                        <a href="{{ path(routeName, {'depotId': depotId, 'page': currentPage + 1}) }}" 
+                           class="join-item btn btn-sm">
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        {% else %}
+                        <button class="join-item btn btn-sm btn-disabled">
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Enhanced table sorting functionality with mobile support
+let sortDirection = {};
+
+function sortTable(columnIndex) {
+    const table = document.getElementById('containerTable');
+    const tbody = table.getElementsByTagName('tbody')[0];
+    const rows = Array.from(tbody.getElementsByTagName('tr'));
+    
+    // Determine sort direction
+    const currentDirection = sortDirection[columnIndex] || 'asc';
+    const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+    sortDirection[columnIndex] = newDirection;
+    
+    // Update sort indicators
+    updateSortIndicators(columnIndex, newDirection);
+    
+    // Sort rows
+    rows.sort((a, b) => {
+        let aValue, bValue;
+        
+        // Get cell values, handling hidden columns on mobile
+        const aCells = a.getElementsByTagName('td');
+        const bCells = b.getElementsByTagName('td');
+        
+        // Adjust column index for hidden columns
+        let actualColumnIndex = columnIndex;
+        if (window.innerWidth < 768 && columnIndex >= 2) {
+            // On mobile, Gate In Date is hidden, so adjust indices
+            actualColumnIndex = columnIndex === 2 ? 2 : columnIndex - 1;
+        }
+        if (window.innerWidth < 1024 && columnIndex >= 4) {
+            // On tablet, Condition is hidden, so adjust indices
+            actualColumnIndex = columnIndex === 4 ? 4 : columnIndex - 1;
+        }
+        if (window.innerWidth < 1280 && columnIndex >= 6) {
+            // On smaller screens, Location is hidden, so adjust indices
+            actualColumnIndex = columnIndex === 6 ? 6 : columnIndex - 1;
+        }
+        
+        if (actualColumnIndex < aCells.length && actualColumnIndex < bCells.length) {
+            aValue = aCells[actualColumnIndex].textContent.trim();
+            bValue = bCells[actualColumnIndex].textContent.trim();
+        } else {
+            return 0;
+        }
+        
+        // Handle different data types
+        let comparison = 0;
+        if (columnIndex === 2) { // Date column
+            const aDate = new Date(aValue);
+            const bDate = new Date(bValue);
+            comparison = aDate - bDate;
+        } else if (columnIndex === 3) { // Dwell time column
+            const aNum = parseInt(aValue.replace(/\D/g, ''));
+            const bNum = parseInt(bValue.replace(/\D/g, ''));
+            comparison = aNum - bNum;
+        } else {
+            comparison = aValue.localeCompare(bValue);
+        }
+        
+        return newDirection === 'asc' ? comparison : -comparison;
+    });
+    
+    // Reorder table rows
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+function updateSortIndicators(activeColumn, direction) {
+    // Reset all sort indicators
+    const headers = document.querySelectorAll('#containerTable th');
+    headers.forEach((header, index) => {
+        const svg = header.querySelector('svg');
+        if (svg) {
+            svg.style.transform = 'rotate(0deg)';
+            svg.style.opacity = '0.5';
+        }
+    });
+    
+    // Update active column indicator
+    const activeHeader = headers[activeColumn];
+    if (activeHeader) {
+        const svg = activeHeader.querySelector('svg');
+        if (svg) {
+            svg.style.opacity = '1';
+            svg.style.transform = direction === 'desc' ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+    }
+}
+
+// Future API integration placeholder with loading state management
+function loadContainerData(depotId) {
+    // Show loading state
+    const loadingState = document.getElementById('loadingState');
+    const containerTable = document.getElementById('containerTable');
+    
+    if (loadingState && containerTable) {
+        loadingState.classList.remove('hidden');
+        containerTable.style.opacity = '0.5';
+        
+        // This will be replaced with actual API call
+        // fetch(`/api/depot/${depotId}/containers`)
+        //     .then(response => response.json())
+        //     .then(data => {
+        //         updateContainerTable(data);
+        //         loadingState.classList.add('hidden');
+        //         containerTable.style.opacity = '1';
+        //     })
+        //     .catch(error => {
+        //         console.error('Error loading container data:', error);
+        //         loadingState.classList.add('hidden');
+        //         containerTable.style.opacity = '1';
+        //     });
+    }
+}
+
+// Handle responsive table behavior
+function handleResponsiveTable() {
+    const table = document.getElementById('containerTable');
+    if (!table) return;
+    
+    // Add scroll indicator for mobile
+    const tableContainer = table.closest('.overflow-x-auto');
+    if (tableContainer && window.innerWidth < 768) {
+        tableContainer.style.position = 'relative';
+        
+        // Add scroll hint
+        if (!tableContainer.querySelector('.scroll-hint')) {
+            const scrollHint = document.createElement('div');
+            scrollHint.className = 'scroll-hint absolute top-2 right-2 text-xs text-gray-400 pointer-events-none';
+            scrollHint.textContent = '← Scroll →';
+            tableContainer.appendChild(scrollHint);
+            
+            // Hide hint after user scrolls
+            tableContainer.addEventListener('scroll', () => {
+                scrollHint.style.display = 'none';
+            }, { once: true });
+        }
+    }
+}
+
+// Initialize responsive behavior
+document.addEventListener('DOMContentLoaded', function() {
+    handleResponsiveTable();
+    
+    // Handle window resize
+    window.addEventListener('resize', handleResponsiveTable);
+});
+</script>
+{% endblock %}

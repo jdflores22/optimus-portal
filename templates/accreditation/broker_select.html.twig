@@ -1,0 +1,211 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Select Broker - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Top Navigation Bar -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-meta-blue">OPTIMUS</span>
+                    <span class="ml-4 text-gray-600">Select Broker</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Flash Messages -->
+        {% for message in app.flashes('success') %}
+            <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-4">
+                {{ message }}
+            </div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-4">
+                {{ message }}
+            </div>
+        {% endfor %}
+
+        <!-- Header -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">Select a Broker</h1>
+            <p class="mt-2 text-gray-600">Choose an approved broker to link to your consignee account</p>
+        </div>
+
+        {% if currentBroker %}
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-blue-800">
+                            <strong>Current Broker:</strong> {{ currentBroker.fullName }} ({{ currentBroker.email }})
+                        </p>
+                        <p class="text-xs text-blue-600 mt-1">
+                            Linked on {{ app.user.createdAt|date('M j, Y') }}
+                        </p>
+                    </div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        Linked
+                    </span>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Search Bar -->
+        <div class="mb-6">
+            <form method="get" action="{{ path('accreditation_broker_select') }}" class="flex gap-4">
+                <div class="flex-1">
+                    <label for="search" class="sr-only">Search brokers</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                        <input 
+                            type="text" 
+                            name="search" 
+                            id="search"
+                            value="{{ searchTerm }}"
+                            placeholder="Search by business name or email..."
+                            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                    </div>
+                </div>
+                <button 
+                    type="submit"
+                    class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                    Search
+                </button>
+                {% if searchTerm %}
+                    <a 
+                        href="{{ path('accreditation_broker_select') }}"
+                        class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                        Clear
+                    </a>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- Search Results Info -->
+        {% if searchTerm %}
+            <div class="mb-4">
+                <p class="text-sm text-gray-600">
+                    {% if brokers|length > 0 %}
+                        Found {{ brokers|length }} broker{{ brokers|length != 1 ? 's' : '' }} matching "{{ searchTerm }}"
+                    {% else %}
+                        No brokers found matching "{{ searchTerm }}"
+                    {% endif %}
+                </p>
+            </div>
+        {% endif %}
+
+        <!-- Brokers List -->
+        {% if brokers|length > 0 %}
+            <form method="post" action="{{ path('accreditation_broker_select') }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('broker_select') }}">
+                
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="divide-y divide-gray-200">
+                        {% for broker in brokers %}
+                            <label class="flex items-center p-6 hover:bg-gray-50 cursor-pointer transition">
+                                <input 
+                                    type="radio" 
+                                    name="broker_id" 
+                                    value="{{ broker.id }}"
+                                    {% if currentBroker and currentBroker.id == broker.id %}checked{% endif %}
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                    required
+                                >
+                                <div class="ml-4 flex-1">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <h3 class="text-lg font-medium text-gray-900">
+                                                {{ broker.fullName }}
+                                            </h3>
+                                            <p class="mt-1 text-sm text-gray-500">{{ broker.email }}</p>
+                                            <div class="mt-2 flex items-center text-xs text-gray-400">
+                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                {{ broker.linkedConsignees|length }} linked consignee{{ broker.linkedConsignees|length != 1 ? 's' : '' }}
+                                            </div>
+                                        </div>
+                                        <div class="flex flex-col items-end">
+                                            <span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                                Approved
+                                            </span>
+                                            {% if currentBroker and currentBroker.id == broker.id %}
+                                                <span class="mt-2 px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                                    Current
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="mt-6 flex items-center justify-between">
+                    <a href="{{ path('accreditation_index') }}" 
+                       class="text-sm text-gray-600 hover:text-gray-900">
+                        Cancel
+                    </a>
+                    <button 
+                        type="submit"
+                        class="px-6 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                    >
+                        {% if currentBroker %}
+                            Change Broker
+                        {% else %}
+                            Link Selected Broker
+                        {% endif %}
+                    </button>
+                </div>
+            </form>
+        {% else %}
+            <div class="bg-white rounded-lg shadow p-6 text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">
+                    {% if searchTerm %}
+                        No brokers found
+                    {% else %}
+                        No accredited brokers available
+                    {% endif %}
+                </h3>
+                <p class="mt-1 text-sm text-gray-500">
+                    {% if searchTerm %}
+                        Try adjusting your search terms or browse all available brokers.
+                    {% else %}
+                        There are currently no accredited brokers in the system. Only brokers with approved accreditation can be selected. Please contact support for assistance.
+                    {% endif %}
+                </p>
+                <div class="mt-6">
+                    {% if searchTerm %}
+                        <a href="{{ path('accreditation_broker_select') }}" 
+                           class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                            View All Brokers
+                        </a>
+                    {% endif %}
+                    <a href="{{ path('accreditation_index') }}" 
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 {% if searchTerm %}ml-3{% endif %}">
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

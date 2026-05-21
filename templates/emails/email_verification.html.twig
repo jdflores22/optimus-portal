@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email Address</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6; 
+            color: #1c1e21; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f0f2f5;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 20px auto; 
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .header { 
+            background-color: #1877F2; 
+            color: white; 
+            padding: 32px 24px; 
+            text-align: center; 
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .content { 
+            padding: 32px 24px; 
+            background-color: #ffffff; 
+        }
+        .content p {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+        }
+        .verification-button {
+            display: inline-block;
+            background-color: #1877F2;
+            color: white;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 24px 0;
+            text-align: center;
+        }
+        .verification-button:hover {
+            background-color: #166fe5;
+        }
+        .verification-info {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .verification-info h3 {
+            margin: 0 0 8px 0;
+            color: #1565c0;
+            font-size: 16px;
+        }
+        .verification-info p {
+            margin: 0;
+            font-size: 14px;
+            color: #1976d2;
+        }
+        .footer { 
+            padding: 24px; 
+            text-align: center; 
+            font-size: 14px; 
+            color: #65676b;
+            background-color: #f0f2f5;
+        }
+        .security-notice {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+        .security-notice h4 {
+            margin: 0 0 8px 0;
+            color: #856404;
+            font-size: 14px;
+        }
+        .security-notice p {
+            margin: 0;
+            font-size: 13px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Verify Your Email Address</h1>
+        </div>
+        <div class="content">
+            <p>Hello {{ user.email }},</p>
+            <p>Welcome to OPTIMUS Shipping Portal! To complete your registration and secure your account, please verify your email address by clicking the button below.</p>
+            
+            <div style="text-align: center;">
+                <a href="{{ verificationUrl }}" class="verification-button">
+                    Verify Email Address
+                </a>
+            </div>
+
+            <div class="verification-info">
+                <h3>📧 Verification Details</h3>
+                <p><strong>Email:</strong> {{ user.email }}</p>
+                <p><strong>Role:</strong> {{ user.role.value|title }}</p>
+                <p><strong>Expires:</strong> {{ expiresAt|date('F j, Y \\a\\t g:i A') }}</p>
+            </div>
+
+            <p>If the button above doesn't work, you can copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; background-color: #f8f9fa; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 14px;">
+                {{ verificationUrl }}
+            </p>
+
+            <div class="security-notice">
+                <h4>🛡️ Security Notice</h4>
+                <p>This verification link will expire in 24 hours for your security. If you didn't create an account with OPTIMUS Portal, please ignore this email.</p>
+            </div>
+
+            <p><strong>What happens next?</strong></p>
+            <ul>
+                <li>Click the verification link to confirm your email address</li>
+                <li>Your account will be reviewed by our team</li>
+                <li>You'll receive a notification once your account is approved</li>
+                <li>Start using OPTIMUS Portal for your shipping operations</li>
+            </ul>
+
+            <p>If you have any questions or need assistance, please contact our support team.</p>
+        </div>
+        <div class="footer">
+            <p><strong>OPTIMUS Shipping Portal</strong><br>
+            Your trusted partner in shipping operations</p>
+            <p style="font-size: 12px; margin-top: 16px;">
+                This is an automated message. Please do not reply to this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

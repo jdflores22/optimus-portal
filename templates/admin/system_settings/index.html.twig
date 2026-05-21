@@ -1,0 +1,236 @@
+{% extends 'base.html.twig' %}
+{% block title %}System Settings{% endblock %}
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Top Navigation Bar -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-meta-blue">System Settings</span>
+                    <span class="ml-4 text-gray-600">Manage all system configurations from one place</span>
+                    </div>
+                <div class="flex items-center">
+                    <span class="text-sm text-gray-600">System Admin</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex gap-6">
+            <!-- Sidebar Navigation -->
+            <div class="w-64 flex-shrink-0">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-4">
+                    <nav class="flex flex-col p-2">
+                        <a href="{{ path('admin_configuration_index') }}" class="px-4 py-3 text-left hover:bg-gray-50 transition-colors rounded-lg border-l-4 border-transparent text-gray-700 mb-1">
+                            <i class="fas fa-cog mr-2"></i>eDO Configuration
+                        </a>
+                        <button onclick="showTab('rate-limiter')" class="tab-btn px-4 py-3 text-left hover:bg-gray-50 transition-colors rounded-lg border-l-4 border-blue-500 bg-blue-50 text-blue-700 font-medium mb-1" data-tab="rate-limiter">
+                            <i class="fas fa-tachometer-alt mr-2"></i>Rate Limiter
+                        </button>
+                        <button onclick="showTab('session-config')" class="tab-btn px-4 py-3 text-left hover:bg-gray-50 transition-colors rounded-lg border-l-4 border-transparent text-gray-700 mb-1" data-tab="session-config">
+                            <i class="fas fa-clock mr-2"></i>Session Config
+                        </button>
+                        <button onclick="showTab('shipping-lines')" class="tab-btn px-4 py-3 text-left hover:bg-gray-50 transition-colors rounded-lg border-l-4 border-transparent text-gray-700 mb-1" data-tab="shipping-lines">
+                            <i class="fas fa-ship mr-2"></i>Shipping Lines
+                        </button>
+                        <button onclick="showTab('terminals')" class="tab-btn px-4 py-3 text-left hover:bg-gray-50 transition-colors rounded-lg border-l-4 border-transparent text-gray-700 mb-1" data-tab="terminals">
+                            <i class="fas fa-warehouse mr-2"></i>Terminals
+                        </button>
+                        <button onclick="showTab('container-types')" class="tab-btn px-4 py-3 text-left hover:bg-gray-50 transition-colors rounded-lg border-l-4 border-transparent text-gray-700 mb-1" data-tab="container-types">
+                            <i class="fas fa-box mr-2"></i>Container Types
+                        </button>
+                        <button onclick="showTab('container-sizes')" class="tab-btn px-4 py-3 text-left hover:bg-gray-50 transition-colors rounded-lg border-l-4 border-transparent text-gray-700" data-tab="container-sizes">
+                            <i class="fas fa-ruler mr-2"></i>Container Sizes
+                        </button>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="flex-1">
+                <!-- Rate Limiter Tab -->
+                <div id="rate-limiter-tab" class="tab-content">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4">Rate Limiter Configuration</h2>
+                        <p class="text-gray-600 mb-6">Configure rate limits for various system operations</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {% for name, config in rateLimiters %}
+                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                                <form method="POST" action="{{ path('admin_system_settings_rate_limiter_update') }}" class="space-y-4">
+                                    <input type="hidden" name="limiter_name" value="{{ name }}">
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-gray-900">{{ name|replace({'_': ' '})|title }}</h3>
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-2">Active</span>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Limit</label>
+                                            <input type="number" name="limit" value="{{ config.limit }}" min="1" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Interval</label>
+                                            <input type="text" name="interval" value="{{ config.interval }}" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <div class="flex items-center justify-between text-sm">
+                                            <span class="text-gray-600">Current Rate:</span>
+                                            <span class="font-semibold text-gray-900">{{ config.limit }} per {{ config.interval }}</span>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200">Update Settings</button>
+                                </form>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div class="flex">
+                                <i class="fas fa-exclamation-triangle text-yellow-600 mt-1 mr-3"></i>
+                                <div class="text-sm text-yellow-700">
+                                    <p class="font-medium mb-1">After updating settings:</p>
+                                    <p>Run: <code class="bg-yellow-100 px-2 py-1 rounded">php bin/console cache:clear</code></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Session Config Tab -->
+                <div id="session-config-tab" class="tab-content hidden">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4">Session Configuration</h2>
+                        <p class="text-gray-600 mb-6">Configure session timeout and monitoring intervals</p>
+                        <form method="POST" action="{{ path('admin_system_settings_session_update') }}" class="max-w-2xl">
+                            <div class="space-y-6">
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-desktop mr-2"></i>Desktop Session Timeout (minutes)
+                                    </label>
+                                    <input type="number" name="desktop_timeout_minutes" value="{{ sessionConfig.desktop_timeout_minutes ?? 30 }}" min="1" max="1440" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <p class="mt-2 text-sm text-gray-500">How long before desktop users are logged out due to inactivity</p>
+                                </div>
+
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-sync mr-2"></i>Check Interval (seconds)
+                                    </label>
+                                    <input type="number" name="check_interval_seconds" value="{{ sessionConfig.check_interval_seconds ?? 60 }}" min="10" max="300" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <p class="mt-2 text-sm text-gray-500">How often the system checks for session expiration (desktop)</p>
+                                </div>
+
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-mobile-alt mr-2"></i>PWA Ping Interval (minutes)
+                                    </label>
+                                    <input type="number" name="pwa_ping_interval_minutes" value="{{ sessionConfig.pwa_ping_interval_minutes ?? 5 }}" min="1" max="60" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <p class="mt-2 text-sm text-gray-500">How often PWA apps ping to keep session alive</p>
+                                </div>
+
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <div class="flex">
+                                        <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
+                                        <div class="text-sm text-blue-700">
+                                            <p class="font-medium mb-1">Current Configuration:</p>
+                                            <ul class="list-disc list-inside space-y-1">
+                                                <li>Desktop timeout: {{ sessionConfig.desktop_timeout_minutes ?? 30 }} minutes</li>
+                                                <li>Check interval: {{ sessionConfig.check_interval_seconds ?? 60 }} seconds</li>
+                                                <li>PWA ping: {{ sessionConfig.pwa_ping_interval_minutes ?? 5 }} minutes</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="w-full px-4 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200">
+                                    <i class="fas fa-save mr-2"></i>Update Session Configuration
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Shipping Lines Tab -->
+                <div id="shipping-lines-tab" class="tab-content hidden">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4">Shipping Lines Management</h2>
+                        <p class="text-gray-600 mb-6">Manage shipping line companies and their configurations</p>
+                        <div class="space-y-3">
+                            {% for shippingLine in shippingLines %}
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center">
+                                        <span class="text-sm font-medium">{{ shippingLine.brandName|slice(0, 2)|upper }}</span>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-lg font-medium text-gray-900">{{ shippingLine.brandName }}</h4>
+                                        <p class="text-sm text-gray-500">{{ shippingLine.shippingLineAdmins|length }} admin(s)</p>
+                                    </div>
+                                </div>
+                                <a href="{{ path('admin_shipping_lines_detail', {id: shippingLine.id}) }}" class="px-3 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 rounded-lg text-sm">
+                                    <i class="fas fa-eye mr-1"></i>View
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terminals Tab -->
+                <div id="terminals-tab" class="tab-content hidden">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4">Terminals Management</h2>
+                        <div class="space-y-3">
+                            {% for terminal in terminals %}
+                            <div class="p-4 bg-gray-50 rounded-lg">
+                                <h4 class="font-medium text-gray-900">{{ terminal.name }}</h4>
+                                <p class="text-sm text-gray-500">{{ terminal.location }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Container Types Tab -->
+                <div id="container-types-tab" class="tab-content hidden">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4">Container Types</h2>
+                        <div class="space-y-3">
+                            {% for type in containerTypes %}
+                            <div class="p-4 bg-gray-50 rounded-lg">
+                                <h4 class="font-medium text-gray-900">{{ type.name }} ({{ type.code }})</h4>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Container Sizes Tab -->
+                <div id="container-sizes-tab" class="tab-content hidden">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4">Container Sizes</h2>
+                        <div class="space-y-3">
+                            {% for size in containerSizes %}
+                            <div class="p-4 bg-gray-50 rounded-lg">
+                                <h4 class="font-medium text-gray-900">{{ size.name }} ({{ size.code }})</h4>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTab(t){document.querySelectorAll('.tab-content').forEach(c=>c.classList.add('hidden'));document.querySelectorAll('.tab-btn').forEach(b=>{b.classList.remove('border-blue-500','bg-blue-50','text-blue-700','font-medium');b.classList.add('border-transparent','text-gray-700')});document.getElementById(t+'-tab').classList.remove('hidden');const a=document.querySelector(`[data-tab="${t}"]`);a.classList.add('border-blue-500','bg-blue-50','text-blue-700','font-medium');a.classList.remove('border-transparent','text-gray-700')}
+function showToast(m,t='success'){const c=document.getElementById('toastContainer'),d=document.createElement('div'),bg=t==='success'?'bg-green-50 border-green-200':t==='error'?'bg-red-50 border-red-200':'bg-blue-50 border-blue-200',tc=t==='success'?'text-green-800':t==='error'?'text-red-800':'text-blue-800',ic=t==='success'?'text-green-400':t==='error'?'text-red-400':'text-blue-400',icon=t==='success'?'<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>':'<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';d.className=`${bg} border rounded-lg p-4 shadow-lg flex items-start space-x-3 min-w-[300px] max-w-md transform transition-all duration-300`;d.innerHTML=`<svg class="w-5 h-5 ${ic} flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">${icon}</svg><div class="flex-1"><p class="text-sm font-medium ${tc}">${m}</p></div><button onclick="this.parentElement.remove()" class="flex-shrink-0 ${tc}">×</button>`;c.appendChild(d);setTimeout(()=>{d.style.transform='translateX(400px)';d.style.opacity='0';setTimeout(()=>d.remove(),300)},5000)}
+{% for message in app.flashes('success') %}showToast('{{ message|e('js') }}','success');{% endfor %}
+{% for message in app.flashes('error') %}showToast('{{ message|e('js') }}','error');{% endfor %}
+</script>
+{% endblock %}

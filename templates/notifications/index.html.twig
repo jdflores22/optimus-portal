@@ -1,0 +1,411 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Notifications - OPTIMUS{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block body %}
+<div class="space-y-5">
+
+    {# Header #}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+            <h1 class="text-2xl font-bold text-base-content">Notifications</h1>
+            <p class="text-sm text-base-content/60">Stay updated with important activities</p>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+            <button id="markAllReadBtn" class="btn btn-outline btn-sm gap-2">
+                <span class="icon-[tabler--checks] size-4"></span>
+                Mark All Read
+            </button>
+            <button id="deleteReadBtn" class="btn btn-outline btn-error btn-sm gap-2">
+                <span class="icon-[tabler--trash] size-4"></span>
+                Delete Read
+            </button>
+        </div>
+    </div>
+
+    {# Filters #}
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-4 flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-2">
+                <label class="text-sm font-medium text-base-content/70">Filter:</label>
+                <select id="filterSelect" class="select select-bordered select-sm">
+                    <option value="all">All Notifications</option>
+                    <option value="unread">Unread Only</option>
+                    <option value="read">Read Only</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-2">
+                <label class="text-sm font-medium text-base-content/70">Per Page:</label>
+                <select id="limitSelect" class="select select-bordered select-sm">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    {# Notifications list #}
+    <div class="card bg-base-100 shadow-sm overflow-hidden">
+
+        {# Loading state #}
+        <div id="loadingState" class="flex items-center justify-center gap-3 py-16">
+            <span class="loading loading-spinner loading-md text-primary"></span>
+            <span class="text-sm text-base-content/60">Loading notifications...</span>
+        </div>
+
+        {# Content #}
+        <div id="notificationsContainer" style="display:none;"></div>
+    </div>
+
+    {# Pagination #}
+    <div id="paginationContainer" class="hidden">
+        <div class="flex items-center justify-between px-4 py-3 bg-base-100 rounded-xl shadow-sm border border-base-300">
+            <p class="text-sm text-base-content/60 hidden sm:block">
+                Showing <span id="showingFrom" class="font-medium text-base-content">0</span>–<span id="showingTo" class="font-medium text-base-content">0</span>
+                of <span id="totalCount" class="font-medium text-base-content">0</span>
+            </p>
+            <div class="flex items-center gap-2 ml-auto">
+                <button id="prevBtn" class="btn btn-outline btn-sm gap-1" disabled>
+                    <span class="icon-[tabler--chevron-left] size-4"></span>
+                    Previous
+                </button>
+                <button id="nextBtn" class="btn btn-outline btn-sm gap-1" disabled>
+                    Next
+                    <span class="icon-[tabler--chevron-right] size-4"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{# Toast container #}
+<div id="toastContainer" class="fixed top-20 right-4 z-[9999] space-y-2 pointer-events-none"></div>
+
+{# Notification detail modal #}
+<div id="notificationDetailModal" class="hidden fixed inset-0 z-[10001] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeNotificationDetailModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-base-300">
+            <h3 class="font-semibold text-base text-base-content">Notification Details</h3>
+            <button type="button" onclick="closeNotificationDetailModal()" class="btn btn-ghost btn-sm btn-circle">
+                <span class="icon-[tabler--x] size-4"></span>
+            </button>
+        </div>
+        <div class="px-5 py-4">
+            <div class="flex items-start gap-3">
+                <div id="detailModalNotificationIcon" class="size-9 rounded-full flex items-center justify-center flex-shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                    <div id="detailModalNotificationStatus" class="text-xs font-semibold mb-1"></div>
+                    <h4 class="text-sm font-semibold text-base-content mb-1" id="detailModalNotificationTitleText"></h4>
+                    <p class="text-sm text-base-content/60 mb-3" id="detailModalNotificationMessage"></p>
+                    <div class="flex items-center justify-between text-xs text-base-content/40">
+                        <span id="detailModalNotificationTime"></span>
+                        <span id="detailModalNotificationType" class="badge badge-sm"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-base-300">
+            <button type="button" onclick="closeNotificationDetailModal()" class="btn btn-ghost btn-sm">Close</button>
+            <button type="button" id="detailModalActionButton" onclick="handleDetailModalAction()" class="btn btn-primary btn-sm" style="display:none;"></button>
+            <button type="button" id="detailModalMarkReadButton" onclick="markNotificationAsReadFromDetailModal()" class="btn btn-info btn-sm gap-1" style="display:none;">
+                <span class="icon-[tabler--check] size-4"></span>
+                Mark as Read
+            </button>
+        </div>
+    </div>
+</div>
+
+{# Confirmation modal #}
+<div id="confirmationModal" class="hidden fixed inset-0 z-[10000] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="hideConfirmationModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-sm z-10">
+        <div class="flex items-center gap-3 px-5 py-4 border-b border-base-300">
+            <div class="size-9 rounded-full bg-warning/10 flex items-center justify-center flex-shrink-0">
+                <span class="icon-[tabler--alert-triangle] size-5 text-warning"></span>
+            </div>
+            <h3 class="font-semibold text-base text-base-content" id="modalTitle">Confirm Action</h3>
+        </div>
+        <div class="px-5 py-4">
+            <p class="text-sm text-base-content/70" id="modalMessage">Are you sure?</p>
+        </div>
+        <div class="flex justify-end gap-2 px-5 py-4 border-t border-base-300">
+            <button id="cancelButton" type="button" class="btn btn-ghost btn-sm">Cancel</button>
+            <button id="confirmButton" type="button" class="btn btn-primary btn-sm">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPage = 1;
+let currentLimit = 20;
+let currentFilter = 'all';
+let currentNotifications = [];
+let currentDetailModalNotification = null;
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+function showToast(message, type = 'info', duration = 4000) {
+    const container = document.getElementById('toastContainer');
+    const typeMap = {
+        success: { icon: 'icon-[tabler--circle-check]', cls: 'alert-success' },
+        error:   { icon: 'icon-[tabler--alert-circle]', cls: 'alert-error' },
+        warning: { icon: 'icon-[tabler--alert-triangle]', cls: 'alert-warning' },
+        info:    { icon: 'icon-[tabler--info-circle]', cls: 'alert-info' },
+    };
+    const t = typeMap[type] || typeMap.info;
+    const el = document.createElement('div');
+    el.className = `alert ${t.cls} shadow-lg pointer-events-auto max-w-sm text-sm translate-x-full opacity-0 transition-all duration-300`;
+    el.innerHTML = `<span class="${t.icon} size-5"></span><span>${message}</span>
+        <button onclick="this.parentElement.remove()" class="btn btn-ghost btn-xs btn-circle ml-auto">
+            <span class="icon-[tabler--x] size-3"></span>
+        </button>`;
+    container.appendChild(el);
+    requestAnimationFrame(() => { el.classList.remove('translate-x-full','opacity-0'); });
+    if (duration > 0) setTimeout(() => {
+        el.classList.add('translate-x-full','opacity-0');
+        setTimeout(() => el.remove(), 300);
+    }, duration);
+}
+
+// ── Load & Render ──────────────────────────────────────────────────────────
+function loadPageNotifications() {
+    document.getElementById('loadingState').style.display = 'flex';
+    document.getElementById('notificationsContainer').style.display = 'none';
+
+    const params = new URLSearchParams({ page: currentPage, limit: currentLimit, filter: currentFilter });
+    fetch(`/notifications/api/paginated?${params}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin'
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            currentNotifications = data.notifications;
+            renderPageNotifications(data.notifications);
+            updatePagination(data.pagination);
+        } else { showError('Failed to load notifications'); }
+    })
+    .catch(() => showError('Failed to load notifications'))
+    .finally(() => {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('notificationsContainer').style.display = 'block';
+    });
+}
+
+function renderPageNotifications(list) {
+    const container = document.getElementById('notificationsContainer');
+    if (!list.length) {
+        container.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-16 text-base-content/40 gap-3">
+            <span class="icon-[tabler--bell-off] size-12"></span>
+            <p class="text-sm font-medium">No notifications</p>
+            <p class="text-xs">Nothing matches the current filter.</p>
+        </div>`;
+        return;
+    }
+
+    const typeMap = {
+        success: { dot: 'bg-success', cssVar: '--su' },
+        error:   { dot: 'bg-error',   cssVar: '--er' },
+        warning: { dot: 'bg-warning', cssVar: '--wa' },
+        info:    { dot: 'bg-info',    cssVar: '--in' },
+    };
+
+    container.innerHTML = `<ul class="divide-y divide-base-200">` +
+    list.map(n => {
+        const t = typeMap[n.type] || typeMap.info;
+        const unreadBg = n.isRead ? '' : 'bg-primary/5';
+        return `
+        <li class="px-5 py-4 ${unreadBg} hover:bg-base-200/60 transition-colors cursor-pointer"
+            onclick="showNotificationDetailModal(${n.id})">
+            <div class="flex items-start gap-4">
+                <div class="size-2.5 rounded-full ${t.dot} mt-2 flex-shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm ${n.isRead ? 'text-base-content/70' : 'font-semibold text-base-content'}">${n.title}</p>
+                            <p class="text-xs text-base-content/60 mt-0.5 line-clamp-2">${n.message}</p>
+                            <div class="flex items-center justify-between mt-2">
+                                <span class="text-xs text-base-content/40">${n.timeAgo}</span>
+                                ${n.actionText && n.actionUrl ? `<span class="text-xs text-primary font-medium">${n.actionText}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 flex-shrink-0" onclick="event.stopPropagation()">
+                            ${!n.isRead ? `<button onclick="markAsRead(${n.id})" class="btn btn-soft btn-primary btn-xs">Read</button>` : ''}
+                            <button onclick="deleteNotification(${n.id})" class="btn btn-soft btn-error btn-xs">
+                                <span class="icon-[tabler--trash] size-3.5"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                ${!n.isRead ? `<div class="size-2 rounded-full bg-primary flex-shrink-0 mt-2"></div>` : ''}
+            </div>
+        </li>`;
+    }).join('') + `</ul>`;
+}
+
+function updatePagination(p) {
+    const container = document.getElementById('paginationContainer');
+    if (p.total > 0) {
+        container.classList.remove('hidden');
+        document.getElementById('showingFrom').textContent = ((p.page - 1) * p.limit) + 1;
+        document.getElementById('showingTo').textContent = Math.min(p.page * p.limit, p.total);
+        document.getElementById('totalCount').textContent = p.total;
+        document.getElementById('prevBtn').disabled = p.page <= 1;
+        document.getElementById('nextBtn').disabled = p.page >= p.pages;
+    } else {
+        container.classList.add('hidden');
+    }
+}
+
+function showError(msg) {
+    document.getElementById('notificationsContainer').innerHTML = `
+    <div class="flex flex-col items-center justify-center py-16 text-base-content/40 gap-3">
+        <span class="icon-[tabler--alert-circle] size-12 text-error/60"></span>
+        <p class="text-sm font-medium text-base-content/60">${msg}</p>
+        <button onclick="loadPageNotifications()" class="btn btn-outline btn-sm">Try Again</button>
+    </div>`;
+}
+
+// ── Actions ────────────────────────────────────────────────────────────────
+function markAsRead(id) {
+    fetch(`/notifications/${id}/read`, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+    .then(r => r.json()).then(d => {
+        if (d.success) { loadPageNotifications(); showToast('Marked as read', 'success'); }
+        else showToast('Failed', 'error');
+    }).catch(() => showToast('Failed', 'error'));
+}
+
+function deleteNotification(id) {
+    showConfirmationModal('Delete Notification', 'Delete this notification? This cannot be undone.', () => {
+        fetch(`/notifications/${id}/delete`, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+        .then(r => r.json()).then(d => {
+            if (d.success) { loadPageNotifications(); showToast('Deleted', 'success'); }
+            else showToast('Failed to delete', 'error');
+        }).catch(() => showToast('Failed', 'error'));
+    });
+}
+
+function markAllAsRead() {
+    showConfirmationModal('Mark All as Read', 'Mark all notifications as read?', () => {
+        fetch('/notifications/mark-all-read', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+        .then(r => r.json()).then(d => {
+            if (d.success) { loadPageNotifications(); showToast(d.message, 'success'); }
+            else showToast('Failed', 'error');
+        }).catch(() => showToast('Failed', 'error'));
+    });
+}
+
+function deleteReadNotifications() {
+    showConfirmationModal('Delete Read Notifications', 'Delete all read notifications? This cannot be undone.', () => {
+        fetch('/notifications/delete-read', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+        .then(r => r.json()).then(d => {
+            if (d.success) { loadPageNotifications(); showToast(d.message, 'success'); }
+            else showToast('Failed', 'error');
+        }).catch(() => showToast('Failed', 'error'));
+    });
+}
+
+// ── Confirmation modal ─────────────────────────────────────────────────────
+function showConfirmationModal(title, message, onConfirm) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalMessage').textContent = message;
+    document.getElementById('confirmationModal').classList.remove('hidden');
+    document.getElementById('confirmButton').onclick = () => { hideConfirmationModal(); onConfirm(); };
+}
+function hideConfirmationModal() {
+    document.getElementById('confirmationModal').classList.add('hidden');
+}
+
+// ── Detail modal ───────────────────────────────────────────────────────────
+const typeStyles = {
+    success: { cssVar: '--su', icon: 'icon-[tabler--circle-check]', badgeCls: 'badge-success' },
+    error:   { cssVar: '--er', icon: 'icon-[tabler--alert-circle]', badgeCls: 'badge-error' },
+    warning: { cssVar: '--wa', icon: 'icon-[tabler--alert-triangle]', badgeCls: 'badge-warning' },
+    info:    { cssVar: '--in', icon: 'icon-[tabler--info-circle]', badgeCls: 'badge-info' },
+};
+
+function showNotificationDetailModal(id) {
+    const n = currentNotifications.find(x => x.id === id);
+    if (!n) return;
+    currentDetailModalNotification = n;
+
+    const ts = typeStyles[n.type] || typeStyles.info;
+
+    document.getElementById('detailModalNotificationTitleText').textContent = n.title;
+    document.getElementById('detailModalNotificationMessage').textContent = n.message;
+    document.getElementById('detailModalNotificationTime').textContent = n.timeAgo;
+
+    const icon = document.getElementById('detailModalNotificationIcon');
+    icon.style.background = `oklch(var(${ts.cssVar})/.15)`;
+    icon.innerHTML = `<span class="${ts.icon} size-5" style="color:oklch(var(${ts.cssVar}))"></span>`;
+
+    const typeEl = document.getElementById('detailModalNotificationType');
+    typeEl.className = `badge badge-sm ${ts.badgeCls}`;
+    typeEl.textContent = n.type.charAt(0).toUpperCase() + n.type.slice(1);
+
+    document.getElementById('detailModalNotificationStatus').innerHTML = n.isRead
+        ? `<span style="color:oklch(var(--bc)/.5)">● Read</span>`
+        : `<span style="color:oklch(var(--p))">● Unread</span>`;
+
+    const actionBtn = document.getElementById('detailModalActionButton');
+    if (n.actionText && n.actionUrl) { actionBtn.textContent = n.actionText; actionBtn.style.display = 'inline-flex'; }
+    else actionBtn.style.display = 'none';
+
+    document.getElementById('detailModalMarkReadButton').style.display = n.isRead ? 'none' : 'inline-flex';
+    document.getElementById('notificationDetailModal').classList.remove('hidden');
+}
+
+function closeNotificationDetailModal() {
+    document.getElementById('notificationDetailModal').classList.add('hidden');
+    currentDetailModalNotification = null;
+}
+
+function handleDetailModalAction() {
+    if (currentDetailModalNotification?.actionUrl) {
+        markNotificationAsReadFromDetailModal(false);
+        window.location.href = currentDetailModalNotification.actionUrl;
+    }
+}
+
+function markNotificationAsReadFromDetailModal(closeModal = true) {
+    if (!currentDetailModalNotification) return;
+    fetch(`/notifications/${currentDetailModalNotification.id}/read`, {
+        method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin'
+    }).then(r => r.json()).then(d => {
+        if (d.success) {
+            const n = currentNotifications.find(x => x.id === currentDetailModalNotification.id);
+            if (n) n.isRead = true;
+            loadPageNotifications();
+            showToast('Marked as read', 'success');
+            if (closeModal) closeNotificationDetailModal();
+            else {
+                document.getElementById('detailModalNotificationStatus').innerHTML = `<span style="color:oklch(var(--bc)/.5)">● Read</span>`;
+                document.getElementById('detailModalMarkReadButton').style.display = 'none';
+            }
+        }
+    }).catch(() => showToast('Failed', 'error'));
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    loadPageNotifications();
+
+    document.getElementById('filterSelect').addEventListener('change', function() { currentFilter = this.value; currentPage = 1; loadPageNotifications(); });
+    document.getElementById('limitSelect').addEventListener('change', function() { currentLimit = parseInt(this.value); currentPage = 1; loadPageNotifications(); });
+    document.getElementById('prevBtn').addEventListener('click', () => { if (currentPage > 1) { currentPage--; loadPageNotifications(); } });
+    document.getElementById('nextBtn').addEventListener('click', () => { currentPage++; loadPageNotifications(); });
+    document.getElementById('markAllReadBtn').addEventListener('click', markAllAsRead);
+    document.getElementById('deleteReadBtn').addEventListener('click', deleteReadNotifications);
+    document.getElementById('cancelButton').addEventListener('click', hideConfirmationModal);
+
+    document.addEventListener('keydown', e => {
+        if (e.key !== 'Escape') return;
+        if (!document.getElementById('notificationDetailModal').classList.contains('hidden')) closeNotificationDetailModal();
+        else if (!document.getElementById('confirmationModal').classList.contains('hidden')) hideConfirmationModal();
+    });
+});
+</script>
+{% endblock %}

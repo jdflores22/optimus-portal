@@ -1,0 +1,42 @@
+framework:
+  rate_limiter:
+    api_user:
+      policy: sliding_window
+      limit: 100
+      interval: '1 minute'
+    api_ip:
+      policy: sliding_window
+      limit: 200
+      interval: '1 minute'
+    photo_upload:
+      policy: sliding_window
+      limit: 10
+      interval: '1 minute'
+    api_auth:
+      policy: sliding_window
+      limit: 5
+      interval: '1 minute'
+    role_acceptance:
+      policy: sliding_window
+      limit: 5
+      interval: '1 minute'
+    payment_submission:
+      policy: sliding_window
+      limit: 10
+      interval: '1 hour'
+    referral_code_generation:
+      policy: sliding_window
+      limit: 10
+      interval: '1 hour'
+    broker_transfer_request:
+      policy: sliding_window
+      limit: 20
+      interval: '1 hour'
+    workspace_switching:
+      policy: sliding_window
+      limit: 30
+      interval: '1 minute'
+    referral_code_application:
+      policy: sliding_window
+      limit: 10
+      interval: '1 hour'

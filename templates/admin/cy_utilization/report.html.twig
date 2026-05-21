@@ -1,0 +1,231 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}CY Utilization Report{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.45.0/dist/apexcharts.css">
+    <style>
+        .report-filters {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .report-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-pre-forecast {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-allocated {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .loading-overlay.active {
+            display: flex;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">CY Utilization Report</h1>
+
+            <!-- Filters -->
+            <div class="report-filters">
+                <form id="reportFiltersForm">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <label for="startDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="startDate" name="start_date" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="endDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="endDate" name="end_date" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="containerSizeFilter" class="form-label">Container Size</label>
+                            <select class="form-select" id="containerSizeFilter" name="container_size">
+                                <option value="both">Both (20ft & 40ft)</option>
+                                <option value="20ft">20ft Only</option>
+                                <option value="40ft">40ft Only</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="shippingLineFilter" class="form-label">Shipping Line</label>
+                            <select class="form-select" id="shippingLineFilter" name="shipping_line_id">
+                                <option value="">All Shipping Lines</option>
+                                {# Shipping lines will be loaded via AJAX #}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="terminalFilter" class="form-label">Terminal</label>
+                            <select class="form-select" id="terminalFilter" name="terminal_id">
+                                <option value="">All Terminals</option>
+                                {# Terminals will be loaded via AJAX #}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="sortBy" class="form-label">Sort By</label>
+                            <select class="form-select" id="sortBy" name="sort_by">
+                                <option value="terminal">Terminal Name</option>
+                                <option value="utilization_teu">Utilization (TEU)</option>
+                                <option value="utilization_20ft">Utilization (20ft)</option>
+                                <option value="utilization_40ft">Utilization (40ft)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-chart-bar"></i> Generate Report
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="resetFilters">
+                                <i class="fas fa-redo"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Export Buttons -->
+            <div class="export-buttons" id="exportButtons" style="display: none;">
+                <button type="button" class="btn btn-success" id="exportCsv">
+                    <i class="fas fa-file-csv"></i> Export to CSV
+                </button>
+                <button type="button" class="btn btn-danger" id="exportPdf">
+                    <i class="fas fa-file-pdf"></i> Export to PDF
+                </button>
+            </div>
+
+            <!-- Utilization Trends Chart -->
+            <div class="report-card" id="trendsCard" style="display: none;">
+                <h3>Utilization Trends Over Time</h3>
+                <div id="utilizationTrendsChart"></div>
+            </div>
+
+            <!-- Allocation Breakdown Chart -->
+            <div class="report-card" id="breakdownCard" style="display: none;">
+                <h3>Allocation Breakdown by Terminal</h3>
+                <div id="allocationBreakdownChart"></div>
+            </div>
+
+            <!-- Status Breakdown -->
+            <div class="report-card" id="statusCard" style="display: none;">
+                <h3>Allocation Status Breakdown</h3>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <span class="status-badge status-pre-forecast">Pre-Forecast</span>
+                                </h5>
+                                <p class="card-text">
+                                    <strong>Containers:</strong> <span id="preForecastCount">0</span><br>
+                                    <strong>TEU:</strong> <span id="preForecastTeu">0.0</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <span class="status-badge status-allocated">Allocated</span>
+                                </h5>
+                                <p class="card-text">
+                                    <strong>Containers:</strong> <span id="allocatedCount">0</span><br>
+                                    <strong>TEU:</strong> <span id="allocatedTeu">0.0</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Utilization by Location Table -->
+            <div class="report-card" id="locationCard" style="display: none;">
+                <h3>Utilization by Location</h3>
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm" id="utilizationTable">
+                        <thead>
+                            <tr>
+                                <th rowspan="2" class="align-middle">Terminal</th>
+                                <th rowspan="2" class="align-middle">Location</th>
+                                <th rowspan="2" class="align-middle">Shipping Line</th>
+                                <th colspan="3" class="text-center bg-light">TEU-Based</th>
+                                <th colspan="4" class="text-center bg-info text-white">20ft Containers</th>
+                                <th colspan="4" class="text-center bg-warning">40ft Containers</th>
+                            </tr>
+                            <tr>
+                                <!-- TEU-Based -->
+                                <th class="bg-light">Capacity</th>
+                                <th class="bg-light">Allocated</th>
+                                <th class="bg-light">Util %</th>
+                                <!-- 20ft -->
+                                <th class="bg-info text-white">Capacity</th>
+                                <th class="bg-info text-white">Allocated</th>
+                                <th class="bg-info text-white">Available</th>
+                                <th class="bg-info text-white">Util %</th>
+                                <!-- 40ft -->
+                                <th class="bg-warning">Capacity</th>
+                                <th class="bg-warning">Allocated</th>
+                                <th class="bg-warning">Available</th>
+                                <th class="bg-warning">Util %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="utilizationTableBody">
+                            <!-- Data will be populated via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner-border text-light" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.0/dist/apexcharts.min.js"></script>
+    <script src="{{ asset('js/cy-utilization-report.js') }}"></script>
+{% endblock %}

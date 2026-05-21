@@ -1,0 +1,175 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Payment Receipt{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-success text-white text-center">
+                    <h4 class="mb-0"><i class="fas fa-check-circle"></i> Payment Successful</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Receipt Header -->
+                    <div class="text-center mb-4">
+                        <h5>Optimus Shipping Portal</h5>
+                        <p class="text-muted">FREE-ADVICE Processing Fee Receipt</p>
+                        <hr>
+                    </div>
+
+                    <!-- Payment Details -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Payment Information</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Receipt Number:</strong></td>
+                                    <td>{{ payment_reference }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Payment Date:</strong></td>
+                                    <td>{{ payment_date|date('M d, Y H:i') }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Payment Method:</strong></td>
+                                    <td>{{ payment_method|title }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td><span class="badge bg-success">Completed</span></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Customer Information</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Name:</strong></td>
+                                    <td>{{ trucker.fullName }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Email:</strong></td>
+                                    <td>{{ trucker.email }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Company:</strong></td>
+                                    <td>{{ trucker.companyName ?? 'Individual' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>License:</strong></td>
+                                    <td>{{ trucker.licenseNumber ?? 'Not provided' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Service Details -->
+                    <div class="mb-4">
+                        <h6>Service Details</h6>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>FREE-ADVICE Processing Fee</td>
+                                    <td class="text-end">$25.00</td>
+                                </tr>
+                                <tr>
+                                    <td>Container Verification Fee</td>
+                                    <td class="text-end">$15.00</td>
+                                </tr>
+                                <tr>
+                                    <td>Photo Processing Fee</td>
+                                    <td class="text-end">$10.00</td>
+                                </tr>
+                                {% if additional_fees is defined %}
+                                    {% for fee_name, fee_amount in additional_fees %}
+                                        <tr>
+                                            <td>{{ fee_name|title }}</td>
+                                            <td class="text-end">${{ fee_amount|number_format(2) }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                {% endif %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-active">
+                                    <th>Total Amount</th>
+                                    <th class="text-end">${{ total_amount|number_format(2) }}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- Container Information (if available) -->
+                    {% if container_number is defined %}
+                    <div class="mb-4">
+                        <h6>Container Information</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Container Number:</strong></td>
+                                <td>{{ container_number }}</td>
+                            </tr>
+                            {% if terminal_name is defined %}
+                            <tr>
+                                <td><strong>Selected Terminal:</strong></td>
+                                <td>{{ terminal_name }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                    {% endif %}
+
+                    <!-- Important Notes -->
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Important Information</h6>
+                        <ul class="mb-0">
+                            <li>Keep this receipt for your records</li>
+                            <li>Payment reference number will be required for FREE-ADVICE submission</li>
+                            <li>This payment is non-refundable once FREE-ADVICE is processed</li>
+                            <li>Contact support if you have any questions about this payment</li>
+                        </ul>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="text-center mt-4">
+                        <button onclick="window.print()" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-print"></i> Print Receipt
+                        </button>
+                        <a href="{{ path('trucker_pre_advice_create', {
+                            container_number: container_number ?? '',
+                            terminal_id: terminal_id ?? '',
+                            payment_reference: payment_reference,
+                            payment_success: '1'
+                        }) }}" class="btn btn-success">
+                            <i class="fas fa-arrow-right"></i> Continue to FREE-ADVICE
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .btn, .navbar, .sidebar {
+        display: none !important;
+    }
+    
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    .card-header {
+        background-color: #28a745 !important;
+        -webkit-print-color-adjust: exact;
+    }
+}
+</style>
+{% endblock %}

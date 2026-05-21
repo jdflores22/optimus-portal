@@ -1,0 +1,248 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Terminal Utilization - {{ terminal.name }} - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="py-6">
+                <div class="flex items-center mb-2">
+                    <a href="{{ path('admin_terminals_index') }}" class="text-gray-400 hover:text-gray-500 mr-3">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                        </svg>
+                    </a>
+                    <h1 class="text-3xl font-bold text-gray-900">{{ terminal.name }}</h1>
+                </div>
+                <p class="text-gray-600">Terminal capacity allocation and utilization overview</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Terminal Info Card -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Terminal Name</p>
+                    <p class="text-lg font-semibold text-gray-900 mt-1">{{ terminal.name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Location</p>
+                    <p class="text-lg font-semibold text-gray-900 mt-1">{{ terminal.location }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Region</p>
+                    <p class="text-base font-semibold text-gray-900 mt-1">
+                        {% if terminal.region %}
+                            {{ terminal.region.name }}
+                            {% if terminal.city %}<br><span class="text-sm text-gray-600">{{ terminal.city.name }}</span>{% endif %}
+                        {% else %}
+                            <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Type</p>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-1">
+                        {{ terminal.type.value }}
+                    </span>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Status</p>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ terminal.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} mt-1">
+                        {{ terminal.isActive ? 'Active' : 'Inactive' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Capacity Overview Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Capacity</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ terminal.dailyCapacity }}</p>
+                        <p class="text-xs text-blue-600 font-medium">TEU</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Allocated</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ totalAllocated }}</p>
+                        <p class="text-xs text-green-600 font-medium">TEU</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Available</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ availableCapacity }}</p>
+                        <p class="text-xs text-yellow-600 font-medium">TEU</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Utilization</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ utilizationPercentage|number_format(1) }}%</p>
+                        <p class="text-xs text-purple-600 font-medium">of capacity</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Utilization Progress Bar -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Capacity Utilization</h3>
+                <span class="text-sm text-gray-600">{{ totalAllocated }} / {{ terminal.dailyCapacity }} TEU</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-6">
+                {% set barColor = utilizationPercentage >= 90 ? 'bg-red-500' : (utilizationPercentage >= 70 ? 'bg-yellow-500' : 'bg-green-500') %}
+                <div class="{{ barColor }} h-6 rounded-full flex items-center justify-center text-white text-sm font-medium transition-all duration-500" 
+                     style="width: {{ utilizationPercentage > 100 ? 100 : utilizationPercentage }}%">
+                    {% if utilizationPercentage > 5 %}
+                        {{ utilizationPercentage|number_format(1) }}%
+                    {% endif %}
+                </div>
+            </div>
+            <div class="flex justify-between mt-2 text-sm text-gray-500">
+                <span>0 TEU</span>
+                <span>{{ terminal.dailyCapacity }} TEU</span>
+            </div>
+        </div>
+
+        <!-- Shipping Line Allocations Section -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Shipping Line Allocations</h3>
+                <p class="text-sm text-gray-500">Container yard capacity allocated to each shipping line</p>
+            </div>
+
+            {% if allocations|length > 0 %}
+            <!-- Grid Layout for Allocations -->
+            <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {% for allocation in allocations %}
+                {% set allocationPercentage = (allocation.allocatedCapacity / terminal.dailyCapacity * 100) %}
+                {% set borderColor = allocationPercentage >= 100 ? 'border-red-200' : (allocationPercentage >= 80 ? 'border-orange-200' : 'border-green-200') %}
+                {% set bgColor = allocationPercentage >= 100 ? 'bg-red-50' : (allocationPercentage >= 80 ? 'bg-orange-50' : 'bg-green-50') %}
+                {% set textColor = allocationPercentage >= 100 ? 'text-red-700' : (allocationPercentage >= 80 ? 'text-orange-700' : 'text-green-700') %}
+                {% set progressColor = allocationPercentage >= 100 ? 'bg-red-500' : (allocationPercentage >= 80 ? 'bg-orange-500' : 'bg-green-500') %}
+                <div class="bg-white border-2 {{ borderColor }} rounded-xl p-5 hover:shadow-lg transition-all duration-200 hover:-translate-y-1">
+                    <!-- Header -->
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex-1">
+                            <h4 class="text-lg font-bold text-gray-900 mb-1">
+                                {{ allocation.staffUser.managedShippingLine ? allocation.staffUser.managedShippingLine.brandName : allocation.staffUser.fullName }}
+                            </h4>
+                            <p class="text-sm text-gray-500 flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                Allocated on {{ allocation.createdAt|date('M d, Y') }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Capacity Info -->
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div class="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                            <p class="text-xs text-blue-600 font-medium mb-1">Allocated TEUs</p>
+                            <p class="text-2xl font-bold text-blue-900">{{ allocation.allocatedCapacity }}</p>
+                        </div>
+                        <div class="{{ bgColor }} rounded-lg p-3 border {{ borderColor }}">
+                            <p class="text-xs {{ textColor }} font-medium mb-1">Utilization</p>
+                            <p class="text-2xl font-bold {{ textColor }}">{{ allocationPercentage|number_format(0) }}%</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Container Breakdown -->
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-gray-600 font-medium">20ft</span>
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                </svg>
+                            </div>
+                            <p class="text-lg font-bold text-gray-900 mt-1">{{ allocation.capacity20ft }} <span class="text-sm font-normal text-gray-500">units</span></p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-gray-600 font-medium">40ft</span>
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                </svg>
+                            </div>
+                            <p class="text-lg font-bold text-gray-900 mt-1">{{ allocation.capacity40ft }} <span class="text-sm font-normal text-gray-500">units</span></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="mb-3">
+                        <div class="flex justify-between text-xs text-gray-600 mb-1">
+                            <span>Allocated: {{ allocation.allocatedCapacity }} TEUs</span>
+                            <span>Terminal: {{ terminal.dailyCapacity }} TEUs</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                            <div class="{{ progressColor }} h-2.5 rounded-full transition-all duration-300" style="width: {{ allocationPercentage > 100 ? 100 : allocationPercentage }}%"></div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="p-12 text-center">
+                <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                </svg>
+                <h3 class="text-sm font-medium text-gray-900 mb-1">No Allocations Yet</h3>
+                <p class="text-sm text-gray-500">No shipping lines have been allocated capacity at this terminal yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

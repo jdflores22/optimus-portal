@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Accreditation Rejected</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #dc3545; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background-color: #f9f9f9; }
+        .footer { padding: 10px; text-align: center; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Accreditation Rejected</h1>
+        </div>
+        <div class="content">
+            <p>Dear {{ businessName ?? user.email }},</p>
+            <p>Your accreditation application has been rejected.</p>
+            {% if reason %}
+                <p><strong>Reason:</strong> {{ reason }}</p>
+            {% endif %}
+            <p>Status: <strong>{{ status.value }}</strong></p>
+        </div>
+        <div class="footer">
+            <p>OPTIMUS Shipping Portal</p>
+        </div>
+    </div>
+</body>
+</html>

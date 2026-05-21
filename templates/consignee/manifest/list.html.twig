@@ -1,0 +1,358 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Manifests - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <!-- Header Section -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h1 class="text-2xl font-bold text-base-content">My Manifests</h1>
+                    <p class="text-sm text-base-content/60 mt-1">View manifests where you are declared as consignee</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Filters -->
+        <div class="card bg-base-100 shadow-sm mb-6">
+            <div class="card-body p-4 bg-base-200">
+                <form method="GET" action="{{ path('consignee_manifest_list') }}" class="space-y-3">
+                    <!-- Search Bar -->
+                    <div class="form-control">
+                        <label for="search" class="label">
+                            <span class="label-text">Search</span>
+                        </label>
+                        <div class="relative">
+                            <span class="icon-[tabler--search] size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></span>
+                            <input type="text" 
+                                   name="search" 
+                                   id="search" 
+                                   value="{{ filters.search }}" 
+                                   placeholder="Search by manifest #, BL #, vessel, or broker name..."
+                                   class="input input-bordered w-full pl-10">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <!-- Status Filter -->
+                        <div class="form-control">
+                            <label for="status" class="label">
+                                <span class="label-text">Status</span>
+                            </label>
+                            <select name="status" id="status" class="select select-bordered w-full">
+                                <option value="">All Statuses</option>
+                                {% for state in workflowStates %}
+                                    <option value="{{ state.value }}" {{ filters.status == state.value ? 'selected' : '' }}>
+                                        {{ state.getDisplayName() }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Date From -->
+                        <div class="form-control">
+                            <label for="date_from" class="label">
+                                <span class="label-text">Date From</span>
+                            </label>
+                            <input type="date" name="date_from" id="date_from" value="{{ filters.date_from }}" 
+                                   class="input input-bordered w-full">
+                        </div>
+
+                        <!-- Date To -->
+                        <div class="form-control">
+                            <label for="date_to" class="label">
+                                <span class="label-text">Date To</span>
+                            </label>
+                            <input type="date" name="date_to" id="date_to" value="{{ filters.date_to }}" 
+                                   class="input input-bordered w-full">
+                        </div>
+                    </div>
+
+                    <!-- Filter Buttons -->
+                    <div class="flex gap-2">
+                        <a href="{{ path('consignee_manifest_list') }}" class="btn btn-ghost">
+                            Clear
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            Apply Filters
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Manifest List -->
+        <div class="card bg-base-100 shadow-sm">
+            {% if manifests|length > 0 %}
+                <div class="card-body p-4 border-b border-base-300">
+                    <h3 class="text-sm font-semibold text-base-content">{{ total }} Manifest{{ total != 1 ? 's' : '' }}</h3>
+                </div>
+
+                <!-- Mobile: Card Layout -->
+                <div class="divide-y divide-base-300 lg:hidden">
+                    {% for manifest in manifests %}
+                        {% set accessPayment = manifest.manifestAccessPayment %}
+                        {% set statusValue = manifest.workflowState.value %}
+                        
+                        <div class="p-4 hover:bg-base-200 transition-colors">
+                            <div class="flex flex-col gap-3">
+                                <!-- Top: Manifest Number & Action Button -->
+                                <div class="flex items-start justify-between gap-2">
+                                    <a href="{{ path('consignee_manifest_detail', {id: manifest.id}) }}" 
+                                       class="text-sm font-bold text-base-content hover:text-primary">
+                                        {{ manifest.manifestNumber }}
+                                    </a>
+                                    
+                                    <div class="flex-shrink-0">
+                                        {% if statusValue == 'pending_payment' and (not accessPayment or accessPayment.status.value == 'rejected') %}
+                                            <a href="{{ path('consignee_manifest_payment', {id: manifest.id}) }}" 
+                                               class="btn btn-error btn-sm gap-2">
+                                                <span class="icon-[tabler--credit-card] size-4"></span>
+                                                Pay
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ path('consignee_manifest_detail', {id: manifest.id}) }}" 
+                                               class="btn btn-ghost btn-sm gap-2">
+                                                <span class="icon-[tabler--eye] size-4"></span>
+                                                View
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Status Badges -->
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <!-- Workflow Status Badge -->
+                                    {% if statusValue == 'manifest_uploaded' %}
+                                        <span class="badge badge-ghost badge-lg">Uploaded</span>
+                                    {% elseif statusValue == 'noa_generated' %}
+                                        <span class="badge badge-secondary badge-lg">NOA Generated</span>
+                                    {% elseif statusValue == 'bl_generated' %}
+                                        <span class="badge badge-info badge-lg">BL Generated</span>
+                                    {% elseif statusValue == 'bl_uploaded' %}
+                                        <span class="badge badge-info badge-lg">BL Uploaded</span>
+                                    {% elseif statusValue == 'billing_generated' %}
+                                        <span class="badge badge-warning badge-lg">Billing Generated</span>
+                                    {% elseif statusValue == 'payment_submitted' %}
+                                        <span class="badge badge-info badge-lg">Payment Submitted</span>
+                                    {% elseif statusValue == 'edo_generated' %}
+                                        <span class="badge badge-success badge-lg">eDO Generated</span>
+                                    {% elseif statusValue == 'edo_released' %}
+                                        <span class="badge badge-success badge-lg">eDO Released</span>
+                                    {% else %}
+                                        <span class="badge badge-ghost badge-lg">{{ manifest.workflowState.getDisplayName() }}</span>
+                                    {% endif %}
+                                    
+                                    <!-- Payment Status Badge -->
+                                    {% if accessPayment %}
+                                        {% if accessPayment.status.value == 'verified' %}
+                                            <span class="badge badge-success badge-lg gap-2">
+                                                <span class="icon-[tabler--check] size-3"></span>
+                                                Paid
+                                            </span>
+                                        {% elseif accessPayment.status.value == 'pending_validation' %}
+                                            <span class="badge badge-warning badge-lg gap-2">
+                                                <span class="icon-[tabler--clock] size-3"></span>
+                                                Pending
+                                            </span>
+                                        {% elseif accessPayment.status.value == 'rejected' %}
+                                            <span class="badge badge-error badge-lg gap-2">
+                                                <span class="icon-[tabler--x] size-3"></span>
+                                                Rejected
+                                            </span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Details -->
+                                <div class="grid grid-cols-1 gap-2 text-xs text-base-content/60">
+                                    {% if manifest.broker %}
+                                        <div class="flex items-center gap-2">
+                                            <span class="icon-[tabler--user-check] size-4"></span>
+                                            <span class="font-medium text-base-content truncate">{{ manifest.broker.fullName }}</span>
+                                            {% if not manifest.broker.isActive %}
+                                                <span class="badge badge-error badge-xs">Inactive</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if manifest.vesselName %}
+                                        <div class="flex items-center gap-2">
+                                            <span class="icon-[tabler--ship] size-4"></span>
+                                            <span class="truncate">{{ manifest.vesselName }}</span>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div class="flex items-center gap-2">
+                                        <span class="icon-[tabler--calendar] size-4"></span>
+                                        <span>{{ manifest.createdAt|date('M j, Y') }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Desktop: Table Layout -->
+                <div class="hidden lg:block overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Manifest #</th>
+                                <th>Broker</th>
+                                <th>Vessel</th>
+                                <th>Status</th>
+                                <th>Payment</th>
+                                <th>Date</th>
+                                <th class="text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for manifest in manifests %}
+                                {% set accessPayment = manifest.manifestAccessPayment %}
+                                {% set statusValue = manifest.workflowState.value %}
+                                
+                                <tr class="hover">
+                                    <td>
+                                        <a href="{{ path('consignee_manifest_detail', {id: manifest.id}) }}" 
+                                           class="font-semibold text-base-content hover:text-primary">
+                                            {{ manifest.manifestNumber }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if manifest.broker %}
+                                            <div>
+                                                <span class="text-sm text-base-content">{{ manifest.broker.fullName }}</span>
+                                                {% if not manifest.broker.isActive %}
+                                                    <div class="flex items-center mt-1">
+                                                        <svg class="w-3 h-3 text-error mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                                                        </svg>
+                                                        <span class="text-xs text-error font-medium">Inactive</span>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        {% else %}
+                                            <span class="text-sm text-base-content/40">No broker</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if manifest.vesselName %}
+                                            <span class="text-sm text-base-content">{{ manifest.vesselName }}</span>
+                                        {% else %}
+                                            <span class="text-sm text-base-content/40">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if statusValue == 'manifest_uploaded' %}
+                                            <span class="badge badge-ghost badge-lg">Uploaded</span>
+                                        {% elseif statusValue == 'noa_generated' %}
+                                            <span class="badge badge-secondary badge-lg">NOA Generated</span>
+                                        {% elseif statusValue == 'bl_generated' %}
+                                            <span class="badge badge-info badge-lg">BL Generated</span>
+                                        {% elseif statusValue == 'bl_uploaded' %}
+                                            <span class="badge badge-info badge-lg">BL Uploaded</span>
+                                        {% elseif statusValue == 'billing_generated' %}
+                                            <span class="badge badge-warning badge-lg">Billing Generated</span>
+                                        {% elseif statusValue == 'payment_submitted' %}
+                                            <span class="badge badge-info badge-lg">Payment Submitted</span>
+                                        {% elseif statusValue == 'edo_generated' %}
+                                            <span class="badge badge-success badge-lg">eDO Generated</span>
+                                        {% elseif statusValue == 'edo_released' %}
+                                            <span class="badge badge-success badge-lg">eDO Released</span>
+                                        {% else %}
+                                            <span class="badge badge-ghost badge-lg">{{ manifest.workflowState.getDisplayName() }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if accessPayment %}
+                                            {% if accessPayment.status.value == 'verified' %}
+                                                <span class="badge badge-success badge-lg gap-2">
+                                                    <span class="icon-[tabler--check] size-3"></span>
+                                                    Paid
+                                                </span>
+                                            {% elseif accessPayment.status.value == 'pending_validation' %}
+                                                <span class="badge badge-warning badge-lg gap-2">
+                                                    <span class="icon-[tabler--clock] size-3"></span>
+                                                    Pending
+                                                </span>
+                                            {% elseif accessPayment.status.value == 'rejected' %}
+                                                <span class="badge badge-error badge-lg gap-2">
+                                                    <span class="icon-[tabler--x] size-3"></span>
+                                                    Rejected
+                                                </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-sm text-base-content/40">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="text-sm text-base-content/60">{{ manifest.createdAt|date('M j, Y') }}</span>
+                                    </td>
+                                    <td class="text-right">
+                                        {% if statusValue == 'pending_payment' and (not accessPayment or accessPayment.status.value == 'rejected') %}
+                                            <a href="{{ path('consignee_manifest_payment', {id: manifest.id}) }}" 
+                                               class="btn btn-error btn-sm gap-2">
+                                                <span class="icon-[tabler--credit-card] size-4"></span>
+                                                Pay Now
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ path('consignee_manifest_detail', {id: manifest.id}) }}" 
+                                               class="btn btn-ghost btn-sm gap-2">
+                                                <span class="icon-[tabler--eye] size-4"></span>
+                                                View
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if totalPages > 1 %}
+                    <div class="card-body p-4 border-t border-base-300 flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div class="text-sm text-base-content/60">
+                            Page {{ currentPage }} of {{ totalPages }}
+                        </div>
+                        <div class="join">
+                            {% if currentPage > 1 %}
+                                <a href="{{ path('consignee_manifest_list', filters|merge({page: currentPage - 1})) }}" 
+                                   class="join-item btn btn-sm gap-2">
+                                    <span class="icon-[tabler--chevron-left] size-4"></span>
+                                    Previous
+                                </a>
+                            {% endif %}
+                            {% if currentPage < totalPages %}
+                                <a href="{{ path('consignee_manifest_list', filters|merge({page: currentPage + 1})) }}" 
+                                   class="join-item btn btn-sm gap-2">
+                                    Next
+                                    <span class="icon-[tabler--chevron-right] size-4"></span>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="card-body items-center text-center py-16">
+                    <div class="size-20 bg-base-200 rounded-full flex items-center justify-center mb-6">
+                        <span class="icon-[tabler--file-off] size-10 text-base-content/40"></span>
+                    </div>
+                    <h3 class="text-lg font-bold text-base-content mb-2">No manifests found</h3>
+                    <p class="text-sm text-base-content/60 mb-6">No manifests have been declared with you as consignee yet.</p>
+                    {% if filters.status or filters.date_from or filters.date_to or filters.search %}
+                        <a href="{{ path('consignee_manifest_list') }}" class="btn btn-ghost">
+                            Clear Filters
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

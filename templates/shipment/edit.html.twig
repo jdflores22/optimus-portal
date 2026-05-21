@@ -1,0 +1,508 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Shipment - {{ shipment.manifestNumber }}{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Top Navigation -->
+    <nav class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-blue-600">OPTIMUS</span>
+                    {% if not isShippingLinesAdmin %}
+                        <span class="ml-4 text-gray-600">SL-Staff Portal</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="mb-6">
+            <a href="{{ path('shipment_detail', {id: shipment.id}) }}" class="text-blue-600 hover:text-blue-800 text-sm mb-2 inline-block">
+                ← Back to Shipment Details
+            </a>
+            <h1 class="text-3xl font-bold text-gray-900">Edit Shipment</h1>
+            <p class="mt-2 text-gray-600">Manifest Number: {{ shipment.manifestNumber }}</p>
+        </div>
+
+        <!-- Flash Messages -->
+        {% for message in app.flashes('success') %}
+            <div class="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+                {{ message }}
+            </div>
+        {% endfor %}
+
+        {% for message in app.flashes('error') %}
+            <div class="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+                {{ message }}
+            </div>
+        {% endfor %}
+
+        <!-- Edit Form -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <form method="POST" action="{{ path('shipment_update', {id: shipment.id}) }}">
+                <div class="space-y-6">
+                    <!-- B/L No - Highlighted as most important -->
+                    <div class="p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
+                        <label for="blNo" class="block text-sm font-medium text-blue-700 mb-1">
+                            B/L No (Bill of Lading) <span class="text-blue-500 font-bold">*Most Important*</span>
+                        </label>
+                        <input type="text" 
+                               id="blNo" 
+                               name="blNo" 
+                               value="{{ shipment.blNo ?? '' }}"
+                               class="w-full px-3 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-lg font-semibold"
+                               placeholder="Bill of Lading Number">
+                        <p class="mt-1 text-sm text-blue-600">This is the most critical field for shipment identification</p>
+                    </div>
+
+                    <!-- Consignee Information (Read-only display) -->
+                    {% if shipment.consignee %}
+                        <div class="p-3 bg-gray-50 rounded-lg border">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Consignee</label>
+                            <p class="text-sm font-semibold text-gray-900">{{ shipment.consignee.businessName }}</p>
+                            <p class="text-xs text-gray-600">{{ shipment.consignee.email }}</p>
+                            <p class="text-xs text-gray-500 mt-1">Note: Consignee cannot be changed after creation</p>
+                        </div>
+                    {% endif %}
+
+                    <!-- Primary Fields -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="deliveryOrderNo" class="block text-sm font-medium text-gray-700 mb-1">
+                                Delivery Order No
+                            </label>
+                            <input type="text" 
+                                   id="deliveryOrderNo" 
+                                   name="deliveryOrderNo" 
+                                   value="{{ shipment.deliveryOrderNo ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label for="vessel" class="block text-sm font-medium text-gray-700 mb-1">
+                                Vessel
+                            </label>
+                            <input type="text" 
+                                   id="vessel" 
+                                   name="vessel" 
+                                   value="{{ shipment.vessel ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="voyage" class="block text-sm font-medium text-gray-700 mb-1">
+                                Voyage
+                            </label>
+                            <input type="text" 
+                                   id="voyage" 
+                                   name="voyage" 
+                                   value="{{ shipment.voyage ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label for="lloydsNo" class="block text-sm font-medium text-gray-700 mb-1">
+                                LLOYDS No
+                            </label>
+                            <input type="text" 
+                                   id="lloydsNo" 
+                                   name="lloydsNo" 
+                                   value="{{ shipment.lloydsNo ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+
+                    <!-- Customs Information -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="custStatus" class="block text-sm font-medium text-gray-700 mb-1">
+                                CUST Status
+                            </label>
+                            <input type="text" 
+                                   id="custStatus" 
+                                   name="custStatus" 
+                                   value="{{ shipment.custStatus ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label for="custRef" class="block text-sm font-medium text-gray-700 mb-1">
+                                CUST REF
+                            </label>
+                            <input type="text" 
+                                   id="custRef" 
+                                   name="custRef" 
+                                   value="{{ shipment.custRef ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+
+                    <!-- Additional Fields -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="vesselCustomNo" class="block text-sm font-medium text-gray-700 mb-1">
+                                Vessel Custom No
+                            </label>
+                            <input type="text" 
+                                   id="vesselCustomNo" 
+                                   name="vesselCustomNo" 
+                                   value="{{ shipment.vesselCustomNo ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label for="generalDeclarationDt" class="block text-sm font-medium text-gray-700 mb-1">
+                                General Declaration Date
+                            </label>
+                            <input type="date" 
+                                   id="generalDeclarationDt" 
+                                   name="generalDeclarationDt" 
+                                   value="{{ shipment.generalDeclarationDt ? shipment.generalDeclarationDt|date('Y-m-d') : '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+
+                    <!-- Optional Fields -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="agentCustomRegNo" class="block text-sm font-medium text-gray-700 mb-1">
+                                Agent Custom Reg No <span class="text-gray-400">(Optional)</span>
+                            </label>
+                            <input type="text" 
+                                   id="agentCustomRegNo" 
+                                   name="agentCustomRegNo" 
+                                   value="{{ shipment.agentCustomRegNo ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label for="custId" class="block text-sm font-medium text-gray-700 mb-1">
+                                Cust ID <span class="text-gray-400">(Optional)</span>
+                            </label>
+                            <input type="text" 
+                                   id="custId" 
+                                   name="custId" 
+                                   value="{{ shipment.custId ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+
+                    <!-- Dates -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="actualArrivalDate" class="block text-sm font-medium text-gray-700 mb-1">
+                                Actual Arrival Date
+                            </label>
+                            <input type="datetime-local" 
+                                   id="actualArrivalDate" 
+                                   name="actualArrivalDate" 
+                                   value="{{ shipment.actualArrivalDate ? shipment.actualArrivalDate|date('Y-m-d\\TH:i') : '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div class="flex items-end">
+                            <div class="w-full">
+                                <label class="block text-sm font-medium text-gray-500 mb-1">
+                                    Notice of Arrival Date
+                                </label>
+                                <p class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-700">
+                                    {{ shipment.noticeOfArrivalDate|date('M j, Y g:i A') }}
+                                </p>
+                                <p class="text-xs text-gray-500 mt-1">Cannot be changed</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Billing Information -->
+                    <div>
+                        <label for="billingInformation" class="block text-sm font-medium text-gray-700 mb-1">
+                            Billing Information
+                        </label>
+                        <textarea id="billingInformation" 
+                                  name="billingInformation" 
+                                  rows="4"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder="Enter billing details, charges, and payment information...">{{ shipment.billingInformation }}</textarea>
+                    </div>
+
+                    <!-- Container Information Section -->
+                    <div class="border-t border-gray-200 pt-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Container Information</h3>
+                        
+                        <!-- Container Number -->
+                        <div class="mb-4">
+                            <label for="containerNumber" class="block text-sm font-medium text-gray-700 mb-1">
+                                Container Number
+                            </label>
+                            <input type="text" 
+                                   id="containerNumber" 
+                                   name="containerNumber" 
+                                   value="{{ shipment.containerNumber ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="e.g., ABCD1234567">
+                        </div>
+
+                        <!-- Container Type and Size (side by side) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="containerType" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Container Type
+                                </label>
+                                <select id="containerType" 
+                                        name="containerType" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        data-selected="{{ shipment.containerType ?? '' }}">
+                                    <option value="">Loading...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="containerSize" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Container Size
+                                </label>
+                                <select id="containerSize" 
+                                        name="containerSize" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        data-selected="{{ shipment.containerSize ?? '' }}">
+                                    <option value="">Loading...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Commodity Information Section -->
+                    <div class="border-t border-gray-200 pt-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Commodity Information</h3>
+                        
+                        <!-- Commodity -->
+                        <div class="mb-4">
+                            <label for="commodity" class="block text-sm font-medium text-gray-700 mb-1">
+                                Commodity
+                            </label>
+                            <input type="text" 
+                                   id="commodity" 
+                                   name="commodity" 
+                                   value="{{ shipment.commodity ?? '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   placeholder="e.g., Electronics, Textiles, Machinery">
+                        </div>
+
+                        <!-- Commodity PCS and QTY (side by side) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="commodityPcs" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Commodity PCS
+                                </label>
+                                <input type="text" 
+                                       id="commodityPcs" 
+                                       name="commodityPcs" 
+                                       value="{{ shipment.commodityPcs ?? '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       placeholder="Number of pieces">
+                            </div>
+                            <div>
+                                <label for="commodityQty" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Commodity QTY
+                                </label>
+                                <input type="text" 
+                                       id="commodityQty" 
+                                       name="commodityQty" 
+                                       value="{{ shipment.commodityQty ?? '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       placeholder="Quantity">
+                            </div>
+                        </div>
+
+                        <!-- NET WT (KGM) and MEAS/CBM (side by side) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="netWtKgm" class="block text-sm font-medium text-gray-700 mb-1">
+                                    NET WT (KGM)
+                                </label>
+                                <input type="text" 
+                                       id="netWtKgm" 
+                                       name="netWtKgm" 
+                                       value="{{ shipment.netWtKgm ?? '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       placeholder="Net weight in kilograms">
+                            </div>
+                            <div>
+                                <label for="measCbm" class="block text-sm font-medium text-gray-700 mb-1">
+                                    MEAS/CBM
+                                </label>
+                                <input type="text" 
+                                       id="measCbm" 
+                                       name="measCbm" 
+                                       value="{{ shipment.measCbm ?? '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       placeholder="Measurement in cubic meters">
+                            </div>
+                        </div>
+
+                        <!-- Empty Return Address -->
+                        <div class="mb-4">
+                            <label for="emptyReturnAddress" class="block text-sm font-medium text-gray-700 mb-1">
+                                Empty Return Address
+                            </label>
+                            <textarea id="emptyReturnAddress" 
+                                      name="emptyReturnAddress" 
+                                      rows="3"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                      placeholder="Enter the address where empty containers should be returned...">{{ shipment.emptyReturnAddress ?? '' }}</textarea>
+                            <p class="mt-1 text-sm text-gray-500">Address for returning empty containers</p>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                        <a href="{{ path('shipment_detail', {id: shipment.id}) }}" 
+                           class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Cancel
+                        </a>
+                        <button type="submit" 
+                                id="updateShipmentBtn"
+                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span id="updateText">Update Shipment</span>
+                            <span id="updateLoading" class="hidden">
+                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Updating...
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load container library data on page load
+    loadContainerTypes();
+    loadContainerSizes();
+    
+    const form = document.querySelector('form');
+    const updateBtn = document.getElementById('updateShipmentBtn');
+    const updateText = document.getElementById('updateText');
+    const updateLoading = document.getElementById('updateLoading');
+    
+    // Load container types from API
+    async function loadContainerTypes() {
+        const select = document.getElementById('containerType');
+        const selectedValue = select.dataset.selected || '';
+        
+        try {
+            const response = await fetch('/api/container-types/active');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const data = await response.json();
+            
+            select.innerHTML = '<option value="">Select Container Type</option>';
+            
+            data.containerTypes.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type.code;
+                option.textContent = type.name;
+                if (type.description) {
+                    option.title = type.description;
+                }
+                if (type.code === selectedValue) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Failed to load container types:', error);
+            select.innerHTML = '<option value="">Error loading types</option>';
+            showNotification('Failed to load container types. Please refresh the page.', 'error');
+        }
+    }
+
+    // Load container sizes from API
+    async function loadContainerSizes() {
+        const select = document.getElementById('containerSize');
+        const selectedValue = select.dataset.selected || '';
+        
+        try {
+            const response = await fetch('/api/container-sizes/active');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const data = await response.json();
+            
+            select.innerHTML = '<option value="">Select Container Size</option>';
+            
+            data.containerSizes.forEach(size => {
+                const option = document.createElement('option');
+                option.value = size.code;
+                option.textContent = size.name;
+                if (size.description) {
+                    option.title = size.description;
+                }
+                if (size.code === selectedValue) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Failed to load container sizes:', error);
+            select.innerHTML = '<option value="">Error loading sizes</option>';
+            showNotification('Failed to load container sizes. Please refresh the page.', 'error');
+        }
+    }
+
+    // Show notification helper
+    function showNotification(message, type) {
+        // Create a simple notification element
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg ${
+            type === 'error' ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-blue-50 border border-blue-200 text-blue-800'
+        }`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    }
+    
+    if (form && updateBtn) {
+        form.addEventListener('submit', function(e) {
+            // Prevent double submission
+            if (updateBtn.disabled) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Show loading state
+            updateBtn.disabled = true;
+            updateText.classList.add('hidden');
+            updateLoading.classList.remove('hidden');
+            
+            // Optional: Add a timeout to re-enable button if something goes wrong
+            setTimeout(function() {
+                if (updateBtn.disabled) {
+                    updateBtn.disabled = false;
+                    updateText.classList.remove('hidden');
+                    updateLoading.classList.add('hidden');
+                }
+            }, 30000); // 30 seconds timeout
+        });
+        
+        // Reset loading state if form submission fails (e.g., validation error)
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                // Page was loaded from cache, reset button state
+                updateBtn.disabled = false;
+                updateText.classList.remove('hidden');
+                updateLoading.classList.add('hidden');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

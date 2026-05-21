@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>New FREE-ADVICE Request for Review</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #007bff; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background-color: #f8f9fa; }
+        .details { background-color: white; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+        .status { padding: 5px 10px; border-radius: 3px; font-weight: bold; }
+        .status.pending { background-color: #ffc107; color: #212529; }
+        .action-required { background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; border-radius: 5px; }
+        .trucker-info { background-color: #e7f3ff; padding: 15px; border-left: 4px solid #007bff; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔔 New FREE-ADVICE Request</h1>
+        </div>
+        
+        <div class="content">
+            <p>Dear Terminal Team Member,</p>
+            
+            <p>A new FREE-ADVICE request has been submitted and requires your review and verification.</p>
+            
+            <div class="action-required">
+                <h3>⚡ Action Required:</h3>
+                <p>Please review this request in the Terminal Team dashboard and make a verification decision.</p>
+            </div>
+            
+            <div class="details">
+                <h3>Request Details:</h3>
+                <p><strong>Reference Number:</strong> {{ preAdviceRequest.id }}</p>
+                <p><strong>Container Number:</strong> {{ preAdviceRequest.container.containerNumber }}</p>
+                <p><strong>Container Size:</strong> {{ preAdviceRequest.container.size }}</p>
+                <p><strong>Container Type:</strong> {{ preAdviceRequest.container.type }}</p>
+                <p><strong>Selected Terminal:</strong> {{ preAdviceRequest.selectedTerminal.name }} ({{ preAdviceRequest.selectedTerminal.type.value }})</p>
+                <p><strong>Status:</strong> <span class="status pending">{{ preAdviceRequest.status.value|title }}</span></p>
+                <p><strong>Submitted:</strong> {{ preAdviceRequest.createdAt|date('Y-m-d H:i:s') }}</p>
+                {% if preAdviceRequest.paymentReference %}
+                <p><strong>Payment Reference:</strong> {{ preAdviceRequest.paymentReference }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="trucker-info">
+                <h3>👤 Trucker Information:</h3>
+                <p><strong>Name:</strong> {{ preAdviceRequest.trucker.fullName }}</p>
+                <p><strong>Email:</strong> {{ preAdviceRequest.trucker.email }}</p>
+                {% if preAdviceRequest.trucker.phoneNumber %}
+                <p><strong>Phone:</strong> {{ preAdviceRequest.trucker.phoneNumber }}</p>
+                {% endif %}
+                {% if preAdviceRequest.trucker.companyName %}
+                <p><strong>Company:</strong> {{ preAdviceRequest.trucker.companyName }}</p>
+                {% endif %}
+                {% if preAdviceRequest.trucker.licenseNumber %}
+                <p><strong>License:</strong> {{ preAdviceRequest.trucker.licenseNumber }}</p>
+                {% endif %}
+                {% if preAdviceRequest.trucker.truckPlateNumber %}
+                <p><strong>Truck Plate:</strong> {{ preAdviceRequest.trucker.truckPlateNumber }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="details">
+                <h3>📸 Photos Submitted:</h3>
+                <p><strong>Number of Photos:</strong> {{ preAdviceRequest.geotagPhotos|length }}</p>
+                <p>All photos include GPS coordinates and are available for review in the dashboard.</p>
+            </div>
+            
+            <div class="details">
+                <h3>🔍 Review Checklist:</h3>
+                <ul>
+                    <li>Verify photo quality and container visibility</li>
+                    <li>Check GPS coordinates for accuracy</li>
+                    <li>Confirm container condition from photos</li>
+                    <li>Validate terminal capacity and compatibility</li>
+                    <li>Review trucker information and credentials</li>
+                    <li>Check payment verification status</li>
+                </ul>
+            </div>
+            
+            <p><strong>Please log into the Terminal Team dashboard to review this request and make your verification decision.</strong></p>
+            
+            <p>Time-sensitive: Truckers are waiting for verification to proceed with their container return.</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated message from OPTIMUS Shipping Portal.<br>
+            Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

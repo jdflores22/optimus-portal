@@ -1,0 +1,441 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <!-- Professional Header -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 lg:px-8">
+            <div class="py-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold text-base-content">Welcome back, {{ user.businessName }}</h1>
+                        <p class="mt-2 text-sm opacity-60">Here's what's happening with your shipments today</p>
+                    </div>
+                    <div class="hidden md:flex items-center gap-4">
+                        <div class="text-right">
+                            <p class="text-sm font-medium">{{ "now"|date("l, F j, Y") }}</p>
+                            <p class="text-xs opacity-60">{{ "now"|date("g:i A") }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Suspended Broker Warning Banner -->
+        {% if manifestsWithSuspendedBrokers|length > 0 %}
+            <div class="alert alert-error mb-6">
+                <span class="icon-[tabler--alert-triangle] size-6"></span>
+                <div class="flex-1">
+                    <h3 class="font-semibold">Action Required: Suspended Broker(s)</h3>
+                    <p class="text-sm mt-1">
+                        You have <span class="font-bold">{{ manifestsWithSuspendedBrokers|length }} manifest(s)</span> assigned to suspended broker(s). 
+                        These manifests cannot be processed until you assign a new broker.
+                    </p>
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        <a href="{{ path('consignee_manifest_list') }}" class="btn btn-ghost btn-sm rounded-lg gap-2">
+                            <span class="icon-[tabler--file-text] size-4"></span>
+                            View Affected Manifests
+                        </a>
+                        <a href="{{ path('consignee_referral_codes') }}" class="btn btn-error btn-sm rounded-lg gap-2">
+                            <span class="icon-[tabler--plus] size-4"></span>
+                            Add New Broker
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        
+        <!-- Shipping Line Filter -->
+        {% if allShippingLines|length > 0 %}
+            <div class="card bg-base-100 shadow-sm mb-6">
+                <div class="card-body p-5">
+                    <form method="GET" action="{{ path('app_consignee_dashboard') }}" class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        <div class="flex items-center gap-3 flex-1">
+                            <span class="icon-[tabler--filter] size-5 opacity-60"></span>
+                            <label for="shipping_line" class="text-sm font-semibold">Filter by Shipping Line:</label>
+                            <select id="shipping_line" 
+                                    name="shipping_line" 
+                                    onchange="this.form.submit()"
+                                    class="select select-bordered flex-1 max-w-xs rounded-lg">
+                                <option value="">All Shipping Lines</option>
+                                {% for shippingLine in allShippingLines %}
+                                    <option value="{{ shippingLine.id }}" {% if selectedShippingLineId == shippingLine.id %}selected{% endif %}>
+                                        {{ shippingLine.brandName }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% if selectedShippingLineId %}
+                            <a href="{{ path('app_consignee_dashboard') }}" 
+                               class="btn btn-ghost btn-sm rounded-lg gap-2">
+                                <span class="icon-[tabler--x] size-4"></span>
+                                Clear Filter
+                            </a>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Key Metrics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Manifests -->
+            <div class="stats shadow-sm bg-base-100">
+                <div class="stat">
+                    <div class="stat-figure text-primary">
+                        <span class="icon-[tabler--file-text] size-8"></span>
+                    </div>
+                    <div class="stat-title">Total Manifests</div>
+                    <div class="stat-value text-primary">{{ recentManifests|length }}</div>
+                    <div class="stat-desc">Active shipments</div>
+                </div>
+            </div>
+
+            <!-- Accreditation Status -->
+            <div class="stats shadow-sm bg-base-100">
+                <div class="stat">
+                    <div class="stat-figure {% if approvedCount > 0 %}text-success{% elseif pendingCount > 0 %}text-info{% else %}text-base-content/40{% endif %}">
+                        <span class="icon-[tabler--shield-check] size-8"></span>
+                    </div>
+                    <div class="stat-title">Accreditations</div>
+                    {% if accreditationSubmissions|length > 0 %}
+                        <div class="stat-value">{{ accreditationSubmissions|length }}</div>
+                        <div class="stat-desc">
+                            {% if approvedCount > 0 %}{{ approvedCount }} approved{% endif %}
+                            {% if pendingCount > 0 %}{{ pendingCount }} pending{% endif %}
+                            {% if needsActionCount > 0 %}<span class="text-error">{{ needsActionCount }} action needed</span>{% endif %}
+                        </div>
+                    {% else %}
+                        <div class="stat-value text-base-content/40">0</div>
+                        <div class="stat-desc">Submit now</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Approved Brokers -->
+            <div class="stats shadow-sm bg-base-100">
+                <div class="stat">
+                    <div class="stat-figure {% if approvedBrokers|length > 0 %}text-info{% else %}text-warning{% endif %}">
+                        <span class="icon-[tabler--users] size-8"></span>
+                    </div>
+                    <div class="stat-title">Approved Brokers</div>
+                    {% if approvedBrokers|length > 0 %}
+                        <div class="stat-value text-info">{{ approvedBrokers|length }}</div>
+                        <div class="stat-desc">Active relationships</div>
+                    {% else %}
+                        <div class="stat-value text-warning">0</div>
+                        <div class="stat-desc">Use referral code</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Payment Required -->
+            <div class="stats shadow-sm {% if manifestsNeedingPayment|length > 0 %}bg-error/10{% else %}bg-base-100{% endif %}">
+                <div class="stat">
+                    <div class="stat-figure {% if manifestsNeedingPayment|length > 0 %}text-error{% else %}text-success{% endif %}">
+                        <span class="icon-[tabler--credit-card] size-8"></span>
+                    </div>
+                    <div class="stat-title">Payment Required</div>
+                    <div class="stat-value {% if manifestsNeedingPayment|length > 0 %}text-error{% endif %}">{{ manifestsNeedingPayment|length }}</div>
+                    <div class="stat-desc">
+                        {% if manifestsNeedingPayment|length > 0 %}Action needed{% else %}All paid{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        {% if (accreditationSubmissions|length == 0) or (approvedBrokers|length == 0) or (manifestsNeedingPayment|length > 0) %}
+        <div class="card bg-gradient-to-r from-primary to-primary-focus text-primary-content shadow-lg mb-8">
+            <div class="card-body p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold">Quick Actions</h3>
+                        <p class="text-sm opacity-80 mt-1">Complete these tasks to get started</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {% if accreditationSubmissions|length == 0 %}
+                    <a href="{{ path('accreditation_index') }}" class="card bg-base-100/10 hover:bg-base-100/20 backdrop-blur-sm transition-all">
+                        <div class="card-body p-4">
+                            <div class="flex items-start gap-3">
+                                <div class="size-10 bg-base-100/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <span class="icon-[tabler--file-text] size-5"></span>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="text-sm font-semibold">Submit Accreditation</h4>
+                                    <p class="text-xs opacity-80 mt-1">Get verified to access all features</p>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                    {% endif %}
+                    
+                    {% if approvedBrokers|length == 0 %}
+                    <a href="{{ path('consignee_referral_codes') }}" class="card bg-base-100/10 hover:bg-base-100/20 backdrop-blur-sm transition-all">
+                        <div class="card-body p-4">
+                            <div class="flex items-start gap-3">
+                                <div class="size-10 bg-base-100/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <span class="icon-[tabler--link] size-5"></span>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="text-sm font-semibold">Link Brokers</h4>
+                                    <p class="text-xs opacity-80 mt-1">Use referral codes to connect with brokers</p>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                    {% endif %}
+                    
+                    {% if manifestsNeedingPayment|length > 0 %}
+                    <a href="{{ path('consignee_manifest_list') }}" class="card bg-base-100/10 hover:bg-base-100/20 backdrop-blur-sm transition-all">
+                        <div class="card-body p-4">
+                            <div class="flex items-start gap-3">
+                                <div class="size-10 bg-base-100/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <span class="icon-[tabler--credit-card] size-5"></span>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="text-sm font-semibold">Complete Payments</h4>
+                                    <p class="text-xs opacity-80 mt-1">{{ manifestsNeedingPayment|length }} manifest(s) need payment</p>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Two Column Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Content - Recent Manifests -->
+            <div class="lg:col-span-2">
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-0">
+                        <div class="px-6 py-5 border-b border-base-300 flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-semibold">Recent Manifests</h3>
+                                <p class="text-sm opacity-60 mt-1">Your latest shipment manifests</p>
+                            </div>
+                            <a href="{{ path('consignee_manifest_list') }}" class="btn btn-ghost btn-sm rounded-lg gap-2">
+                                View All
+                                <span class="icon-[tabler--chevron-right] size-4"></span>
+                            </a>
+                        </div>
+                        
+                        {% if recentManifests|length > 0 %}
+                        <div class="overflow-x-auto">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Manifest #</th>
+                                        <th>Shipping Line</th>
+                                        <th>BL Number</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th class="text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for manifest in recentManifests %}
+                                    <tr class="hover">
+                                        <td>
+                                            <span class="font-semibold">{{ manifest.manifestNumber }}</span>
+                                        </td>
+                                        <td>{{ manifest.shippingLine.brandName }}</td>
+                                        <td>
+                                            <span class="opacity-60">{{ manifest.blNumber ?? 'N/A' }}</span>
+                                        </td>
+                                        <td>
+                                            {% set statusValue = manifest.workflowState.value %}
+                                            
+                                            {% if statusValue == 'manifest_uploaded' %}
+                                                <span class="badge badge-info badge-lg rounded-lg">{{ manifest.workflowState.getDisplayName() }}</span>
+                                            {% elseif statusValue == 'noa_generated' %}
+                                                <span class="badge badge-secondary badge-lg rounded-lg">{{ manifest.workflowState.getDisplayName() }}</span>
+                                            {% elseif statusValue == 'bl_uploaded' %}
+                                                <span class="badge badge-info badge-lg rounded-lg">{{ manifest.workflowState.getDisplayName() }}</span>
+                                            {% elseif statusValue == 'billing_generated' %}
+                                                <span class="badge badge-warning badge-lg rounded-lg">{{ manifest.workflowState.getDisplayName() }}</span>
+                                            {% elseif statusValue == 'payment_submitted' %}
+                                                <span class="badge badge-warning badge-lg rounded-lg">{{ manifest.workflowState.getDisplayName() }}</span>
+                                            {% elseif statusValue == 'edo_generated' %}
+                                                <span class="badge badge-success badge-lg rounded-lg">{{ manifest.workflowState.getDisplayName() }}</span>
+                                            {% elseif statusValue == 'edo_released' %}
+                                                <span class="badge badge-success badge-lg rounded-lg">{{ manifest.workflowState.getDisplayName() }}</span>
+                                            {% else %}
+                                                <span class="badge badge-ghost badge-lg rounded-lg">{{ manifest.workflowState.getDisplayName() }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="text-sm opacity-60">{{ manifest.createdAt|date('M d, Y') }}</span>
+                                        </td>
+                                        <td class="text-right">
+                                            <a href="{{ path('consignee_manifest_detail', {id: manifest.id}) }}" class="btn btn-ghost btn-sm rounded-lg">View</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-16">
+                            <div class="size-16 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="icon-[tabler--file-off] size-8 opacity-40"></span>
+                            </div>
+                            <h3 class="text-base font-semibold">No manifests yet</h3>
+                            <p class="mt-2 text-sm opacity-60">Your shipment manifests will appear here once created.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar - Account Info & Activity -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Account Information Card -->
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-semibold">Account Information</h3>
+                            <a href="{{ path('account_settings') }}" class="text-xs text-primary hover:underline font-medium">Edit</a>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-xs font-semibold opacity-50 uppercase tracking-wider mb-1">Business Name</p>
+                                <p class="text-sm font-medium">{{ user.businessName }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold opacity-50 uppercase tracking-wider mb-1">Email</p>
+                                <p class="text-sm">{{ user.email }}</p>
+                            </div>
+                            {% if approvedBrokers|length > 0 %}
+                            <div>
+                                <p class="text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">Approved Brokers</p>
+                                <div class="space-y-2">
+                                    {% for relationship in approvedBrokers %}
+                                        {% set broker = relationship.broker %}
+                                        {% set isSuspended = broker.status.value == 'DENIED' %}
+                                    <div class="flex items-center p-2 bg-base-200 rounded-lg {% if isSuspended %}border-2 border-error{% endif %}">
+                                        <div class="avatar placeholder mr-2">
+                                            <div class="{% if isSuspended %}bg-error{% else %}bg-info{% endif %} text-{% if isSuspended %}error{% else %}info{% endif %}-content rounded-full w-8">
+                                                <span class="icon-[tabler--user] size-4"></span>
+                                            </div>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium">{{ broker.fullName }}</p>
+                                            <p class="text-xs opacity-60 truncate">{{ broker.email }}</p>
+                                        </div>
+                                        {% if isSuspended %}
+                                        <span class="badge badge-error badge-sm rounded-lg gap-1">
+                                            <span class="icon-[tabler--ban] size-3"></span>
+                                            Suspended
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <a href="{{ path('consignee_referral_codes') }}" class="mt-3 inline-flex items-center text-xs text-primary hover:underline font-medium gap-1">
+                                    <span class="icon-[tabler--plus] size-4"></span>
+                                    Add more brokers
+                                </a>
+                            </div>
+                            {% endif %}
+                            {% if accreditationSubmissions|length > 0 %}
+                            <div>
+                                <p class="text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">Accreditation Status</p>
+                                <div class="space-y-2">
+                                    {% for submission in accreditationSubmissions %}
+                                    <div class="flex items-center justify-between p-2 bg-base-200 rounded-lg">
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-xs font-medium truncate">{{ submission.shippingLine.brandName }}</p>
+                                        </div>
+                                        <div class="ml-2">
+                                            {% if submission.status.value == 'APPROVED' %}
+                                                <span class="badge badge-success badge-sm rounded-lg gap-1">
+                                                    <span class="icon-[tabler--check] size-3"></span>
+                                                    Approved
+                                                </span>
+                                            {% elseif submission.status.value == 'PENDING' %}
+                                                <span class="badge badge-info badge-sm rounded-lg gap-1">
+                                                    <span class="loading loading-spinner loading-xs"></span>
+                                                    Pending
+                                                </span>
+                                            {% else %}
+                                                <span class="badge badge-error badge-sm rounded-lg">
+                                                    {{ submission.status.value|replace({'_': ' '})|title }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Links Card -->
+                <div class="card bg-gradient-to-br from-primary/10 to-secondary/10 shadow-sm">
+                    <div class="card-body p-6">
+                        <h3 class="text-base font-semibold mb-4">Quick Links</h3>
+                        <div class="space-y-2">
+                            <a href="{{ path('consignee_manifest_list') }}" class="flex items-center justify-between p-3 bg-base-100 rounded-lg hover:shadow-md transition-all">
+                                <div class="flex items-center gap-3">
+                                    <div class="size-8 bg-info/10 rounded-lg flex items-center justify-center">
+                                        <span class="icon-[tabler--file-text] size-4 text-info"></span>
+                                    </div>
+                                    <span class="text-sm font-medium">All Manifests</span>
+                                </div>
+                                <span class="icon-[tabler--chevron-right] size-4 opacity-40"></span>
+                            </a>
+                            <a href="{{ path('accreditation_index') }}" class="flex items-center justify-between p-3 bg-base-100 rounded-lg hover:shadow-md transition-all">
+                                <div class="flex items-center gap-3">
+                                    <div class="size-8 bg-success/10 rounded-lg flex items-center justify-center">
+                                        <span class="icon-[tabler--shield-check] size-4 text-success"></span>
+                                    </div>
+                                    <span class="text-sm font-medium">Accreditation</span>
+                                </div>
+                                <span class="icon-[tabler--chevron-right] size-4 opacity-40"></span>
+                            </a>
+                            <a href="{{ path('account_settings') }}" class="flex items-center justify-between p-3 bg-base-100 rounded-lg hover:shadow-md transition-all">
+                                <div class="flex items-center gap-3">
+                                    <div class="size-8 bg-secondary/10 rounded-lg flex items-center justify-center">
+                                        <span class="icon-[tabler--settings] size-4 text-secondary"></span>
+                                    </div>
+                                    <span class="text-sm font-medium">Account Settings</span>
+                                </div>
+                                <span class="icon-[tabler--chevron-right] size-4 opacity-40"></span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Help & Support Card -->
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-6">
+                        <div class="flex items-start gap-3">
+                            <div class="size-10 bg-info/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <span class="icon-[tabler--help-circle] size-5 text-info"></span>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-semibold mb-1">Need Help?</h4>
+                                <p class="text-xs opacity-60 mb-3">Contact our support team for assistance with your shipments.</p>
+                                <a href="mailto:support@optimus.com" class="text-xs text-primary hover:underline font-medium">support@optimus.com</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

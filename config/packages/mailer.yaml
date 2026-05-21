@@ -1,0 +1,6 @@
+framework:
+    mailer:
+        dsn: '%env(MAILER_DSN)%'
+        message_bus: 'messenger.default_bus' # Enable async email sending via Messenger
+        headers:
+            from: '%env(MAILER_FROM_EMAIL)%'

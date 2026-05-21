@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #f59e0b;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f9fafb;
+            padding: 30px;
+            border: 1px solid #e5e7eb;
+            border-top: none;
+        }
+        .warning-box {
+            background-color: #fffbeb;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #f59e0b;
+        }
+        .manifest-info {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .action-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            color: #6b7280;
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Broker Deactivation Alert</h1>
+    </div>
+    <div class="content">
+        <p>Hello {{ consignee.businessName }},</p>
+        
+        <div class="warning-box">
+            <h3 style="margin-top: 0;">⚠️ Action Required</h3>
+            <p>The broker assigned to your manifest has been deactivated and can no longer process this shipment.</p>
+        </div>
+        
+        <div class="manifest-info">
+            <h3 style="margin-top: 0;">Affected Manifest</h3>
+            <p><strong>Manifest Number:</strong> {{ manifest.manifestNumber }}</p>
+            {% if manifest.vesselName %}
+            <p><strong>Vessel:</strong> {{ manifest.vesselName }}</p>
+            {% endif %}
+            <p><strong>Inactive Broker:</strong> {{ broker.fullName }}</p>
+            <p><strong>Deactivated Since:</strong> {{ deactivatedAt|date('F j, Y') }}</p>
+        </div>
+        
+        <p><strong>What You Need to Do:</strong></p>
+        <ol>
+            <li>Log in to your OPTIMUS account</li>
+            <li>Navigate to the affected manifest</li>
+            <li>Request a broker transfer to one of your active brokers</li>
+            <li>Wait for shipping line staff approval</li>
+        </ol>
+        
+        <center>
+            <a href="{{ manifestUrl }}" class="action-button">View Manifest & Request Transfer</a>
+        </center>
+        
+        <p>The manifest will remain in an inactive state until a new broker is assigned. Please take action as soon as possible to avoid delays in your shipment processing.</p>
+        
+        <p>If you need assistance or have questions, please contact support.</p>
+        
+        <p>Best regards,<br>The OPTIMUS Team</p>
+    </div>
+    <div class="footer">
+        <p>This is an automated message from OPTIMUS Shipping Portal.</p>
+        <p>© {{ 'now'|date('Y') }} OPTIMUS. All rights reserved.</p>
+    </div>
+</body>
+</html>

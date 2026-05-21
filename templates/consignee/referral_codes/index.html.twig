@@ -1,0 +1,382 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Referral Codes - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Broker Referral Codes</h1>
+                <p class="mt-2 text-gray-600">Generate and manage referral codes for broker registration</p>
+            </div>
+            <button type="button" onclick="openGenerateModal()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Generate New Code
+            </button>
+        </div>
+    </div>
+
+    <!-- Referral Codes List -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Your Referral Codes</h3>
+        </div>
+
+        {% if codeStats|length > 0 %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usage</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brokers Linked</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for stat in codeStats %}
+                            {% set code = stat.code %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <code class="text-sm font-mono font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">{{ code.code }}</code>
+                                        <button onclick="copyToClipboard('{{ code.code }}')" class="ml-2 text-gray-400 hover:text-gray-600" title="Copy code">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if code.isActive %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Active
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            Inactive
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ code.currentUses }} / {{ code.maxUses ?? 1 }}
+                                    {% if code.currentUses >= (code.maxUses ?? 1) %}
+                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            Used
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ stat.broker_count }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {% if code.expiresAt %}
+                                        {{ code.expiresAt|date('M d, Y') }}
+                                        {% if code.expiresAt < date() %}
+                                            <span class="text-red-600">(Expired)</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-gray-400">Never</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ code.createdAt|date('M d, Y') }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    {% if code.isActive %}
+                                        <button type="button" 
+                                                onclick="showDeactivateModal('{{ code.id }}', '{{ code.code }}')"
+                                                class="text-red-600 hover:text-red-900">
+                                            Deactivate
+                                        </button>
+                                    {% elseif code.currentUses >= (code.maxUses ?? 1) %}
+                                        <span class="text-gray-400 text-xs">Used - Cannot reactivate</span>
+                                    {% else %}
+                                        <button type="button"
+                                                onclick="showReactivateModal('{{ code.id }}', '{{ code.code }}')"
+                                                class="text-green-600 hover:text-green-900">
+                                            Reactivate
+                                        </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="px-6 py-12 text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No referral codes</h3>
+                <p class="mt-1 text-sm text-gray-500">Get started by generating your first referral code.</p>
+                <div class="mt-6">
+                    <button type="button" onclick="openGenerateModal()"
+                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                        Generate Code
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Generate Code Modal - Uses fixed positioning to overlay entire viewport -->
+<div id="generateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 items-center justify-center hidden" style="z-index: 9999;">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <form method="POST" action="{{ path('consignee_generate_code') }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('generate_referral_code') }}">
+            
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Generate Referral Code</h3>
+            </div>
+            
+            <div class="px-6 py-4 space-y-4">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-blue-700">
+                                Each referral code can only be used once by a single broker. Generate a new code for each broker you want to link with.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="expires_at" class="block text-sm font-medium text-gray-700 mb-1">
+                        Expiry Date (Optional)
+                    </label>
+                    <input type="date" name="expires_at" id="expires_at" min="{{ 'now'|date('Y-m-d') }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <p class="mt-1 text-sm text-gray-500">Leave empty for no expiration</p>
+                </div>
+            </div>
+            
+            <div class="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end space-x-3">
+                <button type="button" onclick="closeGenerateModal()"
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                    Generate Code
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        alert('Code copied to clipboard!');
+    }, function(err) {
+        console.error('Could not copy text: ', err);
+    });
+}
+
+function openGenerateModal() {
+    const modal = document.getElementById('generateModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+
+function closeGenerateModal() {
+    const modal = document.getElementById('generateModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = ''; // Restore scrolling
+}
+
+// Deactivate Modal Functions
+function showDeactivateModal(codeId, codeText) {
+    document.getElementById('deactivateCodeId').value = codeId;
+    document.getElementById('deactivateCodeDisplay').textContent = codeText;
+    const modal = document.getElementById('deactivateModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDeactivateModal() {
+    const modal = document.getElementById('deactivateModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+}
+
+function confirmDeactivate() {
+    document.getElementById('deactivateForm').submit();
+}
+
+// Reactivate Modal Functions
+function showReactivateModal(codeId, codeText) {
+    document.getElementById('reactivateCodeId').value = codeId;
+    document.getElementById('reactivateCodeDisplay').textContent = codeText;
+    const modal = document.getElementById('reactivateModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeReactivateModal() {
+    const modal = document.getElementById('reactivateModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+}
+
+function confirmReactivate() {
+    document.getElementById('reactivateForm').submit();
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeGenerateModal();
+        closeDeactivateModal();
+        closeReactivateModal();
+    }
+});
+
+// Close modal when clicking outside
+document.getElementById('generateModal')?.addEventListener('click', function(event) {
+    if (event.target === this) {
+        closeGenerateModal();
+    }
+});
+
+document.getElementById('deactivateModal')?.addEventListener('click', function(event) {
+    if (event.target === this) {
+        closeDeactivateModal();
+    }
+});
+
+document.getElementById('reactivateModal')?.addEventListener('click', function(event) {
+    if (event.target === this) {
+        closeReactivateModal();
+    }
+});
+</script>
+
+<!-- Deactivate Confirmation Modal -->
+<div id="deactivateModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center" style="z-index: 9999;">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Deactivate Referral Code</h3>
+            <p class="text-sm text-gray-600 text-center mb-4">
+                Are you sure you want to deactivate this code?
+            </p>
+            <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                <p class="text-xs text-gray-500 mb-1">Code:</p>
+                <p id="deactivateCodeDisplay" class="text-lg font-mono font-bold text-gray-900"></p>
+            </div>
+            <p class="text-xs text-red-600 text-center mb-6">
+                This code will no longer be usable by brokers.
+            </p>
+            <div class="flex space-x-3">
+                <button type="button" 
+                        onclick="closeDeactivateModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="button" 
+                        onclick="confirmDeactivate()"
+                        class="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700">
+                    Deactivate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reactivate Confirmation Modal -->
+<div id="reactivateModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center" style="z-index: 9999;">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-green-100 rounded-full mb-4">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Reactivate Referral Code</h3>
+            <p class="text-sm text-gray-600 text-center mb-4">
+                Are you sure you want to reactivate this code?
+            </p>
+            <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                <p class="text-xs text-gray-500 mb-1">Code:</p>
+                <p id="reactivateCodeDisplay" class="text-lg font-mono font-bold text-gray-900"></p>
+            </div>
+            <p class="text-xs text-green-600 text-center mb-6">
+                This code will become usable again by brokers.
+            </p>
+            <div class="flex space-x-3">
+                <button type="button" 
+                        onclick="closeReactivateModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="button" 
+                        onclick="confirmReactivate()"
+                        class="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700">
+                    Reactivate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden Forms -->
+<form method="POST" id="deactivateForm" style="display: none;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token('deactivate_referral_code') }}">
+    <input type="hidden" name="code_id" id="deactivateCodeId">
+</form>
+
+<form method="POST" id="reactivateForm" style="display: none;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token('reactivate_referral_code') }}">
+    <input type="hidden" name="code_id" id="reactivateCodeId">
+</form>
+
+<script>
+// Update form actions dynamically
+function showDeactivateModal(codeId, codeText) {
+    document.getElementById('deactivateCodeId').value = codeId;
+    document.getElementById('deactivateCodeDisplay').textContent = codeText;
+    document.getElementById('deactivateForm').action = '{{ path('consignee_deactivate_code', {id: '__ID__'}) }}'.replace('__ID__', codeId);
+    const modal = document.getElementById('deactivateModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function showReactivateModal(codeId, codeText) {
+    document.getElementById('reactivateCodeId').value = codeId;
+    document.getElementById('reactivateCodeDisplay').textContent = codeText;
+    document.getElementById('reactivateForm').action = '{{ path('consignee_reactivate_code', {id: '__ID__'}) }}'.replace('__ID__', codeId);
+    const modal = document.getElementById('reactivateModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+</script>
+{% endblock %}

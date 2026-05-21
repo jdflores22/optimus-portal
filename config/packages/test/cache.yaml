@@ -1,0 +1,14 @@
+framework:
+    cache:
+        app: cache.adapter.array
+        pools:
+            avatar_colors.cache:
+                adapter: cache.adapter.array
+            form_configurations.cache:
+                adapter: cache.adapter.array
+            user_permissions.cache:
+                adapter: cache.adapter.array
+            dashboard_metrics.cache:
+                adapter: cache.adapter.array
+            file_metadata.cache:
+                adapter: cache.adapter.array

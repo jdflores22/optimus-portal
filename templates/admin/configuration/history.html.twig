@@ -1,0 +1,79 @@
+{% extends 'base.html.twig' %}
+{% block title %}Configuration History - {{ configKey }}{% endblock %}
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Top Navigation Bar -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="{{ path('admin_configuration_index') }}" class="text-gray-600 hover:text-gray-900 mr-4">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <span class="text-2xl font-bold text-meta-blue">Configuration History</span>
+                    <span class="ml-4 text-gray-600">{{ configKey }}</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-xl font-bold text-gray-900">Change History</h2>
+                <p class="text-gray-600 mt-1">Track all changes made to this configuration</p>
+            </div>
+
+            {% if history is empty %}
+            <div class="p-8 text-center">
+                <i class="fas fa-history text-6xl text-gray-300 mb-4"></i>
+                <p class="text-gray-600">No history available for this configuration</p>
+            </div>
+            {% else %}
+            <div class="divide-y divide-gray-200">
+                {% for entry in history %}
+                <div class="p-6 hover:bg-gray-50 transition-colors">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <i class="fas fa-edit mr-1"></i>Changed
+                                </span>
+                                <span class="text-sm text-gray-600">
+                                    {{ entry.changedAt|date('Y-m-d H:i:s') }}
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 mb-3">
+                                <div class="bg-red-50 rounded-lg p-3">
+                                    <div class="text-xs font-medium text-red-800 mb-1">Old Value</div>
+                                    <div class="text-sm text-red-900 font-mono break-all">{{ entry.oldValue }}</div>
+                                </div>
+                                <div class="bg-green-50 rounded-lg p-3">
+                                    <div class="text-xs font-medium text-green-800 mb-1">New Value</div>
+                                    <div class="text-sm text-green-900 font-mono break-all">{{ entry.newValue }}</div>
+                                </div>
+                            </div>
+
+                            {% if entry.changeReason %}
+                            <div class="bg-gray-50 rounded-lg p-3 mb-2">
+                                <div class="text-xs font-medium text-gray-700 mb-1">Reason</div>
+                                <div class="text-sm text-gray-900">{{ entry.changeReason }}</div>
+                            </div>
+                            {% endif %}
+
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-user mr-2"></i>
+                                Changed by: <span class="font-medium ml-1">{{ entry.changedBy.fullName }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

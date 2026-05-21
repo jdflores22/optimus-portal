@@ -1,0 +1,185 @@
+<!-- Shipping Line Deactivated Modal -->
+<div id="shippingLineDeactivatedModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full hidden z-[10002]" style="backdrop-filter: blur(4px);">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="relative bg-white rounded-lg shadow-2xl max-w-md w-full mx-auto transform transition-all">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-center p-6 border-b border-gray-200 bg-red-50 rounded-t-lg">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-red-900">Account Access Suspended</h3>
+                        <p class="text-sm text-red-700">Shipping Line Deactivated</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-6">
+                <div class="text-center space-y-4">
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-red-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"/>
+                                </svg>
+                            </div>
+                            <div class="text-left">
+                                <h4 class="text-sm font-medium text-red-900 mb-2">
+                                    Your shipping line has been deactivated
+                                </h4>
+                                <p class="text-sm text-red-800" id="deactivationMessage">
+                                    The shipping line associated with your account has been deactivated by a System Administrator. 
+                                    You will be automatically logged out and your access to the system has been suspended.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-lg p-4 text-left">
+                        <h5 class="text-sm font-medium text-gray-900 mb-2">What this means:</h5>
+                        <ul class="text-sm text-gray-700 space-y-1">
+                            <li>• Your account access has been temporarily suspended</li>
+                            <li>• All users under this shipping line are affected</li>
+                            <li>• You will need administrator approval to regain access</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-blue-50 rounded-lg p-4 text-left">
+                        <h5 class="text-sm font-medium text-blue-900 mb-2">Next steps:</h5>
+                        <p class="text-sm text-blue-800">
+                            Please contact your System Administrator for more information about when access will be restored.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-center px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+                <button type="button" 
+                        onclick="handleShippingLineDeactivationLogout()" 
+                        class="w-full px-6 py-3 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200">
+                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                    OK - Logout Now
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global variable to track if deactivation modal is shown
+let shippingLineDeactivationModalShown = false;
+
+// Function to show shipping line deactivated modal
+function showShippingLineDeactivatedModal(shippingLineName = null) {
+    if (shippingLineDeactivationModalShown) {
+        return; // Prevent multiple modals
+    }
+    
+    shippingLineDeactivationModalShown = true;
+    
+    // Update message if shipping line name is provided
+    if (shippingLineName) {
+        const messageElement = document.getElementById('deactivationMessage');
+        if (messageElement) {
+            messageElement.textContent = `The shipping line "${shippingLineName}" associated with your account has been deactivated by a System Administrator. You will be automatically logged out and your access to the system has been suspended.`;
+        }
+    }
+    
+    // Show modal
+    const modal = document.getElementById('shippingLineDeactivatedModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        
+        // Disable page interactions
+        document.body.style.overflow = 'hidden';
+        
+        // Focus on the OK button
+        setTimeout(() => {
+            const okButton = modal.querySelector('button');
+            if (okButton) {
+                okButton.focus();
+            }
+        }, 100);
+    }
+}
+
+// Function to handle logout after deactivation
+function handleShippingLineDeactivationLogout() {
+    // Show loading state
+    const button = document.querySelector('#shippingLineDeactivatedModal button');
+    if (button) {
+        button.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Logging out...
+        `;
+        button.disabled = true;
+    }
+    
+    // Redirect to logout
+    window.location.href = '{{ path("app_logout") }}';
+}
+
+// Function to check shipping line status periodically
+function checkShippingLineStatus() {
+    // Only check if user is logged in and has a shipping line association
+    {% if app.user and app.user.role.value in ['SHIPPING_LINES_ADMIN', 'SL_STAFF', 'EVALUATOR', 'ACCOUNTING', 'TERMINAL_TEAM'] %}
+        fetch('/check-shipping-line-status', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (response.status === 401) {
+                // User is not authenticated, stop checking
+                console.debug('User not authenticated, stopping shipping line status checks');
+                return null;
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data && data.success === false && data.deactivated === true) {
+                // Shipping line has been deactivated
+                showShippingLineDeactivatedModal(data.shippingLineName || null);
+            }
+        })
+        .catch(error => {
+            // Silently fail for status checks
+            console.debug('Shipping line status check failed:', error);
+        });
+    {% endif %}
+}
+
+// Start checking shipping line status every 30 seconds
+{% if app.user and app.user.role.value in ['SHIPPING_LINES_ADMIN', 'SL_STAFF', 'EVALUATOR', 'ACCOUNTING', 'TERMINAL_TEAM'] %}
+    // Initial check after 5 seconds
+    setTimeout(checkShippingLineStatus, 5000);
+    
+    // Then check every 30 seconds
+    setInterval(checkShippingLineStatus, 30000);
+{% endif %}
+
+// Keyboard support for modal
+document.addEventListener('keydown', function(event) {
+    const modal = document.getElementById('shippingLineDeactivatedModal');
+    if (modal && !modal.classList.contains('hidden')) {
+        if (event.key === 'Enter' || event.key === 'Escape') {
+            event.preventDefault();
+            handleShippingLineDeactivationLogout();
+        }
+    }
+});
+</script>

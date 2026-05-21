@@ -1,0 +1,361 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Final Payment - {{ manifest.manifestNumber }} - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="w-full bg-base-200 min-h-screen">
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8">
+    {# Header #}
+    <div class="mb-6">
+        <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" 
+           class="inline-flex items-center text-sm text-base-content/60 hover:text-base-content mb-4">
+            <span class="icon-[tabler--arrow-left] size-4 mr-2"></span>
+            Back to Manifest Details
+        </a>
+        <h1 class="text-3xl font-bold text-base-content">Final Payment Submission</h1>
+        <p class="mt-2 text-base-content/60">{{ manifest.manifestNumber }}</p>
+    </div>
+
+    {# 2-Column Grid Layout - Billing Details wider (2/3) and Payment Form narrower (1/3) #}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {# Left Column - Billing Details (takes 2 columns = 2/3 width) #}
+        <div class="lg:col-span-2 card bg-base-100 shadow-lg">
+            <div class="card-body">
+                <h3 class="card-title mb-4">Billing Details</h3>
+                
+                {% if billing.originalCurrency == 'USD' and billing.exchangeRate %}
+                    <div class="alert alert-info mb-4">
+                        <span class="icon-[tabler--currency-dollar] size-5"></span>
+                        <div class="text-sm">
+                            <p class="font-medium">Dual Currency Billing</p>
+                            <p>Exchange Rate: ₱{{ billing.exchangeRate|number_format(4) }} per USD</p>
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <div class="space-y-3">
+                    {# Freight Charges #}
+                    <div class="flex justify-between py-2 border-b border-base-300">
+                        <span class="text-sm text-base-content/60">Freight Charges</span>
+                        <div class="text-right">
+                            {% if billing.originalCurrency == 'USD' and billing.freightChargesUsd %}
+                                <div class="grid grid-cols-2 gap-4 text-sm font-medium text-base-content">
+                                    <div class="text-right">${{ billing.freightChargesUsd|number_format(2) }}</div>
+                                    <div class="text-right text-base-content/60">₱{{ billing.freightCharges|number_format(2) }}</div>
+                                </div>
+                            {% else %}
+                                <span class="text-sm font-medium text-base-content">₱{{ billing.freightCharges|number_format(2) }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {# THC Charges #}
+                    <div class="flex justify-between py-2 border-b border-base-300">
+                        <span class="text-sm text-base-content/60">Terminal Handling Charges (THC)</span>
+                        <div class="text-right">
+                            {% if billing.originalCurrency == 'USD' and billing.thcChargesUsd %}
+                                <div class="grid grid-cols-2 gap-4 text-sm font-medium text-base-content">
+                                    <div class="text-right">${{ billing.thcChargesUsd|number_format(2) }}</div>
+                                    <div class="text-right text-base-content/60">₱{{ billing.thcCharges|number_format(2) }}</div>
+                                </div>
+                            {% else %}
+                                <span class="text-sm font-medium text-base-content">₱{{ billing.thcCharges|number_format(2) }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {# Additional Charges #}
+                    {% if billing.additionalCharges %}
+                        {% for charge in billing.additionalCharges %}
+                            <div class="flex justify-between py-2 border-b border-base-300">
+                                <span class="text-sm text-base-content/60">{{ charge.description }}</span>
+                                <div class="text-right">
+                                    {% if charge.amountUsd %}
+                                        <div class="grid grid-cols-2 gap-4 text-sm font-medium text-base-content">
+                                            <div class="text-right">${{ charge.amountUsd|number_format(2) }}</div>
+                                            <div class="text-right text-base-content/60">₱{{ charge.amount|number_format(2) }}</div>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-sm font-medium text-base-content">₱{{ charge.amount|number_format(2) }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    {# Total Amount #}
+                    <div class="flex justify-between py-3 bg-primary/10 px-4 rounded-lg mt-4">
+                        <span class="text-base font-medium text-base-content">Total Amount Due</span>
+                        <div class="text-right">
+                            {% if billing.originalCurrency == 'USD' and billing.totalAmountUsd %}
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="text-lg font-bold text-primary text-right">${{ billing.totalAmountUsd|number_format(2) }}</div>
+                                    <div class="text-base font-semibold text-base-content/70 text-right">₱{{ billing.totalAmount|number_format(2) }}</div>
+                                </div>
+                            {% else %}
+                                <span class="text-lg font-bold text-primary">₱{{ billing.totalAmount|number_format(2) }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {# Download Billing #}
+                {% if billing.pdfPath %}
+                    <div class="mt-4">
+                        <a href="/api/billing/{{ billing.id }}/download" 
+                           target="_blank"
+                           class="inline-flex items-center text-sm text-primary hover:text-primary/80">
+                            <span class="icon-[tabler--download] size-4 mr-2"></span>
+                            Download Billing Document
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Right Column - Payment Submission Form (takes 1 column = 1/3 width) #}
+        <div class="lg:col-span-1 card bg-base-100 shadow-lg">
+            <div class="card-body">
+                <h3 class="card-title mb-4">Submit Payment Receipt</h3>
+
+                <form id="paymentForm" class="space-y-6">
+                    {# Amount Field #}
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">
+                                Payment Amount <span class="text-error">*</span>
+                            </span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-base-content/60">₱</span>
+                            </div>
+                            <input type="number" 
+                                   id="amount" 
+                                   name="amount" 
+                                   value="{{ billing.totalAmount }}" 
+                                   step="0.01" 
+                                   min="0.01"
+                                   required
+                                   readonly
+                                   disabled
+                                   class="input input-bordered pl-7 w-full bg-base-200 cursor-not-allowed">
+                        </div>
+                        <label class="label">
+                            <span class="label-text-alt text-base-content/60">Amount is fixed based on billing total</span>
+                        </label>
+                    </div>
+
+                    {# Receipt Upload #}
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">
+                                Payment Receipt <span class="text-error">*</span>
+                            </span>
+                        </label>
+                        
+                        {# Hidden file input #}
+                        <input id="receipt" name="receipt" type="file" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
+                        
+                        {# File Upload Area (shown when no file selected) #}
+                        <div id="uploadArea" class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-base-300 rounded-lg hover:border-primary transition-colors cursor-pointer">
+                            <div class="space-y-1 text-center">
+                                <span class="icon-[tabler--upload] size-12 text-base-content/40 mx-auto block"></span>
+                                <div class="flex text-sm text-base-content/60 justify-center">
+                                    <span class="font-medium text-primary hover:text-primary/80">Upload a file</span>
+                                    <p class="pl-1">or drag and drop</p>
+                                </div>
+                                <p class="text-xs text-base-content/60">PDF, JPG, PNG up to 5MB</p>
+                            </div>
+                        </div>
+
+                        {# File Selected Area (shown when file is selected) #}
+                        <div id="fileSelectedArea" class="hidden mt-1 border-2 border-success bg-success/10 rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center flex-1 min-w-0">
+                                    <span class="icon-[tabler--file] size-10 text-success flex-shrink-0"></span>
+                                    <div class="ml-4 flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-base-content truncate" id="selectedFileName"></p>
+                                        <p class="text-sm text-base-content/60" id="selectedFileSize"></p>
+                                    </div>
+                                </div>
+                                <button type="button" 
+                                        id="changeFileBtn"
+                                        class="btn btn-sm btn-ghost ml-4 flex-shrink-0">
+                                    <span class="icon-[tabler--refresh] size-4"></span>
+                                    Change File
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Warning Message #}
+                    <div class="alert alert-warning">
+                        <span class="icon-[tabler--alert-triangle] size-5"></span>
+                        <span class="text-sm">
+                            Please ensure the payment amount matches the billing total. Your payment will be verified by the accounting department before eDO generation.
+                        </span>
+                    </div>
+
+                    {# Error Message #}
+                    <div id="errorMessage" class="alert alert-error hidden">
+                        <span class="icon-[tabler--alert-circle] size-5"></span>
+                        <span class="text-sm" id="errorText"></span>
+                    </div>
+
+                    {# Success Message #}
+                    <div id="successMessage" class="alert alert-success hidden">
+                        <span class="icon-[tabler--circle-check] size-5"></span>
+                        <span class="text-sm">Payment submitted successfully! Redirecting...</span>
+                    </div>
+
+                    {# Submit Button #}
+                    <div class="flex items-center justify-end gap-3">
+                        <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" 
+                           class="btn btn-ghost">
+                            Cancel
+                        </a>
+                        <button type="submit" 
+                                id="submitBtn"
+                                class="btn btn-primary">
+                            Submit Payment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('paymentForm');
+    const receiptInput = document.getElementById('receipt');
+    const uploadArea = document.getElementById('uploadArea');
+    const fileSelectedArea = document.getElementById('fileSelectedArea');
+    const selectedFileName = document.getElementById('selectedFileName');
+    const selectedFileSize = document.getElementById('selectedFileSize');
+    const changeFileBtn = document.getElementById('changeFileBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const errorMessage = document.getElementById('errorMessage');
+    const errorText = document.getElementById('errorText');
+    const successMessage = document.getElementById('successMessage');
+
+    // Format file size
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    // Show file selected UI
+    function showFileSelected(file) {
+        selectedFileName.textContent = file.name;
+        selectedFileSize.textContent = formatFileSize(file.size);
+        uploadArea.classList.add('hidden');
+        fileSelectedArea.classList.remove('hidden');
+    }
+
+    // Show upload area UI
+    function showUploadArea() {
+        uploadArea.classList.remove('hidden');
+        fileSelectedArea.classList.add('hidden');
+        receiptInput.value = ''; // Clear the file input
+    }
+
+    // File input change handler
+    receiptInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            const file = e.target.files[0];
+            
+            // Validate file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                errorText.textContent = 'File size must be less than 5MB';
+                errorMessage.classList.remove('hidden');
+                receiptInput.value = '';
+                return;
+            }
+            
+            showFileSelected(file);
+            errorMessage.classList.add('hidden');
+        }
+    });
+
+    // Change file button handler
+    changeFileBtn.addEventListener('click', function() {
+        showUploadArea();
+    });
+
+    // Click on upload area to trigger file input
+    uploadArea.addEventListener('click', function(e) {
+        e.preventDefault();
+        receiptInput.click();
+    });
+
+    // Drag and drop handlers
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('border-primary', 'bg-primary/10');
+    });
+
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('border-primary', 'bg-primary/10');
+    });
+
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('border-primary', 'bg-primary/10');
+        
+        if (e.dataTransfer.files.length > 0) {
+            receiptInput.files = e.dataTransfer.files;
+            const event = new Event('change', { bubbles: true });
+            receiptInput.dispatchEvent(event);
+        }
+    });
+
+    // Form submission
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        errorMessage.classList.add('hidden');
+        successMessage.classList.add('hidden');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span>Submitting...';
+
+        const formData = new FormData();
+        formData.append('amount', document.getElementById('amount').value);
+        formData.append('receipt', receiptInput.files[0]);
+
+        try {
+            const response = await fetch('/api/manifests/{{ manifest.id }}/payments/final', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                successMessage.classList.remove('hidden');
+                setTimeout(() => {
+                    window.location.href = '{{ path('broker_manifest_detail', {id: manifest.id}) }}';
+                }, 2000);
+            } else {
+                errorText.textContent = data.error || 'Failed to submit payment. Please try again.';
+                errorMessage.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Payment';
+            }
+        } catch (error) {
+            errorText.textContent = 'An error occurred. Please try again.';
+            errorMessage.classList.remove('hidden');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Payment';
+        }
+    });
+});
+</script>
+{% endblock %}

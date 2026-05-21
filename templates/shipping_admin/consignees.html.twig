@@ -1,0 +1,161 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Consignee Management - Shipping Admin{% endblock %}
+
+{% block body %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div>
+        <div class="flex items-center gap-3 mb-2">
+            <span class="icon-[tabler--building] size-8 text-primary"></span>
+            <h1 class="text-2xl sm:text-3xl font-bold text-base-content">Consignee Management</h1>
+        </div>
+        <p class="text-base-content/60">View and manage consignees and their broker relationships</p>
+    </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="card bg-base-100 shadow-md">
+                    <div class="card-body p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-base-content/60">Total Consignees</p>
+                                <p class="text-2xl font-bold text-base-content">{{ consignees|length }}</p>
+                            </div>
+                            <span class="icon-[tabler--building] size-10 text-primary opacity-20"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-md">
+                    <div class="card-body p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-base-content/60">With Brokers</p>
+                                <p class="text-2xl font-bold text-base-content">
+                                    {{ consignees|filter(c => c.linkedBroker)|length }}
+                                </p>
+                            </div>
+                            <span class="icon-[tabler--link] size-10 text-success opacity-20"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-md">
+                    <div class="card-body p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-base-content/60">Without Brokers</p>
+                                <p class="text-2xl font-bold text-base-content">
+                                    {{ consignees|filter(c => not c.linkedBroker)|length }}
+                                </p>
+                            </div>
+                            <span class="icon-[tabler--unlink] size-10 text-warning opacity-20"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-md">
+                    <div class="card-body p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-base-content/60">Total NOAs</p>
+                                <p class="text-2xl font-bold text-base-content">
+                                    {% set totalNoas = 0 %}
+                                    {% for consignee in consignees %}
+                                        {% set totalNoas = totalNoas + consigneeStats[consignee.id].noa_count %}
+                                    {% endfor %}
+                                    {{ totalNoas }}
+                                </p>
+                            </div>
+                            <span class="icon-[tabler--file-text] size-10 text-info opacity-20"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Consignees Table -->
+            <div class="card bg-base-100 shadow-md">
+                <div class="card-body p-0">
+                    <div class="overflow-x-auto">
+                        <table class="table table-zebra w-full">
+                            <thead>
+                                <tr>
+                                    <th class="bg-base-200">Consignee</th>
+                                    <th class="bg-base-200">Linked Broker</th>
+                                    <th class="bg-base-200 text-center">NOAs</th>
+                                    <th class="bg-base-200 text-center">Manifests</th>
+                                    <th class="bg-base-200 text-center">Containers</th>
+                                    <th class="bg-base-200">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for consignee in consignees %}
+                                <tr class="hover">
+                                    <td>
+                                        <a href="{{ path('app_shipping_admin_consignee_detail', {id: consignee.id}) }}" class="flex items-center gap-3 hover:text-primary transition-colors">
+                                            <div class="avatar avatar-placeholder">
+                                                <div class="bg-primary text-primary-content size-10 rounded-full">
+                                                    <span class="text-sm font-semibold">{{ consignee.businessName|slice(0, 2)|upper }}</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="font-semibold text-base-content">{{ consignee.businessName }}</div>
+                                                <div class="text-xs text-base-content/60">{{ consignee.email }}</div>
+                                            </div>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if consignee.linkedBroker %}
+                                            <div class="flex items-center gap-2">
+                                                <span class="icon-[tabler--link] size-4 text-success"></span>
+                                                <div>
+                                                    <div class="font-medium text-sm">{{ consignee.linkedBroker.fullName }}</div>
+                                                    <div class="text-xs text-base-content/60">{{ consignee.linkedBroker.email }}</div>
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <span class="badge badge-ghost badge-sm gap-1">
+                                                <span class="icon-[tabler--unlink] size-3"></span>
+                                                No Broker
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-primary badge-sm">{{ consigneeStats[consignee.id].noa_count }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-info badge-sm">{{ consigneeStats[consignee.id].manifest_count }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-secondary badge-sm">{{ consigneeStats[consignee.id].container_count }}</span>
+                                    </td>
+                                    <td>
+                                        {% if consignee.isActive %}
+                                            <span class="badge badge-success badge-sm gap-1">
+                                                <span class="icon-[tabler--circle-check] size-3"></span>
+                                                Active
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-error badge-sm gap-1">
+                                                <span class="icon-[tabler--circle-x] size-3"></span>
+                                                Inactive
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-8 text-base-content/60">
+                                        <span class="icon-[tabler--building-off] size-12 mx-auto mb-3 opacity-50"></span>
+                                        <p>No consignees found</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endblock %}

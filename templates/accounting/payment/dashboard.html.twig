@@ -1,0 +1,273 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Payment Validation Dashboard - ACCOUNTING{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200 py-8">
+    <div class="w-full px-4 sm:px-6 lg:px-8">
+        
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-base-content">Payment Validation Dashboard</h1>
+            <p class="mt-2 text-sm text-base-content/60">Final Payment Validation for ACCOUNTING</p>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Pending Card -->
+            <div class="card bg-base-100 shadow-sm border border-warning/30 hover:shadow-md transition-shadow">
+                <div class="card-body p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-base-content/60 mb-1">Pending</p>
+                            <p class="text-3xl font-bold text-base-content">{{ stats.pending }}</p>
+                        </div>
+                        <div class="bg-warning/10 rounded-full p-3">
+                            <span class="icon-[tabler--clock] size-8 text-warning"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Approved Card -->
+            <div class="card bg-base-100 shadow-sm border border-success/30 hover:shadow-md transition-shadow">
+                <div class="card-body p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-base-content/60 mb-1">Approved</p>
+                            <p class="text-3xl font-bold text-base-content">{{ stats.approved }}</p>
+                        </div>
+                        <div class="bg-success/10 rounded-full p-3">
+                            <span class="icon-[tabler--circle-check] size-8 text-success"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rejected Card -->
+            <div class="card bg-base-100 shadow-sm border border-error/30 hover:shadow-md transition-shadow">
+                <div class="card-body p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-base-content/60 mb-1">Rejected</p>
+                            <p class="text-3xl font-bold text-base-content">{{ stats.rejected }}</p>
+                        </div>
+                        <div class="bg-error/10 rounded-full p-3">
+                            <span class="icon-[tabler--circle-x] size-8 text-error"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Discrepancies Card -->
+            <div class="card bg-base-100 shadow-sm border border-accent/30 hover:shadow-md transition-shadow">
+                <div class="card-body p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-base-content/60 mb-1">Discrepancies</p>
+                            <p class="text-3xl font-bold text-base-content">{{ stats.discrepancies }}</p>
+                        </div>
+                        <div class="bg-accent/10 rounded-full p-3">
+                            <span class="icon-[tabler--alert-triangle] size-8 text-accent"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card bg-base-100 shadow-sm mb-8">
+            <div class="card-body p-6">
+                <h2 class="text-lg font-semibold text-base-content mb-4">Quick Actions</h2>
+                <div class="flex flex-wrap gap-3">
+                    <a href="{{ path('accounting_payment_final_list') }}" 
+                       class="btn btn-primary gap-2">
+                        <span class="icon-[tabler--list] size-5"></span>
+                        View All Payments
+                    </a>
+                    <a href="{{ path('accounting_payment_final_list', {status: 'pending_validation'}) }}" 
+                       class="btn btn-warning gap-2">
+                        <span class="icon-[tabler--clock] size-5"></span>
+                        Pending Payments ({{ stats.pending }})
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card bg-base-100 shadow-sm mb-8">
+            <div class="card-body p-6">
+                <h2 class="text-lg font-semibold text-base-content mb-4">Filter Recent Activity</h2>
+                <form method="get" action="{{ path('accounting_payment_dashboard') }}">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                        <div class="form-control">
+                            <label for="date_from" class="label">
+                                <span class="label-text">Date From</span>
+                            </label>
+                            <input type="date" 
+                                   id="date_from" 
+                                   name="date_from" 
+                                   value="{{ filters.date_from }}"
+                                   class="input input-bordered w-full">
+                        </div>
+                        <div class="form-control">
+                            <label for="date_to" class="label">
+                                <span class="label-text">Date To</span>
+                            </label>
+                            <input type="date" 
+                                   id="date_to" 
+                                   name="date_to" 
+                                   value="{{ filters.date_to }}"
+                                   class="input input-bordered w-full">
+                        </div>
+                        <div class="form-control">
+                            <label for="status" class="label">
+                                <span class="label-text">Status</span>
+                            </label>
+                            <select id="status" 
+                                    name="status"
+                                    class="select select-bordered w-full">
+                                <option value="">All Statuses</option>
+                                {% for statusOption in paymentStatuses %}
+                                    <option value="{{ statusOption.value }}" {% if filters.status == statusOption.value %}selected{% endif %}>
+                                        {{ statusOption.value|replace({'_': ' '})|title }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-control">
+                            <label for="submitter" class="label">
+                                <span class="label-text">Submitter</span>
+                            </label>
+                            <input type="text" 
+                                   id="submitter" 
+                                   name="submitter" 
+                                   value="{{ filters.submitter }}" 
+                                   placeholder="Name or email"
+                                   class="input input-bordered w-full">
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="submit" 
+                                class="btn btn-primary gap-2">
+                            <span class="icon-[tabler--filter] size-5"></span>
+                            Apply Filters
+                        </button>
+                        <a href="{{ path('accounting_payment_dashboard') }}" 
+                           class="btn btn-ghost gap-2">
+                            <span class="icon-[tabler--x] size-5"></span>
+                            Clear Filters
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Recent Validation Activity -->
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-0">
+                <div class="px-6 py-4 border-b border-base-300">
+                    <h2 class="text-lg font-semibold text-base-content">Recent Validation Activity</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    {% if recentActivity is empty %}
+                        <div class="p-12 text-center">
+                            <span class="icon-[tabler--file-text] size-12 text-base-content/40 mx-auto"></span>
+                            <p class="mt-4 text-base-content/60">No recent activity found.</p>
+                        </div>
+                    {% else %}
+                        <table class="table table-zebra">
+                            <thead>
+                                <tr>
+                                    <th>Manifest</th>
+                                    <th>Submitter</th>
+                                    <th>Billing</th>
+                                    <th>Payment</th>
+                                    <th>Discrepancy</th>
+                                    <th>Status</th>
+                                    <th>Submitted</th>
+                                    <th>Validated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in recentActivity %}
+                                    {% set billing = payment.manifest.billing %}
+                                    {% set discrepancy = billing ? (payment.amount - billing.totalAmount)|abs : 0 %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ path('manifest_workflow_detail', {id: payment.manifest.id}) }}" 
+                                               class="link link-primary font-medium">
+                                                {{ payment.manifest.manifestNumber }}
+                                            </a>
+                                        </td>
+                                        <td class="text-sm">
+                                            {{ payment.submittedBy.fullName }}
+                                        </td>
+                                        <td class="text-sm">
+                                            {% if billing %}
+                                                ₱{{ billing.totalAmount|number_format(2) }}
+                                            {% else %}
+                                                <span class="text-base-content/40">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-sm font-medium">
+                                            ₱{{ payment.amount|number_format(2) }}
+                                        </td>
+                                        <td class="text-sm">
+                                            {% if discrepancy > 0.01 %}
+                                                <span class="inline-flex items-center gap-1 text-error">
+                                                    <span class="icon-[tabler--alert-triangle] size-4"></span>
+                                                    ₱{{ discrepancy|number_format(2) }}
+                                                </span>
+                                            {% else %}
+                                                <span class="inline-flex items-center gap-1 text-success">
+                                                    <span class="icon-[tabler--circle-check] size-4"></span>
+                                                    Match
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if payment.status.value == 'pending_validation' %}
+                                                <span class="badge badge-warning badge-sm">
+                                                    Pending
+                                                </span>
+                                            {% elseif payment.status.value == 'verified' %}
+                                                <span class="badge badge-success badge-sm">
+                                                    Verified
+                                                </span>
+                                            {% elseif payment.status.value == 'rejected' %}
+                                                <span class="badge badge-error badge-sm">
+                                                    Rejected
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-sm text-base-content/70">
+                                            {{ payment.createdAt|date('Y-m-d H:i') }}
+                                        </td>
+                                        <td class="text-sm text-base-content/70">
+                                            {% if payment.validatedAt %}
+                                                <div>{{ payment.validatedAt|date('Y-m-d H:i') }}</div>
+                                                <div class="text-xs text-base-content/50">by {{ payment.validatedBy.fullName }}</div>
+                                            {% else %}
+                                                <span class="text-base-content/40">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{{ path('accounting_payment_final_detail', {id: payment.id}) }}" 
+                                               class="btn btn-primary btn-sm gap-2">
+                                                <span class="icon-[tabler--eye] size-4"></span>
+                                                View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

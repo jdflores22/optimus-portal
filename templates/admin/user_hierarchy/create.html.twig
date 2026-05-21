@@ -1,0 +1,573 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Create User{% endblock %}
+{% block page_title %}Create User{% endblock %}
+
+{% block body %}
+<div class="space-y-5">
+    {# Breadcrumb #}
+    <div class="text-sm breadcrumbs text-base-content/50">
+        <ul>
+            <li><a href="{{ path('admin_user_hierarchy_list') }}" class="hover:text-base-content">User Hierarchy</a></li>
+            <li class="text-base-content">Create User</li>
+        </ul>
+    </div>
+
+    {# Header #}
+    <div>
+        <h1 class="text-2xl font-bold text-base-content">
+            {% if preselectedAdminId %}
+                Add Subordinate User
+            {% else %}
+                Create New User
+            {% endif %}
+        </h1>
+        <p class="text-sm text-base-content/60 mt-1">
+            {% if preselectedAdminId %}
+                Add a new subordinate user to the selected admin's team
+            {% else %}
+                Add a new user to the hierarchical system with role-specific access and shipping line scope
+            {% endif %}
+        </p>
+    </div>
+
+    {# Flash Messages #}
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success"><span class="icon-[tabler--circle-check] size-5"></span><span>{{ message }}</span></div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error"><span class="icon-[tabler--alert-circle] size-5"></span><span>{{ message }}</span></div>
+    {% endfor %}
+    {% for message in app.flashes('warning') %}
+        <div class="alert alert-warning"><span class="icon-[tabler--alert-triangle] size-5"></span><span>{{ message }}</span></div>
+    {% endfor %}
+    {% for message in app.flashes('info') %}
+        <div class="alert alert-info"><span class="icon-[tabler--info-circle] size-5"></span><span>{{ message }}</span></div>
+    {% endfor %}
+
+    {# Create User Form #}
+    <div class="card bg-base-100 shadow-sm">
+        <form method="POST" action="{{ path('admin_user_hierarchy_create', preselectedAdminId ? {admin_id: preselectedAdminId} : {}) }}" class="card-body p-6">
+            <input type="hidden" name="_token" value="{{ csrf_token('user_create') }}">
+            
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                {# Basic Information #}
+                <div class="sm:col-span-2">
+                    <h3 class="text-lg font-semibold text-base-content mb-4">Basic Information</h3>
+                </div>
+
+                <div class="form-control">
+                    <label class="label" for="email">
+                        <span class="label-text">Email Address *</span>
+                    </label>
+                    <div class="relative">
+                        <input type="email" 
+                               name="email" 
+                               id="email" 
+                               required
+                               oninput="validateEmail(this.value)"
+                               class="input input-bordered w-full pr-10"
+                               value="{{ data.email|default('') }}">
+                        
+                        {# Email validation icon #}
+                        <div id="emailValidationIcon" class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none hidden">
+                            <span id="emailSuccessIcon" class="icon-[tabler--circle-check] size-5 text-success hidden"></span>
+                            <span id="emailErrorIcon" class="icon-[tabler--alert-circle] size-5 text-error hidden"></span>
+                            <span id="emailLoadingIcon" class="loading loading-spinner loading-sm hidden"></span>
+                        </div>
+                    </div>
+                    <div id="emailValidationMessage" class="label hidden">
+                        <span class="label-text-alt"></span>
+                    </div>
+                </div>
+
+                <div class="form-control">
+                    <label class="label" for="password">
+                        <span class="label-text" id="passwordLabel">Password</span>
+                    </label>
+                    <input type="password" 
+                           name="password" 
+                           id="password" 
+                           minlength="8"
+                           class="input input-bordered w-full">
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/50">Minimum 8 characters (required only when skipping email notification)</span>
+                    </label>
+                </div>
+
+                <div class="form-control">
+                    <label class="label" for="firstName">
+                        <span class="label-text">First Name *</span>
+                    </label>
+                    <input type="text" 
+                           name="firstName" 
+                           id="firstName" 
+                           required
+                           class="input input-bordered w-full"
+                           value="{{ data.firstName|default('') }}">
+                </div>
+
+                <div class="form-control">
+                    <label class="label" for="lastName">
+                        <span class="label-text">Last Name *</span>
+                    </label>
+                    <input type="text" 
+                           name="lastName" 
+                           id="lastName" 
+                           required
+                           class="input input-bordered w-full"
+                           value="{{ data.lastName|default('') }}">
+                </div>
+
+                {# Role and Hierarchy #}
+                <div class="sm:col-span-2">
+                    <h3 class="text-lg font-semibold text-base-content mb-4 mt-6">Role and Hierarchy</h3>
+                </div>
+
+                <div class="form-control">
+                    <label class="label" for="role">
+                        <span class="label-text">Role *</span>
+                    </label>
+                    <select name="role" 
+                            id="role" 
+                            required
+                            onchange="handleRoleChange()"
+                            class="select select-bordered w-full">
+                        <option value="">Select a role</option>
+                        {% if currentUser.role.value == 'SYSTEM_ADMIN' and not preselectedAdminId %}
+                            <option value="SHIPPING_LINES_ADMIN" {% if data.role|default('') == 'SHIPPING_LINES_ADMIN' %}selected{% endif %}>
+                                Shipping Lines Admin
+                            </option>
+                        {% endif %}
+                        <option value="SL_STAFF" {% if data.role|default('') == 'SL_STAFF' %}selected{% endif %}>SL Staff</option>
+                        <option value="EVALUATOR" {% if data.role|default('') == 'EVALUATOR' %}selected{% endif %}>Evaluator</option>
+                        <option value="ACCOUNTING" {% if data.role|default('') == 'ACCOUNTING' %}selected{% endif %}>Accounting</option>
+                        <option value="TERMINAL_TEAM" {% if data.role|default('') == 'TERMINAL_TEAM' %}selected{% endif %}>Terminal Team</option>
+                    </select>
+                    {% if preselectedAdminId %}
+                        <label class="label">
+                            <span class="label-text-alt text-base-content/50">Creating subordinate user - only subordinate roles available</span>
+                        </label>
+                    {% elseif currentUser.role.value == 'SHIPPING_LINES_ADMIN' %}
+                        <label class="label">
+                            <span class="label-text-alt text-base-content/50">As a shipping line admin, you can only create subordinate users</span>
+                        </label>
+                    {% endif %}
+                </div>
+
+                {# Shipping Line Selection (for Admins) #}
+                <div id="shippingLineField" class="form-control hidden">
+                    <label class="label" for="shippingLineId">
+                        <span class="label-text">Shipping Line *</span>
+                    </label>
+                    <select name="shippingLineId" 
+                            id="shippingLineId"
+                            class="select select-bordered w-full">
+                        <option value="">Select a shipping line</option>
+                        {% for shippingLine in shippingLines %}
+                            <option value="{{ shippingLine.id }}" {% if data.shippingLineId|default('') == shippingLine.id %}selected{% endif %}>
+                                {{ shippingLine.brandName }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/50">Required for Shipping Lines Admin role</span>
+                    </label>
+                </div>
+
+                {# Admin Selection (for subordinate roles) #}
+                <div id="adminField" class="form-control {% if currentUser.role.value != 'SHIPPING_LINES_ADMIN' %}hidden{% endif %}">
+                    {% if currentUser.role.value == 'SHIPPING_LINES_ADMIN' %}
+                        <input type="hidden" name="shippingLineAdminId" value="{{ currentUser.id }}">
+                        <label class="label">
+                            <span class="label-text">Admin Assignment</span>
+                        </label>
+                        <div class="alert alert-info">
+                            <span class="icon-[tabler--info-circle] size-5"></span>
+                            <div>
+                                <h3 class="font-semibold">Automatic Admin Assignment</h3>
+                                <p class="text-sm mt-1">You will be automatically assigned as the admin for any user you create. All team members will report to you.</p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <label class="label" for="shippingLineAdminId">
+                            <span class="label-text">Shipping Line Admin *</span>
+                        </label>
+                        <select name="shippingLineAdminId" 
+                                id="shippingLineAdminId"
+                                class="select select-bordered w-full">
+                            <option value="">Select an admin</option>
+                        </select>
+                        <label class="label">
+                            <span class="label-text-alt text-base-content/50">Required for subordinate roles</span>
+                        </label>
+                    {% endif %}
+                </div>
+
+                {# Role Description #}
+                <div class="sm:col-span-2">
+                    <div id="roleDescription" class="alert alert-info hidden">
+                        <span class="icon-[tabler--info-circle] size-5"></span>
+                        <div>
+                            <h3 class="font-semibold">Role Information</h3>
+                            <p id="roleDescriptionText" class="text-sm mt-1"></p>
+                        </div>
+                    </div>
+                </div>
+
+                {# System Admin Options #}
+                {% if currentUser.role.value == 'SYSTEM_ADMIN' %}
+                <div class="sm:col-span-2">
+                    <h3 class="text-lg font-semibold text-base-content mb-4 mt-6">System Administrator Options</h3>
+                    <div class="space-y-4">
+                        <div class="form-control">
+                            <label class="label cursor-pointer justify-start gap-3">
+                                <input id="skipEmailNotification" 
+                                       name="skipEmailNotification" 
+                                       type="checkbox" 
+                                       value="1"
+                                       onchange="handleSkipEmailChange()"
+                                       class="checkbox">
+                                <div>
+                                    <span class="label-text font-medium">Skip email notification and create user directly</span>
+                                    <p class="text-sm text-base-content/60 mt-1">
+                                        When checked, the user account will be created immediately without sending an email invitation. 
+                                        The user will need to be provided with their login credentials manually.
+                                    </p>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div id="emailWorkflowInfo" class="alert alert-success">
+                            <span class="icon-[tabler--mail] size-5"></span>
+                            <div>
+                                <h3 class="font-semibold">Email Invitation Workflow (Default)</h3>
+                                <p class="text-sm mt-1">The user will receive an email invitation to accept their role. They can review the role details and accept or decline the invitation. This ensures explicit consent and improves the onboarding experience.</p>
+                            </div>
+                        </div>
+                        
+                        <div id="directCreationInfo" class="alert alert-warning hidden">
+                            <span class="icon-[tabler--alert-triangle] size-5"></span>
+                            <div>
+                                <h3 class="font-semibold">Direct User Creation (Legacy Mode)</h3>
+                                <p class="text-sm mt-1">The user account will be created immediately with the provided password. You will need to manually provide the user with their login credentials. This bypasses the email invitation workflow.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            {# Form Actions #}
+            <div class="flex justify-end gap-3 mt-6 pt-6 border-t border-base-300">
+                <a href="{{ path('admin_user_hierarchy_list') }}" class="btn btn-ghost gap-2">
+                    <span class="icon-[tabler--x] size-4"></span>Cancel
+                </a>
+                <button type="submit" 
+                        id="submitButton"
+                        class="btn btn-primary gap-2">
+                    <span id="submitIcon" class="icon-[tabler--plus] size-4"></span>
+                    <span id="loadingSpinner" class="loading loading-spinner loading-sm hidden"></span>
+                    <span id="submitText">Create User</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<script>
+// Handle skip email notification checkbox
+function handleSkipEmailChange() {
+    const skipEmailCheckbox = document.getElementById('skipEmailNotification');
+    const passwordField = document.getElementById('password');
+    const passwordLabel = document.getElementById('passwordLabel');
+    const emailWorkflowInfo = document.getElementById('emailWorkflowInfo');
+    const directCreationInfo = document.getElementById('directCreationInfo');
+    
+    if (skipEmailCheckbox && skipEmailCheckbox.checked) {
+        passwordField.setAttribute('required', 'required');
+        passwordLabel.innerHTML = 'Password <span class="text-error">*</span>';
+        emailWorkflowInfo.classList.add('hidden');
+        directCreationInfo.classList.remove('hidden');
+    } else {
+        passwordField.removeAttribute('required');
+        passwordLabel.textContent = 'Password';
+        emailWorkflowInfo.classList.remove('hidden');
+        directCreationInfo.classList.add('hidden');
+    }
+}
+
+// Toast notification helper
+function showToast(message, type = 'info') {
+    const typeClasses = {
+        success: 'alert-success',
+        error: 'alert-error',
+        warning: 'alert-warning',
+        info: 'alert-info'
+    };
+    
+    const typeIcons = {
+        success: 'icon-[tabler--circle-check]',
+        error: 'icon-[tabler--alert-circle]',
+        warning: 'icon-[tabler--alert-triangle]',
+        info: 'icon-[tabler--info-circle]'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = `alert ${typeClasses[type]} fixed top-4 right-4 w-auto max-w-md shadow-lg z-50`;
+    toast.innerHTML = `
+        <span class="${typeIcons[type]} size-5"></span>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// Email validation
+let emailValidationTimeout;
+let isEmailValid = false;
+
+function validateEmail(email) {
+    if (emailValidationTimeout) {
+        clearTimeout(emailValidationTimeout);
+    }
+    
+    if (!email || email.trim() === '') {
+        clearEmailValidation();
+        return;
+    }
+    
+    showEmailValidationState('loading');
+    
+    emailValidationTimeout = setTimeout(() => {
+        fetch('{{ path('admin_user_hierarchy_validate_email') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: 'email=' + encodeURIComponent(email)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.valid) {
+                showEmailValidationState('success', data.message);
+                isEmailValid = true;
+            } else {
+                showEmailValidationState('error', data.message);
+                isEmailValid = false;
+            }
+        })
+        .catch(error => {
+            console.error('Email validation error:', error);
+            showEmailValidationState('error', 'Unable to validate email. Please try again.');
+            isEmailValid = false;
+        });
+    }, 500);
+}
+
+function clearEmailValidation() {
+    const iconContainer = document.getElementById('emailValidationIcon');
+    const message = document.getElementById('emailValidationMessage');
+    const emailInput = document.getElementById('email');
+    
+    if (iconContainer) iconContainer.classList.add('hidden');
+    if (message) message.classList.add('hidden');
+    
+    if (emailInput) emailInput.classList.remove('input-success', 'input-error');
+    
+    const successIcon = document.getElementById('emailSuccessIcon');
+    const errorIcon = document.getElementById('emailErrorIcon');
+    const loadingIcon = document.getElementById('emailLoadingIcon');
+    
+    if (successIcon) successIcon.classList.add('hidden');
+    if (errorIcon) errorIcon.classList.add('hidden');
+    if (loadingIcon) loadingIcon.classList.add('hidden');
+    
+    isEmailValid = false;
+}
+
+function showEmailValidationState(state, message = '') {
+    const iconContainer = document.getElementById('emailValidationIcon');
+    const messageDiv = document.getElementById('emailValidationMessage');
+    const emailInput = document.getElementById('email');
+    const successIcon = document.getElementById('emailSuccessIcon');
+    const errorIcon = document.getElementById('emailErrorIcon');
+    const loadingIcon = document.getElementById('emailLoadingIcon');
+    
+    if (!iconContainer || !messageDiv || !emailInput) return;
+    
+    iconContainer.classList.remove('hidden');
+    
+    if (successIcon) successIcon.classList.add('hidden');
+    if (errorIcon) errorIcon.classList.add('hidden');
+    if (loadingIcon) loadingIcon.classList.add('hidden');
+    
+    switch (state) {
+        case 'loading':
+            if (loadingIcon) loadingIcon.classList.remove('hidden');
+            emailInput.classList.remove('input-success', 'input-error');
+            messageDiv.classList.add('hidden');
+            break;
+            
+        case 'success':
+            if (successIcon) successIcon.classList.remove('hidden');
+            emailInput.classList.add('input-success');
+            emailInput.classList.remove('input-error');
+            emailInput.classList.add('validated');
+            messageDiv.querySelector('.label-text-alt').textContent = message;
+            messageDiv.querySelector('.label-text-alt').className = 'label-text-alt text-success';
+            messageDiv.classList.remove('hidden');
+            break;
+            
+        case 'error':
+            if (errorIcon) errorIcon.classList.remove('hidden');
+            emailInput.classList.add('input-error');
+            emailInput.classList.remove('input-success');
+            emailInput.classList.add('validated');
+            messageDiv.querySelector('.label-text-alt').textContent = message;
+            messageDiv.querySelector('.label-text-alt').className = 'label-text-alt text-error';
+            messageDiv.classList.remove('hidden');
+            break;
+    }
+}
+
+// Available admins data
+const availableAdmins = {{ shippingLines|map(sl => {
+    id: sl.id,
+    brandName: sl.brandName,
+    admins: sl.shippingLineAdmins|map(admin => {
+        id: admin.id,
+        email: admin.email,
+        name: admin.firstName ~ ' ' ~ admin.lastName
+    })
+})|json_encode|raw }};
+
+const roleDescriptions = {
+    'SHIPPING_LINES_ADMIN': 'Manages a specific shipping line and can supervise SL Staff, Evaluators, Accounting, and Terminal Team members. Has full access to shipping line operations and user management within their scope.',
+    'SL_STAFF': 'General staff member under a Shipping Lines Admin. Handles day-to-day operations and administrative tasks within the shipping line scope.',
+    'EVALUATOR': 'Specialized role for evaluation and assessment tasks. Reports to a Shipping Lines Admin and has access to evaluation-specific functionality.',
+    'ACCOUNTING': 'Handles financial and accounting operations within the shipping line. Reports to a Shipping Lines Admin and has access to financial data and reports.',
+    'TERMINAL_TEAM': 'Manages terminal operations, container assignments, and port logistics. Reports to a Shipping Lines Admin and has specialized access to terminal management features.'
+};
+
+function handleRoleChange() {
+    const roleSelect = document.getElementById('role');
+    const shippingLineField = document.getElementById('shippingLineField');
+    const adminField = document.getElementById('adminField');
+    const roleDescription = document.getElementById('roleDescription');
+    const roleDescriptionText = document.getElementById('roleDescriptionText');
+    const selectedRole = roleSelect.value;
+    const isShippingLineAdmin = {{ currentUser.role.value == 'SHIPPING_LINES_ADMIN' ? 'true' : 'false' }};
+
+    shippingLineField.classList.add('hidden');
+    roleDescription.classList.add('hidden');
+    
+    if (!isShippingLineAdmin) {
+        adminField.classList.add('hidden');
+    }
+
+    document.getElementById('shippingLineId').removeAttribute('required');
+    const adminSelect = document.getElementById('shippingLineAdminId');
+    if (adminSelect) {
+        adminSelect.removeAttribute('required');
+    }
+
+    if (selectedRole) {
+        roleDescriptionText.textContent = roleDescriptions[selectedRole] || '';
+        roleDescription.classList.remove('hidden');
+
+        if (selectedRole === 'SHIPPING_LINES_ADMIN') {
+            shippingLineField.classList.remove('hidden');
+            document.getElementById('shippingLineId').setAttribute('required', 'required');
+        } else {
+            adminField.classList.remove('hidden');
+            
+            if (!isShippingLineAdmin && adminSelect) {
+                adminSelect.setAttribute('required', 'required');
+                populateAdminOptions();
+            }
+        }
+    }
+}
+
+function populateAdminOptions() {
+    const adminSelect = document.getElementById('shippingLineAdminId');
+    if (!adminSelect) return;
+    
+    adminSelect.innerHTML = '<option value="">Select an admin</option>';
+
+    availableAdmins.forEach(shippingLine => {
+        if (shippingLine.admins && shippingLine.admins.length > 0) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = shippingLine.brandName;
+            
+            shippingLine.admins.forEach(admin => {
+                const option = document.createElement('option');
+                option.value = admin.id;
+                option.textContent = `${admin.name} (${admin.email})`;
+                optgroup.appendChild(option);
+            });
+            
+            adminSelect.appendChild(optgroup);
+        }
+    });
+}
+
+// Initialize form
+document.addEventListener('DOMContentLoaded', function() {
+    const preselectedAdminId = {{ preselectedAdminId|default('null') }};
+    
+    if (preselectedAdminId) {
+        const roleSelect = document.getElementById('role');
+        if (roleSelect) {
+            roleSelect.value = 'SL_STAFF';
+            handleRoleChange();
+            
+            setTimeout(() => {
+                const adminSelect = document.getElementById('shippingLineAdminId');
+                if (adminSelect) {
+                    adminSelect.value = preselectedAdminId;
+                }
+            }, 100);
+        }
+    } else {
+        handleRoleChange();
+    }
+});
+
+// Form submission
+document.querySelector('form').addEventListener('submit', function(e) {
+    const submitButton = document.getElementById('submitButton');
+    
+    if (submitButton.disabled) {
+        e.preventDefault();
+        return;
+    }
+
+    const emailInput = document.getElementById('email');
+    if (emailInput.classList.contains('validated') && !isEmailValid) {
+        e.preventDefault();
+        showToast('Please fix the email validation error before submitting.', 'error');
+        return;
+    }
+
+    showLoadingState();
+});
+
+function showLoadingState() {
+    const submitButton = document.getElementById('submitButton');
+    const submitIcon = document.getElementById('submitIcon');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const submitText = document.getElementById('submitText');
+    
+    submitButton.disabled = true;
+    submitIcon.classList.add('hidden');
+    loadingSpinner.classList.remove('hidden');
+    submitText.textContent = 'Creating User...';
+}
+</script>
+{% endblock %}

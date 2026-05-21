@@ -1,0 +1,731 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Final Payment Validation - {{ payment.manifest.manifestNumber }}{% endblock %}
+
+{% block body %}
+<div class="w-full bg-base-200 min-h-screen">
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8">
+    {# Breadcrumb #}
+    <div class="breadcrumbs text-sm mb-6">
+        <ul>
+            <li>
+                <a href="{{ path('accounting_payment_dashboard') }}" class="inline-flex items-center gap-2">
+                    <span class="icon-[tabler--home] size-4"></span>
+                    Dashboard
+                </a>
+            </li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li>
+                <a href="{{ path('accounting_payment_final_list') }}">Final Payments</a>
+            </li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li aria-current="page">Payment #{{ payment.id }}</li>
+        </ul>
+    </div>
+
+    {# Page Header #}
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-base-content">Final Payment Validation</h1>
+        <p class="mt-2 text-sm text-base-content/60">Review and validate the final payment for manifest {{ payment.manifest.manifestNumber }}</p>
+    </div>
+
+    {# Payment Details Card #}
+    <div class="card bg-base-100 shadow-lg mb-6">
+        <div class="card-header">
+            <h2 class="card-title">Payment Details</h2>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {# Left Column #}
+                <div class="space-y-4">
+                    <div class="flex justify-between">
+                        <span class="text-sm font-medium text-base-content/60">Payment ID:</span>
+                        <span class="text-sm text-base-content">#{{ payment.id }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm font-medium text-base-content/60">Manifest Number:</span>
+                        <a href="{{ path('manifest_workflow_detail', {id: payment.manifest.id}) }}" class="text-sm text-primary hover:text-primary/80">
+                            {{ payment.manifest.manifestNumber }}
+                        </a>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm font-medium text-base-content/60">Consignee:</span>
+                        <span class="text-sm text-base-content">
+                            {% if payment.manifest.consignee %}
+                                {{ payment.manifest.consignee.businessName }}
+                            {% else %}
+                                <span class="text-base-content/40">Not declared</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm font-medium text-base-content/60">Broker:</span>
+                        <span class="text-sm text-base-content">
+                            {% if payment.manifest.broker %}
+                                {{ payment.manifest.broker.fullName }}
+                            {% else %}
+                                <span class="text-base-content/40">None</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% if billing.originalCurrency == 'USD' and billing.exchangeRate %}
+                        <div class="flex justify-between">
+                            <span class="text-sm font-medium text-base-content/60">Currency:</span>
+                            <span class="text-sm text-base-content">USD (₱{{ billing.exchangeRate|number_format(4) }}/USD)</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                {# Right Column #}
+                <div class="space-y-4">
+                    <div class="flex justify-between">
+                        <span class="text-sm font-medium text-base-content/60">Submitted By:</span>
+                        <div class="text-right">
+                            <div class="text-sm text-base-content">{{ payment.submittedBy.fullName }}</div>
+                            <div class="text-xs text-base-content/60">{{ payment.submittedBy.email }}</div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm font-medium text-base-content/60">Submitted At:</span>
+                        <span class="text-sm text-base-content">{{ payment.createdAt|date('F d, Y H:i:s') }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-base-content/60">Status:</span>
+                        {% if payment.status.value == 'pending_validation' %}
+                            <span class="badge badge-warning">Pending Validation</span>
+                        {% elseif payment.status.value == 'verified' %}
+                            <span class="badge badge-success">Verified</span>
+                        {% elseif payment.status.value == 'rejected' %}
+                            <span class="badge badge-error">Rejected</span>
+                        {% endif %}
+                    </div>
+                    {% if payment.validatedBy %}
+                        <div class="flex justify-between">
+                            <span class="text-sm font-medium text-base-content/60">Validated By:</span>
+                            <div class="text-right">
+                                <div class="text-sm text-base-content">{{ payment.validatedBy.fullName }}</div>
+                                <div class="text-xs text-base-content/60">{{ payment.validatedAt|date('F d, Y H:i:s') }}</div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Amount Comparison #}
+            <div class="mt-6 {% if discrepancy > 0.01 %}border-error bg-error/10{% else %}border-success bg-success/10{% endif %} border rounded-lg p-6">
+                <h3 class="text-sm font-semibold text-base-content mb-4">Amount Comparison</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                    <div>
+                        <div class="text-xs text-base-content/60 mb-2">Billing Amount</div>
+                        {% if billing.originalCurrency == 'USD' and billing.totalAmountUsd %}
+                            <div class="text-2xl font-bold text-base-content">${{ billing.totalAmountUsd|number_format(2) }}</div>
+                            <div class="text-sm text-base-content/60">₱{{ billing.totalAmount|number_format(2) }}</div>
+                        {% else %}
+                            <div class="text-2xl font-bold text-base-content">₱{{ billing.totalAmount|number_format(2) }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <div class="text-xs text-base-content/60 mb-2">Payment Amount</div>
+                        <div class="text-2xl font-bold text-base-content">₱{{ payment.amount|number_format(2) }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-base-content/60 mb-2">Discrepancy</div>
+                        {% if discrepancy > 0.01 %}
+                            <div class="text-2xl font-bold text-error">
+                                <span class="icon-[tabler--alert-triangle] size-6 inline-block"></span>
+                                ₱{{ discrepancy|number_format(2) }}
+                            </div>
+                            <div class="mt-3 p-3 bg-warning/10 border border-warning rounded text-left">
+                                <p class="text-xs text-warning">
+                                    <strong>Amount Mismatch!</strong> The payment amount does not match the billing total. You can override this with justification.
+                                </p>
+                            </div>
+                        {% else %}
+                            <div class="text-2xl font-bold text-success">
+                                <span class="icon-[tabler--circle-check] size-6 inline-block"></span>
+                                Match
+                            </div>
+                            <div class="text-xs text-success mt-1">Amounts match perfectly</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {% if payment.rejectionReason %}
+                <div class="alert alert-error mt-6">
+                    <span class="icon-[tabler--circle-x] size-5"></span>
+                    <div>
+                        <h3 class="font-medium">Rejection Reason</h3>
+                        <p class="text-sm">{{ payment.rejectionReason }}</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Side-by-Side Documents #}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {# Billing Document #}
+        <div class="card bg-base-100 shadow-lg">
+            <div class="card-header bg-primary text-primary-content flex justify-between items-center">
+                <h3 class="card-title">Billing Document</h3>
+                {% if billing.pdfPath %}
+                    <a href="/api/billing/{{ billing.id }}/download?inline=false" target="_blank" class="btn btn-sm btn-ghost">
+                        <span class="icon-[tabler--download] size-4"></span>
+                        Download
+                    </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <h4 class="text-sm font-semibold text-base-content mb-3 pb-2 border-b border-base-300">Charge Breakdown</h4>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Freight Charges:</span>
+                        {% if billing.originalCurrency == 'USD' and billing.freightChargesUsd %}
+                            <div class="text-right">
+                                <div class="font-medium">${{ billing.freightChargesUsd|number_format(2) }}</div>
+                                <div class="text-xs text-base-content/60">₱{{ billing.freightCharges|number_format(2) }}</div>
+                            </div>
+                        {% else %}
+                            <span class="font-medium">₱{{ billing.freightCharges|number_format(2) }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">THC Charges:</span>
+                        {% if billing.originalCurrency == 'USD' and billing.thcChargesUsd %}
+                            <div class="text-right">
+                                <div class="font-medium">${{ billing.thcChargesUsd|number_format(2) }}</div>
+                                <div class="text-xs text-base-content/60">₱{{ billing.thcCharges|number_format(2) }}</div>
+                            </div>
+                        {% else %}
+                            <span class="font-medium">₱{{ billing.thcCharges|number_format(2) }}</span>
+                        {% endif %}
+                    </div>
+                    {% if billing.additionalCharges %}
+                        {% for charge in billing.additionalCharges %}
+                            <div class="flex justify-between">
+                                <span class="text-base-content/60">{{ charge.description }}:</span>
+                                {% if charge.amountUsd %}
+                                    <div class="text-right">
+                                        <div class="font-medium">${{ charge.amountUsd|number_format(2) }}</div>
+                                        <div class="text-xs text-base-content/60">₱{{ charge.amount|number_format(2) }}</div>
+                                    </div>
+                                {% else %}
+                                    <span class="font-medium">₱{{ charge.amount|number_format(2) }}</span>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    <div class="flex justify-between pt-2 border-t border-base-300 font-bold text-base">
+                        <span>Total Amount:</span>
+                        {% if billing.originalCurrency == 'USD' and billing.totalAmountUsd %}
+                            <div class="text-right">
+                                <div class="text-primary">${{ billing.totalAmountUsd|number_format(2) }}</div>
+                                <div class="text-sm text-base-content/60 font-semibold">₱{{ billing.totalAmount|number_format(2) }}</div>
+                            </div>
+                        {% else %}
+                            <span class="text-primary">₱{{ billing.totalAmount|number_format(2) }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-base-300 text-xs text-base-content/60">
+                    <div>Generated by: {{ billing.generatedBy.fullName }}</div>
+                    <div>Generated at: {{ billing.createdAt|date('F d, Y H:i:s') }}</div>
+                </div>
+
+                {% if billing.pdfPath %}
+                    <div class="mt-4 border border-base-300 rounded overflow-hidden" style="height: 400px;">
+                        <iframe src="/api/billing/{{ billing.id }}/download?inline=true" class="w-full h-full"></iframe>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Payment Receipt #}
+        <div class="card bg-base-100 shadow-lg">
+            <div class="card-header bg-success text-success-content flex justify-between items-center">
+                <h3 class="card-title">Payment Receipt</h3>
+                <a href="{{ path('accounting_payment_receipt', {id: payment.id}) }}?inline=false" target="_blank" class="btn btn-sm btn-ghost">
+                    <span class="icon-[tabler--download] size-4"></span>
+                    Download
+                </a>
+            </div>
+            <div class="p-0">
+                <div class="overflow-auto bg-base-200" style="height: 600px;">
+                    {% if payment.receiptFilePath %}
+                        <iframe src="{{ path('accounting_payment_receipt', {id: payment.id}) }}?inline=true" class="w-full h-full border-0"></iframe>
+                    {% else %}
+                        <div class="flex flex-col items-center justify-center h-full p-8 text-center">
+                            <span class="icon-[tabler--file] size-16 text-base-content/40 mb-4"></span>
+                            <p class="text-base-content/60 mb-4">No receipt uploaded</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# Official Receipt (Generated by Shipping Line) #}
+        {% if payment.officialReceiptPath %}
+        <div class="card bg-base-100 shadow-lg">
+            <div class="card-header bg-accent text-accent-content flex justify-between items-center">
+                <div>
+                    <h3 class="card-title">Official Receipt</h3>
+                    <p class="text-sm opacity-80">Generated by {{ payment.shippingLine.name }}</p>
+                </div>
+                <a href="{{ path('accounting_payment_receipt', {id: payment.id}) }}?type=official&inline=false" target="_blank" class="btn btn-sm btn-ghost">
+                    <span class="icon-[tabler--download] size-4"></span>
+                    Download Official Receipt
+                </a>
+            </div>
+            <div class="p-0">
+                <div class="overflow-auto bg-base-200" style="height: 600px;">
+                    <iframe src="{{ path('accounting_payment_receipt', {id: payment.id}) }}?type=official&inline=true" class="w-full h-full border-0"></iframe>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {# Validation Actions #}
+    {% if payment.status.value == 'pending_validation' %}
+        <div class="card bg-base-100 shadow-lg border-2 border-info mb-6">
+            <div class="card-header bg-info/10">
+                <h3 class="card-title">Validation Actions</h3>
+            </div>
+            <div class="card-body">
+                {% if discrepancy > 0.01 %}
+                    <div class="alert alert-warning mb-6">
+                        <span class="icon-[tabler--alert-triangle] size-5"></span>
+                        <div>
+                            <h3 class="font-medium">Amount Mismatch Detected</h3>
+                            <p class="text-sm">If you approve this payment, please provide justification for the override.</p>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button type="button" onclick="openApprovalModal()" 
+                            class="btn btn-success btn-lg">
+                        <span class="icon-[tabler--circle-check] size-5"></span>
+                        Approve Payment
+                    </button>
+                    <button type="button" onclick="openRejectionModal()" 
+                            class="btn btn-error btn-lg">
+                        <span class="icon-[tabler--circle-x] size-5"></span>
+                        Reject Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {# Validation History #}
+    {% if validationHistory is not empty %}
+        <div class="card bg-base-100 shadow-lg">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">Validation History</h3>
+                    <p class="text-sm text-base-content/60 mt-1">Previous payment attempts for this manifest</p>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table table-zebra">
+                    <thead>
+                        <tr>
+                            <th>Payment ID</th>
+                            <th>Submitted By</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Validated By</th>
+                            <th>Validated At</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for historyPayment in validationHistory %}
+                            <tr>
+                                <td class="font-medium">#{{ historyPayment.id }}</td>
+                                <td>{{ historyPayment.submittedBy.fullName }}</td>
+                                <td>₱{{ historyPayment.amount|number_format(2) }}</td>
+                                <td>
+                                    {% if historyPayment.status.value == 'verified' %}
+                                        <span class="badge badge-success">Verified</span>
+                                    {% elseif historyPayment.status.value == 'rejected' %}
+                                        <span class="badge badge-error">Rejected</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ historyPayment.validatedBy.fullName }}</td>
+                                <td>{{ historyPayment.validatedAt|date('Y-m-d H:i') }}</td>
+                                <td>
+                                    {% if historyPayment.rejectionReason %}
+                                        {{ historyPayment.rejectionReason }}
+                                    {% else %}
+                                        <span class="text-base-content/40">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+</div>
+</div>
+
+{# Approval Modal #}
+<dialog id="approvalModal" class="modal">
+    <div class="modal-box max-w-lg">
+        <div class="flex items-start gap-4 mb-4">
+            <div class="size-12 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
+                <span class="icon-[tabler--check] size-6 text-success"></span>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-base-content">Approve Payment</h3>
+                <p class="text-sm text-base-content/60 mt-2">
+                    You are about to approve this payment. This action will:
+                </p>
+                <ul class="text-sm text-base-content/80 space-y-2 mt-3 list-disc list-inside">
+                    <li>Mark the payment as verified</li>
+                    <li>Generate an official receipt from the shipping line</li>
+                    <li>Transfer manifest to SL_STAFF for eDO generation</li>
+                    <li>Notify the broker, consignee, and SL_STAFF</li>
+                </ul>
+                
+                {% if discrepancy > 0.01 %}
+                    <div class="alert alert-warning mt-4">
+                        <span class="icon-[tabler--alert-triangle] size-5"></span>
+                        <div>
+                            <p class="font-medium">Amount Mismatch</p>
+                            <p class="text-xs">Justification required for override</p>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="form-control mt-4">
+                    <label class="label">
+                        <span class="label-text">
+                            Justification / Notes
+                            {% if discrepancy > 0.01 %}
+                                <span class="text-error">*</span>
+                            {% else %}
+                                <span class="text-base-content/40">(Optional)</span>
+                            {% endif %}
+                        </span>
+                    </label>
+                    <textarea id="approvalReason" rows="3" 
+                              class="textarea textarea-bordered"
+                              placeholder="Enter justification or notes..."></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal-action">
+            <button type="button" onclick="closeApprovalModal()" class="btn btn-ghost">
+                Cancel
+            </button>
+            <button type="button" id="approvalSubmitBtn" onclick="confirmApproval()" class="btn btn-success">
+                <span class="icon-[tabler--circle-check] size-5"></span>
+                Confirm Approval
+            </button>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button onclick="closeApprovalModal()">close</button>
+    </form>
+</dialog>rder border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:mt-0 sm:w-auto sm:text-sm transition-colors">
+{# Rejection Modal #}
+<dialog id="rejectionModal" class="modal">
+    <div class="modal-box max-w-lg">
+        <div class="flex items-start gap-4 mb-4">
+            <div class="size-12 rounded-full bg-error/10 flex items-center justify-center flex-shrink-0">
+                <span class="icon-[tabler--x] size-6 text-error"></span>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-base-content">Reject Payment</h3>
+                <p class="text-sm text-base-content/60 mt-2">
+                    You are about to reject this payment. This action will:
+                </p>
+                <ul class="text-sm text-base-content/80 space-y-2 mt-3 list-disc list-inside">
+                    <li>Mark the payment as rejected</li>
+                    <li>Revert manifest to billing_generated state</li>
+                    <li>Notify the broker and consignee with the reason</li>
+                    <li>Require broker to resubmit payment</li>
+                </ul>
+
+                <div class="form-control mt-4">
+                    <label class="label">
+                        <span class="label-text">
+                            Reason for Rejection
+                            <span class="text-error">*</span>
+                        </span>
+                    </label>
+                    <textarea id="rejectionReason" rows="4" required
+                              class="textarea textarea-bordered"
+                              placeholder="Please provide a detailed reason for rejection..."></textarea>
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60">This reason will be sent to the broker and consignee.</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal-action">
+            <button type="button" onclick="closeRejectionModal()" class="btn btn-ghost">
+                Cancel
+            </button>
+            <button type="button" id="rejectionSubmitBtn" onclick="confirmRejection()" class="btn btn-error">
+                <span class="icon-[tabler--circle-x] size-5"></span>
+                Confirm Rejection
+            </button>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button onclick="closeRejectionModal()">close</button>
+    </form>
+</dialog>
+
+{# Success Modal #}
+<dialog id="successModal" class="modal">
+    <div class="modal-box max-w-lg">
+        <div class="text-center">
+            <div class="size-20 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4 animate-bounce-once">
+                <span class="icon-[tabler--check] size-12 text-success"></span>
+            </div>
+            <h3 class="text-2xl font-bold text-base-content mb-4">Success!</h3>
+            <p class="text-base text-base-content/80 mb-4" id="successMessage">
+                {# Message will be inserted here #}
+            </p>
+            <div id="successDetails" class="space-y-2 text-sm text-success">
+                {# Details will be inserted here #}
+            </div>
+        </div>
+        
+        <div class="modal-action justify-center">
+            <button type="button" onclick="closeSuccessModal()" class="btn btn-success btn-wide">
+                <span class="icon-[tabler--check] size-5"></span>
+                OK
+            </button>
+        </div>
+    </div>
+</dialog>
+
+{# Error Modal #}
+<dialog id="errorModal" class="modal">
+    <div class="modal-box max-w-lg">
+        <div class="text-center">
+            <div class="size-20 rounded-full bg-error/10 flex items-center justify-center mx-auto mb-4 animate-shake">
+                <span class="icon-[tabler--x] size-12 text-error"></span>
+            </div>
+            <h3 class="text-2xl font-bold text-base-content mb-4">Error</h3>
+            <p class="text-base text-base-content/80" id="errorMessage">
+                {# Error message will be inserted here #}
+            </p>
+        </div>
+        
+        <div class="modal-action justify-center">
+            <button type="button" onclick="closeErrorModal()" class="btn btn-error btn-wide">
+                <span class="icon-[tabler--x] size-5"></span>
+                Close
+            </button>
+        </div>
+    </div>
+</dialog>
+
+<style>
+@keyframes bounce-once {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+.animate-bounce-once {
+    animation: bounce-once 0.6s ease-in-out;
+}
+
+.animate-shake {
+    animation: shake 0.5s ease-in-out;
+}
+</style>
+
+<script>
+// Success Modal Functions
+function showSuccessModal(message, details = []) {
+    document.getElementById('successMessage').textContent = message;
+    
+    const detailsContainer = document.getElementById('successDetails');
+    detailsContainer.innerHTML = '';
+    
+    if (details.length > 0) {
+        details.forEach(detail => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-center gap-2';
+            
+            const icon = document.createElement('span');
+            icon.className = 'icon-[tabler--circle-check] size-5 flex-shrink-0';
+            
+            const text = document.createElement('span');
+            text.textContent = detail;
+            
+            div.appendChild(icon);
+            div.appendChild(text);
+            detailsContainer.appendChild(div);
+        });
+    }
+    
+    document.getElementById('successModal').showModal();
+}
+
+function closeSuccessModal() {
+    document.getElementById('successModal').close();
+    window.location.reload();
+}
+
+// Error Modal Functions
+function showErrorModal(message) {
+    document.getElementById('errorMessage').textContent = message;
+    document.getElementById('errorModal').showModal();
+}
+
+function closeErrorModal() {
+    document.getElementById('errorModal').close();
+}
+
+// Modal functions
+function openApprovalModal() {
+    document.getElementById('approvalModal').showModal();
+}
+
+function closeApprovalModal() {
+    document.getElementById('approvalModal').close();
+    document.getElementById('approvalReason').value = '';
+}
+
+function openRejectionModal() {
+    document.getElementById('rejectionModal').showModal();
+}
+
+function closeRejectionModal() {
+    document.getElementById('rejectionModal').close();
+    document.getElementById('rejectionReason').value = '';
+}
+
+function confirmApproval() {
+    const reason = document.getElementById('approvalReason').value.trim();
+    const hasDiscrepancy = {{ discrepancy > 0.01 ? 'true' : 'false' }};
+    
+    if (hasDiscrepancy && !reason) {
+        alert('Please provide justification for the amount override.');
+        return;
+    }
+    
+    const submitBtn = document.getElementById('approvalSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span>Processing...';
+    
+    fetch(`/api/payments/{{ payment.id }}/validate-final`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            approved: true,
+            reason: reason || null
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showErrorModal(data.message || data.error);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span class="icon-[tabler--circle-check] size-5"></span>Confirm Approval';
+        } else if (data.success) {
+            closeApprovalModal();
+            
+            // Build success details
+            const details = [];
+            if (data.officialReceiptGenerated) {
+                details.push('Official Receipt has been generated');
+            }
+            if (data.nextStep) {
+                details.push(data.nextStep);
+            }
+            
+            showSuccessModal(
+                data.message || 'Payment approved successfully!',
+                details
+            );
+        } else {
+            // Fallback for old response format
+            closeApprovalModal();
+            showSuccessModal('Payment approved successfully! Official receipt has been issued. Manifest transferred to SL_STAFF for eDO generation.');
+        }
+    })
+    .catch(error => {
+        showErrorModal('An error occurred. Please try again.');
+        console.error('Error:', error);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span class="icon-[tabler--circle-check] size-5"></span>Confirm Approval';
+    });
+}
+
+function confirmRejection() {
+    const reason = document.getElementById('rejectionReason').value.trim();
+    
+    if (!reason) {
+        alert('Please provide a reason for rejection.');
+        return;
+    }
+    
+    const submitBtn = document.getElementById('rejectionSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span>Processing...';
+    
+    fetch(`/api/payments/{{ payment.id }}/validate-final`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            approved: false,
+            reason: reason
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showErrorModal(data.message || data.error);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span class="icon-[tabler--circle-x] size-5"></span>Confirm Rejection';
+        } else if (data.success) {
+            closeRejectionModal();
+            showSuccessModal(data.message || 'Payment rejected successfully!');
+        } else {
+            // Fallback for old response format
+            closeRejectionModal();
+            showSuccessModal('Payment rejected successfully!');
+        }
+    })
+    .catch(error => {
+        showErrorModal('An error occurred. Please try again.');
+        console.error('Error:', error);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span class="icon-[tabler--circle-x] size-5"></span>Confirm Rejection';
+    });
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeApprovalModal();
+        closeRejectionModal();
+    }
+});
+</script>
+{% endblock %}

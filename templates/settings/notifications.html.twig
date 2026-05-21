@@ -1,0 +1,449 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Notification Settings - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="py-6">
+                <h1 class="text-3xl font-bold text-gray-900">Notification Settings</h1>
+                <p class="mt-2 text-gray-600">Manage your notification preferences and devices</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <form id="notification-preferences-form" class="space-y-6">
+            <!-- Notification Types Section -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Notification Types</h3>
+                    <p class="text-sm text-gray-600 mt-1">Choose which types of notifications you want to receive</p>
+                </div>
+
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for type, label in notificationTypes %}
+                            <label class="relative flex items-start p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer">
+                                <div class="flex items-center h-5">
+                                    <input 
+                                        type="checkbox" 
+                                        id="type_{{ type }}" 
+                                        name="enabled_types[]" 
+                                        value="{{ type }}"
+                                        {% if preferences.isTypeEnabled(type) %}checked{% endif %}
+                                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                                    >
+                                </div>
+                                <div class="ml-3 flex-1">
+                                    <span class="text-sm font-medium text-gray-900">
+                                        {{ label }}
+                                    </span>
+                                </div>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Do Not Disturb Section -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Do Not Disturb</h3>
+                    <p class="text-sm text-gray-600 mt-1">Suppress notifications during specific hours</p>
+                </div>
+
+                <div class="p-6 space-y-6">
+                    <label class="relative flex items-start p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer">
+                        <div class="flex items-center h-5">
+                            <input 
+                                type="checkbox" 
+                                id="dnd_enabled" 
+                                name="dnd_enabled" 
+                                value="1"
+                                {% if preferences.isDoNotDisturbEnabled %}checked{% endif %}
+                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                            >
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <span class="text-sm font-semibold text-gray-900">
+                                Enable Do Not Disturb Mode
+                            </span>
+                            <p class="text-xs text-gray-600 mt-1">
+                                Silence notifications during your specified quiet hours
+                            </p>
+                        </div>
+                    </label>
+
+                    <div id="dnd-time-range" class="space-y-4 {% if not preferences.isDoNotDisturbEnabled %}hidden{% endif %}">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="dnd_start" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Start Time
+                                </label>
+                                <input 
+                                    type="time" 
+                                    id="dnd_start" 
+                                    name="dnd_start"
+                                    value="{% if preferences.doNotDisturbStart %}{{ preferences.doNotDisturbStart|date('H:i') }}{% endif %}"
+                                    class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                >
+                            </div>
+
+                            <div>
+                                <label for="dnd_end" class="block text-sm font-medium text-gray-700 mb-2">
+                                    End Time
+                                </label>
+                                <input 
+                                    type="time" 
+                                    id="dnd_end" 
+                                    name="dnd_end"
+                                    value="{% if preferences.doNotDisturbEnd %}{{ preferences.doNotDisturbEnd|date('H:i') }}{% endif %}"
+                                    class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                >
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-blue-800">
+                                        Notifications received during Do Not Disturb hours will be queued and delivered when the mode is disabled.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manage Devices Section -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Manage Devices</h3>
+                    <p class="text-sm text-gray-600 mt-1">Devices registered to receive push notifications</p>
+                </div>
+
+                <div class="p-6">
+                    {% if subscriptions is empty %}
+                        <div class="text-center py-12">
+                            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>
+                            <p class="text-gray-500 font-medium">No devices registered</p>
+                            <p class="text-sm text-gray-400 mt-1">Enable push notifications on your devices to see them here</p>
+                        </div>
+                    {% else %}
+                        <div class="space-y-3">
+                            {% for subscription in subscriptions %}
+                                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200" data-subscription-id="{{ subscription.id }}">
+                                    <div class="flex items-center flex-1">
+                                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="text-sm font-medium text-gray-900">
+                                                {{ subscription.userAgent ?? 'Unknown Device' }}
+                                            </div>
+                                            <div class="text-xs text-gray-500 mt-1">
+                                                Registered: {{ subscription.createdAt|date('M d, Y') }}
+                                                {% if subscription.lastUsedAt %}
+                                                    | Last used: {{ subscription.lastUsedAt|date('M d, Y') }}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        type="button"
+                                        class="remove-device-btn ml-4 inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                        data-subscription-id="{{ subscription.id }}"
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Save Button -->
+            <div class="flex justify-end">
+                <button 
+                    type="submit"
+                    class="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                    Save Preferences
+                </button>
+            </div>
+        </form>
+
+        <!-- Success/Error Messages -->
+        <div id="message-container" class="mt-6 hidden">
+            <div id="success-message" class="hidden bg-green-50 border border-green-200 rounded-lg p-4 shadow-sm">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <p class="text-sm font-medium text-green-800"></p>
+                    </div>
+                    <button type="button" onclick="hideMessage()" class="ml-3 flex-shrink-0">
+                        <svg class="h-5 w-5 text-green-400 hover:text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div id="error-message" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 shadow-sm">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <p class="text-sm font-medium text-red-800"></p>
+                    </div>
+                    <button type="button" onclick="hideMessage()" class="ml-3 flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400 hover:text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmation-modal" class="hidden fixed inset-0 z-[9999] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeConfirmationModal()"></div>
+
+        <!-- Center modal -->
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <!-- Modal panel -->
+        <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+            <div class="sm:flex sm:items-start">
+                <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1-1.964-1-2.732 0L3.732 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                        Remove Device
+                    </h3>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500" id="modal-message">
+                            Are you sure you want to remove this device? You will no longer receive push notifications on this device.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse gap-3">
+                <button type="button" 
+                        id="confirm-remove-btn"
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm transition-colors">
+                    Remove Device
+                </button>
+                <button type="button" 
+                        onclick="closeConfirmationModal()"
+                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let pendingRemovalSubscriptionId = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('notification-preferences-form');
+    const dndEnabledCheckbox = document.getElementById('dnd_enabled');
+    const dndTimeRange = document.getElementById('dnd-time-range');
+    const messageContainer = document.getElementById('message-container');
+    const successMessage = document.getElementById('success-message');
+    const errorMessage = document.getElementById('error-message');
+    const confirmationModal = document.getElementById('confirmation-modal');
+    const confirmRemoveBtn = document.getElementById('confirm-remove-btn');
+
+    // Toggle DND time range visibility
+    dndEnabledCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            dndTimeRange.classList.remove('hidden');
+        } else {
+            dndTimeRange.classList.add('hidden');
+        }
+    });
+
+    // Handle form submission
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch('{{ path('notification_preferences_update') }}', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showMessage(successMessage, data.message || 'Preferences saved successfully');
+                // Scroll to message
+                messageContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                showMessage(errorMessage, data.error || 'Failed to save preferences');
+                messageContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        } catch (error) {
+            showMessage(errorMessage, 'An error occurred while saving preferences');
+            messageContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    });
+
+    // Handle device removal - show confirmation modal
+    document.querySelectorAll('.remove-device-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            pendingRemovalSubscriptionId = this.dataset.subscriptionId;
+            openConfirmationModal();
+        });
+    });
+
+    // Confirm removal button in modal
+    confirmRemoveBtn.addEventListener('click', async function() {
+        if (!pendingRemovalSubscriptionId) return;
+
+        const subscriptionId = pendingRemovalSubscriptionId;
+        
+        // Disable button and show loading state
+        confirmRemoveBtn.disabled = true;
+        confirmRemoveBtn.innerHTML = '<svg class="animate-spin h-4 w-4 mr-2 inline-block" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Removing...';
+
+        try {
+            const response = await fetch(`{{ path('notification_preferences_remove_device', {id: 999999}) }}`.replace('999999', subscriptionId), {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Remove the device element from the DOM with animation
+                const deviceElement = document.querySelector(`[data-subscription-id="${subscriptionId}"]`);
+                if (deviceElement) {
+                    deviceElement.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+                    deviceElement.style.opacity = '0';
+                    deviceElement.style.transform = 'translateX(20px)';
+                    setTimeout(() => {
+                        deviceElement.remove();
+                        
+                        // Check if there are no more devices and show empty state
+                        const devicesContainer = deviceElement.parentElement;
+                        if (devicesContainer && devicesContainer.children.length === 0) {
+                            devicesContainer.innerHTML = `
+                                <div class="text-center py-12">
+                                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                        </svg>
+                                    </div>
+                                    <p class="text-gray-500 font-medium">No devices registered</p>
+                                    <p class="text-sm text-gray-400 mt-1">Enable push notifications on your devices to see them here</p>
+                                </div>
+                            `;
+                        }
+                    }, 300);
+                }
+                
+                closeConfirmationModal();
+                showMessage(successMessage, data.message || 'Device removed successfully');
+                
+                // Scroll to success message
+                setTimeout(() => {
+                    messageContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 350);
+            } else {
+                closeConfirmationModal();
+                showMessage(errorMessage, data.error || 'Failed to remove device');
+                messageContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        } catch (error) {
+            closeConfirmationModal();
+            showMessage(errorMessage, 'An error occurred while removing device');
+            messageContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } finally {
+            // Reset button state
+            confirmRemoveBtn.disabled = false;
+            confirmRemoveBtn.textContent = 'Remove Device';
+            pendingRemovalSubscriptionId = null;
+        }
+    });
+
+    function showMessage(element, message) {
+        messageContainer.classList.remove('hidden');
+        successMessage.classList.add('hidden');
+        errorMessage.classList.add('hidden');
+        
+        element.classList.remove('hidden');
+        element.querySelector('p').textContent = message;
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            hideMessage();
+        }, 5000);
+    }
+});
+
+function openConfirmationModal() {
+    const modal = document.getElementById('confirmation-modal');
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeConfirmationModal() {
+    const modal = document.getElementById('confirmation-modal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    pendingRemovalSubscriptionId = null;
+}
+
+function hideMessage() {
+    const messageContainer = document.getElementById('message-container');
+    const successMessage = document.getElementById('success-message');
+    const errorMessage = document.getElementById('error-message');
+    
+    successMessage.classList.add('hidden');
+    errorMessage.classList.add('hidden');
+    messageContainer.classList.add('hidden');
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeConfirmationModal();
+    }
+});
+</script>
+{% endblock %}

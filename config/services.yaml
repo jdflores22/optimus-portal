@@ -1,0 +1,684 @@
+# yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
+
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+# See also https://symfony.com/doc/current/service_container/import.html
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+    app.file_encryption_key: '%env(FILE_ENCRYPTION_KEY)%'
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        bind:
+            $avatarColorsConfig: '%avatar_colors%'
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/'
+
+    # Avatar Color Service with specific cache binding
+    App\Service\Avatar\AvatarColorService:
+        arguments:
+            $cache: '@avatar_colors.cache'
+            $logger: '@monolog.logger.avatar_colors'
+
+    # Avatar Color Generator Service with logger
+    App\Service\Avatar\ColorGeneratorService:
+        arguments:
+            $logger: '@monolog.logger.avatar_colors'
+
+    # Avatar Color Accessibility Validator Service with logger
+    App\Service\Avatar\AccessibilityValidatorService:
+        arguments:
+            $logger: '@monolog.logger.avatar_colors'
+
+    # Avatar Color Twig Extension with logger
+    App\Twig\AvatarColorExtension:
+        arguments:
+            $logger: '@monolog.logger.avatar_colors'
+
+    # Terminal Team Twig Extension for badge counts
+    App\Twig\TerminalTeamExtension:
+        tags: ['twig.extension']
+
+    # EDO Payment Twig Extension for badge counts
+    App\Twig\EDOPaymentExtension:
+        tags: ['twig.extension']
+
+    # Appeal Twig Extension for badge counts
+    App\Twig\AppealExtension:
+        tags: ['twig.extension']
+
+    # Transfer Request Twig Extension for badge counts
+    App\Twig\TransferRequestExtension:
+        tags: ['twig.extension']
+
+    # Avatar Color Configuration Services
+    App\Service\Avatar\ConfigurationValidatorService:
+        public: true
+
+    App\Service\Avatar\ConfigurationReloaderService:
+        public: true
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $avatarColorService: '@App\Service\Avatar\AvatarColorService'
+
+    # Avatar Colors Cache Manager
+    App\Service\Avatar\AvatarColorsCacheManager:
+        public: true
+        arguments:
+            $logger: '@monolog.logger.avatar_colors'
+
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones
+
+    # Make services public for testing
+    App\Service\AccreditationWorkflowService:
+        public: true
+
+    App\Service\AuditService:
+        public: true
+
+    App\Service\PaymentService:
+        public: true
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Service\PaymentReceiptGenerator:
+        public: true
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Service\ShipmentService:
+        public: true
+
+    # File Service
+    App\Service\FileService:
+        public: true
+
+    # SMS Service Interface binding
+    App\Service\SmsServiceInterface:
+        alias: App\Service\SmsService
+
+    # SMS Service
+    App\Service\SmsService:
+        public: true
+
+    # In-App Notification Service
+    App\Service\InAppNotificationService:
+        public: true
+
+    # Notification Monitoring Service
+    App\Service\NotificationMonitoringService:
+        public: true
+
+    # Enhanced Dwell Time Notification Service
+    App\Service\DwellTimeNotificationService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $emailService: '@App\Service\EmailNotificationService'
+            $smsService: '@App\Service\SmsServiceInterface'
+            $inAppService: '@App\Service\InAppNotificationService'
+            $urlGenerator: '@router'
+            $logger: '@logger'
+            $terminalTeamService: '@App\Service\TerminalTeamDwellTimeService'
+            $monitoringService: '@App\Service\NotificationMonitoringService'
+
+    # Email Verification Service
+
+    # Integration Services for Terminal Team Pre-Advice
+    App\Service\AuthenticationIntegrationService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $tokenStorage: '@security.token_storage'
+            $eventDispatcher: '@event_dispatcher'
+            $shippingLineAccessControl: '@App\Service\ShippingLineAccessControlService'
+
+    App\Service\FileManagementIntegrationService:
+        public: true
+        arguments:
+            $fileService: '@App\Service\FileService'
+            $entityManager: '@doctrine.orm.entity_manager'
+            $logger: '@logger'
+
+    App\Service\PaymentIntegrationService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $paymentService: '@App\Service\PaymentService'
+            $auditService: '@App\Service\AuditService'
+            $logger: '@logger'
+
+    App\Service\EDOIntegrationService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $paymentService: '@App\Service\PaymentService'
+            $auditService: '@App\Service\AuditService'
+            $logger: '@logger'
+            $parameterBag: '@parameter_bag'
+    App\Service\EmailVerificationService:
+        public: true
+        arguments:
+            $fromAddress: '%env(MAILER_FROM_EMAIL)%'
+
+    # Email Notification Service for role acceptance workflow
+    App\Service\EmailNotificationService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $mailer: '@mailer.mailer'
+            $twig: '@twig'
+            $urlGenerator: '@router'
+            $logger: '@logger'
+            $notificationService: '@App\Service\InAppNotificationService'
+            $fromAddress: '%env(MAILER_FROM_EMAIL)%'
+
+    # User Service with optional notification service
+    App\Service\UserService:
+        public: true
+        calls:
+            - setNotificationService: ['@App\Service\NotificationService']
+
+    # Notification Service with dependencies for FREE-ADVICE notifications
+    App\Service\NotificationService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $inAppNotificationService: '@App\Service\InAppNotificationService'
+            $logger: '@logger'
+
+    # Error Handler
+    App\Service\ErrorHandler:
+        public: true
+        arguments:
+            $environment: '%kernel.environment%'
+
+    # Exception Subscriber with environment binding
+    App\EventSubscriber\ExceptionSubscriber:
+        arguments:
+            $environment: '%kernel.environment%'
+        tags:
+            - { name: kernel.event_listener, event: kernel.exception }
+
+    # Structured Logger with different channels
+    App\Service\StructuredLogger:
+        public: true
+        arguments:
+            $appLogger: '@monolog.logger'
+            $securityLogger: '@monolog.logger.security'
+            $auditLogger: '@monolog.logger.audit'
+            $errorLogger: '@monolog.logger.error'
+            $notificationLogger: '@monolog.logger'
+
+    # Retry Service
+    App\Service\RetryService:
+        public: true
+
+    # Database Transaction Service
+    App\Service\DatabaseTransactionService:
+        public: true
+
+    # JWT Service
+    App\Service\JwtService:
+        public: true
+
+    # Cache Service with dedicated cache pools
+    App\Service\CacheService:
+        public: true
+        arguments:
+            $formConfigurationsCache: '@form_configurations.cache'
+            $userPermissionsCache: '@user_permissions.cache'
+            $dashboardMetricsCache: '@dashboard_metrics.cache'
+            $fileMetadataCache: '@file_metadata.cache'
+            $logger: '@monolog.logger'
+
+    # Redis Session Handler for production
+    Symfony\Component\HttpFoundation\Session\Storage\Handler\RedisSessionHandler:
+        arguments:
+            - '@Predis\Client'
+
+    # Redis client for session handling
+    Predis\Client:
+        arguments:
+            - '%env(REDIS_URL)%'
+
+    # Terminal Team Pre-Advice Services
+    App\Service\ContainerSearchService:
+        public: true
+
+    App\Service\TerminalService:
+        public: true
+
+    App\Service\SlotManagementService:
+        public: true
+
+    App\Service\PreAdviceService:
+        public: true
+
+    App\Service\PhotoVerificationService:
+        public: true
+
+    # Reporting Services
+    App\Service\ReportingService:
+        public: true
+
+    App\Service\ReportExportService:
+        public: true
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Service\ScheduledReportService:
+        public: true
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    # Dynamic Shipping Line Management Services
+    App\Service\ShippingLineService:
+        public: true
+
+    App\Service\UserHierarchyService:
+        public: true
+
+    App\Service\ActivityLogService:
+        public: true
+
+    # Pending User Service for role acceptance workflow
+    App\Service\PendingUserService:
+        public: true
+
+    # Container Data Service for detailed stack view
+    App\Service\ContainerDataService:
+        public: true
+
+    # Access Control and Security Services
+    App\Service\ScopeAccessControlService:
+        public: true
+        arguments:
+            $activityLogService: '@App\Service\ActivityLogService'
+
+    App\Service\AuthenticationService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $passwordHasher: '@security.user_password_hasher'
+            $activityLogService: '@App\Service\ActivityLogService'
+            $scopeAccessControlService: '@App\Service\ScopeAccessControlService'
+            $requestStack: '@request_stack'
+
+    # Role Acceptance Controller with rate limiter
+    App\Controller\RoleAcceptanceController:
+        arguments:
+            $roleAcceptanceLimiter: '@limiter.role_acceptance'
+    
+    # Broker Workspace Switcher Controller with rate limiter
+    App\Controller\Broker\WorkspaceSwitcherController:
+        arguments:
+            $workspaceSwitchingLimiter: '@limiter.workspace_switching'
+    
+    # Referral Code Controller with rate limiter
+    App\Controller\Consignee\ReferralCodeController:
+        arguments:
+            $referralCodeGenerationLimiter: '@limiter.referral_code_generation'
+    
+    # Broker Transfer Controller with rate limiter
+    App\Controller\Consignee\BrokerTransferController:
+        arguments:
+            $brokerTransferRequestLimiter: '@limiter.broker_transfer_request'
+    
+    # Payment Controller with rate limiter
+    App\Controller\Api\PaymentController:
+        arguments:
+            $paymentService: '@App\Service\PaymentService'
+            $edoPaymentService: '@App\Service\EDOPaymentServiceInterface'
+            $authorizationService: '@App\Service\ManifestAuthorizationService'
+            $edoService: '@App\Service\EDOService'
+            $paymentSubmissionLimiter: '@limiter.payment_submission'
+            $fileStorage: '@App\Service\FileStorageServiceInterface'
+            $auditService: '@App\Service\AuditService'
+    
+    # Document Service
+    App\Service\DocumentService:
+        public: true
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    # Dwell Time Management Services
+    App\Service\DwellTimeMonitor:
+        public: true
+
+    App\Service\ContainerStatusService:
+        public: true
+
+    App\Service\TerminalTeamDwellTimeService:
+        public: true
+
+    App\Service\ContainerReturnService:
+        public: true
+
+    # Manifest Payment and NOA Workflow Services
+    App\Service\ManifestServiceInterface:
+        alias: App\Service\ManifestService
+
+    App\Service\ManifestService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $auditService: '@App\Service\AuditService'
+            $workflowOrchestrator: '@App\Service\WorkflowOrchestrator'
+
+    App\Service\PaymentServiceInterface:
+        alias: App\Service\PaymentService
+
+    App\Service\NOAServiceInterface:
+        alias: App\Service\NOAService
+
+    App\Service\CYAllocationService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $configurationService: '@App\Service\ConfigurationService'
+
+    App\Service\NOADocumentGenerator:
+        public: true
+        arguments:
+            $fileStorageService: '@App\Service\FileStorageServiceInterface'
+            $dompdfFactory: '@App\Service\DompdfFactory'
+
+    App\Service\ManifestBLDocumentGenerator:
+        public: true
+        arguments:
+            $fileStorageService: '@App\Service\FileStorageServiceInterface'
+
+    App\Service\NOAService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $documentService: '@App\Service\DocumentService'
+            $auditService: '@App\Service\AuditService'
+            $workflowOrchestrator: '@App\Service\WorkflowOrchestrator'
+            $activityLogService: '@App\Service\ActivityLogService'
+            $notificationService: '@App\Service\ManifestNotificationService'
+            $cyAllocationService: '@App\Service\CYAllocationService'
+            $inAppNotificationService: '@App\Service\InAppNotificationService'
+
+    App\Service\BillingServiceInterface:
+        alias: App\Service\BillingService
+
+    App\Service\BillingService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $documentService: '@App\Service\DocumentService'
+            $auditService: '@App\Service\AuditService'
+            $workflowOrchestrator: '@App\Service\WorkflowOrchestrator'
+
+    App\Service\EDOServiceInterface:
+        alias: App\Service\EDOService
+
+    App\Service\EDOService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $documentService: '@App\Service\DocumentService'
+            $auditService: '@App\Service\AuditService'
+            $edoPdfCache: '@edo_pdf.cache'
+
+    App\Service\EDOGenerationServiceInterface:
+        alias: App\Service\EDOGenerationService
+        public: true
+
+    App\Service\EDOGenerationService:
+        public: true
+
+    App\Service\EDODocumentGenerator:
+        public: true
+        arguments:
+            $fileStorageService: '@App\Service\FileStorageServiceInterface'
+            $dompdfFactory: '@App\Service\DompdfFactory'
+
+    App\Service\EDOAuditServiceInterface:
+        alias: App\Service\EDOAuditService
+        public: true
+
+    App\Service\EDOAuditService:
+        public: true
+
+    App\Service\BatchEDOGenerationServiceInterface:
+        alias: App\Service\BatchEDOGenerationService
+        public: true
+
+    App\Service\BatchEDOGenerationService:
+        public: true
+
+    # Workspace and Broker Relationship Services
+    App\Service\WorkspaceService:
+        public: true
+
+    App\Service\BrokerRelationshipService:
+        public: true
+
+    App\Service\ManifestAuthorizationServiceInterface:
+        alias: App\Service\ManifestAuthorizationService
+
+    App\Service\ManifestAuthorizationService:
+        public: true
+        arguments:
+            $manifestAuthorizationCache: '@cache.app'
+
+    App\Service\ManifestNotificationService:
+        public: true
+        arguments:
+            $notificationGateway: '@App\Service\NotificationGateway'
+            $inAppNotificationService: '@App\Service\InAppNotificationService'
+
+    # Notification Gateway - routes notifications to multiple channels
+    App\Service\NotificationGateway:
+        public: true
+        arguments:
+            $pushNotificationService: '@App\Service\PushNotificationService'
+            $inAppNotificationService: '@App\Service\InAppNotificationService'
+            $mailer: '@mailer.mailer'
+            $twig: '@twig'
+            $logger: '@logger'
+
+    # Push Notification Service
+    App\Service\PushNotificationService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $logger: '@logger'
+            $vapidPublicKey: '%env(VAPID_PUBLIC_KEY)%'
+            $vapidPrivateKey: '%env(VAPID_PRIVATE_KEY)%'
+            $vapidSubject: '%env(VAPID_SUBJECT)%'
+
+    # Test Push Notification Command
+    App\Command\TestPushNotificationCommand:
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $vapidPublicKey: '%env(VAPID_PUBLIC_KEY)%'
+            $vapidPrivateKey: '%env(VAPID_PRIVATE_KEY)%'
+            $vapidSubject: '%env(VAPID_SUBJECT)%'
+        tags:
+            - { name: 'console.command' }
+
+    # Notification Delivery Rate Monitoring Command
+    App\Command\MonitorNotificationDeliveryRateCommand:
+        arguments:
+            $metricsRepository: '@App\Repository\NotificationMetricsRepository'
+            $mailer: '@mailer.mailer'
+            $twig: '@twig'
+            $logger: '@logger'
+            $adminEmail: '%env(MAILER_FROM_EMAIL)%'
+        tags:
+            - { name: 'console.command' }
+
+    # Push Subscription Cleanup Command
+    # Schedule via cron: 0 3 * * * php bin/console app:cleanup-invalid-subscriptions
+    # See docs/push-subscription-cleanup.md for detailed scheduling instructions
+    App\Command\CleanupInvalidSubscriptionsCommand:
+        tags:
+            - { name: 'console.command' }
+
+    App\Service\WorkflowOrchestrator:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $auditService: '@App\Service\AuditService'
+            $notificationService: '@App\Service\ManifestNotificationService'
+
+    App\Service\PaymentVerificationTransactionService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $transactionService: '@App\Service\DatabaseTransactionService'
+            $edoService: '@App\Service\EDOService'
+            $workflowOrchestrator: '@App\Service\WorkflowOrchestrator'
+            $authorizationService: '@App\Service\ManifestAuthorizationService'
+            $logger: '@logger'
+
+    # eDO Release Workflow Services
+    App\Service\EDOReleaseServiceInterface:
+        alias: App\Service\EDOReleaseService
+
+    App\Service\EDOReleaseService:
+        public: true
+        arguments:
+            $edoRepository: '@App\Repository\ElectronicDeliveryOrderRepository'
+            $historyRepository: '@App\Repository\EDOReleaseHistoryRepository'
+            $entityManager: '@doctrine.orm.entity_manager'
+            $logger: '@logger'
+            $auditService: '@App\Service\AuditService'
+
+    App\Service\PaymentFeeConfigurationServiceInterface:
+        alias: App\Service\PaymentFeeConfigurationService
+
+    App\Service\PaymentFeeConfigurationService:
+        public: true
+        arguments:
+            $repository: '@App\Repository\PaymentFeeConfigurationRepository'
+            $entityManager: '@doctrine.orm.entity_manager'
+
+    # eDO Payment Separation Services
+    App\Service\EDOPaymentServiceInterface:
+        alias: App\Service\EDOPaymentService
+
+    App\Service\EDOPaymentService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $fileService: '@App\Service\FileService'
+            $auditService: '@App\Service\AuditService'
+            $notificationService: '@App\Service\ManifestNotificationService'
+            $activityLogService: '@App\Service\ActivityLogService'
+            $paymentFeeConfigService: '@App\Service\PaymentFeeConfigurationService'
+            $fileUploadService: '@App\Service\FileUploadServiceInterface'
+            $officialReceiptGenerator: '@App\Service\OfficialReceiptGeneratorServiceInterface'
+            $projectDir: '%kernel.project_dir%'
+
+    App\Service\EDOReportingServiceInterface:
+        alias: App\Service\EDOReportingService
+
+    App\Service\EDOReportingService:
+        public: true
+        arguments:
+            $edoRepository: '@App\Repository\ElectronicDeliveryOrderRepository'
+            $entityManager: '@doctrine.orm.entity_manager'
+            $reportsDirectory: '%kernel.project_dir%/var/reports'
+
+    App\Service\EDOAccessLogServiceInterface:
+        alias: App\Service\EDOAccessLogService
+
+    App\Service\EDOAccessLogService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+
+    # Configuration Service for eDO workflow settings
+    App\Service\ConfigurationService:
+        public: true
+        arguments:
+            $cache: '@cache.app'
+
+    # File Upload Service for payment receipts
+    App\Service\FileUploadServiceInterface:
+        alias: App\Service\FileUploadService
+    
+    App\Service\FileUploadService:
+        public: true
+        arguments:
+            $storageBasePath: '%kernel.project_dir%/storage'
+            $logger: '@logger'
+
+    # Official Receipt Generator Service
+    App\Service\OfficialReceiptGeneratorServiceInterface:
+        alias: App\Service\OfficialReceiptGeneratorService
+    
+    App\Service\OfficialReceiptGeneratorService:
+        public: true
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    # Multi-Tenant Shipping Line Services
+    App\Service\ShippingLineContextService:
+        public: true
+
+    App\Service\ShippingLineAccessControlService:
+        public: true
+
+    App\Service\ShippingLineLogoService:
+        public: true
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    # Dompdf Service Configuration
+    dompdf:
+        class: Dompdf\Dompdf
+        factory: ['App\Service\DompdfFactory', 'create']
+
+    App\Service\DompdfFactory:
+        public: false
+
+    # EDO Number Generator
+    App\Utility\EDONumberGenerator:
+        public: true
+
+    # Broker EDO Controller with projectDir binding
+    App\Controller\Broker\BrokerEDOController:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    # System Admin EDO Payment Controller with projectDir binding
+    App\Controller\Admin\SystemAdminEDOPaymentController:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    # Container Allocation Audit Service
+    App\Service\ContainerAllocationAuditServiceInterface:
+        alias: App\Service\ContainerAllocationAuditService
+
+    App\Service\ContainerAllocationAuditService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+
+    # CY Utilization Report Service
+    App\Service\CYUtilizationReportServiceInterface:
+        alias: App\Service\CYUtilizationReportService
+
+    App\Service\CYUtilizationReportService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $params: '@parameter_bag'
+
+imports:
+    - { resource: services_api.yaml }

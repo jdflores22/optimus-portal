@@ -1,0 +1,239 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Importing Manifests - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+    {# Breadcrumb #}
+    <div class="breadcrumbs text-sm">
+        <ul>
+            <li>
+                <a href="{{ path('manifest_workflow_list') }}" class="inline-flex items-center gap-2">
+                    <span class="icon-[tabler--file-text] size-4"></span>
+                    NOA Workflow
+                </a>
+            </li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li>
+                <a href="{{ path('manifest_workflow_bulk_import_manifests') }}">Bulk Import Manifests</a>
+            </li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li aria-current="page">Processing</li>
+        </ul>
+    </div>
+
+    {# Progress Card #}
+    <div class="max-w-3xl mx-auto">
+        <div class="card bg-base-100 shadow-lg">
+            <div class="card-body p-8">
+                
+                {# Header #}
+                <div class="text-center mb-8">
+                    <div class="size-16 rounded-full bg-info/10 flex items-center justify-center mx-auto mb-4">
+                        <span class="icon-[tabler--file-upload] size-8 text-info"></span>
+                    </div>
+                    <h1 class="text-2xl font-bold text-base-content mb-2">Importing Manifests</h1>
+                    <p class="text-sm text-base-content/60">
+                        Generating Manifest/BL documents for each NOA. This may take a few minutes.
+                    </p>
+                </div>
+
+                {# Progress Bar #}
+                <div class="space-y-4">
+                    <div class="flex items-center justify-center gap-x-1" id="progressBar">
+                        <!-- Progress steps will be dynamically generated -->
+                    </div>
+
+                    {# Status Text #}
+                    <div class="text-center">
+                        <p class="text-lg font-semibold text-base-content" id="statusText">
+                            Initializing...
+                        </p>
+                        <p class="text-sm text-base-content/60 mt-1" id="detailText">
+                            Processing row <span id="currentRow">0</span> of <span id="totalRows">{{ totalRows }}</span>
+                        </p>
+                    </div>
+                </div>
+
+                {# Live Updates #}
+                <div class="mt-8 space-y-3" id="liveUpdates">
+                    <!-- Live updates will appear here -->
+                </div>
+
+                {# Warning #}
+                <div class="alert alert-info mt-6">
+                    <span class="icon-[tabler--info-circle] size-5"></span>
+                    <span class="text-sm">Please do not close this page until the import is complete.</span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const importId = '{{ importId }}';
+const totalRows = {{ totalRows }};
+const progressCheckUrl = '{{ path('manifest_workflow_bulk_import_manifests_progress_check', {importId: importId}) }}';
+const numSteps = Math.min(totalRows, 20); // Max 20 steps for visual clarity
+
+// Initialize progress bar
+function initProgressBar() {
+    const progressBar = document.getElementById('progressBar');
+    progressBar.innerHTML = '';
+    
+    for (let i = 0; i < numSteps; i++) {
+        const step = document.createElement('div');
+        step.className = 'progress-step bg-base-300';
+        step.setAttribute('role', 'progressbar');
+        step.setAttribute('aria-valuenow', '0');
+        step.setAttribute('aria-valuemin', '0');
+        step.setAttribute('aria-valuemax', '100');
+        step.id = `step-${i}`;
+        progressBar.appendChild(step);
+    }
+    
+    // Add percentage text
+    const percentText = document.createElement('p');
+    percentText.className = 'text-sm text-info ms-2 font-medium';
+    percentText.id = 'percentText';
+    percentText.textContent = '0%';
+    progressBar.appendChild(percentText);
+}
+
+// Update progress bar
+function updateProgressBar(processed, total) {
+    const percentage = Math.round((processed / total) * 100);
+    const stepsToFill = Math.floor((processed / total) * numSteps);
+    
+    // Update steps
+    for (let i = 0; i < numSteps; i++) {
+        const step = document.getElementById(`step-${i}`);
+        if (i < stepsToFill) {
+            step.className = 'progress-step bg-info';
+        } else if (i === stepsToFill && processed < total) {
+            step.className = 'progress-step bg-info/50';
+        } else {
+            step.className = 'progress-step bg-base-300';
+        }
+    }
+    
+    // Update percentage
+    document.getElementById('percentText').textContent = percentage + '%';
+    document.getElementById('currentRow').textContent = processed;
+}
+
+// Add live update
+function addLiveUpdate(message, type = 'info') {
+    const liveUpdates = document.getElementById('liveUpdates');
+    const update = document.createElement('div');
+    
+    const iconMap = {
+        success: 'circle-check',
+        error: 'alert-circle',
+        warning: 'alert-triangle',
+        info: 'info-circle'
+    };
+    
+    const colorMap = {
+        success: 'text-success',
+        error: 'text-error',
+        warning: 'text-warning',
+        info: 'text-info'
+    };
+    
+    update.className = 'flex items-start gap-2 text-sm animate-fade-in';
+    
+    // Create icon element
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'size-4 flex-shrink-0 mt-0.5 ' + colorMap[type];
+    iconSpan.classList.add('icon-[tabler--' + iconMap[type] + ']');
+    
+    // Create message element
+    const messageSpan = document.createElement('span');
+    messageSpan.className = 'text-base-content/80';
+    messageSpan.textContent = message;
+    
+    // Append elements
+    update.appendChild(iconSpan);
+    update.appendChild(messageSpan);
+    
+    liveUpdates.insertBefore(update, liveUpdates.firstChild);
+    
+    // Keep only last 10 updates
+    while (liveUpdates.children.length > 10) {
+        liveUpdates.removeChild(liveUpdates.lastChild);
+    }
+}
+
+// Check progress
+async function checkProgress() {
+    try {
+        const response = await fetch(progressCheckUrl);
+        const data = await response.json();
+        
+        // Update progress bar
+        updateProgressBar(data.processed, data.total);
+        
+        // Update status text
+        document.getElementById('statusText').textContent = data.status;
+        
+        // Add live updates for new items
+        if (data.lastUpdate) {
+            addLiveUpdate(data.lastUpdate.message, data.lastUpdate.type);
+        }
+        
+        // Check if complete
+        if (data.complete) {
+            document.getElementById('statusText').textContent = 'Import Complete!';
+            document.getElementById('detailText').textContent = 
+                `Successfully imported ${data.successCount} of ${data.total} Manifests`;
+            
+            // Change all steps to success color
+            for (let i = 0; i < numSteps; i++) {
+                document.getElementById(`step-${i}`).className = 'progress-step bg-success';
+            }
+            document.getElementById('percentText').className = 'text-sm text-success ms-2 font-medium';
+            
+            // Redirect to results page after 2 seconds
+            setTimeout(() => {
+                window.location.href = data.redirectUrl;
+            }, 2000);
+        } else {
+            // Continue polling - check every 200ms for faster processing
+            setTimeout(checkProgress, 200);
+        }
+        
+    } catch (error) {
+        console.error('Error checking progress:', error);
+        addLiveUpdate('Error checking progress. Retrying...', 'error');
+        setTimeout(checkProgress, 2000); // Retry after 2 seconds
+    }
+}
+
+// Initialize and start
+initProgressBar();
+addLiveUpdate('Starting manifest import process...', 'info');
+setTimeout(checkProgress, 100); // Start checking after 100ms
+</script>
+
+<style>
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+}
+</style>
+
+{% endblock %}

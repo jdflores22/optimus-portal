@@ -1,0 +1,1221 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Form - {{ form.name }} - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Top Navigation Bar -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-meta-blue">OPTIMUS</span>
+                    <span class="ml-4 text-gray-600">Form Builder</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="toggle-preview" class="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition">
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        Live Preview
+                    </button>
+                    <a href="{{ path('form_builder_list') }}" class="text-gray-600 hover:text-gray-800">
+                        ← Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">{{ form.name }}</h1>
+                <div class="flex items-center space-x-4 mt-2">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {{ form.type.value }}
+                    </span>
+                    <span class="text-sm text-gray-500">Version {{ form.version }}</span>
+                    {% if form.status.value == 'PUBLISHED' %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            Published
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                            </svg>
+                            Draft
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{{ path('form_builder_preview', {id: form.id}) }}" 
+                   class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                    </svg>
+                    Full Preview
+                </a>
+                {% if form.status.value == 'DRAFT' %}
+                    <a href="{{ path('form_builder_publish_confirm', {id: form.id}) }}" 
+                       class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Publish Form
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        {% for message in app.flashes('success') %}
+            <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                {{ message }}
+            </div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+                {{ message }}
+            </div>
+        {% endfor %}
+
+        <!-- Main Layout - 3 Columns in 1 Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Column 1: Field Templates -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">1. Field Templates</h3>
+                    <div class="space-y-3">
+                        {% set fieldTemplates = {
+                            'text': { icon: 'M4 6h16M4 12h16M4 18h7', name: 'Text Input' },
+                            'number': { icon: 'M7 20l4-16m2 16l4-16M6 9h14M4 15h14', name: 'Number' },
+                            'date': { icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', name: 'Date' },
+                            'file': { icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', name: 'File Upload' },
+                            'dropdown': { icon: 'M8 9l4-4 4 4m0 6l-4 4-4-4', name: 'Dropdown' },
+                            'checkbox': { icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', name: 'Checkbox' },
+                            'radio': { icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z', name: 'Radio Button' }
+                        } %}
+                        
+                        {% for fieldType, template in fieldTemplates %}
+                            <button type="button" 
+                                    class="field-template w-full text-left p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition group"
+                                    data-field-type="{{ fieldType }}"
+                                    data-field-name="{{ template.name }}">
+                                <div class="flex items-center space-x-3">
+                                    <svg class="w-5 h-5 text-gray-400 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ template.icon }}"></path>
+                                    </svg>
+                                    <span class="text-sm font-medium text-gray-700 group-hover:text-blue-700">{{ template.name }}</span>
+                                </div>
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 2: Form Structure -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <!-- Form Builder Header -->
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-gray-900">2. Form Structure</h3>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm text-gray-500">{{ form.fields.fields|length }} fields</span>
+                                <button id="save-form" class="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition flex items-center">
+                                    <svg id="save-spinner" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white hidden" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span id="save-text">Save</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sortable Fields List -->
+                    <div class="p-6">
+                        <div id="sortable-fields" class="space-y-3 min-h-[400px]">
+                            {% if form.fields.fields|length > 0 %}
+                                {% for field in form.fields.fields %}
+                                    <div class="field-item bg-gray-50 border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition cursor-move" 
+                                         data-field-id="{{ field.id }}"
+                                         data-field-order="{{ field.order }}">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center space-x-3">
+                                                <!-- Drag Handle -->
+                                                <div class="drag-handle cursor-move text-gray-400 hover:text-gray-600">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                                                    </svg>
+                                                </div>
+                                                
+                                                <div class="flex-1">
+                                                    <div class="flex items-center space-x-2 mb-1">
+                                                        <span class="font-medium text-gray-900">{{ field.label }}</span>
+                                                        {% if field.required %}
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                                Required
+                                                            </span>
+                                                        {% endif %}
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                            {{ field.type|capitalize }}
+                                                        </span>
+                                                    </div>
+                                                    <p class="text-sm text-gray-500">Position: {{ field.order }}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="flex items-center space-x-2">
+                                                <button type="button" 
+                                                        class="edit-field-btn p-2 text-gray-400 hover:text-blue-600 transition"
+                                                        data-field-id="{{ field.id }}"
+                                                        title="Edit field">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                    </svg>
+                                                </button>
+                                                <button type="button" 
+                                                        class="delete-field-btn p-2 text-gray-400 hover:text-red-600 transition"
+                                                        data-field-id="{{ field.id }}"
+                                                        title="Delete field">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-12">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                    </svg>
+                                    <h3 class="mt-2 text-sm font-medium text-gray-900">No fields yet</h3>
+                                    <p class="mt-1 text-sm text-gray-500">Get started by adding a field from the templates on the left.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 3: Field Properties -->
+            <div class="lg:col-span-1">
+                <!-- Live Preview Panel -->
+                <div id="preview-panel" class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 hidden">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">Live Preview</h3>
+                    </div>
+                    <div class="p-6">
+                        <div id="form-preview" class="space-y-4">
+                            <!-- Dynamic preview content will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Field Properties Panel -->
+                <div id="field-editor-panel" class="bg-white rounded-lg shadow-sm border border-gray-200 sticky top-4">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">3. Field Properties</h3>
+                    </div>
+                    <div class="p-6">
+                        <div id="field-editor-content">
+                            <div class="text-center py-8 text-gray-500">
+                                <svg class="mx-auto h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+                                </svg>
+                                <p class="text-sm">Select a field to edit its properties</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Field Confirmation Modal -->
+<div id="delete-field-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-lg font-semibold text-gray-900">Delete Field</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-gray-600 mb-4">
+                    Are you sure you want to delete the field "<span id="delete-field-name" class="font-medium text-gray-900"></span>"? 
+                </p>
+                <p class="text-sm text-gray-500">
+                    This action cannot be undone and will permanently remove this field from your form.
+                </p>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button type="button" id="cancel-delete-field" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition">
+                    Cancel
+                </button>
+                <button type="button" id="confirm-delete-field" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition">
+                    Delete Field
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+    let fieldOrder = {{ form.fields.fields|length + 1 }};
+    let currentFields = {{ form.fields.fields|json_encode|raw }};
+    let isEditing = false;
+    let editingFieldId = null;
+
+    // Simple drag and drop implementation
+    function initializeDragAndDrop() {
+        const sortableContainer = document.getElementById('sortable-fields');
+        let draggedElement = null;
+
+        // Add drag event listeners to all field items
+        function addDragListeners() {
+            const fieldItems = document.querySelectorAll('.field-item');
+            fieldItems.forEach(item => {
+                item.draggable = true;
+                
+                item.addEventListener('dragstart', function(e) {
+                    draggedElement = this;
+                    this.style.opacity = '0.5';
+                });
+
+                item.addEventListener('dragend', function(e) {
+                    this.style.opacity = '';
+                    draggedElement = null;
+                });
+
+                item.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                });
+
+                item.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    if (draggedElement && draggedElement !== this) {
+                        const allItems = Array.from(sortableContainer.children);
+                        const draggedIndex = allItems.indexOf(draggedElement);
+                        const targetIndex = allItems.indexOf(this);
+
+                        if (draggedIndex < targetIndex) {
+                            this.parentNode.insertBefore(draggedElement, this.nextSibling);
+                        } else {
+                            this.parentNode.insertBefore(draggedElement, this);
+                        }
+                        
+                        updateFieldOrder();
+                    }
+                });
+            });
+        }
+
+        addDragListeners();
+        
+        // Re-add listeners when new fields are added
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList') {
+                    addDragListeners();
+                }
+            });
+        });
+        
+        observer.observe(sortableContainer, { childList: true });
+    }
+
+    // Initialize drag and drop when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeDragAndDrop();
+        
+        // Add modal event listeners
+        document.getElementById('cancel-delete-field').addEventListener('click', closeDeleteModal);
+        document.getElementById('confirm-delete-field').addEventListener('click', confirmDeleteField);
+        
+        // Close modal when clicking outside
+        document.getElementById('delete-field-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDeleteModal();
+            }
+        });
+        
+        // Add save form functionality
+        document.getElementById('save-form').addEventListener('click', saveFormStructure);
+    });
+
+    // Toggle preview panel
+    document.getElementById('toggle-preview').addEventListener('click', function() {
+        const panel = document.getElementById('preview-panel');
+        panel.classList.toggle('hidden');
+        if (!panel.classList.contains('hidden')) {
+            updatePreview();
+        }
+    });
+
+    // Field template clicks
+    document.querySelectorAll('.field-template').forEach(button => {
+        button.addEventListener('click', function() {
+            const fieldType = this.dataset.fieldType;
+            const fieldName = this.dataset.fieldName;
+            showFieldProperties(false, fieldType, fieldName);
+        });
+    });
+
+    // Edit field buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.edit-field-btn')) {
+            const fieldId = e.target.closest('.edit-field-btn').dataset.fieldId;
+            const field = currentFields.find(f => f.id === fieldId);
+            if (field) {
+                showFieldProperties(true, field.type, field.label, field);
+            }
+        }
+        
+        if (e.target.closest('.delete-field-btn')) {
+            const fieldId = e.target.closest('.delete-field-btn').dataset.fieldId;
+            deleteField(fieldId);
+        }
+    });
+
+    function showFieldProperties(editing = false, fieldType = '', fieldName = '', fieldData = null) {
+        isEditing = editing;
+        editingFieldId = fieldData ? fieldData.id : null;
+        
+        const propertiesContent = document.getElementById('field-editor-content');
+        
+        const formHTML = `
+            <form id="field-properties-form" class="space-y-4">
+                <div class="mb-4">
+                    <h4 class="text-sm font-semibold text-gray-900 mb-3">
+                        ${editing ? 'Edit Field Properties' : 'New Field Properties'}
+                    </h4>
+                </div>
+                
+                <input type="hidden" id="field-id" value="${fieldData ? fieldData.id : ''}">
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Field Label <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" 
+                           id="field-label" 
+                           required
+                           value="${fieldData ? fieldData.label : fieldName}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                           placeholder="e.g., Business Name">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Field Type <span class="text-red-500">*</span>
+                    </label>
+                    <select id="field-type" 
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        <option value="">-- Select --</option>
+                        {% for fieldType in fieldTypes %}
+                            <option value="{{ fieldType }}" ${fieldType === '${fieldType}' ? 'selected' : ''}>{{ fieldType|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" 
+                               id="field-required" 
+                               ${fieldData && fieldData.required ? 'checked' : ''}
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <span class="ml-2 text-sm text-gray-700">Required field</span>
+                    </label>
+                </div>
+
+                <div id="field-type-options" class="space-y-3">
+                    <!-- Dynamic field type options will be inserted here -->
+                </div>
+
+                <div class="pt-4 border-t border-gray-200">
+                    <div class="flex space-x-3">
+                        <button type="button" id="save-field-properties" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition text-sm flex items-center justify-center">
+                            <svg id="field-save-spinner" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white hidden" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span id="field-save-text">${editing ? 'Update Field' : 'Add Field'}</span>
+                        </button>
+                        <button type="button" id="cancel-field-properties" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition text-sm">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </form>
+        `;
+        
+        propertiesContent.innerHTML = formHTML;
+        
+        // Set the field type value after HTML is inserted
+        document.getElementById('field-type').value = fieldType;
+        
+        // Add event listeners for the new form
+        document.getElementById('save-field-properties').addEventListener('click', saveFieldFromProperties);
+        document.getElementById('cancel-field-properties').addEventListener('click', clearFieldProperties);
+        
+        // Add field type change listener for dynamic options
+        document.getElementById('field-type').addEventListener('change', updateFieldTypeOptions);
+        
+        // Initialize field type options
+        updateFieldTypeOptions();
+    }
+
+    function clearFieldProperties() {
+        const propertiesContent = document.getElementById('field-editor-content');
+        propertiesContent.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <svg class="mx-auto h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+                </svg>
+                <p class="text-sm">Select a field to edit its properties</p>
+            </div>
+        `;
+        isEditing = false;
+        editingFieldId = null;
+    }
+
+    function updateFieldTypeOptions() {
+        const fieldType = document.getElementById('field-type').value;
+        const optionsContainer = document.getElementById('field-type-options');
+        
+        let optionsHTML = '';
+        
+        switch (fieldType) {
+            case 'dropdown':
+            case 'radio':
+                optionsHTML = `
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Options <span class="text-red-500">*</span>
+                        </label>
+                        <div id="field-options-list" class="space-y-2">
+                            <div class="flex items-center space-x-2">
+                                <input type="text" placeholder="Option 1" class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm">
+                                <button type="button" class="text-red-600 hover:text-red-800">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <input type="text" placeholder="Option 2" class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm">
+                                <button type="button" class="text-red-600 hover:text-red-800">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" id="add-option" class="mt-2 text-sm text-blue-600 hover:text-blue-800">
+                            + Add Option
+                        </button>
+                    </div>
+                `;
+                break;
+            case 'text':
+                optionsHTML = `
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Placeholder Text
+                        </label>
+                        <input type="text" 
+                               id="field-placeholder" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                               placeholder="Enter placeholder text">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Maximum Length
+                        </label>
+                        <input type="number" 
+                               id="field-maxlength" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                               placeholder="e.g., 255">
+                    </div>
+                `;
+                break;
+            case 'number':
+                optionsHTML = `
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Minimum Value
+                        </label>
+                        <input type="number" 
+                               id="field-min" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                               placeholder="e.g., 0">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Maximum Value
+                        </label>
+                        <input type="number" 
+                               id="field-max" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                               placeholder="e.g., 100">
+                    </div>
+                `;
+                break;
+            case 'file':
+                optionsHTML = `
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Accepted File Types
+                        </label>
+                        <input type="text" 
+                               id="field-accept" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                               placeholder="e.g., .pdf,.doc,.docx">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Maximum File Size (MB)
+                        </label>
+                        <input type="number" 
+                               id="field-maxsize" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                               placeholder="e.g., 10">
+                    </div>
+                `;
+                break;
+        }
+        
+        optionsContainer.innerHTML = optionsHTML;
+        
+        // Add event listener for add option button if it exists
+        const addOptionBtn = document.getElementById('add-option');
+        if (addOptionBtn) {
+            addOptionBtn.addEventListener('click', addNewOption);
+        }
+    }
+
+    function addNewOption() {
+        const optionsList = document.getElementById('field-options-list');
+        const optionCount = optionsList.children.length + 1;
+        
+        const newOptionHTML = `
+            <div class="flex items-center space-x-2">
+                <input type="text" placeholder="Option ${optionCount}" class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm">
+                <button type="button" class="text-red-600 hover:text-red-800 remove-option">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                </button>
+            </div>
+        `;
+        
+        optionsList.insertAdjacentHTML('beforeend', newOptionHTML);
+        
+        // Add event listener to the new remove button
+        const newRemoveBtn = optionsList.lastElementChild.querySelector('.remove-option');
+        newRemoveBtn.addEventListener('click', function() {
+            this.parentElement.remove();
+        });
+    }
+
+    function saveFieldFromProperties() {
+        const label = document.getElementById('field-label').value;
+        const type = document.getElementById('field-type').value;
+        const required = document.getElementById('field-required').checked;
+        
+        if (!label || !type) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        // Show spinner and disable button
+        const saveButton = document.getElementById('save-field-properties');
+        const saveSpinner = document.getElementById('field-save-spinner');
+        const saveText = document.getElementById('field-save-text');
+        
+        saveSpinner.classList.remove('hidden');
+        saveText.textContent = isEditing ? 'Updating...' : 'Adding...';
+        saveButton.disabled = true;
+        saveButton.classList.add('opacity-75', 'cursor-not-allowed');
+
+        const fieldData = {
+            id: isEditing ? editingFieldId : 'field_' + Date.now(),
+            label: label,
+            type: type,
+            required: required,
+            order: isEditing ? currentFields.find(f => f.id === editingFieldId).order : getNextFieldOrder(),
+            validation: {}
+        };
+        
+        // Add field-specific options
+        switch (type) {
+            case 'text':
+                const placeholder = document.getElementById('field-placeholder')?.value;
+                const maxlength = document.getElementById('field-maxlength')?.value;
+                if (placeholder) fieldData.placeholder = placeholder;
+                if (maxlength) fieldData.validation.maxlength = parseInt(maxlength);
+                break;
+            case 'number':
+                const min = document.getElementById('field-min')?.value;
+                const max = document.getElementById('field-max')?.value;
+                if (min) fieldData.validation.min = parseInt(min);
+                if (max) fieldData.validation.max = parseInt(max);
+                break;
+            case 'file':
+                const accept = document.getElementById('field-accept')?.value;
+                const maxsize = document.getElementById('field-maxsize')?.value;
+                if (accept) fieldData.validation.accept = accept;
+                if (maxsize) fieldData.validation.maxsize = parseInt(maxsize);
+                break;
+            case 'dropdown':
+            case 'radio':
+                const optionInputs = document.querySelectorAll('#field-options-list input');
+                const options = Array.from(optionInputs)
+                    .map(input => input.value.trim())
+                    .filter(value => value !== '');
+                if (options.length > 0) {
+                    fieldData.options = options;
+                }
+                break;
+        }
+        
+        if (isEditing) {
+            // Update existing field
+            const fieldIndex = currentFields.findIndex(f => f.id === editingFieldId);
+            if (fieldIndex !== -1) {
+                currentFields[fieldIndex] = fieldData;
+            }
+        } else {
+            // Add new field
+            currentFields.push(fieldData);
+            fieldOrder++;
+        }
+
+        fetch('{{ path('form_builder_update_fields', {id: form.id}) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ fields: currentFields })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                // Show success state briefly
+                saveSpinner.classList.add('hidden');
+                saveText.textContent = isEditing ? 'Updated!' : 'Added!';
+                saveButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                saveButton.classList.add('bg-green-600');
+                
+                // Clear properties and refresh display after brief success display
+                setTimeout(() => {
+                    clearFieldProperties();
+                    refreshFieldDisplay();
+                }, 1000);
+            } else {
+                resetFieldSaveButton();
+                alert('Error: ' + result.message);
+            }
+        })
+        .catch(error => {
+            resetFieldSaveButton();
+            alert('Error saving field: ' + error.message);
+        });
+    }
+
+    function resetFieldSaveButton() {
+        const saveButton = document.getElementById('save-field-properties');
+        const saveSpinner = document.getElementById('field-save-spinner');
+        const saveText = document.getElementById('field-save-text');
+        
+        if (saveButton && saveSpinner && saveText) {
+            saveSpinner.classList.add('hidden');
+            saveText.textContent = isEditing ? 'Update Field' : 'Add Field';
+            saveButton.disabled = false;
+            saveButton.classList.remove('opacity-75', 'cursor-not-allowed', 'bg-green-600');
+            saveButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        }
+    }
+
+    let fieldToDelete = null;
+
+    function deleteField(fieldId) {
+        const field = currentFields.find(f => f.id === fieldId);
+        if (!field) {
+            alert('Field not found');
+            return;
+        }
+        
+        fieldToDelete = fieldId;
+        document.getElementById('delete-field-name').textContent = field.label;
+        document.getElementById('delete-field-modal').classList.remove('hidden');
+    }
+
+    function confirmDeleteField() {
+        if (!fieldToDelete) return;
+        
+        // Show loading state on confirm button
+        const confirmBtn = document.getElementById('confirm-delete-field');
+        const originalText = confirmBtn.textContent;
+        confirmBtn.textContent = 'Deleting...';
+        confirmBtn.disabled = true;
+        
+        // Immediately remove field from UI for instant feedback
+        const fieldToRemove = currentFields.find(f => f.id === fieldToDelete);
+        const fieldElement = document.querySelector(`[data-field-id="${fieldToDelete}"]`);
+        
+        // Store original state for potential rollback
+        const originalFields = [...currentFields];
+        const originalFieldElement = fieldElement ? fieldElement.cloneNode(true) : null;
+        const fieldIndex = fieldElement ? Array.from(fieldElement.parentNode.children).indexOf(fieldElement) : -1;
+        
+        // Remove from UI immediately
+        if (fieldElement) {
+            fieldElement.style.opacity = '0.5';
+            fieldElement.style.transform = 'translateX(-100%)';
+            fieldElement.style.transition = 'all 0.3s ease';
+            
+            setTimeout(() => {
+                if (fieldElement.parentNode) {
+                    fieldElement.remove();
+                }
+            }, 300);
+        }
+        
+        // Remove from currentFields array
+        currentFields = currentFields.filter(f => f.id !== fieldToDelete);
+        
+        // Update field count immediately
+        const fieldCountSpan = document.querySelector('.text-sm.text-gray-500');
+        if (fieldCountSpan && fieldCountSpan.textContent.includes('fields')) {
+            fieldCountSpan.textContent = `${currentFields.length} fields`;
+        }
+        
+        // Close modal immediately
+        closeDeleteModal();
+        
+        // Show immediate feedback
+        showNotification('Deleting field...', 'info');
+        
+        // Now make the server request
+        fetch('{{ path('form_builder_delete_field', {id: form.id, fieldId: '__FIELD_ID__'}) }}'.replace('__FIELD_ID__', fieldToDelete), {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            
+            // Check if response is ok
+            if (!response.ok) {
+                return response.text().then(text => {
+                    console.log('Error response body:', text);
+                    throw new Error(`HTTP error! status: ${response.status}, body: ${text.substring(0, 200)}...`);
+                });
+            }
+            
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                return response.text().then(text => {
+                    console.log('Non-JSON response body:', text);
+                    throw new Error('Server returned non-JSON response: ' + text.substring(0, 200) + '...');
+                });
+            }
+            
+            return response.json();
+        })
+        .then(result => {
+            if (result.success) {
+                // Server confirmed deletion - show success message
+                showNotification('Field deleted successfully', 'success');
+                
+                // Reorder remaining fields to fix any gaps in order
+                currentFields.forEach((field, index) => {
+                    field.order = index + 1;
+                });
+                
+                // Update position numbers in remaining fields
+                document.querySelectorAll('.field-item').forEach((item, index) => {
+                    const positionText = item.querySelector('p.text-sm.text-gray-500');
+                    if (positionText) {
+                        positionText.textContent = `Position: ${index + 1}`;
+                    }
+                });
+                
+            } else {
+                throw new Error(result.message || 'Unknown error occurred');
+            }
+        })
+        .catch(error => {
+            console.error('Delete error:', error);
+            
+            // Rollback the UI changes on error
+            currentFields = originalFields;
+            
+            // Restore field count
+            if (fieldCountSpan && fieldCountSpan.textContent.includes('fields')) {
+                fieldCountSpan.textContent = `${originalFields.length} fields`;
+            }
+            
+            // Restore the field element if we have it
+            if (originalFieldElement && fieldIndex >= 0) {
+                const sortableFields = document.getElementById('sortable-fields');
+                const children = Array.from(sortableFields.children);
+                
+                if (fieldIndex < children.length) {
+                    sortableFields.insertBefore(originalFieldElement, children[fieldIndex]);
+                } else {
+                    sortableFields.appendChild(originalFieldElement);
+                }
+                
+                // Re-initialize drag and drop for restored element
+                initializeDragAndDrop();
+            }
+            
+            showNotification('Error deleting field: ' + error.message, 'error');
+        })
+        .finally(() => {
+            // Reset button state
+            confirmBtn.textContent = originalText;
+            confirmBtn.disabled = false;
+        });
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('delete-field-modal').classList.add('hidden');
+        fieldToDelete = null;
+    }
+
+    function showNotification(message, type = 'info') {
+        // Create a temporary notification
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' :
+            type === 'error' ? 'bg-red-50 border border-red-200 text-red-800' :
+            'bg-blue-50 border border-blue-200 text-blue-800'
+        }`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 3000);
+    }
+
+    function saveFormStructure() {
+        const saveButton = document.getElementById('save-form');
+        const saveSpinner = document.getElementById('save-spinner');
+        const saveText = document.getElementById('save-text');
+        
+        // Show spinner and disable button
+        saveSpinner.classList.remove('hidden');
+        saveText.textContent = 'Saving...';
+        saveButton.disabled = true;
+        saveButton.classList.add('opacity-75', 'cursor-not-allowed');
+        
+        fetch('{{ path('form_builder_update_fields', {id: form.id}) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ fields: currentFields })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                // Show success state briefly
+                saveSpinner.classList.add('hidden');
+                saveText.textContent = 'Saved!';
+                saveButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                saveButton.classList.add('bg-green-600');
+                
+                // Reset button after 2 seconds
+                setTimeout(() => {
+                    resetSaveButton();
+                }, 2000);
+            } else {
+                resetSaveButton();
+                alert('Error saving form: ' + result.message);
+            }
+        })
+        .catch(error => {
+            resetSaveButton();
+            alert('Error saving form: ' + error.message);
+        });
+    }
+
+    function resetSaveButton() {
+        const saveButton = document.getElementById('save-form');
+        const saveSpinner = document.getElementById('save-spinner');
+        const saveText = document.getElementById('save-text');
+        
+        saveSpinner.classList.add('hidden');
+        saveText.textContent = 'Save';
+        saveButton.disabled = false;
+        saveButton.classList.remove('opacity-75', 'cursor-not-allowed', 'bg-green-600');
+        saveButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+    }
+
+    function refreshFieldDisplay() {
+        const sortableFields = document.getElementById('sortable-fields');
+        
+        // Sort fields by order
+        currentFields.sort((a, b) => a.order - b.order);
+        
+        // Clear and rebuild the field list
+        sortableFields.innerHTML = '';
+        
+        if (currentFields.length > 0) {
+            currentFields.forEach(field => {
+                const fieldHTML = `
+                    <div class="field-item bg-gray-50 border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition cursor-move" 
+                         data-field-id="${field.id}"
+                         data-field-order="${field.order}">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <!-- Drag Handle -->
+                                <div class="drag-handle cursor-move text-gray-400 hover:text-gray-600">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                                    </svg>
+                                </div>
+                                
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-2 mb-1">
+                                        <span class="font-medium text-gray-900">${field.label}</span>
+                                        ${field.required ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Required</span>' : ''}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            ${field.type.charAt(0).toUpperCase() + field.type.slice(1)}
+                                        </span>
+                                    </div>
+                                    <p class="text-sm text-gray-500">Position: ${field.order}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-2">
+                                <button type="button" 
+                                        class="edit-field-btn p-2 text-gray-400 hover:text-blue-600 transition"
+                                        data-field-id="${field.id}"
+                                        title="Edit field">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                </button>
+                                <button type="button" 
+                                        class="delete-field-btn p-2 text-gray-400 hover:text-red-600 transition"
+                                        data-field-id="${field.id}"
+                                        title="Delete field">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                sortableFields.insertAdjacentHTML('beforeend', fieldHTML);
+            });
+        } else {
+            sortableFields.innerHTML = `
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No fields yet</h3>
+                    <p class="mt-1 text-sm text-gray-500">Get started by adding a field from the templates on the left.</p>
+                </div>
+            `;
+        }
+        
+        // Update field count
+        const fieldCountSpan = document.querySelector('.text-sm.text-gray-500');
+        if (fieldCountSpan && fieldCountSpan.textContent.includes('fields')) {
+            fieldCountSpan.textContent = `${currentFields.length} fields`;
+        }
+        
+        // Re-initialize drag and drop for new elements
+        initializeDragAndDrop();
+    }
+
+    function getNextFieldOrder() {
+        if (currentFields.length === 0) {
+            return 1;
+        }
+        
+        // Find the highest order number and add 1
+        const maxOrder = Math.max(...currentFields.map(f => f.order || 0));
+        return maxOrder + 1;
+    }
+
+    function updateFieldOrder() {
+        const fieldItems = document.querySelectorAll('.field-item');
+        
+        // Update the order based on current visual position
+        fieldItems.forEach((item, index) => {
+            const fieldId = item.dataset.fieldId;
+            const field = currentFields.find(f => f.id === fieldId);
+            if (field) {
+                field.order = index + 1;
+                // Also update the data attribute for consistency
+                item.dataset.fieldOrder = index + 1;
+            }
+        });
+        
+        // Sort the currentFields array to match the visual order
+        currentFields.sort((a, b) => a.order - b.order);
+        
+        // Auto-save field order
+        saveFieldOrder();
+    }
+
+    function saveFieldOrder() {
+        fetch('{{ path('form_builder_update_fields', {id: form.id}) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ fields: currentFields })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (!result.success) {
+                console.error('Error saving field order:', result.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving field order:', error.message);
+        });
+    }
+
+    function updatePreview() {
+        const previewContainer = document.getElementById('form-preview');
+        let previewHTML = '';
+        
+        currentFields.sort((a, b) => a.order - b.order).forEach(field => {
+            previewHTML += generateFieldPreview(field);
+        });
+        
+        previewContainer.innerHTML = previewHTML || '<p class="text-gray-500 text-center">No fields to preview</p>';
+    }
+
+    function generateFieldPreview(field) {
+        const requiredMark = field.required ? '<span class="text-red-500">*</span>' : '';
+        
+        switch (field.type) {
+            case 'text':
+                return `
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            ${field.label} ${requiredMark}
+                        </label>
+                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md" disabled>
+                    </div>
+                `;
+            case 'number':
+                return `
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            ${field.label} ${requiredMark}
+                        </label>
+                        <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-md" disabled>
+                    </div>
+                `;
+            case 'date':
+                return `
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            ${field.label} ${requiredMark}
+                        </label>
+                        <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-md" disabled>
+                    </div>
+                `;
+            case 'file':
+                return `
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            ${field.label} ${requiredMark}
+                        </label>
+                        <input type="file" class="w-full px-3 py-2 border border-gray-300 rounded-md" disabled>
+                    </div>
+                `;
+            case 'dropdown':
+                return `
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            ${field.label} ${requiredMark}
+                        </label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md" disabled>
+                            <option>-- Select --</option>
+                        </select>
+                    </div>
+                `;
+            case 'checkbox':
+                return `
+                    <div class="mb-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded" disabled>
+                            <span class="ml-2 text-sm text-gray-700">${field.label} ${requiredMark}</span>
+                        </label>
+                    </div>
+                `;
+            case 'radio':
+                return `
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            ${field.label} ${requiredMark}
+                        </label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="${field.id}" class="h-4 w-4 text-blue-600 border-gray-300" disabled>
+                                <span class="ml-2 text-sm text-gray-700">Option 1</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="${field.id}" class="h-4 w-4 text-blue-600 border-gray-300" disabled>
+                                <span class="ml-2 text-sm text-gray-700">Option 2</span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            default:
+                return '';
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Billing Document Generated</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #ffc107;">Billing Document Generated</h2>
+        
+        <p>Dear {{ recipient.fullName ?? recipient.businessName ?? recipient.email }},</p>
+        
+        <p>A billing document has been generated for your shipment:</p>
+        
+        <div style="background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0;">
+            {% if manifest is defined %}
+                <p><strong>Manifest Number:</strong> {{ manifest.manifestNumber }}</p>
+                <p><strong>BL Number:</strong> {{ manifest.blNumber ?? 'N/A' }}</p>
+            {% endif %}
+            {% if edo is defined %}
+                <p><strong>eDO Number:</strong> {{ edo.edoNumber }}</p>
+            {% endif %}
+            {% if container is defined %}
+                <p><strong>Container Number:</strong> {{ container.containerNumber }}</p>
+            {% endif %}
+            <p><strong>Total Amount:</strong> ₱{{ billing.totalAmount|number_format(2) }}</p>
+        </div>
+        
+        <h3 style="color: #2c3e50;">Itemized Charges:</h3>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr style="background-color: #f8f9fa;">
+                <td style="padding: 10px; border: 1px solid #ddd;"><strong>Description</strong></td>
+                <td style="padding: 10px; border: 1px solid #ddd; text-align: right;"><strong>Amount</strong></td>
+            </tr>
+            {% if billing.freightCharges is defined %}
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">Freight Charges</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">₱{{ billing.freightCharges|number_format(2) }}</td>
+                </tr>
+            {% endif %}
+            {% if billing.thcCharges is defined %}
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">Terminal Handling Charges (THC)</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">₱{{ billing.thcCharges|number_format(2) }}</td>
+                </tr>
+            {% endif %}
+            {% if billing.expiredDays is defined and billing.perDayRate is defined %}
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">eDO Expired Days ({{ billing.expiredDays }} days × ₱{{ billing.perDayRate|number_format(2) }})</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">₱{{ billing.totalAmount|number_format(2) }}</td>
+                </tr>
+            {% endif %}
+            {% if billing.additionalCharges is defined %}
+                {% for charge in billing.additionalCharges %}
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ charge.description }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">₱{{ charge.amount|number_format(2) }}</td>
+                </tr>
+                {% endfor %}
+            {% endif %}
+            <tr style="background-color: #f8f9fa; font-weight: bold;">
+                <td style="padding: 10px; border: 1px solid #ddd;">TOTAL</td>
+                <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">₱{{ billing.totalAmount|number_format(2) }}</td>
+            </tr>
+        </table>
+        
+        <p>Please submit your payment receipt to proceed with cargo release.</p>
+        
+        <p style="margin-top: 30px;">
+            {% if manifest is defined %}
+                <a href="{{ url('manifest_detail', {id: manifest.id}) }}" 
+                   style="background-color: #ffc107; color: #333; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                    View Billing & Submit Payment
+                </a>
+            {% elseif edo is defined %}
+                <a href="{{ url('edo_regeneration_request', {id: edo.id}) }}" 
+                   style="background-color: #ffc107; color: #333; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                    View Billing & Submit Payment
+                </a>
+            {% endif %}
+        </p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        
+        <p style="font-size: 12px; color: #666;">
+            This is an automated message from OPTIMUS Shipping Portal. Please do not reply to this email.
+        </p>
+    </div>
+</body>
+</html>

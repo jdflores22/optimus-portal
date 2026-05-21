@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Container Return Package - {{ pre_advice.container.containerNumber }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #fff;
+        }
+        .page-break {
+            page-break-before: always;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+        .package-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333;
+        }
+        .section {
+            margin-bottom: 25px;
+            border: 1px solid #ddd;
+            padding: 15px;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .info-item {
+            margin-bottom: 8px;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .info-value {
+            color: #333;
+            margin-left: 10px;
+        }
+        .qr-code-large {
+            text-align: center;
+            margin: 30px 0;
+            padding: 30px;
+            border: 3px solid #2563eb;
+            background-color: #f8fafc;
+        }
+        .qr-code-image {
+            max-width: 200px;
+            max-height: 200px;
+            margin: 20px auto;
+            display: block;
+        }
+        .checklist {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .checklist-title {
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .checklist-item {
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px dotted #ccc;
+        }
+        .checklist-item:last-child {
+            border-bottom: none;
+        }
+        .checkbox {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border: 2px solid #333;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        .emergency-contact {
+            background-color: #fef2f2;
+            border: 2px solid #fca5a5;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .emergency-title {
+            font-weight: bold;
+            color: #dc2626;
+            margin-bottom: 10px;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        @media print {
+            body { margin: 0; }
+            .section { break-inside: avoid; }
+            .page-break { page-break-before: always; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Cover Page -->
+    <div class="header">
+        <div class="logo">OPTIMUS SHIPPING PORTAL</div>
+        <div class="package-title">Container Return Package</div>
+        <div style="font-size: 16px; color: #666; margin-top: 10px;">
+            Container: {{ pre_advice.container.containerNumber }}
+        </div>
+        <div style="font-size: 14px; color: #666;">
+            EDO: {{ pre_advice.edoNumber }}
+        </div>
+    </div>
+
+    <!-- Quick Reference -->
+    <div class="section">
+        <div class="section-title">Quick Reference</div>
+        <div class="info-grid">
+            <div>
+                <div class="info-item">
+                    <span class="info-label">Container:</span>
+                    <span class="info-value">{{ pre_advice.container.containerNumber }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Terminal:</span>
+                    <span class="info-value">{{ pre_advice.selectedTerminal.name }} ({{ pre_advice.selectedTerminal.type.value }})</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Trucker:</span>
+                    <span class="info-value">{{ pre_advice.trucker.firstName }} {{ pre_advice.trucker.lastName }}</span>
+                </div>
+            </div>
+            <div>
+                {% if pre_advice.assignedSlot %}
+                    <div class="info-item">
+                        <span class="info-label">Return Date:</span>
+                        <span class="info-value">{{ pre_advice.assignedSlot.date|date('M j, Y') }}</span>
+                    </div>
+                {% endif %}
+                <div class="info-item">
+                    <span class="info-label">EDO Number:</span>
+                    <span class="info-value">{{ pre_advice.edoNumber }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value" style="color: #059669; font-weight: bold;">VERIFIED</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Large QR Code for Easy Scanning -->
+    <div class="qr-code-large">
+        <div style="font-size: 18px; font-weight: bold; color: #2563eb; margin-bottom: 15px;">
+            QR CODE FOR TERMINAL ACCESS
+        </div>
+        {% if qr_code_data %}
+            <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code" class="qr-code-image">
+        {% endif %}
+        <div style="font-size: 14px; color: #666; margin-top: 15px;">
+            Present this QR code at the terminal gate
+        </div>
+        <div style="font-family: monospace; font-size: 12px; background: #fff; padding: 10px; border-radius: 4px; margin-top: 10px;">
+            {{ pre_advice.qrCode }}
+        </div>
+    </div>
+
+    <!-- Pre-Return Checklist -->
+    <div class="checklist">
+        <div class="checklist-title">Pre-Return Checklist</div>
+        <div class="checklist-item">
+            <span class="checkbox"></span>
+            Container is clean and free of damage
+        </div>
+        <div class="checklist-item">
+            <span class="checkbox"></span>
+            All cargo has been removed from container
+        </div>
+        <div class="checklist-item">
+            <span class="checkbox"></span>
+            Container doors are properly secured
+        </div>
+        <div class="checklist-item">
+            <span class="checkbox"></span>
+            Trucker identification matches EDO information
+        </div>
+        <div class="checklist-item">
+            <span class="checkbox"></span>
+            QR code is clearly visible and scannable
+        </div>
+        <div class="checklist-item">
+            <span class="checkbox"></span>
+            Return is scheduled within the assigned time slot
+        </div>
+    </div>
+
+    <!-- Emergency Contact -->
+    <div class="emergency-contact">
+        <div class="emergency-title">Emergency Contact Information</div>
+        <div>Terminal Operations: +1 (555) 123-4567</div>
+        <div>OPTIMUS Support: +1 (555) 987-6543</div>
+        <div>Available 24/7 for urgent issues</div>
+    </div>
+
+    <!-- Page Break for EDO -->
+    <div class="page-break"></div>
+
+    <!-- Full EDO Document -->
+    {% include 'terminal_team/edo_template.html.twig' with {'pre_advice': pre_advice, 'generated_at': generated_at} %}
+
+    <!-- Footer -->
+    <div class="footer">
+        <div><strong>Package Generated:</strong> {{ generated_at|date('M j, Y g:i A') }}</div>
+        <div>OPTIMUS Shipping Portal - Container Return Authorization</div>
+        <div style="margin-top: 10px; font-size: 10px;">
+            This package contains all necessary documents for container return.<br>
+            Keep this package with you during the return process.
+        </div>
+    </div>
+</body>
+</html>

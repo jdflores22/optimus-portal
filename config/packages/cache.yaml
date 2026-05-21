@@ -1,0 +1,50 @@
+framework:
+    cache:
+        # Unique name of your app: used to compute stable namespaces for cache keys.
+        prefix_seed: optimus_shipping_portal
+
+        # Use Redis for application cache
+        app: cache.adapter.redis
+        default_redis_provider: '%env(REDIS_URL)%'
+
+        # Dedicated cache pools for different purposes
+        pools:
+            # Avatar colors cache - for dynamic avatar color generation
+            avatar_colors.cache:
+                adapter: cache.adapter.redis
+                default_lifetime: 3600 # 1 hour - matches avatar_colors.yaml config
+                
+            # Form configurations cache - invalidated when forms are published
+            form_configurations.cache:
+                adapter: cache.adapter.redis
+                default_lifetime: 3600 # 1 hour
+                
+            # User permissions cache - per session
+            user_permissions.cache:
+                adapter: cache.adapter.redis
+                default_lifetime: 1800 # 30 minutes (session timeout)
+                
+            # Dashboard metrics cache - short TTL for real-time feel
+            dashboard_metrics.cache:
+                adapter: cache.adapter.redis
+                default_lifetime: 300 # 5 minutes
+                
+            # File metadata cache - for lazy loading optimization
+            file_metadata.cache:
+                adapter: cache.adapter.redis
+                default_lifetime: 7200 # 2 hours
+                
+            # Manifest workflow cache - for workflow state transition rules
+            manifest_workflow.cache:
+                adapter: cache.adapter.redis
+                default_lifetime: 3600 # 1 hour
+                
+            # Manifest authorization cache - for permission checks
+            manifest_authorization.cache:
+                adapter: cache.adapter.redis
+                default_lifetime: 1800 # 30 minutes
+                
+            # eDO PDF cache - for generated eDO PDF files
+            edo_pdf.cache:
+                adapter: cache.adapter.redis
+                default_lifetime: 86400 # 24 hours

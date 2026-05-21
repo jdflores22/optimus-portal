@@ -1,0 +1,156 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Request eDO Re-generation{% endblock %}
+
+{% block page_title %}Request eDO Re-generation{% endblock %}
+
+{% block body %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Back Button -->
+    <div class="mb-4">
+        <a href="{{ path('edo_detail', {id: edo.id}) }}" class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+            Back to eDO Details
+        </a>
+    </div>
+
+    <div class="bg-white shadow-sm rounded-lg">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">Request eDO Re-generation</h2>
+            <p class="mt-1 text-sm text-gray-600">Submit a request to regenerate an expired eDO</p>
+        </div>
+
+        <!-- eDO Information -->
+        <div class="px-6 py-6 bg-gray-50 border-b border-gray-200">
+            <h3 class="text-sm font-medium text-gray-900 mb-4">eDO Information</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <span class="text-sm font-medium text-gray-500">eDO Number:</span>
+                    <span class="ml-2 text-sm text-gray-900">{{ edo.edoNumber }}</span>
+                </div>
+                <div>
+                    <span class="text-sm font-medium text-gray-500">Container Number:</span>
+                    <span class="ml-2 text-sm text-gray-900">{{ edo.container.containerNumber }}</span>
+                </div>
+                <div>
+                    <span class="text-sm font-medium text-gray-500">Expiration Date:</span>
+                    <span class="ml-2 text-sm text-gray-900">{{ edo.expiresAt|date('Y-m-d H:i:s') }}</span>
+                </div>
+                <div>
+                    <span class="text-sm font-medium text-gray-500">Expired Days:</span>
+                    <span class="ml-2 text-sm font-semibold text-red-600">{{ edo.expiredDays }} days</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <form id="regenerationRequestForm" class="px-6 py-6 space-y-6">
+            <input type="hidden" id="edoId" value="{{ edo.id }}">
+
+            <!-- Notes Field -->
+            <div>
+                <label for="notes" class="block text-sm font-medium text-gray-700">Request Notes (Optional)</label>
+                <textarea id="notes" name="notes" rows="4"
+                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                          placeholder="Add any additional notes or details about this request..."></textarea>
+                <p class="mt-1 text-sm text-gray-500">Provide any relevant information that may help process your request</p>
+            </div>
+
+            <!-- Important Information -->
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-yellow-800">Important Information</h3>
+                        <div class="mt-2 text-sm text-yellow-700">
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>Your request will be routed to the Terminal Team for review</li>
+                                <li>The request will then be forwarded to Accounting for billing calculation</li>
+                                <li>You will receive billing for the {{ edo.expiredDays }} expired days</li>
+                                <li>Payment must be submitted before a new eDO can be generated</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Request Status Tracking Info -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-blue-800">Request Tracking</h3>
+                        <div class="mt-2 text-sm text-blue-700">
+                            <p>You can track the status of your request from your dashboard. You will receive notifications at each stage of the process.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
+                <a href="{{ path('edo_detail', {id: edo.id}) }}"
+                   class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Cancel
+                </a>
+                <button type="submit" id="submitBtn"
+                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Submit Request
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('regenerationRequestForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const edoId = document.getElementById('edoId').value;
+    const notes = document.getElementById('notes').value;
+    const submitBtn = document.getElementById('submitBtn');
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    
+    fetch('/edo/regeneration/request', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            edoId: edoId,
+            notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Re-generation request submitted successfully!');
+            window.location.href = '/edo/' + edoId + '/detail';
+        } else {
+            alert('Error: ' + (data.error || 'Failed to submit request'));
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Request';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while submitting the request');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Request';
+    });
+});
+</script>
+{% endblock %}

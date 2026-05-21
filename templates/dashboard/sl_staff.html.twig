@@ -1,0 +1,839 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}SL-Staff Dashboard - OPTIMUS{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('js/edo-generation-progress.js') }}"></script>
+{% endblock %}
+
+{% block body %}
+<div class="min-h-screen">
+    <!-- Header -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="py-6 flex items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-base-content">SL-Staff Dashboard</h1>
+                    <p class="mt-2 text-base-content/70">Manage your Notice of Arrival (NOA) activities</p>
+                </div>
+                <a href="{{ path('manifest_workflow_create') }}"
+                   class="btn btn-success btn-sm sm:btn-md flex-shrink-0 gap-1.5 whitespace-nowrap">
+                    <span class="icon-[tabler--plus] size-4"></span>
+                    <span class="hidden xs:inline">Create </span>NOA
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Shipment Statistics - 4 Cards in Responsive Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <!-- Total Shipments -->
+            <div class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300">
+                <div class="card-body p-6">
+                    <div class="flex items-center gap-2 mb-6">
+                        <span class="icon-[tabler--ship] size-6 text-info"></span>
+                        <h3 class="text-sm font-medium text-base-content">Total Shipments</h3>
+                    </div>
+                    <p class="text-5xl font-bold text-base-content mb-3">{{ stats.my_shipments_total }}</p>
+                    <p class="text-sm text-info">All time</p>
+                </div>
+            </div>
+
+            <!-- Today's Shipments -->
+            <div class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300">
+                <div class="card-body p-6">
+                    <div class="flex items-center gap-2 mb-6">
+                        <span class="icon-[tabler--clock] size-6 text-success"></span>
+                        <h3 class="text-sm font-medium text-base-content">Created Today</h3>
+                    </div>
+                    <p class="text-5xl font-bold text-base-content mb-3">{{ stats.my_shipments_today }}</p>
+                    <p class="text-sm text-success">Today</p>
+                </div>
+            </div>
+
+            <!-- This Week -->
+            <div class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300">
+                <div class="card-body p-6">
+                    <div class="flex items-center gap-2 mb-6">
+                        <span class="icon-[tabler--calendar] size-6 text-secondary"></span>
+                        <h3 class="text-sm font-medium text-base-content">This Week</h3>
+                    </div>
+                    <p class="text-5xl font-bold text-base-content mb-3">{{ stats.my_shipments_this_week }}</p>
+                    <p class="text-sm text-secondary">Last 7 days</p>
+                </div>
+            </div>
+
+            <!-- This Month -->
+            <div class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300">
+                <div class="card-body p-6">
+                    <div class="flex items-center gap-2 mb-6">
+                        <span class="icon-[tabler--chart-bar] size-6 text-primary"></span>
+                        <h3 class="text-sm font-medium text-base-content">This Month</h3>
+                    </div>
+                    <p class="text-5xl font-bold text-base-content mb-3">{{ stats.my_shipments_this_month }}</p>
+                    <p class="text-sm text-primary">Last 30 days</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ready for eDO Generation Section -->
+        {% if manifestsReadyForEDO|length > 0 %}
+        <div class="card bg-base-100 shadow-sm mb-8">
+            <div class="px-6 py-4 bg-success/10 rounded-t-box">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <span class="icon-[tabler--circle-check] size-5 text-success mr-3"></span>
+                        <div>
+                            <h3 class="text-lg font-semibold text-base-content">Ready for eDO Generation</h3>
+                            <p class="text-sm text-base-content/70">Manifests with verified payments and linked containers</p>
+                        </div>
+                    </div>
+                    <span class="badge badge-soft badge-success">
+                        {{ manifestsReadyForEDO|length }} Ready
+                    </span>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="w-full rounded-box bg-base-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Manifest</th>
+                                    <th>Broker</th>
+                                    <th>Containers</th>
+                                    <th>Payment Verified</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for manifest in manifestsReadyForEDO %}
+                                <tr>
+                                    <td>
+                                        <div class="font-medium">{{ manifest.manifestNumber }}</div>
+                                        <div class="text-xs text-base-content/50">BL: {{ manifest.blNumber }}</div>
+                                    </td>
+                                    <td>{{ manifest.broker.email }}</td>
+                                    <td>
+                                        {% set containers = manifest.getContainersLinkedToManifest() %}
+                                        <div>{{ containers|length }} container(s)</div>
+                                        <div class="text-xs text-base-content/50">
+                                            {% for container in containers %}{{ container.containerNumber }}{% if not loop.last %}, {% endif %}{% endfor %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% set finalPayment = manifest.getFinalPayment() %}
+                                        {% if finalPayment and finalPayment.validatedAt %}
+                                            {{ finalPayment.validatedAt|date('M j, Y') }}
+                                        {% else %}
+                                            {{ manifest.updatedAt|date('M j, Y') }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if is_granted('ROLE_SL_STAFF') %}
+                                            <button onclick="openEDOGenerationModal({{ manifest.id }}, '{{ manifest.manifestNumber }}')"
+                                                    class="btn btn-circle btn-text btn-sm" aria-label="Generate eDOs">
+                                                <span class="icon-[tabler--plus] size-5"></span>
+                                            </button>
+                                            <button class="btn btn-circle btn-text btn-sm" aria-label="View manifest">
+                                                <span class="icon-[tabler--eye] size-5"></span>
+                                            </button>
+                                            <button class="btn btn-circle btn-text btn-sm" aria-label="More options">
+                                                <span class="icon-[tabler--dots-vertical] size-5"></span>
+                                            </button>
+                                        {% else %}
+                                            <span class="text-xs text-base-content/40">Restricted</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Generated eDOs Section -->
+        <!-- CY Empty Return Locations -->
+        {% if cyLocations|length > 0 %}
+        <div class="card bg-base-100 shadow-sm mb-8">
+            <div class="px-6 py-4 flex justify-between items-center">
+                <div>
+                    <h3 class="text-lg font-medium text-base-content">CY Empty Return Locations</h3>
+                    <p class="text-sm text-base-content/60">Real-time capacity utilization across your allocated terminals</p>
+                </div>
+                <span class="badge badge-info badge-lg">
+                    {{ cyLocations|length }} Locations
+                </span>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for location in cyLocations %}
+                    <div class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300">
+                        <div class="card-body p-5">
+                            <!-- Terminal Header -->
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center gap-3 flex-1 min-w-0">
+                                    <div class="w-12 h-12 bg-base-content/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <span class="icon-[tabler--building-warehouse] size-6 text-base-content"></span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="font-bold text-base text-base-content truncate">{{ location.terminal.name }}</h4>
+                                        <p class="text-xs text-base-content/60 truncate">
+                                            {% if location.terminal.region %}
+                                                {{ location.terminal.region.name }}{% if location.terminal.city %}, {{ location.terminal.city.name }}{% endif %}
+                                            {% else %}
+                                                {{ location.terminal.location }}
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                                <span class="badge badge-success badge-sm ml-2 flex-shrink-0">Available</span>
+                            </div>
+                            
+                            <!-- 20ft Containers Section -->
+                            <div class="mb-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h5 class="text-sm font-bold text-base-content">20ft Containers</h5>
+                                    <span class="badge badge-neutral badge-sm">20ft</span>
+                                </div>
+                                
+                                <div class="grid grid-cols-4 gap-3 mb-3">
+                                    <div class="text-center">
+                                        <div class="flex items-center justify-center mb-1">
+                                            <span class="icon-[tabler--box] size-4 text-base-content/40"></span>
+                                        </div>
+                                        <p class="text-xs text-base-content/60 mb-1">Capacity</p>
+                                        <p class="text-lg font-bold text-base-content">{{ location.capacity_20ft }}</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="flex items-center justify-center mb-1">
+                                            <span class="icon-[tabler--box-multiple] size-4 text-info"></span>
+                                        </div>
+                                        <p class="text-xs text-base-content/60 mb-1">Allocated</p>
+                                        <p class="text-lg font-bold text-info">{{ location.allocated_20ft }}</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="flex items-center justify-center mb-1">
+                                            <span class="icon-[tabler--clock] size-4 text-warning"></span>
+                                        </div>
+                                        <p class="text-xs text-base-content/60 mb-1">Pre-Forecast</p>
+                                        <p class="text-lg font-bold text-warning">{{ location.pre_forecast_20ft }}</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="flex items-center justify-center mb-1">
+                                            <span class="icon-[tabler--circle-check] size-4 text-success"></span>
+                                        </div>
+                                        <p class="text-xs text-base-content/60 mb-1">Available</p>
+                                        <p class="text-lg font-bold text-success">{{ location.available_20ft }}</p>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-xs text-base-content/60 flex items-center gap-1">
+                                            <span class="icon-[tabler--chart-bar] size-3"></span>
+                                            Utilization
+                                        </span>
+                                        <span class="text-sm font-bold text-base-content">{{ location.utilization_20ft }}%</span>
+                                    </div>
+                                    <div class="w-full bg-base-300 rounded-full h-2.5">
+                                        <div class="h-2.5 rounded-full transition-all 
+                                            {{ location.utilization_20ft >= 90 ? 'bg-error' : (location.utilization_20ft >= 70 ? 'bg-warning' : 'bg-success') }}" 
+                                             style="width: {{ location.utilization_20ft > 100 ? 100 : location.utilization_20ft }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 40ft Containers Section -->
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <h5 class="text-sm font-bold text-base-content">40ft Containers</h5>
+                                    <span class="badge badge-neutral badge-sm">40ft</span>
+                                </div>
+                                
+                                <div class="grid grid-cols-4 gap-3 mb-3">
+                                    <div class="text-center">
+                                        <div class="flex items-center justify-center mb-1">
+                                            <span class="icon-[tabler--box] size-4 text-base-content/40"></span>
+                                        </div>
+                                        <p class="text-xs text-base-content/60 mb-1">Capacity</p>
+                                        <p class="text-lg font-bold text-base-content">{{ location.capacity_40ft }}</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="flex items-center justify-center mb-1">
+                                            <span class="icon-[tabler--box-multiple] size-4 text-info"></span>
+                                        </div>
+                                        <p class="text-xs text-base-content/60 mb-1">Allocated</p>
+                                        <p class="text-lg font-bold text-info">{{ location.allocated_40ft }}</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="flex items-center justify-center mb-1">
+                                            <span class="icon-[tabler--clock] size-4 text-warning"></span>
+                                        </div>
+                                        <p class="text-xs text-base-content/60 mb-1">Pre-Forecast</p>
+                                        <p class="text-lg font-bold text-warning">{{ location.pre_forecast_40ft }}</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="flex items-center justify-center mb-1">
+                                            <span class="icon-[tabler--circle-check] size-4 text-success"></span>
+                                        </div>
+                                        <p class="text-xs text-base-content/60 mb-1">Available</p>
+                                        <p class="text-lg font-bold text-success">{{ location.available_40ft }}</p>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-xs text-base-content/60 flex items-center gap-1">
+                                            <span class="icon-[tabler--chart-bar] size-3"></span>
+                                            Utilization
+                                        </span>
+                                        <span class="text-sm font-bold text-base-content">{{ location.utilization_40ft }}%</span>
+                                    </div>
+                                    <div class="w-full bg-base-300 rounded-full h-2.5">
+                                        <div class="h-2.5 rounded-full transition-all 
+                                            {{ location.utilization_40ft >= 90 ? 'bg-error' : (location.utilization_40ft >= 70 ? 'bg-warning' : 'bg-success') }}" 
+                                             style="width: {{ location.utilization_40ft > 100 ? 100 : location.utilization_40ft }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Info Box -->
+                <div class="mt-6 alert alert-info">
+                    <span class="icon-[tabler--info-circle] size-5"></span>
+                    <div>
+                        <p class="font-semibold">Capacity Information</p>
+                        <p class="text-sm">
+                            These are your allocated CY terminals. "Allocated" shows containers physically at the terminal, 
+                            "Pre-Forecast" shows announced containers not yet arrived. CY locations are assigned per container during NOA creation.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- NOA Creation Trends Chart -->
+        <div class="card bg-base-100 shadow-sm mb-8">
+            <div class="px-6 py-4">
+                <h3 class="text-lg font-medium text-base-content">NOA Creation Activity (Last 30 Days)</h3>
+                <p class="text-sm text-base-content/50">Track daily NOA creation trends across all staff</p>
+            </div>
+            <div class="p-6">
+                <div id="myShipmentTrendsChart" style="height: 300px;"></div>
+            </div>
+        </div>
+
+        <!-- Recent Shipments -->
+        <div class="card bg-base-100 shadow-sm">
+            <div class="px-6 py-4 flex justify-between items-center">
+                <div>
+                    <h3 class="text-lg font-medium text-base-content">Recent NOAs</h3>
+                    <p class="text-sm text-base-content/50">Latest 10 Notice of Arrivals in the system</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span class="badge badge-soft badge-info">
+                        {{ recentShipments|length }} NOAs
+                    </span>
+                    <a href="{{ path('manifest_workflow_list') }}" class="text-sm text-info hover:text-info font-medium">
+                        View All →
+                    </a>
+                </div>
+            </div>
+            <div class="p-8">
+                {% if recentShipments|length > 0 %}
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {% for shipment in recentShipments %}
+                            <div class="card bg-base-100 shadow-sm p-6 hover:shadow-lg hover:border-base-300 transition-all duration-200 cursor-pointer" onclick="window.location.href='{{ path('manifest_workflow_list') }}'">
+                                <!-- Header with NOA Number and Status -->
+                                <div class="flex items-start justify-between mb-6">
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="text-xl font-semibold text-base-content mb-1">{{ shipment.noaNumber }}</h4>
+                                        <p class="text-sm text-base-content/50">Created {{ shipment.createdAt|date('M j, Y \a\t g:i A') }}</p>
+                                    </div>
+                                    <div class="flex flex-col items-end space-y-2 ml-4">
+                                        <!-- Workflow Status Badge -->
+                                        <span class="badge badge-soft badge-info">
+                                            <span class="icon-[tabler--file-text] size-5 mr-1"></span>
+                                            NOA Created
+                                        </span>
+                                        
+                                        <!-- NOA ID -->
+                                        <span class="text-xs text-base-content/40 font-mono">#{{ shipment.id }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Key Information Grid -->
+                                <div class="grid grid-cols-2 gap-6 mb-6">
+                                    <div>
+                                        <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">B/L Number</p>
+                                        <p class="text-sm font-medium text-base-content font-mono">{{ shipment.blNumber ?: 'N/A' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Vessel</p>
+                                        <p class="text-sm font-medium text-base-content">{{ shipment.vessel ?: 'N/A' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Consignee</p>
+                                        <p class="text-sm font-medium text-base-content truncate">{{ shipment.consigneeName ?: 'N/A' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">ETA</p>
+                                        <p class="text-sm font-medium text-base-content">{{ shipment.eta|date('M j, Y') }}</p>
+                                    </div>
+                                </div>
+
+                                <!-- Container Count -->
+                                <div class="border-t border-base-300 pt-4 mb-4">
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium bg-success/10 text-success">
+                                            <span class="icon-[tabler--box] size-5 mr-1.5"></span>
+                                            {{ shipment.containers|length }} Container(s)
+                                        </span>
+                                        {% if shipment.blNumber %}
+                                            <span class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium bg-info/10 text-info">
+                                                B/L: {{ shipment.blNumber }}
+                                            </span>
+                                        {% endif %}
+                                        {% if shipment.voyage %}
+                                            <span class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium bg-primary/10 text-primary">
+                                                Voyage: {{ shipment.voyage }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Action Footer -->
+                                <div class="flex items-center justify-between pt-4">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="inline-flex items-center text-xs text-info font-medium">
+                                            <span class="icon-[tabler--file-text] size-5 mr-1.5"></span>
+                                            In Workflow
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button onclick="event.stopPropagation(); window.location.href='{{ path('manifest_workflow_list') }}'" 
+                                                class="btn btn-ghost btn-sm">
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- View All Button -->
+                    {% if recentShipments|length >= 10 %}
+                        <div class="mt-8 text-center">
+                            <a href="{{ path('manifest_workflow_list') }}" 
+                               class="btn btn-ghost">
+                                <span class="icon-[tabler--file-text] size-5"></span>
+                                View All NOAs
+                            </a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-16">
+                        <div class="mx-auto w-24 h-24 bg-base-200 rounded-full flex items-center justify-center mb-6">
+                            <span class="icon-[tabler--ship] size-5 text-base-content/40" style="width:3rem;height:3rem;"></span>
+                        </div>
+                        <h3 class="text-xl font-medium text-base-content mb-3">No NOAs in system yet</h3>
+                        <p class="text-sm text-base-content/50 mb-8 max-w-sm mx-auto">There are no Notice of Arrival records in the system yet. Start by creating the first NOA to see it appear here.</p>
+                        <div class="space-y-4">
+                            <a href="{{ path('manifest_workflow_create') }}" 
+                               class="btn btn-success">
+                                <span class="icon-[tabler--plus] size-5"></span>
+                                Create First NOA
+                            </a>
+                            <div class="text-xs text-base-content/40">
+                                Tip: NOA statistics will update as more records are created in the system.
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="mt-8 card bg-base-100 shadow-sm">
+            <div class="px-6 py-4">
+                <h3 class="text-lg font-medium text-base-content">Quick Actions</h3>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <a href="{{ path('manifest_workflow_create') }}"
+                       class="btn btn-success">
+                        <span class="icon-[tabler--plus] size-5"></span>
+                        Create New NOA
+                    </a>
+                    
+                    <a href="{{ path('manifest_workflow_list') }}"
+                       class="btn btn-ghost">
+                        <span class="icon-[tabler--file-text] size-5"></span>
+                        View All NOAs
+                    </a>
+                    
+                    <a href="{{ path('app_sl_staff_dashboard') }}" 
+                       class="btn btn-ghost">
+                        <span class="icon-[tabler--refresh] size-5"></span>
+                        Refresh Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Define global functions first to ensure they're available for onclick handlers
+let currentManifestId = null;
+let currentManifestNumber = null;
+
+function openEDOGenerationModal(manifestId, manifestNumber) {
+    // console.log('openEDOGenerationModal called with:', manifestId, manifestNumber);
+    currentManifestId = manifestId;
+    currentManifestNumber = manifestNumber;
+    
+    // Find the button that was clicked to get container information
+    const clickedButton = document.querySelector(`button[onclick*="${manifestId}"]`);
+    let containers = [];
+    
+    if (clickedButton && clickedButton.dataset.containers) {
+        try {
+            containers = JSON.parse(clickedButton.dataset.containers);
+            // console.log('Parsed containers:', containers);
+        } catch (error) {
+            console.error('Error parsing container data:', error);
+            // console.log('Raw container data:', clickedButton.dataset.containers);
+            containers = [];
+        }
+    } else {
+        console.warn('No container data found for manifest', manifestId);
+    }
+    
+    document.getElementById('manifestNumberDisplay').textContent = manifestNumber;
+    document.getElementById('edoGenerationModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    // Update container info with debug logging
+    updateContainerInfo(containers);
+    
+    // Hide navigation
+    const topNav = document.querySelector('nav');
+    const sidebar = document.querySelector('aside');
+    if (topNav) topNav.style.display = 'none';
+    if (sidebar) sidebar.style.display = 'none';
+    
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('expirationDate').setAttribute('min', today);
+}
+
+function updateContainerInfo(containers) {
+    const containerListElement = document.getElementById('containerList');
+    const containerCountElement = document.getElementById('containerCount');
+    
+    // console.log('updateContainerInfo called with:', containers);
+    
+    if (containers && Array.isArray(containers) && containers.length > 0) {
+        containerCountElement.textContent = containers.length;
+        
+        // Create container list HTML
+        const containerItems = containers.map(container => {
+            const containerNumber = container.containerNumber || 'Unknown';
+            const size = container.size || 'N/A';
+            const type = container.type || 'N/A';
+            
+            return `
+                <div class="flex items-center justify-between py-2 px-3 bg-base-200 rounded-box">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-info/10 rounded-full flex items-center justify-center">
+                            <span class="icon-[tabler--box] size-5 text-info"></span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-base-content">${containerNumber}</p>
+                            <p class="text-xs text-base-content/50">${size} • ${type}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="badge badge-soft badge-success badge-sm">
+                            Will get eDO
+                        </span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        containerListElement.innerHTML = containerItems;
+        // console.log('Container list updated with', containers.length, 'containers');
+    } else {
+        containerCountElement.textContent = '0';
+        containerListElement.innerHTML = '<p class="text-sm text-base-content/50 text-center py-4">No containers found</p>';
+        console.warn('No valid container data provided:', containers);
+    }
+}
+
+function closeEDOGenerationModal() {
+    document.getElementById('edoGenerationModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    document.getElementById('expirationDate').value = '';
+    document.getElementById('expirationDays').value = '';
+    currentManifestId = null;
+    currentManifestNumber = null;
+    
+    // Restore navigation
+    const topNav = document.querySelector('nav');
+    const sidebar = document.querySelector('aside');
+    if (topNav) topNav.style.display = '';
+    if (sidebar) sidebar.style.display = '';
+}
+
+function calculateExpirationDays() {
+    const expirationDate = document.getElementById('expirationDate').value;
+    if (expirationDate) {
+        const today = new Date();
+        const expDate = new Date(expirationDate);
+        const diffTime = expDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        document.getElementById('expirationDays').value = diffDays > 0 ? diffDays : 0;
+    }
+}
+
+function generateEDO() {
+    const expirationDate = document.getElementById('expirationDate').value;
+    
+    if (!expirationDate) {
+        alert('Please select an expiration date');
+        return;
+    }
+    
+    const today = new Date().toISOString().split('T')[0];
+    if (expirationDate <= today) {
+        alert('Expiration date must be in the future');
+        return;
+    }
+    
+    const submitBtn = document.getElementById('edoGenerateBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<svg class="animate-spin h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Generating...';
+    
+    closeEDOGenerationModal();
+    
+    // Use the professional progress controller
+    if (window.edoProgressController) {
+        window.edoProgressController.startGeneration(currentManifestId, expirationDate, 'manifest');
+    } else {
+        console.error('EDO Progress Controller not initialized');
+        alert('Error: Progress controller not available');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span class="icon-[tabler--plus] size-5 inline-block mr-2"></span>Generate eDO';
+    }
+}
+
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeEDOGenerationModal();
+    }
+});
+
+// console.log('Global functions defined. openEDOGenerationModal type:', typeof openEDOGenerationModal);
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Chart data from backend
+    const chartData = {{ chartData|json_encode|raw }};
+    
+    // Debug: Log the chart data (uncomment for debugging)
+    // console.log('SL-Staff Chart Data:', chartData);
+    
+    // My Shipment Trends Chart
+    try {
+        const myShipmentData = chartData.myShipmentTrends || [];
+        
+        const myShipmentTrendsOptions = {
+            series: [{
+                name: 'NOAs Created',
+                data: myShipmentData.length > 0 ? myShipmentData : []
+            }],
+            chart: {
+                type: 'area',
+                height: 300,
+                toolbar: {
+                    show: false
+                },
+                // Disable all touch interactions to prevent passive event listener warnings
+                selection: {
+                    enabled: false
+                },
+                zoom: {
+                    enabled: false
+                },
+                pan: {
+                    enabled: false
+                }
+            },
+            colors: ['#3B82F6'],
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.7,
+                    opacityTo: 0.3,
+                }
+            },
+            stroke: {
+                curve: 'smooth',
+                width: 2
+            },
+            xaxis: {
+                type: myShipmentData.length > 0 ? 'datetime' : 'category',
+                labels: {
+                    format: 'MMM dd'
+                }
+            },
+            yaxis: {
+                title: {
+                    text: 'Number of NOAs'
+                }
+            },
+            tooltip: {
+                x: {
+                    format: 'MMM dd, yyyy'
+                }
+            },
+            noData: {
+                text: 'No NOA data available'
+            },
+            // Disable animations and interactions to reduce event listeners
+            animations: {
+                enabled: false
+            },
+            // Disable all interactive features that might use touch events
+            dataLabels: {
+                enabled: false
+            },
+            markers: {
+                hover: {
+                    size: undefined
+                }
+            }
+        };
+        new ApexCharts(document.querySelector("#myShipmentTrendsChart"), myShipmentTrendsOptions).render();
+    } catch (error) {
+        console.error('Error rendering NOA trends chart:', error);
+    }
+});
+
+</script>
+
+<!-- eDO Generation Modal -->
+<div id="edoGenerationModal" class="hidden fixed inset-0 z-[9999] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 bg-black/75 transition-opacity" aria-hidden="true" onclick="closeEDOGenerationModal()"></div>
+
+        <!-- Center modal -->
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div class="inline-block align-middle bg-base-100 rounded-box text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-4xl sm:w-full">
+            <div class="bg-base-100 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-success/10 sm:mx-0 sm:h-10 sm:w-10">
+                        <span class="icon-[tabler--file-text] size-5 text-success"></span>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
+                        <h3 class="text-lg leading-6 font-medium text-base-content" id="modal-title">
+                            Generate eDOs per Container
+                        </h3>
+                        <div class="mt-4">
+                            <p class="text-sm text-base-content/50 mb-4">
+                                Generate Electronic Delivery Orders for each container in manifest: <span class="font-semibold text-base-content" id="manifestNumberDisplay"></span>
+                            </p>
+
+                            <!-- Container List Section -->
+                            <div class="mb-6 p-4 bg-info/10 rounded-box">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="text-sm font-medium text-info">Containers to Generate eDOs</h4>
+                                    <span class="badge badge-soft badge-info">
+                                        <span id="containerCount">0</span> containers
+                                    </span>
+                                </div>
+                                <div id="containerList" class="space-y-2 max-h-32 overflow-y-auto">
+                                    <!-- Container items will be populated by JavaScript -->
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="expirationDate" class="label-text font-medium mb-2 block">
+                                        eDO Expiration Date
+                                        <span class="text-error">*</span>
+                                    </label>
+                                    <input type="date" id="expirationDate" onchange="calculateExpirationDays()" required
+                                           class="input input-bordered w-full">
+                                    <p class="mt-1 text-xs text-base-content/50">Select when these eDOs should expire</p>
+                                </div>
+
+                                <div>
+                                    <label for="expirationDays" class="label-text font-medium mb-2 block">
+                                        Days Until Expiration
+                                    </label>
+                                    <input type="number" id="expirationDays" readonly
+                                           class="input input-bordered w-full">
+                                    <p class="mt-1 text-xs text-base-content/50">Automatically calculated from expiration date</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 p-3 bg-info/10 rounded-box">
+                                <div class="flex">
+                                    <span class="icon-[tabler--info-circle] size-5 text-info flex-shrink-0"></span>
+                                    <div class="ml-2">
+                                        <p class="text-sm font-medium text-info">What happens next?</p>
+                                        <ul class="mt-1 text-xs text-info list-disc list-inside space-y-1">
+                                            <li>One eDO will be generated per container</li>
+                                            <li>Each eDO will have a unique number</li>
+                                            <li>PDF documents will be created for each eDO</li>
+                                            <li>Broker and consignee will be notified</li>
+                                            <li>Each eDO status will be PENDING_RELEASE</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-base-200 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-3">
+                <button type="button" id="edoGenerateBtn" onclick="generateEDO()"
+                        class="btn btn-success">
+                    <span class="icon-[tabler--plus] size-5"></span>
+                    Generate eDOs
+                </button>
+                <button type="button" onclick="closeEDOGenerationModal()"
+                        class="btn btn-ghost">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include the professional eDO Generation Progress Modal -->
+{% include 'edo/modals/generation_progress.html.twig' %}
+
+{% endblock %}

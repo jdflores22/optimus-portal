@@ -1,0 +1,228 @@
+{% set currentRoute = app.request.attributes.get('_route') %}
+
+{# FlyonUI Sidebar - theme-aware, uses overlay drawer pattern #}
+<aside id="app-sidebar"
+       class="fixed inset-y-0 left-0 z-10 w-64 bg-base-100 shadow-xl
+              -translate-x-full sm:translate-x-0 transition-transform duration-300
+              flex flex-col"
+       tabindex="-1">
+    <div class="drawer-body px-2 pt-4 flex flex-col h-full overflow-y-auto">
+
+        {# Logo #}
+        <div class="flex items-center gap-3 px-3 pb-4">
+            <div class="size-9 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                <span class="icon-[tabler--ship] size-5 text-primary-content"></span>
+            </div>
+            <span class="text-lg font-bold text-base-content">OPTIMUS</span>
+        </div>
+
+        {# Navigation #}
+        <ul class="menu space-y-0.5 p-0 flex-1">
+
+            {# Dashboard - role-based #}
+            {% if app.user.role.value == 'SYSTEM_ADMIN' %}
+                <li>
+                    <a href="{{ path('app_admin_dashboard') }}" class="{{ currentRoute starts with 'app_admin_dashboard' ? 'active' : '' }}">
+                        <span class="icon-[tabler--layout-dashboard] size-5"></span>Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ path('admin_edo_release_queue') }}" class="{{ currentRoute starts with 'admin_edo_release' ? 'active' : '' }}">
+                        <span class="icon-[tabler--circle-check] size-5"></span>eDO Release Queue
+                        {% set pendingCount = pending_edo_payment_count() %}
+                        {% if pendingCount > 0 %}
+                            <span class="badge badge-soft badge-error badge-sm ml-auto">{{ pendingCount }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+            {% elseif app.user.role.value == 'CONSIGNEE' %}
+                <li>
+                    <a href="{{ path('app_consignee_dashboard') }}" class="{{ currentRoute starts with 'app_consignee_dashboard' ? 'active' : '' }}">
+                        <span class="icon-[tabler--layout-dashboard] size-5"></span>Dashboard
+                    </a>
+                </li>
+            {% elseif app.user.role.value == 'BROKER' %}
+                <li>
+                    <a href="{{ path('broker_workspace_selector') }}" class="{{ currentRoute starts with 'broker_workspace' ? 'active' : '' }}">
+                        <span class="icon-[tabler--briefcase] size-5"></span>Workspace
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ path('app_broker_dashboard') }}" class="{{ currentRoute starts with 'app_broker_dashboard' ? 'active' : '' }}">
+                        <span class="icon-[tabler--layout-dashboard] size-5"></span>Dashboard
+                    </a>
+                </li>
+            {% elseif app.user.role.value == 'EVALUATOR' %}
+                <li>
+                    <a href="{{ path('app_evaluator_dashboard') }}" class="{{ currentRoute starts with 'app_evaluator_dashboard' ? 'active' : '' }}">
+                        <span class="icon-[tabler--layout-dashboard] size-5"></span>Dashboard
+                    </a>
+                </li>
+            {% elseif app.user.role.value == 'SL_STAFF' %}
+                <li>
+                    <a href="{{ path('app_sl_staff_dashboard') }}" class="{{ currentRoute starts with 'app_sl_staff_dashboard' ? 'active' : '' }}">
+                        <span class="icon-[tabler--layout-dashboard] size-5"></span>Dashboard
+                    </a>
+                </li>
+            {% elseif app.user.role.value == 'SHIPPING_LINES_ADMIN' %}
+                <li>
+                    <a href="{{ path('app_shipping_admin_dashboard') }}" class="{{ currentRoute starts with 'app_shipping_admin_dashboard' ? 'active' : '' }}">
+                        <span class="icon-[tabler--layout-dashboard] size-5"></span>Dashboard
+                    </a>
+                </li>
+            {% elseif app.user.role.value == 'ACCOUNTING' %}
+                <li>
+                    <a href="{{ path('app_accounting_dashboard_new') }}" class="{{ currentRoute starts with 'app_accounting_dashboard' ? 'active' : '' }}">
+                        <span class="icon-[tabler--layout-dashboard] size-5"></span>Dashboard
+                    </a>
+                </li>
+            {% elseif app.user.role.value == 'TERMINAL_TEAM' %}
+                <li>
+                    <a href="{{ path('app_terminal_team_dashboard') }}" class="{{ currentRoute starts with 'app_terminal_team_dashboard' ? 'active' : '' }}">
+                        <span class="icon-[tabler--layout-dashboard] size-5"></span>Dashboard
+                    </a>
+                </li>
+            {% endif %}
+
+            {# Notifications - all roles #}
+            <li>
+                <a href="{{ path('notifications_page') }}" class="{{ currentRoute starts with 'notifications' ? 'active' : '' }}">
+                    <span class="icon-[tabler--bell] size-5"></span>Notifications
+                    <span id="sidebarNotificationBadge" class="badge badge-soft badge-error badge-sm ml-auto hidden">0</span>
+                </a>
+            </li>
+
+            {# Role-specific items #}
+            {% if app.user.role.value == 'SYSTEM_ADMIN' %}
+                <div class="divider text-base-content/50 py-4 after:border-0">Management</div>
+                <li><a href="{{ path('app_admin_approved_accreditations') }}" class="{{ currentRoute starts with 'app_admin_approved_accreditations' ? 'active' : '' }}"><span class="icon-[tabler--circle-check] size-5"></span>Accreditations</a></li>
+                <li><a href="{{ path('app_admin_users') }}" class="{{ currentRoute starts with 'app_admin_users' ? 'active' : '' }}"><span class="icon-[tabler--users] size-5"></span>User Management</a></li>
+                <li>
+                    <a href="{{ path('admin_appeals_list') }}" class="{{ currentRoute starts with 'admin_appeals' ? 'active' : '' }}">
+                        <span class="icon-[tabler--file-text] size-5"></span>Suspension Appeals
+                        {% if pendingAppealsCount is defined and pendingAppealsCount > 0 %}
+                            <span class="badge badge-soft badge-warning badge-sm ml-auto">{{ pendingAppealsCount }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ path('admin_broker_transfer_requests') }}" class="{{ currentRoute starts with 'admin_broker_transfer' ? 'active' : '' }}">
+                        <span class="icon-[tabler--arrows-exchange] size-5"></span>Transfer Requests
+                        {% if pendingTransferRequestsCount is defined and pendingTransferRequestsCount > 0 %}
+                            <span class="badge badge-soft badge-info badge-sm ml-auto">{{ pendingTransferRequestsCount }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li><a href="{{ path('app_admin_audit_logs') }}" class="{{ currentRoute starts with 'app_admin_audit_logs' ? 'active' : '' }}"><span class="icon-[tabler--clipboard-list] size-5"></span>Audit Logs</a></li>
+                <div class="divider text-base-content/50 py-4 after:border-0">Configuration</div>
+                <li><a href="{{ path('admin_shipping_lines_list') }}" class="{{ currentRoute starts with 'admin_shipping_lines' ? 'active' : '' }}"><span class="icon-[tabler--ship] size-5"></span>Shipping Lines</a></li>
+                <li><a href="{{ path('admin_terminals_index') }}" class="{{ currentRoute starts with 'admin_terminals' ? 'active' : '' }}"><span class="icon-[tabler--building] size-5"></span>Terminals</a></li>
+                <li><a href="{{ path('admin_container_types_index') }}" class="{{ currentRoute starts with 'admin_container_types' ? 'active' : '' }}"><span class="icon-[tabler--box] size-5"></span>Container Types</a></li>
+                <li><a href="{{ path('admin_container_sizes_index') }}" class="{{ currentRoute starts with 'admin_container_sizes' ? 'active' : '' }}"><span class="icon-[tabler--resize] size-5"></span>Container Sizes</a></li>
+                <li><a href="{{ path('admin_user_hierarchy_list') }}" class="{{ currentRoute starts with 'admin_user_hierarchy' ? 'active' : '' }}"><span class="icon-[tabler--hierarchy] size-5"></span>User Hierarchy</a></li>
+                <li><a href="{{ path('form_builder_list') }}" class="{{ currentRoute starts with 'form_builder' ? 'active' : '' }}"><span class="icon-[tabler--forms] size-5"></span>Form Builder</a></li>
+                <li><a href="{{ path('admin_system_settings') }}" class="{{ currentRoute starts with 'admin_system_settings' ? 'active' : '' }}"><span class="icon-[tabler--settings] size-5"></span>System Settings</a></li>
+
+            {% elseif app.user.role.value == 'CONSIGNEE' %}
+                <div class="divider text-base-content/50 py-4 after:border-0">My Account</div>
+                <li><a href="{{ path('accreditation_index') }}" class="{{ currentRoute starts with 'accreditation' ? 'active' : '' }}"><span class="icon-[tabler--id] size-5"></span>Accreditation</a></li>
+                <li><a href="{{ path('consignee_manifest_list') }}" class="{{ currentRoute starts with 'consignee_manifest' ? 'active' : '' }}"><span class="icon-[tabler--file-text] size-5"></span>My Manifests</a></li>
+                <li><a href="{{ path('consignee_brokers') }}" class="{{ currentRoute starts with 'consignee_brokers' ? 'active' : '' }}"><span class="icon-[tabler--users] size-5"></span>Brokers</a></li>
+
+            {% elseif app.user.role.value == 'BROKER' %}
+                <div class="divider text-base-content/50 py-4 after:border-0">My Work</div>
+                <li><a href="{{ path('accreditation_index') }}" class="{{ currentRoute starts with 'accreditation' ? 'active' : '' }}"><span class="icon-[tabler--id] size-5"></span>Accreditation</a></li>
+                <li><a href="{{ path('broker_manifest_list') }}" class="{{ currentRoute starts with 'broker_manifest' ? 'active' : '' }}"><span class="icon-[tabler--file-text] size-5"></span>My Manifests</a></li>
+                <li><a href="{{ path('broker_edo_list_page') }}" class="{{ currentRoute starts with 'broker_edo' ? 'active' : '' }}"><span class="icon-[tabler--file-invoice] size-5"></span>My eDOs</a></li>
+
+            {% elseif app.user.role.value == 'EVALUATOR' %}
+                <div class="divider text-base-content/50 py-4 after:border-0">My Work</div>
+                <li><a href="{{ path('app_evaluator_applications') }}" class="{{ currentRoute starts with 'app_evaluator_applications' ? 'active' : '' }}"><span class="icon-[tabler--file-text] size-5"></span>Applications</a></li>
+
+            {% elseif app.user.role.value == 'SHIPPING_LINES_ADMIN' %}
+                <div class="divider text-base-content/50 py-4 after:border-0">Operations</div>
+                <li><a href="{{ path('manifest_workflow_list') }}" class="{{ currentRoute starts with 'manifest_workflow' ? 'active' : '' }}"><span class="icon-[tabler--file-text] size-5"></span>NOA & BL Workflow</a></li>
+                <li><a href="{{ path('app_container_inventory') }}" class="{{ currentRoute starts with 'app_container_inventory' ? 'active' : '' }}"><span class="icon-[tabler--box] size-5"></span>Container Inventory</a></li>
+                <li><a href="{{ path('admin_user_hierarchy_list') }}" class="{{ currentRoute starts with 'admin_user_hierarchy' ? 'active' : '' }}"><span class="icon-[tabler--users] size-5"></span>My Team</a></li>
+                <li><a href="{{ path('payment_list') }}" class="{{ currentRoute starts with 'payment' ? 'active' : '' }}"><span class="icon-[tabler--cash] size-5"></span>System Payments</a></li>
+                <div class="divider text-base-content/50 py-4 after:border-0">Management</div>
+                <li><a href="{{ path('app_shipping_admin_consignees') }}" class="{{ currentRoute starts with 'app_shipping_admin_consignees' ? 'active' : '' }}"><span class="icon-[tabler--building] size-5"></span>Consignees</a></li>
+                <li><a href="{{ path('app_shipping_admin_brokers') }}" class="{{ currentRoute starts with 'app_shipping_admin_brokers' ? 'active' : '' }}"><span class="icon-[tabler--briefcase] size-5"></span>Brokers</a></li>
+
+            {% elseif app.user.role.value == 'SL_STAFF' %}
+                <div class="divider text-base-content/50 py-4 after:border-0">Operations</div>
+                <li><a href="{{ path('manifest_workflow_list') }}" class="{{ currentRoute starts with 'manifest_workflow' ? 'active' : '' }}"><span class="icon-[tabler--file-text] size-5"></span>NOA & BL Workflow</a></li>
+                <li><a href="{{ path('app_container_inventory') }}" class="{{ currentRoute starts with 'app_container_inventory' ? 'active' : '' }}"><span class="icon-[tabler--box] size-5"></span>Container Inventory</a></li>
+
+            {% elseif app.user.role.value == 'ACCOUNTING' %}
+                <div class="divider text-base-content/50 py-4 after:border-0">Finance</div>
+                <li><a href="{{ path('payment_list') }}" class="{{ currentRoute starts with 'payment' ? 'active' : '' }}"><span class="icon-[tabler--cash] size-5"></span>Payments</a></li>
+                <li><a href="{{ path('accounting_payment_dashboard') }}" class="{{ currentRoute starts with 'accounting_payment' ? 'active' : '' }}"><span class="icon-[tabler--circle-check] size-5"></span>Final Payment Validation</a></li>
+                <div class="divider text-base-content/50 py-4 after:border-0">Operations</div>
+                <li><a href="{{ path('app_container_inventory') }}" class="{{ currentRoute starts with 'app_container_inventory' ? 'active' : '' }}"><span class="icon-[tabler--box] size-5"></span>Container Inventory</a></li>
+
+            {% elseif app.user.role.value == 'TERMINAL_TEAM' %}
+                <div class="divider text-base-content/50 py-4 after:border-0">Operations</div>
+                <li>
+                    <a href="{{ path('app_terminal_team_pre_advice_requests', {status: 'pending'}) }}" class="{{ currentRoute starts with 'app_terminal_team_pre_advice' ? 'active' : '' }}">
+                        <span class="icon-[tabler--clipboard-list] size-5"></span>Pre-Advice
+                        {% if pending_pre_advice_count is defined and pending_pre_advice_count > 0 %}
+                            <span class="badge badge-soft badge-error badge-sm ml-auto">{{ pending_pre_advice_count > 99 ? '99+' : pending_pre_advice_count }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li><a href="{{ path('app_terminal_team_dwell_time_monitoring') }}" class="{{ currentRoute == 'app_terminal_team_dwell_time_monitoring' ? 'active' : '' }}"><span class="icon-[tabler--clock] size-5"></span>Dwell Time</a></li>
+                <li><a href="{{ path('app_container_inventory') }}" class="{{ currentRoute starts with 'app_container_inventory' ? 'active' : '' }}"><span class="icon-[tabler--box] size-5"></span>Container Inventory</a></li>
+            {% endif %}
+
+        </ul>
+
+        {# Profile footer #}
+        <div class="pt-4 pb-2 px-3">
+            <a href="{{ path('profile_settings') }}" class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200 transition-colors">
+                <div class="size-8 rounded-full {{ avatar_colors(app.user) }} flex items-center justify-center flex-shrink-0">
+                    {% if app.user.profilePhoto %}
+                        <img src="{{ path('profile_photo', {userId: app.user.id, filename: app.user.profilePhoto}) }}" alt="Profile" class="size-full object-cover rounded-full">
+                    {% else %}
+                        <span class="text-xs font-semibold">{{ app.user.email|slice(0,1)|upper }}</span>
+                    {% endif %}
+                </div>
+                <div class="min-w-0">
+                    <div class="text-xs font-medium text-base-content truncate">{{ app.user.email }}</div>
+                    <div class="text-xs text-base-content/50">{{ app.user.role.value|replace({'_': ' '})|title }}</div>
+                </div>
+            </a>
+        </div>
+
+    </div>
+</aside>
+
+<script>
+function toggleMobileSidebar() {
+    const sidebar = document.getElementById('app-sidebar');
+    if (!sidebar) return;
+
+    const isOpen = !sidebar.classList.contains('-translate-x-full');
+
+    if (isOpen) {
+        sidebar.classList.add('-translate-x-full');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        if (backdrop) backdrop.remove();
+    } else {
+        sidebar.classList.remove('-translate-x-full');
+
+        const backdrop = document.createElement('div');
+        backdrop.id = 'sidebarBackdrop';
+        backdrop.className = 'fixed inset-0 bg-black/50 z-[9] sm:hidden';
+        backdrop.onclick = toggleMobileSidebar;
+        document.body.appendChild(backdrop);
+    }
+}
+
+window.addEventListener('resize', function() {
+    if (window.innerWidth >= 640) {
+        const backdrop = document.getElementById('sidebarBackdrop');
+        if (backdrop) backdrop.remove();
+    }
+});
+</script>

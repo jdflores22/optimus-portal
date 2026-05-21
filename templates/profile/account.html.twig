@@ -1,0 +1,511 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Account Settings - OPTIMUS{% endblock %}
+{% block page_title %}Account Settings{% endblock %}
+
+{% block body %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+    {# Page header #}
+    <div class="flex items-center gap-4">
+        <div class="size-14 rounded-full {{ avatar_colors(user) }} flex items-center justify-center flex-shrink-0">
+            <span class="text-xl font-bold">{{ user.email|slice(0,1)|upper }}</span>
+        </div>
+        <div>
+            <h1 class="text-2xl font-bold text-base-content">Account Settings</h1>
+            <p class="text-sm text-base-content/60">Manage your account security, notifications, and preferences</p>
+        </div>
+    </div>
+
+    {# Flash messages #}
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success">
+            <span class="icon-[tabler--circle-check] size-5"></span>
+            <span>{{ message }}</span>
+            <button type="button" onclick="this.parentElement.remove()" class="btn btn-ghost btn-xs btn-circle ml-auto">
+                <span class="icon-[tabler--x] size-3"></span>
+            </button>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error">
+            <span class="icon-[tabler--alert-circle] size-5"></span>
+            <span>{{ message }}</span>
+            <button type="button" onclick="this.parentElement.remove()" class="btn btn-ghost btn-xs btn-circle ml-auto">
+                <span class="icon-[tabler--x] size-3"></span>
+            </button>
+        </div>
+    {% endfor %}
+
+    {# AJAX message area #}
+    <div id="message-container" class="hidden space-y-2">
+        <div id="success-message" class="hidden alert alert-success">
+            <span class="icon-[tabler--circle-check] size-5"></span>
+            <span></span>
+            <button type="button" onclick="hideMessage()" class="btn btn-ghost btn-xs btn-circle ml-auto">
+                <span class="icon-[tabler--x] size-3"></span>
+            </button>
+        </div>
+        <div id="error-message" class="hidden alert alert-error">
+            <span class="icon-[tabler--alert-circle] size-5"></span>
+            <span></span>
+            <button type="button" onclick="hideMessage()" class="btn btn-ghost btn-xs btn-circle ml-auto">
+                <span class="icon-[tabler--x] size-3"></span>
+            </button>
+        </div>
+    </div>
+
+    {# Tabs card #}
+    <div class="card bg-base-100 shadow-md">
+        <div class="card-body p-0">
+
+            {# Tab nav #}
+            <div class="flex border-b border-base-300">
+                <button onclick="switchTab('security')" id="tab-security"
+                        class="tab-btn flex-1 flex items-center justify-center gap-2 py-4 text-sm font-medium border-b-2 transition-colors active">
+                    <span class="icon-[tabler--lock] size-4"></span>
+                    Security
+                </button>
+                <button onclick="switchTab('notifications')" id="tab-notifications"
+                        class="tab-btn flex-1 flex items-center justify-center gap-2 py-4 text-sm font-medium border-b-2 transition-colors">
+                    <span class="icon-[tabler--bell] size-4"></span>
+                    Notifications
+                </button>
+                <button onclick="switchTab('account')" id="tab-account"
+                        class="tab-btn flex-1 flex items-center justify-center gap-2 py-4 text-sm font-medium border-b-2 transition-colors">
+                    <span class="icon-[tabler--user] size-4"></span>
+                    Account Info
+                </button>
+            </div>
+
+            {# Skeleton Loader #}
+            <div id="account-skeleton" class="p-6 space-y-8">
+                {# Form skeleton #}
+                <div>
+                    <div class="skeleton skeleton-animated h-5 w-40 mb-4"></div>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="skeleton skeleton-animated h-4 w-32 mb-2"></div>
+                            <div class="skeleton skeleton-animated h-12 w-full"></div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <div class="skeleton skeleton-animated h-4 w-28 mb-2"></div>
+                                <div class="skeleton skeleton-animated h-12 w-full"></div>
+                            </div>
+                            <div>
+                                <div class="skeleton skeleton-animated h-4 w-36 mb-2"></div>
+                                <div class="skeleton skeleton-animated h-12 w-full"></div>
+                            </div>
+                        </div>
+                        <div class="flex justify-end pt-2 border-t border-base-300">
+                            <div class="skeleton skeleton-animated h-10 w-40"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                {# Activity skeleton #}
+                <div class="border-t border-base-300 pt-6">
+                    <div class="skeleton skeleton-animated h-5 w-32 mb-4"></div>
+                    <div class="space-y-3">
+                        <div class="skeleton skeleton-animated h-20 w-full rounded-xl"></div>
+                        <div class="skeleton skeleton-animated h-20 w-full rounded-xl"></div>
+                    </div>
+                </div>
+            </div>
+
+            {# ── SECURITY TAB ── #}
+            <div id="content-security" class="tab-content hidden p-6 space-y-8">
+
+                {# Change password #}
+                <div>
+                    <h3 class="font-semibold text-base text-base-content mb-4">Change Password</h3>
+                    <form method="POST" class="space-y-4">
+                        <input type="hidden" name="action" value="change_password">
+
+                        <div class="form-control">
+                            <label class="label pb-1"><span class="label-text font-medium">Current Password</span></label>
+                            <input type="password" id="current_password" name="current_password" required
+                                   class="input input-bordered w-full">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="form-control">
+                                <label class="label pb-1"><span class="label-text font-medium">New Password</span></label>
+                                <input type="password" id="new_password" name="new_password" required minlength="8"
+                                       class="input input-bordered w-full">
+                                <label class="label pt-1">
+                                    <span class="label-text-alt text-base-content/40">At least 8 characters.</span>
+                                </label>
+                            </div>
+                            <div class="form-control">
+                                <label class="label pb-1"><span class="label-text font-medium">Confirm New Password</span></label>
+                                <input type="password" id="confirm_password" name="confirm_password" required minlength="8"
+                                       class="input input-bordered w-full">
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-2 border-t border-base-300">
+                            <button type="submit" class="btn btn-primary gap-2">
+                                <span class="icon-[tabler--lock] size-4"></span>
+                                Update Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                {# Login activity #}
+                <div class="border-t border-base-300 pt-6">
+                    <h3 class="font-semibold text-base text-base-content mb-4">Login Activity</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-4 rounded-xl bg-success/10 border border-success/20">
+                            <div class="flex items-center gap-3">
+                                <div class="size-10 rounded-full bg-success/20 flex items-center justify-center">
+                                    <span class="icon-[tabler--device-desktop] size-5 text-success"></span>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-base-content">Current Session</p>
+                                    <p class="text-xs text-base-content/50">Active now · Your current browser session</p>
+                                </div>
+                            </div>
+                            <span class="badge badge-success badge-sm">Active</span>
+                        </div>
+                        <div class="flex items-center justify-between p-4 rounded-xl bg-base-200 border border-base-300">
+                            <div class="flex items-center gap-3">
+                                <div class="size-10 rounded-full bg-base-300 flex items-center justify-center">
+                                    <span class="icon-[tabler--clock] size-5 text-base-content/50"></span>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-base-content">Previous Login</p>
+                                    <p class="text-xs text-base-content/50">{{ user.createdAt|date('M j, Y g:i A') }} · Web Browser</p>
+                                </div>
+                            </div>
+                            <span class="badge badge-ghost badge-sm">Ended</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# ── NOTIFICATIONS TAB ── #}
+            <div id="content-notifications" class="tab-content hidden p-6 space-y-6">
+
+                <div>
+                    <h3 class="font-semibold text-base text-base-content mb-1">Notification Types</h3>
+                    <p class="text-sm text-base-content/60 mb-4">Choose which types of notifications you want to receive</p>
+
+                    <form id="notification-preferences-form" class="space-y-6">
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {% for type, label in notificationTypes %}
+                                <label class="flex items-center gap-3 p-3 rounded-xl bg-base-200 border border-base-300 hover:bg-base-300/50 cursor-pointer transition-colors">
+                                    <input type="checkbox" id="type_{{ type }}" name="enabled_types[]" value="{{ type }}"
+                                           {% if preferences.isTypeEnabled(type) %}checked{% endif %}
+                                           class="checkbox checkbox-primary checkbox-sm">
+                                    <span class="text-sm font-medium text-base-content">{{ label }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+
+                        {# Do Not Disturb #}
+                        <div class="border-t border-base-300 pt-6">
+                            <h3 class="font-semibold text-base text-base-content mb-1">Do Not Disturb</h3>
+                            <p class="text-sm text-base-content/60 mb-4">Suppress notifications during specific hours</p>
+
+                            <label class="flex items-start gap-3 p-4 rounded-xl bg-base-200 border border-base-300 hover:bg-base-300/50 cursor-pointer transition-colors mb-4">
+                                <input type="checkbox" id="dnd_enabled" name="dnd_enabled" value="1"
+                                       {% if preferences.isDoNotDisturbEnabled %}checked{% endif %}
+                                       class="checkbox checkbox-primary checkbox-sm mt-0.5">
+                                <div>
+                                    <span class="text-sm font-semibold text-base-content">Enable Do Not Disturb Mode</span>
+                                    <p class="text-xs text-base-content/50 mt-0.5">Silence notifications during your specified quiet hours</p>
+                                </div>
+                            </label>
+
+                            <div id="dnd-time-range" class="space-y-4 {% if not preferences.isDoNotDisturbEnabled %}hidden{% endif %}">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="form-control">
+                                        <label class="label pb-1"><span class="label-text font-medium">Start Time</span></label>
+                                        <input type="time" id="dnd_start" name="dnd_start"
+                                               value="{% if preferences.doNotDisturbStart %}{{ preferences.doNotDisturbStart|date('H:i') }}{% endif %}"
+                                               class="input input-bordered w-full">
+                                    </div>
+                                    <div class="form-control">
+                                        <label class="label pb-1"><span class="label-text font-medium">End Time</span></label>
+                                        <input type="time" id="dnd_end" name="dnd_end"
+                                               value="{% if preferences.doNotDisturbEnd %}{{ preferences.doNotDisturbEnd|date('H:i') }}{% endif %}"
+                                               class="input input-bordered w-full">
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-2 p-3 rounded-xl bg-info/10 border border-info/20 text-xs text-info">
+                                    <span class="icon-[tabler--info-circle] size-4 flex-shrink-0 mt-0.5"></span>
+                                    Notifications received during Do Not Disturb hours will be queued and delivered when the mode is disabled.
+                                </div>
+                            </div>
+                        </div>
+
+                        {# Manage Devices #}
+                        <div class="border-t border-base-300 pt-6">
+                            <h3 class="font-semibold text-base text-base-content mb-1">Manage Devices</h3>
+                            <p class="text-sm text-base-content/60 mb-4">Devices registered to receive push notifications</p>
+
+                            <div id="devices-container">
+                                {% if subscriptions is empty %}
+                                    <div class="flex flex-col items-center justify-center py-10 text-base-content/40 gap-2">
+                                        <span class="icon-[tabler--device-mobile-off] size-10"></span>
+                                        <p class="text-sm font-medium">No devices registered</p>
+                                        <p class="text-xs">Enable push notifications on your devices to see them here</p>
+                                    </div>
+                                {% else %}
+                                    <div class="space-y-2">
+                                        {% for subscription in subscriptions %}
+                                            <div class="flex items-center justify-between p-4 rounded-xl bg-base-200 border border-base-300"
+                                                 data-subscription-id="{{ subscription.id }}">
+                                                <div class="flex items-center gap-3 flex-1 min-w-0">
+                                                    <div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                                        <span class="icon-[tabler--device-mobile] size-5 text-primary"></span>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <p class="text-sm font-medium text-base-content truncate">{{ subscription.userAgent ?? 'Unknown Device' }}</p>
+                                                        <p class="text-xs text-base-content/50">
+                                                            Registered: {{ subscription.createdAt|date('M d, Y') }}
+                                                            {% if subscription.lastUsedAt %} · Last used: {{ subscription.lastUsedAt|date('M d, Y') }}{% endif %}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button type="button"
+                                                        class="remove-device-btn btn btn-ghost btn-sm text-error gap-1 flex-shrink-0"
+                                                        data-subscription-id="{{ subscription.id }}">
+                                                    <span class="icon-[tabler--trash] size-4"></span>
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end border-t border-base-300 pt-4">
+                            <button type="submit" class="btn btn-primary gap-2">
+                                <span class="icon-[tabler--device-floppy] size-4"></span>
+                                Save Notification Preferences
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {# ── ACCOUNT INFO TAB ── #}
+            <div id="content-account" class="tab-content hidden p-6">
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                        <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Account ID</dt>
+                        <dd class="text-sm text-base-content font-mono">#{{ '%06d'|format(user.id) }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Email Address</dt>
+                        <dd class="text-sm text-base-content">{{ user.email }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Email Verification</dt>
+                        <dd class="mt-1">
+                            {% if user.emailVerifiedAt %}
+                                <span class="badge badge-success badge-sm gap-1">
+                                    <span class="icon-[tabler--circle-check] size-3"></span>Verified
+                                </span>
+                            {% else %}
+                                <span class="badge badge-warning badge-sm gap-1">
+                                    <span class="icon-[tabler--clock] size-3"></span>Pending
+                                </span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Account Role</dt>
+                        <dd class="mt-1">
+                            <span class="badge badge-primary badge-sm">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Account Created</dt>
+                        <dd class="text-sm text-base-content">{{ user.createdAt|date('F j, Y g:i A') }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Last Updated</dt>
+                        <dd class="text-sm text-base-content">{{ user.createdAt|date('F j, Y g:i A') }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{# Remove device confirmation modal #}
+<div id="confirmation-modal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeConfirmationModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-sm z-10">
+        <div class="flex items-center gap-3 px-5 py-4 border-b border-base-300">
+            <div class="size-9 rounded-full bg-error/10 flex items-center justify-center flex-shrink-0">
+                <span class="icon-[tabler--alert-triangle] size-5 text-error"></span>
+            </div>
+            <h3 class="font-semibold text-base text-base-content">Remove Device</h3>
+        </div>
+        <div class="px-5 py-4">
+            <p class="text-sm text-base-content/70" id="modal-message">
+                Are you sure you want to remove this device? You will no longer receive push notifications on this device.
+            </p>
+        </div>
+        <div class="flex justify-end gap-2 px-5 py-4 border-t border-base-300">
+            <button type="button" onclick="closeConfirmationModal()" class="btn btn-ghost btn-sm">Cancel</button>
+            <button type="button" id="confirm-remove-btn" class="btn btn-error btn-sm gap-2">
+                <span class="icon-[tabler--trash] size-4"></span>
+                Remove Device
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.tab-btn { border-color: transparent; color: oklch(var(--bc)/.5); }
+.tab-btn:hover { color: oklch(var(--bc)/.8); border-color: oklch(var(--bc)/.2); }
+.tab-btn.active { border-color: oklch(var(--p)); color: oklch(var(--p)); }
+</style>
+
+<script>
+let pendingRemovalSubscriptionId = null;
+
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('content-' + tabName).classList.remove('hidden');
+    document.getElementById('tab-' + tabName).classList.add('active');
+}
+
+function openConfirmationModal() {
+    document.getElementById('confirmation-modal').classList.remove('hidden');
+}
+
+function closeConfirmationModal() {
+    document.getElementById('confirmation-modal').classList.add('hidden');
+    pendingRemovalSubscriptionId = null;
+}
+
+function hideMessage() {
+    document.getElementById('message-container').classList.add('hidden');
+    document.getElementById('success-message').classList.add('hidden');
+    document.getElementById('error-message').classList.add('hidden');
+}
+
+function showMessage(type, message) {
+    const container = document.getElementById('message-container');
+    const el = document.getElementById(type + '-message');
+    hideMessage();
+    container.classList.remove('hidden');
+    el.classList.remove('hidden');
+    el.querySelector('span:nth-child(2)').textContent = message;
+    setTimeout(hideMessage, 5000);
+}
+
+// Show skeleton on page load, hide when content is ready
+document.addEventListener('DOMContentLoaded', function() {
+    const skeleton = document.getElementById('account-skeleton');
+    const securityContent = document.getElementById('content-security');
+    
+    setTimeout(function() {
+        if (skeleton) skeleton.classList.add('hidden');
+        if (securityContent) securityContent.classList.remove('hidden');
+    }, 300);
+    
+    // URL tab param
+    const tab = new URLSearchParams(window.location.search).get('tab');
+    if (tab && ['security','notifications','account'].includes(tab)) switchTab(tab);
+
+    // Password match validation
+    const newPw = document.getElementById('new_password');
+    const confirmPw = document.getElementById('confirm_password');
+    if (newPw && confirmPw) {
+        const validate = () => {
+            confirmPw.setCustomValidity(newPw.value && newPw.value !== confirmPw.value ? 'Passwords do not match' : '');
+        };
+        newPw.addEventListener('input', validate);
+        confirmPw.addEventListener('input', validate);
+    }
+
+    // DND toggle
+    const dndCheckbox = document.getElementById('dnd_enabled');
+    if (dndCheckbox) {
+        dndCheckbox.addEventListener('change', function() {
+            document.getElementById('dnd-time-range').classList.toggle('hidden', !this.checked);
+        });
+    }
+
+    // Notification preferences form
+    const prefForm = document.getElementById('notification-preferences-form');
+    if (prefForm) {
+        prefForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            try {
+                const res = await fetch('{{ path('notification_preferences_update') }}', { method: 'POST', body: new FormData(prefForm) });
+                const data = await res.json();
+                showMessage(data.success ? 'success' : 'error', data.message || data.error || 'Done');
+            } catch { showMessage('error', 'An error occurred while saving preferences'); }
+        });
+    }
+
+    // Device removal
+    document.querySelectorAll('.remove-device-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            pendingRemovalSubscriptionId = this.dataset.subscriptionId;
+            openConfirmationModal();
+        });
+    });
+
+    const confirmBtn = document.getElementById('confirm-remove-btn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', async function() {
+            if (!pendingRemovalSubscriptionId) return;
+            const id = pendingRemovalSubscriptionId;
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Removing...';
+            try {
+                const res = await fetch(`{{ path('notification_preferences_remove_device', {id: 999999}) }}`.replace('999999', id), { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) {
+                    const el = document.querySelector(`[data-subscription-id="${id}"]`);
+                    if (el) {
+                        el.style.transition = 'opacity .3s, transform .3s';
+                        el.style.opacity = '0'; el.style.transform = 'translateX(20px)';
+                        setTimeout(() => {
+                            el.remove();
+                            const remaining = document.querySelectorAll('#devices-container [data-subscription-id]');
+                            if (!remaining.length) {
+                                document.getElementById('devices-container').innerHTML = `
+                                <div class="flex flex-col items-center justify-center py-10 text-base-content/40 gap-2">
+                                    <span class="icon-[tabler--device-mobile-off] size-10"></span>
+                                    <p class="text-sm font-medium">No devices registered</p>
+                                </div>`;
+                            }
+                        }, 300);
+                    }
+                    closeConfirmationModal();
+                    showMessage('success', data.message || 'Device removed successfully');
+                } else {
+                    closeConfirmationModal();
+                    showMessage('error', data.error || 'Failed to remove device');
+                }
+            } catch {
+                closeConfirmationModal();
+                showMessage('error', 'An error occurred while removing device');
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<span class="icon-[tabler--trash] size-4"></span> Remove Device';
+                pendingRemovalSubscriptionId = null;
+            }
+        });
+    }
+});
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeConfirmationModal(); });
+</script>
+{% endblock %}

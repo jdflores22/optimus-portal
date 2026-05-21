@@ -1,0 +1,90 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Admin eDO Unlock{% endblock %}
+
+{% block page_title %}eDO Unlock Management{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white shadow-sm rounded-lg">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">Locked eDOs</h2>
+            <p class="mt-1 text-sm text-gray-600">View and unlock eDOs without requiring payment</p>
+        </div>
+
+        <!-- Warning Banner -->
+        <div class="px-6 py-4 bg-yellow-50 border-b border-yellow-200">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-yellow-800">Administrator Action Required</h3>
+                    <div class="mt-2 text-sm text-yellow-700">
+                        <p>Unlocking eDOs without payment is a privileged action. All unlock operations are logged in the audit trail with your user ID, timestamp, and reason.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- eDO List -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">eDO Number</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Container</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expired Days</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Consignee</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for edo in edos %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ edo.edoNumber }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ edo.container.containerNumber }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                {% if edo.status.value == 'locked' %}bg-yellow-100 text-yellow-800
+                                {% elseif edo.status.value == 'expired' %}bg-red-100 text-red-800
+                                {% endif %}">
+                                {{ edo.status.value|upper }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if edo.expiredDays %}
+                                <span class="font-semibold text-red-600">{{ edo.expiredDays }} days</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ edo.manifest.consignee.user.email }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="{{ path('admin_edo_unlock_detail', {id: edo.id}) }}"
+                               class="text-blue-600 hover:text-blue-900">View & Unlock</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-sm text-gray-500">
+                            No locked or expired eDOs found
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

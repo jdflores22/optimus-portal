@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Push Notifications - Optimus</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #2563eb;
+            font-size: 18px;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+        .log {
+            background: #1f2937;
+            color: #f3f4f6;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+        }
+        .log-time {
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔔 Push Notification Tester</h1>
+        <p class="subtitle">Test push notifications for Optimus Shipping PWA</p>
+
+        <div class="section">
+            <h2>1. Check Permission Status</h2>
+            <button onclick="checkPermission()">Check Permission</button>
+            <button onclick="requestPermission()">Request Permission</button>
+            <div id="permission-status" class="status info" style="display:none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>2. Check Service Worker</h2>
+            <button onclick="checkServiceWorker()">Check Service Worker</button>
+            <button onclick="registerServiceWorker()">Register Service Worker</button>
+            <div id="sw-status" class="status info" style="display:none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>3. Check Push Subscription</h2>
+            <button onclick="checkSubscription()">Check Subscription</button>
+            <button onclick="subscribe()">Subscribe to Push</button>
+            <div id="subscription-status" class="status info" style="display:none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>4. Test Notifications</h2>
+            <button onclick="testLocalNotification()">Test Local Notification</button>
+            <button onclick="testServiceWorkerPush()">Test Service Worker Push</button>
+            <button onclick="testCustomNotification()">Test Custom Notification</button>
+            <div id="test-status" class="status info" style="display:none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>Console Log</h2>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="console-log" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        const log = [];
+        
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            log.push({ timestamp, message, type });
+            updateLogDisplay();
+            console.log(`[${timestamp}] ${message}`);
+        }
+        
+        function updateLogDisplay() {
+            const logDiv = document.getElementById('console-log');
+            logDiv.innerHTML = log.map(entry => 
+                `<div class="log-entry"><span class="log-time">[${entry.timestamp}]</span> ${entry.message}</div>`
+            ).join('');
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            log.length = 0;
+            updateLogDisplay();
+        }
+        
+        function showStatus(elementId, message, type = 'info') {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = `status ${type}`;
+            el.style.display = 'block';
+        }
+        
+        async function checkPermission() {
+            if (!('Notification' in window)) {
+                showStatus('permission-status', '❌ Notifications not supported in this browser', 'error');
+                addLog('Notifications not supported', 'error');
+                return;
+            }
+            
+            const permission = Notification.permission;
+            showStatus('permission-status', `Permission: ${permission}`, permission === 'granted' ? 'success' : 'info');
+            addLog(`Notification permission: ${permission}`);
+        }
+        
+        async function requestPermission() {
+            if (!('Notification' in window)) {
+                showStatus('permission-status', '❌ Notifications not supported', 'error');
+                return;
+            }
+            
+            try {
+                const permission = await Notification.requestPermission();
+                showStatus('permission-status', `✓ Permission ${permission}`, permission === 'granted' ? 'success' : 'error');
+                addLog(`Permission request result: ${permission}`);
+            } catch (error) {
+                showStatus('permission-status', `❌ Error: ${error.message}`, 'error');
+                addLog(`Permission request error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkServiceWorker() {
+            if (!('serviceWorker' in navigator)) {
+                showStatus('sw-status', '❌ Service Workers not supported', 'error');
+                addLog('Service Workers not supported', 'error');
+                return;
+            }
+            
+            try {
+                const registration = await navigator.serviceWorker.getRegistration();
+                if (registration) {
+                    showStatus('sw-status', `✓ Service Worker registered (${registration.active ? 'active' : 'installing'})`, 'success');
+                    addLog(`Service Worker found: ${registration.scope}`);
+                } else {
+                    showStatus('sw-status', '⚠ No Service Worker registered', 'info');
+                    addLog('No Service Worker registered');
+                }
+            } catch (error) {
+                showStatus('sw-status', `❌ Error: ${error.message}`, 'error');
+                addLog(`Service Worker check error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function registerServiceWorker() {
+            if (!('serviceWorker' in navigator)) {
+                showStatus('sw-status', '❌ Service Workers not supported', 'error');
+                return;
+            }
+            
+            try {
+                const registration = await navigator.serviceWorker.register('/sw.js');
+                showStatus('sw-status', '✓ Service Worker registered successfully', 'success');
+                addLog(`Service Worker registered: ${registration.scope}`);
+            } catch (error) {
+                showStatus('sw-status', `❌ Error: ${error.message}`, 'error');
+                addLog(`Service Worker registration error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkSubscription() {
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.getSubscription();
+                
+                if (subscription) {
+                    showStatus('subscription-status', '✓ Push subscription active', 'success');
+                    addLog(`Push subscription found: ${subscription.endpoint.substring(0, 50)}...`);
+                } else {
+                    showStatus('subscription-status', '⚠ No push subscription', 'info');
+                    addLog('No push subscription found');
+                }
+            } catch (error) {
+                showStatus('subscription-status', `❌ Error: ${error.message}`, 'error');
+                addLog(`Subscription check error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function subscribe() {
+            try {
+                // Fetch VAPID public key
+                const response = await fetch('/api/push/vapid-public-key');
+                const data = await response.json();
+                
+                if (!data.success || !data.publicKey) {
+                    throw new Error('Failed to get VAPID public key');
+                }
+                
+                addLog(`VAPID public key retrieved: ${data.publicKey.substring(0, 20)}...`);
+                
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(data.publicKey)
+                });
+                
+                showStatus('subscription-status', '✓ Subscribed to push notifications', 'success');
+                addLog('Push subscription created successfully');
+                
+                // Register with backend
+                const subscriptionData = {
+                    endpoint: subscription.endpoint,
+                    keys: {
+                        p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
+                        auth: arrayBufferToBase64(subscription.getKey('auth'))
+                    }
+                };
+                
+                const registerResponse = await fetch('/api/push/subscribe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(subscriptionData)
+                });
+                
+                if (registerResponse.ok) {
+                    addLog('Subscription registered with backend');
+                } else {
+                    addLog(`Backend registration failed: ${registerResponse.status}`, 'error');
+                }
+                
+            } catch (error) {
+                showStatus('subscription-status', `❌ Error: ${error.message}`, 'error');
+                addLog(`Subscribe error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testLocalNotification() {
+            if (Notification.permission !== 'granted') {
+                showStatus('test-status', '❌ Permission not granted', 'error');
+                addLog('Cannot show notification: permission not granted', 'error');
+                return;
+            }
+            
+            try {
+                const notification = new Notification('Test Notification', {
+                    body: 'This is a local test notification',
+                    icon: '/images/notification-icon.png',
+                    badge: '/images/badge.svg'
+                });
+                
+                showStatus('test-status', '✓ Local notification shown', 'success');
+                addLog('Local notification displayed');
+                
+                notification.onclick = () => {
+                    addLog('Notification clicked');
+                    window.focus();
+                };
+            } catch (error) {
+                showStatus('test-status', `❌ Error: ${error.message}`, 'error');
+                addLog(`Local notification error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testServiceWorkerPush() {
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                
+                await registration.showNotification('Service Worker Test', {
+                    body: 'This notification is shown by the service worker',
+                    icon: '/images/notification-icon.png',
+                    badge: '/images/badge.svg',
+                    data: { url: '/notifications' },
+                    actions: [
+                        { action: 'open', title: 'View' },
+                        { action: 'close', title: 'Dismiss' }
+                    ]
+                });
+                
+                showStatus('test-status', '✓ Service Worker notification shown', 'success');
+                addLog('Service Worker notification displayed');
+            } catch (error) {
+                showStatus('test-status', `❌ Error: ${error.message}`, 'error');
+                addLog(`Service Worker notification error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testCustomNotification() {
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                
+                await registration.showNotification('Payment Approved', {
+                    body: 'Your payment for Manifest #12345 has been approved',
+                    icon: '/images/notification-icon.png',
+                    badge: '/images/badge.svg',
+                    data: { 
+                        url: '/manifests/12345',
+                        type: 'payment_approved'
+                    },
+                    vibrate: [200, 100, 200],
+                    tag: 'payment_approved',
+                    requireInteraction: false,
+                    actions: [
+                        { action: 'open', title: 'View Manifest' },
+                        { action: 'close', title: 'Dismiss' }
+                    ]
+                });
+                
+                showStatus('test-status', '✓ Custom notification shown', 'success');
+                addLog('Custom notification displayed');
+            } catch (error) {
+                showStatus('test-status', `❌ Error: ${error.message}`, 'error');
+                addLog(`Custom notification error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Helper functions
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+        
+        function arrayBufferToBase64(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        }
+        
+        // Initialize
+        addLog('Push Notification Tester loaded');
+        checkPermission();
+        checkServiceWorker();
+        checkSubscription();
+    </script>
+</body>
+</html>

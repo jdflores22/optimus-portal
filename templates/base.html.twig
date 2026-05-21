@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="0">
+        
+        {# Prevent theme flash: apply saved theme before page renders #}
+        <script>
+            (function() {
+                var t = localStorage.getItem('theme') || 'light';
+                document.documentElement.setAttribute('data-theme', t);
+            })();
+        </script>
+        
+        <title>{% block title %}OPTIMUS - Shipping Lines Portal{% endblock %}</title>
+        
+        {# PWA Manifest #}
+        <link rel="manifest" href="{{ asset('manifest.json') }}">
+        
+        {# PWA Support #}
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="default">
+        <meta name="apple-mobile-web-app-title" content="Optimus">
+        <link rel="apple-touch-icon" href="{{ asset('images/icons/icon-192x192.svg') }}">
+        
+        {# Theme Color #}
+        <meta name="theme-color" content="#1e40af">
+        
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
+        
+        {# Inter font - FlyonUI default #}
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        
+        <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ 'now'|date('U') }}">
+        
+        {# Notyf Toast Notifications #}
+        <link rel="stylesheet" href="{{ asset('node_modules/notyf/notyf.min.css') }}?v={{ 'now'|date('U') }}">
+        
+        {% block stylesheets %}
+        {% endblock %}
+
+        {% block javascripts %}
+        {% endblock %}
+        
+        {# FlyonUI JavaScript for interactive components (dropdowns, modals, tooltips, accordions) #}
+        <script src="https://cdn.jsdelivr.net/npm/flyonui@2.4.1/dist/js/flyonui.js"></script>
+
+        {# Theme switcher — setTheme() called directly via onclick on theme buttons #}
+        <script>
+            function setTheme(theme) {
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem('theme', theme);
+            }
+        </script>
+        
+        {# Third-party libraries #}
+        <script src="{{ asset('node_modules/lodash/lodash.min.js') }}"></script>
+        <script src="{{ asset('node_modules/apexcharts/dist/apexcharts.min.js') }}"></script>
+        
+        {# Notyf Toast Notifications #}
+        <script src="{{ asset('node_modules/notyf/notyf.min.js') }}?v={{ 'now'|date('U') }}"></script>
+        <script>
+            // Initialize global Notyf instance after DOM is ready
+            document.addEventListener('DOMContentLoaded', function() {
+                try {
+                    window.notyf = new Notyf({
+                        duration: 4000,
+                        position: { x: 'right', y: 'top' },
+                        dismissible: true,
+                        ripple: true
+                    });
+                    console.log('[Notyf] Initialized successfully');
+                } catch (error) {
+                    console.error('[Notyf] Initialization failed:', error);
+                }
+            });
+        </script>
+        
+        {% if app.user %}
+            <!-- PWA Detection and Session Management -->
+            <script src="{{ asset('js/pwa-detector.js') }}?v={{ 'now'|date('U') }}"></script>
+            <script src="{{ asset('js/permission-handler.js') }}?v={{ 'now'|date('U') }}"></script>
+            
+            <!-- Real-time notification system -->
+            <script src="{{ asset('js/notifications.js') }}?v={{ 'now'|date('U') }}"></script>
+            
+            <!-- Real-time account status monitoring -->
+            <script src="{{ asset('js/account-status-monitor.js') }}?v={{ 'now'|date('U') }}"></script>
+            
+            <!-- Session Manager (Desktop: timeout, PWA: infinite) -->
+            <script src="{{ asset('js/session-manager.js') }}?v={{ 'now'|date('U') }}"></script>
+            
+            <!-- Initialize PWA-aware permissions -->
+            <script>
+                (function() {
+                    // Initialize PWA detector
+                    const pwaDetector = new PWADetector();
+                    const displayMode = pwaDetector.getDisplayMode();
+                    
+                    console.log('[PWA] Display mode:', displayMode);
+                    console.log('[PWA] Is PWA:', pwaDetector.isPWA());
+                    console.log('[PWA] Is iOS PWA:', pwaDetector.isIOSPWA());
+                    
+                    // Initialize permission handler
+                    fetch('/api/push/vapid-public-key')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success && data.publicKey) {
+                                const permissionHandler = new PermissionHandler(data.publicKey);
+                                window.permissionHandler = permissionHandler;
+                                
+                                console.log('[PWA] Permission handler initialized with VAPID key');
+                                
+                                // Check if this is immediately after login (within 5 seconds)
+                                const loginTimestamp = sessionStorage.getItem('login_timestamp');
+                                const now = Date.now();
+                                const isJustLoggedIn = loginTimestamp && (now - parseInt(loginTimestamp)) < 5000;
+                                
+                                if (isJustLoggedIn) {
+                                    console.log('[PWA] Just logged in - forcing permission prompt');
+                                    // Clear the flag to force showing the prompt
+                                    localStorage.removeItem('has_seen_permission_prompt');
+                                    // Clear the login timestamp
+                                    sessionStorage.removeItem('login_timestamp');
+                                }
+                                
+                                // Initialize permissions on app launch
+                                // This will show the modal if permission is 'default' and not seen before
+                                permissionHandler.initializePermissions().then(() => {
+                                    console.log('[PWA] Permission initialization complete');
+                                }).catch(error => {
+                                    console.error('[PWA] Permission initialization error:', error);
+                                });
+                                
+                            } else {
+                                console.error('[PWA] Failed to retrieve VAPID public key:', data);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('[PWA] Failed to initialize permission handler:', error);
+                        });
+                })();
+            </script>
+        {% endif %}
+    </head>
+    <body class="bg-base-200 min-h-screen" data-authenticated="{{ app.user ? 'true' : 'false' }}">
+        <!-- Broker Suspension Modal (Global) -->
+        {% include 'modals/broker_suspension_modal.html.twig' %}
+        
+        {% set is_authenticated = app.user is not null %}
+        
+        {% if is_authenticated %}
+            <!-- Layout with Navigation -->
+            <div class="flex min-h-screen">
+                <!-- Sidebar -->
+                {% include 'layout/_sidebar.html.twig' %}
+                
+                <!-- Main Content Area -->
+                <div class="flex-1 flex flex-col min-w-0 sm:ml-64">
+                    <!-- Top Navigation -->
+                    {% include 'layout/_topnav_flyonui.html.twig' %}
+                    
+                    <!-- Main Content -->
+                    <main class="py-8 px-4 sm:px-6 lg:px-8">
+        {% else %}
+            <!-- Simple layout for login/public pages -->
+            <div class="min-h-screen flex items-center justify-center">
+        {% endif %}
+        
+        {% block body %}{% endblock %}
+        
+        {% if is_authenticated %}
+                    </main>
+                </div>
+            </div>
+            
+            <!-- Include shipping line deactivated modal for authenticated users -->
+            {% include 'modals/shipping_line_deactivated_modal.html.twig' %}
+        {% else %}
+            </div>
+        {% endif %}
+        
+        {# Service Worker Registration #}
+        <script>
+            // Register service worker for PWA functionality
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js')
+                        .then((registration) => {
+                            console.log('[PWA] Service Worker registered successfully:', registration.scope);
+                            
+                            // Check for updates periodically
+                            setInterval(() => {
+                                registration.update();
+                            }, 60000); // Check every minute
+                        })
+                        .catch((error) => {
+                            console.error('[PWA] Service Worker registration failed:', error);
+                            // Continue with standard web app functionality
+                            // Don't show error to user as PWA features are optional
+                        });
+                });
+                
+                // Handle service worker updates
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    console.log('[PWA] Service Worker updated, reloading page...');
+                    window.location.reload();
+                });
+            } else {
+                console.log('[PWA] Service Workers are not supported in this browser');
+            }
+        </script>
+    </body>
+</html>

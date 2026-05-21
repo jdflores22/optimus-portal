@@ -1,0 +1,19 @@
+services:
+    # API Rate Limit Listener with proper service injection
+    App\EventListener\ApiRateLimitListener:
+        arguments:
+            $apiUserRateLimiterFactory: '@limiter.api_user'
+            $apiIpRateLimiterFactory: '@limiter.api_ip'
+            $photoUploadRateLimiterFactory: '@limiter.photo_upload'
+        tags:
+            - { name: kernel.event_listener, event: kernel.request, priority: 10 }
+
+    # API Security Headers Listener
+    App\EventListener\ApiSecurityHeadersListener:
+        tags:
+            - { name: kernel.event_listener, event: kernel.response, priority: 0 }
+
+    # API Token Service with optional rate limiter
+    App\Service\ApiTokenService:
+        arguments:
+            $apiRateLimiterFactory: '@limiter.api_user'

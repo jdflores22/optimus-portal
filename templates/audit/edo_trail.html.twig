@@ -1,0 +1,91 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}eDO Audit Trail{% endblock %}
+
+{% block page_title %}eDO Audit Trail{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white shadow-sm rounded-lg">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">eDO Audit Trail</h2>
+            <p class="mt-1 text-sm text-gray-600">Search and view complete audit logs for eDO operations</p>
+        </div>
+
+        <!-- Search Form -->
+        <div class="px-6 py-6 bg-gray-50 border-b border-gray-200">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="searchType" class="block text-sm font-medium text-gray-700">Search By</label>
+                    <select id="searchType"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        <option value="container">Container Number</option>
+                        <option value="edo">eDO Number</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="searchValue" class="block text-sm font-medium text-gray-700">Search Value</label>
+                    <input type="text" id="searchValue"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                           placeholder="Enter container or eDO number">
+                </div>
+                <div class="flex items-end">
+                    <button type="button" onclick="searchAuditLogs()"
+                            class="w-full px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                        Search
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden">
+            <!-- Summary -->
+            <div class="px-6 py-4 bg-blue-50 border-b border-blue-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Search Results</p>
+                        <p class="text-sm text-gray-600">
+                            <span id="resultCount">0</span> audit log entries found
+                        </p>
+                    </div>
+                    <button type="button" onclick="exportAuditLogs()"
+                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Export
+                    </button>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="px-6 py-6">
+                <div class="flow-root">
+                    <ul id="auditTimeline" class="-mb-8">
+                        <!-- Timeline items will be inserted here -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="px-6 py-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No search performed</h3>
+            <p class="mt-1 text-sm text-gray-500">Enter a container number or eDO number to search audit logs</p>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="hidden px-6 py-12 text-center">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p class="mt-2 text-sm text-gray-500">Searching audit logs...</p>
+        </div>
+    </div>
+</div>
+
+<script src="{{ asset('js/audit-trail.js') }}"></script>
+{% endblock %}

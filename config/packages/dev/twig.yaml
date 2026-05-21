@@ -1,0 +1,3 @@
+twig:
+    # In development, custom error pages are overridden by debug mode
+    # To test error pages, temporarily set APP_DEBUG=0 in .env.local

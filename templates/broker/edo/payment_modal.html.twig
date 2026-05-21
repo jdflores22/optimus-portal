@@ -1,0 +1,104 @@
+<!-- Payment Submission Modal -->
+<div id="paymentModal" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-overlay" onclick="closePaymentModal()"></div>
+    
+    <div class="modal-content max-w-lg">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+                <div class="size-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span class="icon-[tabler--credit-card] size-6 text-primary"></span>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold">Submit Payment</h3>
+                    <p class="text-sm opacity-60">Upload payment receipt for eDO</p>
+                </div>
+            </div>
+            <button type="button" onclick="closePaymentModal()" class="btn btn-ghost btn-sm btn-circle">
+                <span class="icon-[tabler--x] size-5"></span>
+            </button>
+        </div>
+
+        <!-- eDO Information -->
+        <div class="card bg-base-200 mb-6">
+            <div class="card-body p-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-xs font-semibold opacity-50 uppercase tracking-wider">eDO Number</dt>
+                        <dd id="modalEdoNumber" class="mt-1 text-sm font-semibold">-</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-semibold opacity-50 uppercase tracking-wider">Container Number</dt>
+                        <dd id="modalContainerNumber" class="mt-1 text-sm font-semibold">-</dd>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <dt class="text-xs font-semibold opacity-50 uppercase tracking-wider">Payment Amount</dt>
+                        <dd id="modalPaymentAmount" class="mt-1 text-lg font-bold text-primary">-</dd>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rejection Reason (if applicable) -->
+        <div id="rejectionReasonContainer" class="hidden mb-6">
+            <div class="alert alert-error">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <div>
+                    <h3 class="font-semibold">Previous Payment Rejected</h3>
+                    <p id="rejectionReasonText" class="text-sm mt-1"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Upload -->
+        <form id="paymentForm" enctype="multipart/form-data">
+            <input type="hidden" id="edoId" name="edoId">
+            
+            <div class="mb-6">
+                <label class="block text-sm font-semibold mb-3">
+                    Payment Receipt <span class="text-error">*</span>
+                </label>
+                
+                <!-- Drag and Drop Area -->
+                <div id="dropZone" class="border-2 border-dashed border-base-300 rounded-lg p-8 text-center hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer">
+                    <span class="icon-[tabler--cloud-upload] size-12 mx-auto opacity-40"></span>
+                    <p class="mt-3 text-sm">
+                        <span class="font-semibold text-primary">Click to upload</span> or drag and drop
+                    </p>
+                    <p class="mt-1 text-xs opacity-60">PDF, JPG, or PNG (max 5MB)</p>
+                    <input type="file" id="receiptFile" name="receiptFile" accept=".pdf,.jpg,.jpeg,.png" class="hidden">
+                </div>
+
+                <!-- Selected File Display -->
+                <div id="selectedFileInfo" class="hidden mt-3 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center flex-1 min-w-0 gap-3">
+                            <span class="icon-[tabler--file] size-5 text-primary flex-shrink-0"></span>
+                            <div class="flex-1 min-w-0">
+                                <p id="fileName" class="text-sm font-semibold truncate"></p>
+                                <p id="fileSize" class="text-xs opacity-60"></p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="clearSelectedFile()" class="btn btn-ghost btn-sm btn-circle">
+                            <span class="icon-[tabler--x] size-4"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Validation Error -->
+                <div id="fileError" class="hidden mt-3 text-sm text-error"></div>
+            </div>
+        </form>
+
+        <!-- Modal Footer -->
+        <div class="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+            <button type="button" onclick="closePaymentModal()" class="btn btn-ghost rounded-lg">
+                Cancel
+            </button>
+            <button type="button" id="submitPaymentBtn" onclick="submitPayment()" class="btn btn-primary rounded-lg gap-2">
+                <span id="submitBtnSpinner" class="loading loading-spinner loading-sm hidden"></span>
+                <span id="submitBtnText">Submit Payment</span>
+            </button>
+        </div>
+    </div>
+</div>

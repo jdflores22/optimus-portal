@@ -1,0 +1,218 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Billing Details{% endblock %}
+
+{% block page_title %}Billing Details{% endblock %}
+
+{% block body %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white shadow-sm rounded-lg">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">Billing for Expired eDO Days</h2>
+            <p class="mt-1 text-sm text-gray-600">Review billing details and submit payment</p>
+        </div>
+
+        <!-- eDO Information -->
+        <div class="px-6 py-6 bg-gray-50 border-b border-gray-200">
+            <h3 class="text-sm font-medium text-gray-900 mb-4">eDO Information</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <span class="text-sm font-medium text-gray-500">eDO Number:</span>
+                    <span class="ml-2 text-sm text-gray-900">{{ billing.regenerationRequest.edo.edoNumber }}</span>
+                </div>
+                <div>
+                    <span class="text-sm font-medium text-gray-500">Container Number:</span>
+                    <span class="ml-2 text-sm text-gray-900">{{ billing.regenerationRequest.edo.container.containerNumber }}</span>
+                </div>
+                <div>
+                    <span class="text-sm font-medium text-gray-500">Expiration Date:</span>
+                    <span class="ml-2 text-sm text-gray-900">{{ billing.regenerationRequest.edo.expiresAt|date('Y-m-d H:i:s') }}</span>
+                </div>
+                <div>
+                    <span class="text-sm font-medium text-gray-500">Request Date:</span>
+                    <span class="ml-2 text-sm text-gray-900">{{ billing.regenerationRequest.requestedAt|date('Y-m-d H:i:s') }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Billing Calculation -->
+        <div class="px-6 py-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-6">Billing Calculation</h3>
+            
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center pb-4 border-b border-blue-200">
+                        <span class="text-sm font-medium text-gray-700">Expired Days</span>
+                        <span class="text-lg font-semibold text-gray-900">{{ billing.expiredDays }} days</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center pb-4 border-b border-blue-200">
+                        <span class="text-sm font-medium text-gray-700">Per Day Rate</span>
+                        <span class="text-lg font-semibold text-gray-900">${{ billing.perDayRate|number_format(2) }}</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center pt-2">
+                        <span class="text-base font-bold text-gray-900">Total Amount</span>
+                        <span class="text-2xl font-bold text-blue-600">${{ billing.totalAmount|number_format(2) }}</span>
+                    </div>
+                </div>
+                
+                <div class="mt-4 pt-4 border-t border-blue-200">
+                    <p class="text-xs text-gray-600">
+                        Calculation: {{ billing.expiredDays }} days × ${{ billing.perDayRate|number_format(2) }} = ${{ billing.totalAmount|number_format(2) }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Submission Form -->
+        {% if not billing.payment or billing.payment.status.value == 'rejected' %}
+        <div class="px-6 py-6 border-t border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Submit Payment Receipt</h3>
+            
+            {% if billing.payment and billing.payment.status.value == 'rejected' %}
+            <div class="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">Previous Payment Rejected</h3>
+                        <div class="mt-2 text-sm text-red-700">
+                            <p>Reason: {{ billing.payment.rejectionReason }}</p>
+                            <p class="mt-1">Please submit a new payment receipt.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <form id="paymentSubmissionForm" enctype="multipart/form-data">
+                <input type="hidden" id="billingId" value="{{ billing.id }}">
+                
+                <div>
+                    <label for="receiptFile" class="block text-sm font-medium text-gray-700">Payment Receipt *</label>
+                    <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-400 transition-colors">
+                        <div class="space-y-1 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="flex text-sm text-gray-600">
+                                <label for="receiptFile" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
+                                    <span>Upload payment receipt</span>
+                                    <input id="receiptFile" name="receiptFile" type="file" class="sr-only" accept=".pdf,.jpg,.jpeg,.png" required>
+                                </label>
+                            </div>
+                            <p class="text-xs text-gray-500">PDF, JPG, PNG up to 10MB</p>
+                        </div>
+                    </div>
+                    <p class="mt-2 text-sm text-gray-600" id="fileNameDisplay"></p>
+                    <p class="mt-1 text-sm text-red-600 hidden" id="receiptFileError"></p>
+                </div>
+
+                <div class="mt-6 flex items-center justify-end space-x-3">
+                    <button type="submit" id="submitBtn"
+                            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Submit Payment Receipt
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% elseif billing.payment.status.value == 'submitted' %}
+        <div class="px-6 py-6 border-t border-gray-200">
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-yellow-800">Payment Under Review</h3>
+                        <div class="mt-2 text-sm text-yellow-700">
+                            <p>Your payment receipt has been submitted and is currently under review by the Accounting team.</p>
+                            <p class="mt-1">Submitted on: {{ billing.payment.submittedAt|date('Y-m-d H:i:s') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% elseif billing.payment.status.value == 'confirmed' %}
+        <div class="px-6 py-6 border-t border-gray-200">
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-green-800">Payment Confirmed</h3>
+                        <div class="mt-2 text-sm text-green-700">
+                            <p>Your payment has been confirmed. A new eDO has been generated.</p>
+                            <p class="mt-1">Confirmed on: {{ billing.payment.confirmedAt|date('Y-m-d H:i:s') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.getElementById('receiptFile')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const size = (file.size / 1024 / 1024).toFixed(2);
+        document.getElementById('fileNameDisplay').textContent = `Selected: ${file.name} (${size} MB)`;
+    }
+});
+
+document.getElementById('paymentSubmissionForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const billingId = document.getElementById('billingId').value;
+    const receiptFile = document.getElementById('receiptFile').files[0];
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (!receiptFile) {
+        document.getElementById('receiptFileError').textContent = 'Payment receipt is required';
+        document.getElementById('receiptFileError').classList.remove('hidden');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('billing_id', billingId);
+    formData.append('receipt_file', receiptFile);
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    
+    fetch('/accounting/edo/api/payment-receipts/submit', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Payment receipt submitted successfully!');
+            window.location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to submit payment receipt'));
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Payment Receipt';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while submitting the payment receipt');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Payment Receipt';
+    });
+});
+</script>
+{% endblock %}

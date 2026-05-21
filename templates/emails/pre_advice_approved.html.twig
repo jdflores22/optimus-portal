@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>FREE-ADVICE Request Approved</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #28a745; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background-color: #f8f9fa; }
+        .details { background-color: white; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+        .status { padding: 5px 10px; border-radius: 3px; font-weight: bold; }
+        .status.approved { background-color: #28a745; color: white; }
+        .qr-info { background-color: #e7f3ff; padding: 15px; border-left: 4px solid #007bff; }
+        .important { background-color: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✅ FREE-ADVICE Request Approved</h1>
+        </div>
+        
+        <div class="content">
+            <p>Dear {{ trucker.fullName }},</p>
+            
+            <p><strong>Great news!</strong> Your FREE-ADVICE request has been approved by our Terminal Team.</p>
+            
+            <div class="details">
+                <h3>Request Details:</h3>
+                <p><strong>Reference Number:</strong> {{ preAdviceRequest.id }}</p>
+                <p><strong>Container Number:</strong> {{ preAdviceRequest.container.containerNumber }}</p>
+                <p><strong>Terminal:</strong> {{ preAdviceRequest.selectedTerminal.name }} ({{ preAdviceRequest.selectedTerminal.type.value }})</p>
+                <p><strong>Status:</strong> <span class="status approved">{{ preAdviceRequest.status.value|title }}</span></p>
+                {% if preAdviceRequest.assignedSlot %}
+                <p><strong>Assigned Slot:</strong> {{ preAdviceRequest.assignedSlot.date|date('Y-m-d') }}</p>
+                {% endif %}
+                <p><strong>Approved by:</strong> {{ preAdviceRequest.verifiedBy.fullName }}</p>
+                <p><strong>Approved on:</strong> {{ preAdviceRequest.verifiedAt|date('Y-m-d H:i:s') }}</p>
+            </div>
+            
+            {% if preAdviceRequest.edoNumber and preAdviceRequest.qrCode %}
+            <div class="qr-info">
+                <h3>🎫 Your EDO and QR Code are Ready!</h3>
+                <p><strong>EDO Number:</strong> {{ preAdviceRequest.edoNumber }}</p>
+                <p><strong>QR Code:</strong> Available for download in your dashboard</p>
+                <p>Please download and print your QR code before arriving at the terminal.</p>
+            </div>
+            {% endif %}
+            
+            <div class="important">
+                <h3>⚠️ Important Instructions:</h3>
+                <ul>
+                    <li>Download and print your QR code from the trucker dashboard</li>
+                    <li>Present the QR code at the terminal entrance</li>
+                    <li>Ensure your container matches the approved details</li>
+                    {% if preAdviceRequest.assignedSlot %}
+                    <li>Arrive during your assigned slot time: {{ preAdviceRequest.assignedSlot.date|date('Y-m-d') }}</li>
+                    {% endif %}
+                    <li>Contact the terminal if you encounter any issues</li>
+                </ul>
+            </div>
+            
+            <div class="details">
+                <h3>Terminal Information:</h3>
+                <p><strong>Terminal:</strong> {{ preAdviceRequest.selectedTerminal.name }}</p>
+                <p><strong>Type:</strong> {{ preAdviceRequest.selectedTerminal.type.value }}</p>
+                <p><strong>Location:</strong> {{ preAdviceRequest.selectedTerminal.location }}</p>
+            </div>
+            
+            <p>Thank you for using OPTIMUS Terminal FREE-ADVICE System. Have a safe trip!</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated message from OPTIMUS Shipping Portal.<br>
+            Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

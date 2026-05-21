@@ -1,0 +1,953 @@
+
+<!-- eDO Detail Modal -->
+<div id="edoDetailModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 9999;">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-3xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center mb-4 pb-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">eDO & Payment Details</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-500 transition-colors">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="edoDetailContent" class="mt-4">
+            <!-- Content loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- Rejection Modal -->
+<div id="rejectModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 9999;">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-md shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Reject eDO Release</h3>
+            <button onclick="closeRejectModal()" class="text-gray-400 hover:text-gray-500">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <form id="rejectForm" onsubmit="submitRejection(event)">
+            <input type="hidden" id="rejectEdoId" name="edoId">
+            <div class="mb-4">
+                <label for="rejectionReason" class="block text-sm font-medium text-gray-700 mb-2">
+                    Rejection Reason <span class="text-red-500">*</span>
+                </label>
+                <textarea id="rejectionReason" 
+                          name="reason" 
+                          rows="4" 
+                          required
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Please provide a detailed reason for rejecting this eDO..."></textarea>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button type="button" 
+                        onclick="closeRejectModal()" 
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700">
+                    Reject eDO
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Payment Rejection Modal -->
+<div id="rejectPaymentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 9999;">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-md shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Reject EDO Payment</h3>
+            <button onclick="closeRejectPaymentModal()" class="text-gray-400 hover:text-gray-500">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <form id="rejectPaymentForm" onsubmit="submitPaymentRejection(event)">
+            <input type="hidden" id="rejectPaymentId">
+            <div class="mb-4">
+                <label for="paymentRejectionReason" class="block text-sm font-medium text-gray-700 mb-2">
+                    Rejection Reason <span class="text-red-500">*</span>
+                </label>
+                <textarea id="paymentRejectionReason" 
+                          rows="4" 
+                          required
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Please provide a detailed reason for rejecting this payment..."></textarea>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button type="button" 
+                        onclick="closeRejectPaymentModal()" 
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700">
+                    Reject Payment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Payment Validation Modal -->
+<div id="validatePaymentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 9999;">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-medium text-gray-900">Validate eDO Release Payment</h3>
+            <button onclick="closeValidatePaymentModal()" class="text-gray-400 hover:text-gray-500">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="validatePaymentContent">
+            <!-- Content loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- Rejection Reason Modal -->
+<div id="rejectionReasonModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full" style="z-index: 10000;">
+    <div class="relative top-1/2 transform -translate-y-1/2 mx-auto p-6 border w-11/12 max-w-md shadow-2xl rounded-xl bg-white">
+        <div class="text-center">
+            <!-- Icon -->
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            
+            <!-- Title -->
+            <h3 class="text-xl font-bold text-gray-900 mb-2">
+                Rejection Reason Required
+            </h3>
+            
+            <!-- Message -->
+            <p class="text-sm text-gray-600 mb-4">
+                Please provide a detailed reason for rejecting this payment. This will be sent to the broker.
+            </p>
+            
+            <!-- Textarea -->
+            <div class="mb-6 text-left">
+                <textarea id="rejectionReasonInput" 
+                          rows="4" 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder="Enter rejection reason..."></textarea>
+            </div>
+            
+            <!-- Actions -->
+            <div class="flex space-x-3">
+                <button type="button" 
+                        onclick="closeRejectionReasonModal()" 
+                        class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                    Cancel
+                </button>
+                <button type="button" 
+                        onclick="submitRejectionReason()" 
+                        class="flex-1 px-4 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors">
+                    Continue
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmationModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full" style="z-index: 10000;">
+    <div class="relative top-1/2 transform -translate-y-1/2 mx-auto p-6 border w-11/12 max-w-md shadow-2xl rounded-xl bg-white">
+        <div class="text-center">
+            <!-- Icon -->
+            <div id="confirmationIcon" class="mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4">
+                <!-- Icon will be set dynamically -->
+            </div>
+            
+            <!-- Title -->
+            <h3 id="confirmationTitle" class="text-xl font-bold text-gray-900 mb-2">
+                <!-- Title will be set dynamically -->
+            </h3>
+            
+            <!-- Message -->
+            <p id="confirmationMessage" class="text-sm text-gray-600 mb-6">
+                <!-- Message will be set dynamically -->
+            </p>
+            
+            <!-- Amount Display -->
+            <div id="confirmationAmount" class="hidden bg-gray-50 rounded-lg p-3 mb-6">
+                <p class="text-xs text-gray-500 mb-1">Payment Amount</p>
+                <p class="text-2xl font-bold text-gray-900">₱<span id="confirmationAmountValue">0.00</span></p>
+            </div>
+            
+            <!-- Rejection Reason Display -->
+            <div id="confirmationReason" class="hidden bg-red-50 rounded-lg p-3 mb-6 text-left">
+                <p class="text-xs text-red-600 font-medium mb-1">Rejection Reason</p>
+                <p id="confirmationReasonText" class="text-sm text-gray-900"></p>
+            </div>
+            
+            <!-- Actions -->
+            <div class="flex space-x-3">
+                <button type="button" 
+                        onclick="closeConfirmationModal()" 
+                        class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                    Cancel
+                </button>
+                <button type="button" 
+                        id="confirmationActionBtn"
+                        onclick="confirmValidatePayment()" 
+                        class="flex-1 px-4 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white transition-colors">
+                    <!-- Button text will be set dynamically -->
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div id="loadingModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full" style="z-index: 10001;">
+    <div class="relative top-1/2 transform -translate-y-1/2 mx-auto p-6 w-11/12 max-w-sm">
+        <div class="bg-white rounded-xl shadow-2xl p-8 text-center">
+            <!-- Spinner -->
+            <div class="mx-auto mb-4">
+                <svg class="animate-spin h-16 w-16 mx-auto text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Processing...</h3>
+            <p class="text-sm text-gray-600">Please wait while we validate the payment</p>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div id="successModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full" style="z-index: 10001;">
+    <div class="relative top-1/2 transform -translate-y-1/2 mx-auto p-6 border w-11/12 max-w-md shadow-2xl rounded-xl bg-white">
+        <div class="text-center">
+            <!-- Success Icon -->
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+                <svg class="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            
+            <!-- Title -->
+            <h3 id="successTitle" class="text-xl font-bold text-gray-900 mb-2">
+                Success!
+            </h3>
+            
+            <!-- Message -->
+            <p id="successMessage" class="text-sm text-gray-600 mb-6">
+                <!-- Message will be set dynamically -->
+            </p>
+            
+            <!-- Action -->
+            <button type="button" 
+                    onclick="closeSuccessModal()" 
+                    class="w-full px-4 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors">
+                Continue
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+console.log('EDO Release Queue Script Loaded - Version 2.0');
+
+async function viewEDODetails(edoDataOrId) {
+    const modal = document.getElementById('edoDetailModal');
+    const content = document.getElementById('edoDetailContent');
+    
+    // Handle both object and direct ID parameter
+    const edoId = typeof edoDataOrId === 'object' ? edoDataOrId.id : edoDataOrId;
+    
+    if (!edoId) {
+        console.error('No EDO ID provided');
+        return;
+    }
+    
+    modal.classList.remove('hidden');
+    
+    // Show loading state
+    content.innerHTML = `
+        <div class="text-center py-8">
+            <svg class="animate-spin h-8 w-8 mx-auto text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-2 text-sm text-gray-600">Loading details...</p>
+        </div>
+    `;
+    
+    try {
+        // Fetch fresh data from API
+        const response = await fetch(`/admin/edo-release/${edoId}/details`);
+        
+        // Check if response is OK
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Server returned non-JSON response');
+        }
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to load EDO details');
+        }
+        
+        // Use the fresh data from API
+        edoData = result.data;
+        
+        // Helper function to format dates
+        function formatDate(dateString) {
+            if (!dateString) return null;
+            return new Date(dateString).toLocaleString();
+        }
+        
+        // Build payment section
+        let paymentHtml = '';
+        if (edoData.payment) {
+            const payment = edoData.payment;
+            const statusColors = {
+                'pending_validation': 'bg-yellow-100 text-yellow-800',
+                'verified': 'bg-green-100 text-green-800',
+                'rejected': 'bg-red-100 text-red-800'
+            };
+            const statusLabels = {
+                'pending_validation': 'Pending Validation',
+                'verified': 'Verified',
+                'rejected': 'Rejected'
+            };
+            
+            paymentHtml = `
+                <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <h4 class="text-sm font-semibold text-gray-900 mb-3">Payment Information</h4>
+                    <dl class="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <dt class="text-gray-600">Payment ID</dt>
+                            <dd class="font-medium text-gray-900">#${payment.id}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Amount</dt>
+                            <dd class="font-medium text-gray-900">₱${parseFloat(payment.amount).toFixed(2)}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Status</dt>
+                            <dd><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[payment.status]}">${statusLabels[payment.status]}</span></dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Submitted By</dt>
+                            <dd class="font-medium text-gray-900">${payment.submittedBy}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Submitted At</dt>
+                            <dd class="font-medium text-gray-900">${formatDate(payment.createdAt)}</dd>
+                        </div>
+                        ${payment.validatedAt ? `
+                        <div>
+                            <dt class="text-gray-600">Validated At</dt>
+                            <dd class="font-medium text-gray-900">${formatDate(payment.validatedAt)}</dd>
+                        </div>
+                        ` : ''}
+                        ${payment.validatedBy ? `
+                        <div>
+                            <dt class="text-gray-600">Validated By</dt>
+                            <dd class="font-medium text-gray-900">${payment.validatedBy}</dd>
+                        </div>
+                        ` : ''}
+                        ${payment.rejectionReason ? `
+                        <div class="col-span-2">
+                            <dt class="text-gray-600">Rejection Reason</dt>
+                            <dd class="font-medium text-red-600 mt-1">${payment.rejectionReason}</dd>
+                        </div>
+                        ` : ''}
+                    </dl>
+                    ${payment.receiptPath || payment.officialReceiptPath ? `
+                    <div class="mt-3 pt-3 border-t border-blue-200">
+                        <a href="/admin/edo-payments/${payment.id}/receipt" target="_blank" 
+                           class="inline-flex items-center px-3 py-2 border border-blue-300 rounded-md text-sm text-blue-700 bg-white hover:bg-blue-50 transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            View Payment Receipt
+                        </a>
+                        ${payment.officialReceiptPath || payment.status === 'verified' ? `
+                        <a href="/admin/edo-payments/${payment.id}/official-receipt" target="_blank" 
+                           class="inline-flex items-center px-3 py-2 border border-green-300 rounded-md text-sm text-green-700 bg-white hover:bg-green-50 transition-colors ml-2">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            View Official Receipt
+                        </a>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        } else {
+            paymentHtml = `
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 text-center">
+                    <svg class="mx-auto h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                    </svg>
+                    <p class="mt-2 text-sm font-medium text-gray-900">No Payment Submitted</p>
+                    <p class="text-xs text-gray-500">Awaiting payment from broker</p>
+                </div>
+            `;
+        }
+        
+        // Build EDO status badge
+        const edoStatusColors = {
+            'pending_release': 'bg-yellow-100 text-yellow-800',
+            'released': 'bg-green-100 text-green-800',
+            'rejected': 'bg-red-100 text-red-800'
+        };
+        const edoStatusLabels = {
+            'pending_release': 'Pending Release',
+            'released': 'Released',
+            'rejected': 'Rejected'
+        };
+        
+        content.innerHTML = `
+            <div class="space-y-4">
+                <!-- EDO Information -->
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <h4 class="text-sm font-semibold text-gray-900 mb-3">eDO Information</h4>
+                    <dl class="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <dt class="text-gray-600">eDO Number</dt>
+                            <dd class="font-medium text-gray-900">${edoData.edoNumber}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Status</dt>
+                            <dd><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${edoStatusColors[edoData.status]}">${edoStatusLabels[edoData.status]}</span></dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Manifest Number</dt>
+                            <dd class="font-medium text-gray-900">${edoData.manifest.manifestNumber}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Generated At</dt>
+                            <dd class="font-medium text-gray-900">${formatDate(edoData.generatedAt)}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Consignee</dt>
+                            <dd class="font-medium text-gray-900">${edoData.manifest.consignee || 'Not declared'}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-600">Broker</dt>
+                            <dd class="font-medium text-gray-900">${edoData.manifest.broker || 'None'}</dd>
+                        </div>
+                        ${edoData.releasedAt ? `
+                        <div>
+                            <dt class="text-gray-600">Released At</dt>
+                            <dd class="font-medium text-gray-900">${formatDate(edoData.releasedAt)}</dd>
+                        </div>
+                        ` : ''}
+                    </dl>
+                </div>
+                
+                <!-- Payment Information -->
+                ${paymentHtml}
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error displaying EDO details:', error);
+        content.innerHTML = `
+            <div class="text-center py-8">
+                <div class="size-16 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="icon-[tabler--alert-circle] size-8 text-error"></span>
+                </div>
+                <p class="text-sm font-semibold text-error mb-2">Error Loading Details</p>
+                <p class="text-xs text-base-content/60">${error.message}</p>
+                <button onclick="closeEdoDetailsModal()" class="btn btn-ghost btn-sm mt-4">Close</button>
+            </div>
+        `;
+    }
+}
+
+function closeModal() {
+    document.getElementById('edoDetailModal').classList.add('hidden');
+}
+
+function showRejectModal(edoId) {
+    document.getElementById('rejectEdoId').value = edoId;
+    document.getElementById('rejectionReason').value = '';
+    document.getElementById('rejectModal').classList.remove('hidden');
+}
+
+function closeRejectModal() {
+    document.getElementById('rejectModal').classList.add('hidden');
+}
+
+async function showValidatePaymentModal(paymentId, paymentData = null) {
+    const modal = document.getElementById('validatePaymentModal');
+    const content = document.getElementById('validatePaymentContent');
+    
+    modal.classList.remove('hidden');
+    
+    // Show loading state
+    content.innerHTML = `
+        <div class="text-center py-8">
+            <svg class="animate-spin h-8 w-8 mx-auto text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-2 text-sm text-gray-600">Loading payment details...</p>
+        </div>
+    `;
+    
+    try {
+        // If payment data not provided, fetch it from the API
+        if (!paymentData) {
+            const response = await fetch(`/admin/edo-payments/${paymentId}/details`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Server returned non-JSON response');
+            }
+            
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(result.message || 'Failed to load payment details');
+            }
+            
+            paymentData = result.data;
+        }
+        
+        console.log('Payment data received:', paymentData); // Debug log
+        
+        const payment = paymentData;
+        
+        // Parse date
+        const createdAtDate = new Date(payment.createdAt);
+        
+        // Extract values with fallbacks
+        const id = payment.id || paymentId;
+        const amount = parseFloat(payment.amount || 0);
+        const submittedBy = payment.submittedBy || 'N/A';
+        const receiptPath = '/admin/edo-payments/' + paymentId + '/receipt';
+        
+        content.innerHTML = `
+            <div class="space-y-4">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="text-sm font-medium text-gray-900 mb-3">Payment Information</h4>
+                    <dl class="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <dt class="text-gray-500">Payment ID</dt>
+                            <dd class="font-medium text-gray-900">#${id}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-500">Amount</dt>
+                            <dd class="font-medium text-gray-900">₱${amount.toFixed(2)}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-500">Submitted By</dt>
+                            <dd class="font-medium text-gray-900">${submittedBy}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-500">Submitted At</dt>
+                            <dd class="font-medium text-gray-900">${createdAtDate.toLocaleString()}</dd>
+                        </div>
+                    </dl>
+                </div>
+                
+                <div>
+                    <h4 class="text-sm font-medium text-gray-900 mb-2">Payment Receipt</h4>
+                    <a href="${receiptPath}" target="_blank" 
+                       class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        View Receipt
+                    </a>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" 
+                            onclick="closeValidatePaymentModal()" 
+                            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="button" 
+                            onclick="showRejectionReasonModal(${paymentId})" 
+                            class="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700">
+                        Reject
+                    </button>
+                    <button type="button" 
+                            onclick="validatePayment(${paymentId}, true)" 
+                            class="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700">
+                        Approve & Release eDO
+                    </button>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error displaying payment modal:', error);
+        content.innerHTML = `
+            <div class="text-center py-8">
+                <div class="size-16 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="icon-[tabler--alert-circle] size-8 text-error"></span>
+                </div>
+                <p class="text-sm font-semibold text-error mb-2">Error Loading Payment Details</p>
+                <p class="text-xs text-base-content/60">${error.message}</p>
+                <button onclick="closeValidatePaymentModal()" class="btn btn-ghost btn-sm mt-4">Close</button>
+            </div>
+        `;
+    }
+}
+
+function closeValidatePaymentModal() {
+    document.getElementById('validatePaymentModal').classList.add('hidden');
+}
+
+// Store payment validation context
+let pendingValidation = {
+    paymentId: null,
+    approved: null,
+    reason: null,
+    amount: null
+};
+
+function showRejectionReasonModal(paymentId) {
+    // Store payment ID for later use
+    pendingValidation.paymentId = paymentId;
+    
+    // Get amount from the modal content
+    const amountElements = document.querySelectorAll('#validatePaymentContent dd');
+    let amount = null;
+    if (amountElements.length > 1) {
+        const amountText = amountElements[1].textContent;
+        amount = amountText.replace('₱', '').replace(',', '');
+    }
+    pendingValidation.amount = amount;
+    
+    // Clear previous reason
+    document.getElementById('rejectionReasonInput').value = '';
+    
+    // Close validation modal
+    closeValidatePaymentModal();
+    
+    // Show rejection reason modal
+    document.getElementById('rejectionReasonModal').classList.remove('hidden');
+}
+
+function closeRejectionReasonModal() {
+    document.getElementById('rejectionReasonModal').classList.add('hidden');
+    // Reopen validation modal
+    document.getElementById('validatePaymentModal').classList.remove('hidden');
+}
+
+function submitRejectionReason() {
+    const reason = document.getElementById('rejectionReasonInput').value.trim();
+    
+    if (!reason) {
+        alert('Please provide a rejection reason.');
+        document.getElementById('rejectionReasonInput').focus();
+        return;
+    }
+    
+    // Close rejection reason modal
+    document.getElementById('rejectionReasonModal').classList.add('hidden');
+    
+    // Show confirmation modal
+    showConfirmationModal(pendingValidation.paymentId, false, reason, pendingValidation.amount);
+}
+
+function showConfirmationModal(paymentId, approved, reason, amount) {
+    const modal = document.getElementById('confirmationModal');
+    const icon = document.getElementById('confirmationIcon');
+    const title = document.getElementById('confirmationTitle');
+    const message = document.getElementById('confirmationMessage');
+    const amountDiv = document.getElementById('confirmationAmount');
+    const amountValue = document.getElementById('confirmationAmountValue');
+    const reasonDiv = document.getElementById('confirmationReason');
+    const reasonText = document.getElementById('confirmationReasonText');
+    const actionBtn = document.getElementById('confirmationActionBtn');
+    
+    // Store context
+    pendingValidation = { paymentId, approved, reason, amount };
+    
+    if (approved) {
+        // Approval confirmation
+        icon.className = 'mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4';
+        icon.innerHTML = `
+            <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        `;
+        title.textContent = 'Approve Payment & Release eDO?';
+        message.textContent = 'This will approve the payment and automatically release the eDO to the broker. This action cannot be undone.';
+        actionBtn.className = 'flex-1 px-4 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors';
+        actionBtn.textContent = 'Approve & Release';
+        
+        // Show amount
+        if (amount) {
+            amountDiv.classList.remove('hidden');
+            amountValue.textContent = parseFloat(amount).toFixed(2);
+        }
+        
+        // Hide rejection reason
+        reasonDiv.classList.add('hidden');
+    } else {
+        // Rejection confirmation
+        icon.className = 'mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4';
+        icon.innerHTML = `
+            <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        `;
+        title.textContent = 'Reject Payment?';
+        message.textContent = 'This will reject the payment and notify the broker. They will need to resubmit a new payment.';
+        actionBtn.className = 'flex-1 px-4 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors';
+        actionBtn.textContent = 'Reject Payment';
+        
+        // Hide amount for rejection
+        amountDiv.classList.add('hidden');
+        
+        // Show rejection reason
+        if (reason) {
+            reasonDiv.classList.remove('hidden');
+            reasonText.textContent = reason;
+        }
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function closeConfirmationModal() {
+    document.getElementById('confirmationModal').classList.add('hidden');
+    pendingValidation = { paymentId: null, approved: null, reason: null, amount: null };
+}
+
+function showLoadingModal() {
+    document.getElementById('loadingModal').classList.remove('hidden');
+}
+
+function closeLoadingModal() {
+    document.getElementById('loadingModal').classList.add('hidden');
+}
+
+function showSuccessModal(message) {
+    const modal = document.getElementById('successModal');
+    const messageEl = document.getElementById('successMessage');
+    
+    messageEl.textContent = message;
+    modal.classList.remove('hidden');
+}
+
+function closeSuccessModal() {
+    document.getElementById('successModal').classList.add('hidden');
+    // Reload page after closing success modal
+    window.location.reload();
+}
+
+function confirmValidatePayment() {
+    const { paymentId, approved, reason } = pendingValidation;
+    
+    if (!paymentId) {
+        alert('Invalid payment context');
+        return;
+    }
+    
+    // Close confirmation modal
+    closeConfirmationModal();
+    
+    // Show loading spinner
+    showLoadingModal();
+    
+    // Proceed with validation
+    fetch(`/api/payments/${paymentId}/validate-edo-access`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+            approved: approved,
+            reason: reason || null
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Close loading modal
+        closeLoadingModal();
+        
+        if (data.success) {
+            // Show success message
+            const successMessage = approved 
+                ? 'Payment approved successfully! The eDO has been released to the broker.' 
+                : 'Payment rejected successfully. The broker has been notified.';
+            showSuccessModal(successMessage);
+        } else {
+            alert('Error: ' + (data.error || data.message));
+        }
+    })
+    .catch(error => {
+        // Close loading modal
+        closeLoadingModal();
+        console.error('Validation error:', error);
+        alert('An error occurred while validating the payment');
+    });
+}
+
+function validatePayment(paymentId, approved) {
+    // Get amount from the modal content
+    const amountElements = document.querySelectorAll('#validatePaymentContent dd');
+    let amount = null;
+    if (amountElements.length > 1) {
+        const amountText = amountElements[1].textContent;
+        amount = amountText.replace('₱', '').replace(',', '');
+    }
+    
+    // Close validation modal
+    closeValidatePaymentModal();
+    
+    // Show confirmation modal (approval only, rejection goes through showRejectionReasonModal)
+    showConfirmationModal(paymentId, approved, null, amount);
+}
+
+function releaseEDO(edoId) {
+    if (!confirm('Are you sure you want to release this eDO?')) {
+        return;
+    }
+    
+    fetch(`/admin/edo-release/${edoId}/release`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('An error occurred while releasing the eDO');
+    });
+}
+
+function submitRejection(event) {
+    event.preventDefault();
+    
+    const edoId = document.getElementById('rejectEdoId').value;
+    const reason = document.getElementById('rejectionReason').value;
+    
+    if (!reason.trim()) {
+        alert('Please provide a rejection reason');
+        return;
+    }
+    
+    fetch(`/admin/edo-release/${edoId}/reject`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: reason })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('An error occurred while rejecting the eDO');
+    });
+}
+
+// EDO Payment Validation Functions
+function approveEDOPayment(paymentId) {
+    if (!confirm('Are you sure you want to approve this EDO payment? The EDO will be automatically released.')) {
+        return;
+    }
+    
+    fetch(`/admin/edo-payments/${paymentId}/validate`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            approved: true
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to validate payment'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while validating the payment');
+    });
+}
+
+function showRejectPaymentModal(paymentId) {
+    document.getElementById('rejectPaymentId').value = paymentId;
+    document.getElementById('paymentRejectionReason').value = '';
+    document.getElementById('rejectPaymentModal').classList.remove('hidden');
+}
+
+function closeRejectPaymentModal() {
+    document.getElementById('rejectPaymentModal').classList.add('hidden');
+}
+
+function submitPaymentRejection(event) {
+    event.preventDefault();
+    
+    const paymentId = document.getElementById('rejectPaymentId').value;
+    const reason = document.getElementById('paymentRejectionReason').value;
+    
+    if (!reason.trim()) {
+        alert('Please provide a rejection reason');
+        return;
+    }
+    
+    fetch(`/admin/edo-payments/${paymentId}/validate`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            approved: false,
+            reason: reason
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to validate payment'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while rejecting the payment');
+    });
+}
+</script>

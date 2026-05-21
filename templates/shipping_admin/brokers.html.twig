@@ -1,0 +1,171 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Broker Management - Shipping Admin{% endblock %}
+
+{% block body %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div>
+        <div class="flex items-center gap-3 mb-2">
+            <span class="icon-[tabler--briefcase] size-8 text-primary"></span>
+            <h1 class="text-2xl sm:text-3xl font-bold text-base-content">Broker Management</h1>
+        </div>
+        <p class="text-base-content/60">View and manage brokers and their consignee relationships</p>
+    </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="card bg-base-100 shadow-md">
+                    <div class="card-body p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-base-content/60">Total Brokers</p>
+                                <p class="text-2xl font-bold text-base-content">{{ brokers|length }}</p>
+                            </div>
+                            <span class="icon-[tabler--briefcase] size-10 text-primary opacity-20"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-md">
+                    <div class="card-body p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-base-content/60">Total Consignees</p>
+                                <p class="text-2xl font-bold text-base-content">
+                                    {% set totalConsignees = 0 %}
+                                    {% for broker in brokers %}
+                                        {% set totalConsignees = totalConsignees + brokerStats[broker.id].consignee_count %}
+                                    {% endfor %}
+                                    {{ totalConsignees }}
+                                </p>
+                            </div>
+                            <span class="icon-[tabler--building] size-10 text-success opacity-20"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-md">
+                    <div class="card-body p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-base-content/60">Total Manifests</p>
+                                <p class="text-2xl font-bold text-base-content">
+                                    {% set totalManifests = 0 %}
+                                    {% for broker in brokers %}
+                                        {% set totalManifests = totalManifests + brokerStats[broker.id].manifest_count %}
+                                    {% endfor %}
+                                    {{ totalManifests }}
+                                </p>
+                            </div>
+                            <span class="icon-[tabler--file-text] size-10 text-info opacity-20"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-md">
+                    <div class="card-body p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-base-content/60">Total eDOs</p>
+                                <p class="text-2xl font-bold text-base-content">
+                                    {% set totalEdos = 0 %}
+                                    {% for broker in brokers %}
+                                        {% set totalEdos = totalEdos + brokerStats[broker.id].edo_count %}
+                                    {% endfor %}
+                                    {{ totalEdos }}
+                                </p>
+                            </div>
+                            <span class="icon-[tabler--file-certificate] size-10 text-warning opacity-20"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Brokers Table -->
+            <div class="card bg-base-100 shadow-md">
+                <div class="card-body p-0">
+                    <div class="overflow-x-auto">
+                        <table class="table table-zebra w-full">
+                            <thead>
+                                <tr>
+                                    <th class="bg-base-200">Broker</th>
+                                    <th class="bg-base-200">Linked Consignees</th>
+                                    <th class="bg-base-200 text-center">Manifests</th>
+                                    <th class="bg-base-200 text-center">eDOs</th>
+                                    <th class="bg-base-200">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for broker in brokers %}
+                                <tr class="hover">
+                                    <td>
+                                        <a href="{{ path('app_shipping_admin_broker_detail', {id: broker.id}) }}" class="flex items-center gap-3 hover:text-primary transition-colors">
+                                            <div class="avatar avatar-placeholder">
+                                                <div class="bg-secondary text-secondary-content size-10 rounded-full">
+                                                    <span class="text-sm font-semibold">{{ broker.fullName|slice(0, 2)|upper }}</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="font-semibold text-base-content">{{ broker.fullName }}</div>
+                                                <div class="text-xs text-base-content/60">{{ broker.email }}</div>
+                                            </div>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if brokerStats[broker.id].consignee_count > 0 %}
+                                            <div class="flex flex-col gap-1">
+                                                {% for consignee in brokerStats[broker.id].linked_consignees|slice(0, 3) %}
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="icon-[tabler--building] size-3 text-success"></span>
+                                                        <span class="text-sm">{{ consignee.businessName }}</span>
+                                                    </div>
+                                                {% endfor %}
+                                                {% if brokerStats[broker.id].consignee_count > 3 %}
+                                                    <span class="text-xs text-base-content/60 ml-5">
+                                                        +{{ brokerStats[broker.id].consignee_count - 3 }} more
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        {% else %}
+                                            <span class="badge badge-ghost badge-sm gap-1">
+                                                <span class="icon-[tabler--building-off] size-3"></span>
+                                                No Consignees
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-info badge-sm">{{ brokerStats[broker.id].manifest_count }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-warning badge-sm">{{ brokerStats[broker.id].edo_count }}</span>
+                                    </td>
+                                    <td>
+                                        {% if broker.isActive %}
+                                            <span class="badge badge-success badge-sm gap-1">
+                                                <span class="icon-[tabler--circle-check] size-3"></span>
+                                                Active
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-error badge-sm gap-1">
+                                                <span class="icon-[tabler--circle-x] size-3"></span>
+                                                Inactive
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-8 text-base-content/60">
+                                        <span class="icon-[tabler--briefcase-off] size-12 mx-auto mb-3 opacity-50"></span>
+                                        <p>No brokers found</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endblock %}

@@ -1,0 +1,61 @@
+
+###> symfony/framework-bundle ###
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
+
+###> Node.js ###
+/node_modules/
+/public/node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+###< Node.js ###
+
+###> Tailwind CSS ###
+/public/css/
+###< Tailwind CSS ###
+
+###> IDE ###
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+###< IDE ###
+
+###> phpunit/phpunit ###
+/phpunit.xml
+/.phpunit.cache/
+###< phpunit/phpunit ###
+
+###> User Uploads & Generated Files ###
+/public/uploads/
+*.pdf
+###< User Uploads & Generated Files ###
+
+###> Database Migration Scripts ###
+*.sql
+###< Database Migration Scripts ###
+
+###> Sample Import Files ###
+*.csv
+###< Sample Import Files ###
+
+###> Documentation Files ###
+*.md
+!README.md
+###< Documentation Files ###
+
+###> Environment Files ###
+/.env
+/.env.dev
+/.env.prod
+/.env.prod.template
+/.env.test
+###< Environment Files ###

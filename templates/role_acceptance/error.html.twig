@@ -1,0 +1,194 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Error - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="text-center">
+            <div class="mx-auto h-16 w-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                {% if error_type == 'expired_token' %}
+                    <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                {% elseif error_type == 'already_processed' %}
+                    <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                {% elseif error_type == 'temporarily_disabled' or error_type == 'suspicious_activity' %}
+                    <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                {% else %}
+                    <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                {% endif %}
+            </div>
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">
+                {% if error_type == 'expired_token' %}
+                    Invitation Expired
+                {% elseif error_type == 'already_processed' %}
+                    Already Processed
+                {% elseif error_type == 'invalid_token' %}
+                    Invalid Link
+                {% elseif error_type == 'temporarily_disabled' %}
+                    Access Temporarily Restricted
+                {% elseif error_type == 'suspicious_activity' %}
+                    Security Alert
+                {% else %}
+                    Error
+                {% endif %}
+            </h2>
+            <p class="text-gray-600">{{ message }}</p>
+        </div>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+            <div class="text-center space-y-6">
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3 text-left">
+                            <h3 class="text-sm font-medium text-red-800">
+                                {% if error_type == 'expired_token' %}
+                                    Link Expired
+                                {% elseif error_type == 'already_processed' %}
+                                    Already Responded
+                                {% elseif error_type == 'invalid_token' %}
+                                    Invalid Link
+                                {% elseif error_type == 'temporarily_disabled' %}
+                                    Temporarily Disabled
+                                {% elseif error_type == 'suspicious_activity' %}
+                                    Security Protection Active
+                                {% else %}
+                                    System Error
+                                {% endif %}
+                            </h3>
+                            <div class="mt-2 text-sm text-red-700">
+                                <p>{{ message }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if error_type == 'expired_token' or error_type == 'invalid_token' %}
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3 text-left">
+                                <h3 class="text-sm font-medium text-blue-800">What You Can Do</h3>
+                                <div class="mt-2 text-sm text-blue-700">
+                                    <ul class="list-disc list-inside space-y-1">
+                                        <li>Contact the administrator who sent you the invitation</li>
+                                        <li>Request a new invitation link</li>
+                                        <li>Verify you're using the correct link from your email</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% elseif error_type == 'temporarily_disabled' or error_type == 'suspicious_activity' %}
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-orange-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3 text-left">
+                                <h3 class="text-sm font-medium text-orange-800">Security Protection</h3>
+                                <div class="mt-2 text-sm text-orange-700">
+                                    <ul class="list-disc list-inside space-y-1">
+                                        <li>This invitation has been temporarily restricted for security reasons</li>
+                                        <li>Contact your administrator for assistance</li>
+                                        <li>Wait for the restriction to be lifted automatically</li>
+                                        <li>Do not attempt to access the link repeatedly</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% elseif error_type == 'already_processed' %}
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-green-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3 text-left">
+                                <h3 class="text-sm font-medium text-green-800">Already Completed</h3>
+                                <div class="mt-2 text-sm text-green-700">
+                                    <p>This invitation has already been processed. If you accepted the role, you should have received login credentials via email.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-yellow-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3 text-left">
+                                <h3 class="text-sm font-medium text-yellow-800">Try Again</h3>
+                                <div class="mt-2 text-sm text-yellow-700">
+                                    <p>Please try refreshing the page or contact support if the problem persists.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if admin_contact is defined and admin_contact %}
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="text-sm font-medium text-gray-900 mb-2">Administrator Contact</h4>
+                        <p class="text-sm text-gray-700">
+                            <a href="mailto:{{ admin_contact }}" class="font-medium text-blue-600 hover:text-blue-500 underline">
+                                {{ admin_contact }}
+                            </a>
+                        </p>
+                    </div>
+                {% endif %}
+
+                <div class="space-y-3">
+                    {% if error_type == 'already_processed' %}
+                        <a href="{{ path('app_login') }}" 
+                           class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                            </svg>
+                            Go to Login Page
+                        </a>
+                    {% endif %}
+                    
+                    <p class="text-xs text-gray-500 text-center">
+                        You can close this window if you're done.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-8 text-center">
+        <p class="text-sm text-gray-500">
+            Need help? 
+            <a href="mailto:{{ admin_contact|default('support@optimus-portal.com') }}" class="font-medium text-blue-600 hover:text-blue-500">
+                Contact Support
+            </a>
+        </p>
+    </div>
+</div>
+{% endblock %}

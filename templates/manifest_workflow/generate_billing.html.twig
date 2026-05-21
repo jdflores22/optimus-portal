@@ -1,0 +1,555 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Generate Billing - OPTIMUS{% endblock %}
+
+{% block body %}
+<!-- Toast Notification Container -->
+<div class="toast toast-top toast-end z-50">
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert {% if type == 'success' %}alert-success{% elseif type == 'error' %}alert-error{% elseif type == 'warning' %}alert-warning{% else %}alert-info{% endif %}">
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endfor %}
+</div>
+
+<div class="min-h-screen bg-base-200">
+    <div class="px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-base-content">Generate Billing</h1>
+                    <p class="mt-2 text-base-content/60">Manifest: {{ manifest.manifestNumber }}</p>
+                </div>
+                <a href="{{ path('manifest_workflow_detail', {id: manifest.id}) }}" 
+                   class="btn btn-ghost gap-2">
+                    <span class="icon-[tabler--arrow-left] size-4"></span>
+                    Back to Manifest
+                </a>
+            </div>
+        </div>
+
+        <!-- Workflow State Validation -->
+        {% if manifest.workflowState.value != 'bl_uploaded' %}
+            <div class="alert alert-error">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <div>
+                    <h3 class="font-medium">Invalid Workflow State</h3>
+                    <p class="text-sm">Billing can only be generated when manifest is in "BL Uploaded" state. Current state: {{ manifest.workflowState.getDisplayName() }}</p>
+                </div>
+            </div>
+        {% else %}
+            <!-- 2-Column Layout: Form + Preview -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left Column: Billing Generation Form -->
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body">
+                        <h2 class="card-title text-lg mb-4">Billing Details</h2>
+                        <form id="billingGenerationForm">
+                            <!-- Currency Selection -->
+                            <div class="form-control mb-6">
+                                <label class="label">
+                                    <span class="label-text font-medium">Currency <span class="text-error">*</span></span>
+                                </label>
+                                <select id="currency" name="currency" class="select select-bordered w-full">
+                                    <option value="PHP">Philippine Peso (₱)</option>
+                                    <option value="USD" selected>US Dollar ($)</option>
+                                </select>
+                                <label class="label">
+                                    <span class="label-text-alt text-base-content/60">
+                                        <span id="exchangeRateDisplay">Loading exchange rate...</span>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <!-- Freight Charges -->
+                            <div class="form-control mb-6">
+                                <label for="freightCharges" class="label">
+                                    <span class="label-text font-medium">
+                                        Freight Charges (<span id="currencySymbol1">$</span>) <span class="text-error">*</span>
+                                    </span>
+                                </label>
+                                <input type="number" 
+                                       id="freightCharges" 
+                                       name="freightCharges" 
+                                       required
+                                       min="0"
+                                       step="0.01"
+                                       class="input input-bordered w-full"
+                                       placeholder="0.00">
+                            </div>
+
+                            <!-- THC Charges -->
+                            <div class="form-control mb-6">
+                                <label for="thcCharges" class="label">
+                                    <span class="label-text font-medium">
+                                        Terminal Handling Charges (<span id="currencySymbol2">$</span>) <span class="text-error">*</span>
+                                    </span>
+                                </label>
+                                <input type="number" 
+                                       id="thcCharges" 
+                                       name="thcCharges" 
+                                       required
+                                       min="0"
+                                       step="0.01"
+                                       class="input input-bordered w-full"
+                                       placeholder="0.00">
+                            </div>
+
+                            <!-- Additional Charges -->
+                            <div class="mb-6">
+                                <div class="flex items-center justify-between mb-3">
+                                    <label class="label-text font-medium">Additional Charges</label>
+                                    <button type="button" 
+                                            id="addChargeBtn"
+                                            class="btn btn-ghost btn-sm gap-2">
+                                        <span class="icon-[tabler--plus] size-4"></span>
+                                        Add Charge
+                                    </button>
+                                </div>
+                                <div id="additionalChargesContainer" class="space-y-3">
+                                    <!-- Additional charges will be added here -->
+                                </div>
+                            </div>
+
+                            <!-- Messages -->
+                            <div id="messageContainer" class="mb-6 hidden"></div>
+
+                            <!-- Submit Button -->
+                            <div class="flex items-center justify-end gap-4">
+                                <a href="{{ path('manifest_workflow_detail', {id: manifest.id}) }}" 
+                                   class="btn btn-ghost">
+                                    Cancel
+                                </a>
+                                <button type="submit" 
+                                        id="submitBtn"
+                                        class="btn btn-secondary gap-2">
+                                    <span id="submitBtnText" class="flex items-center gap-2">
+                                        <span class="icon-[tabler--file-invoice] size-4"></span>
+                                        Generate Billing
+                                    </span>
+                                    <span id="submitBtnLoading" class="hidden flex items-center gap-2">
+                                        <span class="loading loading-spinner loading-sm"></span>
+                                        Generating...
+                                    </span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Right Column: Live Preview -->
+                <div class="card bg-base-100 shadow-sm sticky top-4 h-fit">
+                    <div class="card-body">
+                        <h2 class="card-title text-lg mb-4">Billing Preview</h2>
+                        
+                        <!-- Manifest Info -->
+                        <div class="mb-6 p-4 bg-base-200 rounded-lg">
+                            <div class="text-sm space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-base-content/60">Manifest #:</span>
+                                    <span class="font-medium">{{ manifest.manifestNumber }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-base-content/60">BL Number:</span>
+                                    <span class="font-medium">{{ manifest.blNumber }}</span>
+                                </div>
+                                {% if manifest.broker %}
+                                <div class="flex justify-between">
+                                    <span class="text-base-content/60">Broker:</span>
+                                    <span class="font-medium">{{ manifest.broker.fullName }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Charges Breakdown -->
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center py-2 border-b border-base-300">
+                                <span class="text-base-content/70">Freight Charges</span>
+                                <div class="text-right">
+                                    <div id="previewFreight" class="font-medium">$0.00</div>
+                                    <div id="previewFreightPHP" class="text-xs text-base-content/60">₱0.00</div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between items-center py-2 border-b border-base-300">
+                                <span class="text-base-content/70">THC Charges</span>
+                                <div class="text-right">
+                                    <div id="previewTHC" class="font-medium">$0.00</div>
+                                    <div id="previewTHCPHP" class="text-xs text-base-content/60">₱0.00</div>
+                                </div>
+                            </div>
+
+                            <div id="previewAdditionalCharges" class="space-y-3">
+                                <!-- Additional charges preview will appear here -->
+                            </div>
+
+                            <!-- Total -->
+                            <div class="pt-4 mt-4 border-t-2 border-base-300">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-lg font-semibold text-base-content">Total Amount</span>
+                                    <div class="text-right">
+                                        <div id="previewTotal" class="text-2xl font-bold text-secondary">$0.00</div>
+                                        <div id="previewTotalPHP" class="text-sm text-base-content/60">₱0.00</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Exchange Rate Info -->
+                        <div class="mt-6 p-3 bg-info/10 rounded-lg">
+                            <div class="flex items-start gap-2">
+                                <span class="icon-[tabler--info-circle] size-5 text-info flex-shrink-0 mt-0.5"></span>
+                                <div class="text-xs text-base-content/70">
+                                    <p class="font-medium mb-1">Exchange Rate Information</p>
+                                    <p id="exchangeRateInfo">Loading current rates...</p>
+                                    <p class="mt-1 text-base-content/50">Rates are updated in real-time</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+{% if manifest.workflowState.value == 'bl_uploaded' %}
+let chargeCounter = 0;
+let exchangeRate = 1;
+let currentCurrency = 'USD';
+
+// Fetch real-time exchange rate from backend
+async function fetchExchangeRate() {
+    try {
+        const response = await fetch('/api/exchange-rate/usd-php');
+        const data = await response.json();
+        
+        if (data.success && data.rate) {
+            exchangeRate = data.rate;
+            const dateStr = new Date(data.date).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            document.getElementById('exchangeRateDisplay').textContent = `1 USD = ₱${exchangeRate.toFixed(4)}`;
+            document.getElementById('exchangeRateInfo').textContent = `Current rate: 1 USD = ₱${exchangeRate.toFixed(4)} (Updated: ${dateStr}, Source: ${data.source})`;
+        } else {
+            // Fallback rate
+            exchangeRate = data.rate || 57.50;
+            document.getElementById('exchangeRateDisplay').textContent = `1 USD = ₱${exchangeRate.toFixed(4)} (Fallback)`;
+            document.getElementById('exchangeRateInfo').textContent = `${data.message || 'Using fallback rate'}. Please verify current rates.`;
+            
+            // Show warning
+            const messageContainer = document.getElementById('messageContainer');
+            messageContainer.innerHTML = `
+                <div class="alert alert-warning">
+                    <span class="icon-[tabler--alert-triangle] size-5"></span>
+                    <div>
+                        <h3 class="font-medium">Exchange Rate Warning</h3>
+                        <p class="text-sm">Unable to fetch real-time exchange rates. Using fallback rate of ₱${exchangeRate.toFixed(2)}. Please verify the current rate before submitting.</p>
+                    </div>
+                </div>
+            `;
+            messageContainer.classList.remove('hidden');
+        }
+        
+        updatePreview();
+    } catch (error) {
+        console.error('Failed to fetch exchange rate:', error);
+        exchangeRate = 57.50;
+        document.getElementById('exchangeRateDisplay').textContent = `1 USD = ₱${exchangeRate.toFixed(4)} (Fallback)`;
+        document.getElementById('exchangeRateInfo').textContent = `Connection error. Using fallback rate: 1 USD = ₱${exchangeRate.toFixed(4)}`;
+        
+        // Show error
+        const messageContainer = document.getElementById('messageContainer');
+        messageContainer.innerHTML = `
+            <div class="alert alert-error">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <div>
+                    <h3 class="font-medium">Connection Error</h3>
+                    <p class="text-sm">Unable to connect to exchange rate service. Using fallback rate of ₱${exchangeRate.toFixed(2)}. Please verify the current rate before submitting.</p>
+                </div>
+            </div>
+        `;
+        messageContainer.classList.remove('hidden');
+        
+        updatePreview();
+    }
+}
+
+// Initialize exchange rate on page load
+fetchExchangeRate();
+
+// Update currency symbols
+function updateCurrencySymbols() {
+    const symbol = currentCurrency === 'USD' ? '$' : '₱';
+    document.getElementById('currencySymbol1').textContent = symbol;
+    document.getElementById('currencySymbol2').textContent = symbol;
+}
+
+// Currency change handler
+document.getElementById('currency').addEventListener('change', function() {
+    currentCurrency = this.value;
+    updateCurrencySymbols();
+    updatePreview();
+});
+
+// Format currency
+function formatCurrency(amount, currency) {
+    return new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount);
+}
+
+// Convert to PHP if needed
+function convertToPHP(amount) {
+    if (currentCurrency === 'USD') {
+        return amount * exchangeRate;
+    }
+    return amount;
+}
+
+// Update preview
+function updatePreview() {
+    const freight = parseFloat(document.getElementById('freightCharges').value) || 0;
+    const thc = parseFloat(document.getElementById('thcCharges').value) || 0;
+    
+    // Update freight preview
+    const currencySymbol = currentCurrency === 'USD' ? '$' : '₱';
+    document.getElementById('previewFreight').textContent = `${currencySymbol}${formatCurrency(freight, currentCurrency)}`;
+    
+    if (currentCurrency === 'USD') {
+        document.getElementById('previewFreightPHP').textContent = `₱${formatCurrency(convertToPHP(freight), 'PHP')}`;
+        document.getElementById('previewFreightPHP').classList.remove('hidden');
+    } else {
+        document.getElementById('previewFreightPHP').classList.add('hidden');
+    }
+    
+    // Update THC preview
+    document.getElementById('previewTHC').textContent = `${currencySymbol}${formatCurrency(thc, currentCurrency)}`;
+    
+    if (currentCurrency === 'USD') {
+        document.getElementById('previewTHCPHP').textContent = `₱${formatCurrency(convertToPHP(thc), 'PHP')}`;
+        document.getElementById('previewTHCPHP').classList.remove('hidden');
+    } else {
+        document.getElementById('previewTHCPHP').classList.add('hidden');
+    }
+    
+    // Calculate additional charges
+    let additionalTotal = 0;
+    const additionalPreviewContainer = document.getElementById('previewAdditionalCharges');
+    additionalPreviewContainer.innerHTML = '';
+    
+    document.querySelectorAll('.additional-charge-amount').forEach((input, index) => {
+        const amount = parseFloat(input.value) || 0;
+        const descInput = input.parentElement.querySelector('input[type="text"]');
+        const description = descInput ? descInput.value : `Charge ${index + 1}`;
+        
+        if (amount > 0) {
+            additionalTotal += amount;
+            
+            const chargeDiv = document.createElement('div');
+            chargeDiv.className = 'flex justify-between items-center py-2 border-b border-base-300';
+            chargeDiv.innerHTML = `
+                <span class="text-base-content/70">${description || 'Additional Charge'}</span>
+                <div class="text-right">
+                    <div class="font-medium">${currencySymbol}${formatCurrency(amount, currentCurrency)}</div>
+                    ${currentCurrency === 'USD' ? `<div class="text-xs text-base-content/60">₱${formatCurrency(convertToPHP(amount), 'PHP')}</div>` : ''}
+                </div>
+            `;
+            additionalPreviewContainer.appendChild(chargeDiv);
+        }
+    });
+    
+    // Calculate and display total
+    const total = freight + thc + additionalTotal;
+    document.getElementById('previewTotal').textContent = `${currencySymbol}${formatCurrency(total, currentCurrency)}`;
+    
+    if (currentCurrency === 'USD') {
+        document.getElementById('previewTotalPHP').textContent = `₱${formatCurrency(convertToPHP(total), 'PHP')}`;
+        document.getElementById('previewTotalPHP').classList.remove('hidden');
+    } else {
+        document.getElementById('previewTotalPHP').classList.add('hidden');
+    }
+}
+
+// Add additional charge
+document.getElementById('addChargeBtn').addEventListener('click', function() {
+    chargeCounter++;
+    const container = document.getElementById('additionalChargesContainer');
+    const chargeDiv = document.createElement('div');
+    chargeDiv.className = 'flex items-center space-x-3';
+    chargeDiv.id = `charge-${chargeCounter}`;
+    chargeDiv.innerHTML = `
+        <input type="text" 
+               name="charge_desc_${chargeCounter}" 
+               placeholder="Description"
+               class="input input-bordered flex-1 charge-description">
+        <input type="number" 
+               name="charge_amount_${chargeCounter}" 
+               placeholder="Amount"
+               min="0"
+               step="0.01"
+               class="input input-bordered w-32 additional-charge-amount">
+        <button type="button" 
+                onclick="removeCharge(${chargeCounter})"
+                class="btn btn-ghost btn-sm btn-circle text-error">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    `;
+    container.appendChild(chargeDiv);
+    
+    // Add event listeners
+    chargeDiv.querySelector('.additional-charge-amount').addEventListener('input', updatePreview);
+    chargeDiv.querySelector('.charge-description').addEventListener('input', updatePreview);
+});
+
+function removeCharge(id) {
+    document.getElementById(`charge-${id}`).remove();
+    updatePreview();
+}
+
+// Add event listeners for amount inputs
+document.getElementById('freightCharges').addEventListener('input', updatePreview);
+document.getElementById('thcCharges').addEventListener('input', updatePreview);
+
+// Form submission
+document.getElementById('billingGenerationForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const submitBtn = document.getElementById('submitBtn');
+    const submitBtnText = document.getElementById('submitBtnText');
+    const submitBtnLoading = document.getElementById('submitBtnLoading');
+    const messageContainer = document.getElementById('messageContainer');
+    
+    // Disable submit button
+    submitBtn.disabled = true;
+    submitBtnText.classList.add('hidden');
+    submitBtnLoading.classList.remove('hidden');
+    
+    // Collect additional charges
+    const additionalCharges = [];
+    for (let i = 1; i <= chargeCounter; i++) {
+        const descInput = document.querySelector(`input[name="charge_desc_${i}"]`);
+        const amountInput = document.querySelector(`input[name="charge_amount_${i}"]`);
+        
+        if (descInput && amountInput && descInput.value.trim() && amountInput.value) {
+            additionalCharges.push({
+                description: descInput.value.trim(),
+                amount: parseFloat(amountInput.value)
+            });
+        }
+    }
+    
+    // Get form data - convert to PHP if USD
+    let freightCharges = parseFloat(document.getElementById('freightCharges').value);
+    let thcCharges = parseFloat(document.getElementById('thcCharges').value);
+    
+    if (currentCurrency === 'USD') {
+        freightCharges = convertToPHP(freightCharges);
+        thcCharges = convertToPHP(thcCharges);
+        
+        // Convert additional charges
+        additionalCharges.forEach(charge => {
+            charge.amount = convertToPHP(charge.amount);
+        });
+    }
+    
+    const formData = {
+        freightCharges: freightCharges,
+        thcCharges: thcCharges,
+        additionalCharges: additionalCharges.length > 0 ? additionalCharges : null,
+        currency: currentCurrency,
+        exchangeRate: currentCurrency === 'USD' ? exchangeRate : null
+    };
+    
+    try {
+        const response = await fetch('/api/manifests/{{ manifest.id }}/billing', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        console.log('API Response:', data); // Debug logging
+        
+        if (response.ok) {
+            // Success
+            messageContainer.innerHTML = `
+                <div class="alert alert-success">
+                    <span class="icon-[tabler--circle-check] size-5"></span>
+                    <div>
+                        <h3 class="font-medium">Billing generated successfully!</h3>
+                        <p class="text-sm">Total amount: ₱${data.totalAmount.toFixed(2)}</p>
+                    </div>
+                </div>
+            `;
+            messageContainer.classList.remove('hidden');
+            
+            // Redirect after 2 seconds
+            setTimeout(() => {
+                window.location.href = '/manifest-workflow/{{ manifest.id }}';
+            }, 2000);
+        } else {
+            // Error - handle different response formats
+            let errorMessage = 'An error occurred while generating billing';
+            
+            if (typeof data === 'string') {
+                errorMessage = data;
+            } else if (data.error) {
+                errorMessage = data.error;
+            } else if (data.message) {
+                errorMessage = data.message;
+            } else if (data.detail) {
+                errorMessage = data.detail;
+            }
+            
+            console.error('Billing generation failed:', errorMessage, data); // Debug logging
+            
+            messageContainer.innerHTML = `
+                <div class="alert alert-error">
+                    <span class="icon-[tabler--alert-circle] size-5"></span>
+                    <div>
+                        <h3 class="font-medium">Generation failed</h3>
+                        <p class="text-sm">${errorMessage}</p>
+                    </div>
+                </div>
+            `;
+            messageContainer.classList.remove('hidden');
+            
+            // Re-enable submit button
+            submitBtn.disabled = false;
+            submitBtnText.classList.remove('hidden');
+            submitBtnLoading.classList.add('hidden');
+        }
+    } catch (error) {
+        console.error('Billing generation error:', error);
+        messageContainer.innerHTML = `
+            <div class="alert alert-error">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <div>
+                    <h3 class="font-medium">Network error</h3>
+                    <p class="text-sm">Failed to connect to server. Please check your connection and try again.</p>
+                </div>
+            </div>
+        `;
+        messageContainer.classList.remove('hidden');
+        
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtnText.classList.remove('hidden');
+        submitBtnLoading.classList.add('hidden');
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

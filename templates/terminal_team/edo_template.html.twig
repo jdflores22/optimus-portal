@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electronic Delivery Order - {{ pre_advice.edoNumber }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #fff;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+        .edo-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333;
+        }
+        .edo-number {
+            font-size: 16px;
+            color: #666;
+        }
+        .section {
+            margin-bottom: 25px;
+            border: 1px solid #ddd;
+            padding: 15px;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .info-item {
+            margin-bottom: 8px;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .info-value {
+            color: #333;
+            margin-left: 10px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-verified {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        .qr-section {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #ccc;
+        }
+        .instructions {
+            background-color: #f8fafc;
+            border-left: 4px solid #2563eb;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .instructions-title {
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 10px;
+        }
+        @media print {
+            body { margin: 0; }
+            .section { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">OPTIMUS SHIPPING PORTAL</div>
+        <div class="edo-title">Electronic Delivery Order (EDO)</div>
+        <div class="edo-number">EDO Number: {{ pre_advice.edoNumber }}</div>
+    </div>
+
+    <!-- Container Information -->
+    <div class="section">
+        <div class="section-title">Container Information</div>
+        <div class="info-grid">
+            <div>
+                <div class="info-item">
+                    <span class="info-label">Container Number:</span>
+                    <span class="info-value">{{ pre_advice.container.containerNumber }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Size & Type:</span>
+                    <span class="info-value">{{ pre_advice.container.size }} {{ pre_advice.container.type }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value">{{ pre_advice.container.status.value|title|replace('_', ' ') }}</span>
+                </div>
+            </div>
+            <div>
+                {% if pre_advice.container.currentLocation %}
+                    <div class="info-item">
+                        <span class="info-label">Current Location:</span>
+                        <span class="info-value">{{ pre_advice.container.currentLocation }}</span>
+                    </div>
+                {% endif %}
+                <div class="info-item">
+                    <span class="info-label">Expected Return:</span>
+                    <span class="info-value">{{ pre_advice.container.expectedReturnDate|date('M j, Y') }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terminal Information -->
+    <div class="section">
+        <div class="section-title">Terminal Information</div>
+        <div class="info-grid">
+            <div>
+                <div class="info-item">
+                    <span class="info-label">Terminal Name:</span>
+                    <span class="info-value">{{ pre_advice.selectedTerminal.name }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Terminal Type:</span>
+                    <span class="info-value">{{ pre_advice.selectedTerminal.type.value }}</span>
+                </div>
+            </div>
+            <div>
+                <div class="info-item">
+                    <span class="info-label">Location:</span>
+                    <span class="info-value">{{ pre_advice.selectedTerminal.location }}</span>
+                </div>
+                {% if pre_advice.assignedSlot %}
+                    <div class="info-item">
+                        <span class="info-label">Assigned Date:</span>
+                        <span class="info-value">{{ pre_advice.assignedSlot.date|date('M j, Y') }}</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Trucker Information -->
+    <div class="section">
+        <div class="section-title">Authorized Trucker</div>
+        <div class="info-grid">
+            <div>
+                <div class="info-item">
+                    <span class="info-label">Name:</span>
+                    <span class="info-value">{{ pre_advice.trucker.firstName }} {{ pre_advice.trucker.lastName }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">License Number:</span>
+                    <span class="info-value">{{ pre_advice.trucker.licenseNumber }}</span>
+                </div>
+            </div>
+            <div>
+                <div class="info-item">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{ pre_advice.trucker.email }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value">{{ pre_advice.trucker.phoneNumber }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Verification Information -->
+    <div class="section">
+        <div class="section-title">Verification Details</div>
+        <div class="info-grid">
+            <div>
+                <div class="info-item">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value">
+                        <span class="status-badge status-verified">{{ pre_advice.status.value|title }}</span>
+                    </span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Verified By:</span>
+                    <span class="info-value">{{ pre_advice.verifiedBy.firstName }} {{ pre_advice.verifiedBy.lastName }}</span>
+                </div>
+            </div>
+            <div>
+                <div class="info-item">
+                    <span class="info-label">Verification Date:</span>
+                    <span class="info-value">{{ pre_advice.verifiedAt|date('M j, Y g:i A') }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Payment Reference:</span>
+                    <span class="info-value">{{ pre_advice.paymentReference }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Section -->
+    <div class="qr-section">
+        <div style="font-weight: bold; margin-bottom: 10px;">QR Code for Terminal Access</div>
+        <div style="font-size: 12px; color: #666; margin-bottom: 15px;">
+            Present this QR code at the terminal gate for container return authorization
+        </div>
+        <div style="font-family: monospace; font-size: 14px; background: #f5f5f5; padding: 10px; border-radius: 4px;">
+            QR Code: {{ pre_advice.qrCode }}
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instructions">
+        <div class="instructions-title">Important Instructions:</div>
+        <ul style="margin: 0; padding-left: 20px;">
+            <li>This EDO is valid only for the specified container and terminal</li>
+            <li>Present this document along with the QR code at the terminal gate</li>
+            <li>Ensure the authorized trucker matches the information on this EDO</li>
+            <li>Container must be returned on or before the assigned date</li>
+            <li>Any discrepancies should be reported immediately to terminal staff</li>
+        </ul>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div>Generated on {{ generated_at|date('M j, Y g:i A') }}</div>
+        <div>OPTIMUS Shipping Portal - Terminal Team FREE-ADVICE System</div>
+        <div>This is an electronically generated document and does not require a signature</div>
+    </div>
+</body>
+</html>

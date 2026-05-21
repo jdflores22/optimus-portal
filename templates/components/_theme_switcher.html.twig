@@ -1,0 +1,57 @@
+{# Theme Switcher Dropdown - powered by theme-change library #}
+{# Uses data-set-theme attribute to switch themes and data-act-class for active state #}
+<div class="dropdown relative inline-flex [--auto-close:inside] [--offset:8] [--placement:bottom-end]">
+    <button type="button"
+            class="dropdown-toggle btn btn-text btn-circle dropdown-open:bg-base-content/10 size-10"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            aria-label="Change theme">
+        <span class="icon-[tabler--palette] text-base-content size-5.5"></span>
+    </button>
+
+    <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-48" role="menu">
+        <li class="dropdown-header justify-center">
+            <h6 class="text-base-content text-base">Theme</h6>
+        </li>
+
+        <li>
+            <button type="button"
+                    class="dropdown-item gap-3"
+                    data-set-theme="light"
+                    data-act-class="dropdown-item-active">
+                <span class="icon-[tabler--sun] size-5 text-yellow-500"></span>
+                Light
+            </button>
+        </li>
+
+        <li>
+            <button type="button"
+                    class="dropdown-item gap-3"
+                    data-set-theme="dark"
+                    data-act-class="dropdown-item-active">
+                <span class="icon-[tabler--moon] size-5 text-indigo-400"></span>
+                Dark
+            </button>
+        </li>
+
+        <li>
+            <button type="button"
+                    class="dropdown-item gap-3"
+                    data-set-theme="claude"
+                    data-act-class="dropdown-item-active">
+                <span class="icon-[tabler--sparkles] size-5 text-orange-400"></span>
+                Claude
+            </button>
+        </li>
+
+        <li>
+            <button type="button"
+                    class="dropdown-item gap-3"
+                    data-set-theme="corporate"
+                    data-act-class="dropdown-item-active">
+                <span class="icon-[tabler--briefcase] size-5 text-blue-500"></span>
+                Corporate
+            </button>
+        </li>
+    </ul>
+</div>

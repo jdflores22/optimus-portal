@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Rejected</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #ef4444;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f9f9f9;
+            padding: 30px;
+            border: 1px solid #ddd;
+            border-top: none;
+        }
+        .error-icon {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ef4444;
+        }
+        .details {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .detail-value {
+            color: #333;
+        }
+        .reason-box {
+            background-color: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .reason-label {
+            font-weight: bold;
+            color: #991b1b;
+            margin-bottom: 10px;
+        }
+        .reason-text {
+            color: #7f1d1d;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #3b82f6;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>✗ Payment Rejected</h1>
+    </div>
+    
+    <div class="content">
+        <div class="error-icon">✗</div>
+        
+        <p>Dear {{ user.fullName }},</p>
+        
+        <p>We regret to inform you that your {{ paymentType|lower }} payment has been rejected by the accounting department.</p>
+        
+        <div class="details">
+            <div class="detail-row">
+                <span class="detail-label">Manifest Number:</span>
+                <span class="detail-value">{{ manifest.manifestNumber }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Payment Type:</span>
+                <span class="detail-value">{{ paymentType }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Payment Amount:</span>
+                <span class="detail-value">₱{{ payment.amount|number_format(2) }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Payment ID:</span>
+                <span class="detail-value">#{{ payment.id }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Rejected At:</span>
+                <span class="detail-value">{{ payment.validatedAt|date('F d, Y H:i:s') }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Rejected By:</span>
+                <span class="detail-value">{{ payment.validatedBy.fullName }}</span>
+            </div>
+        </div>
+        
+        {% if reason %}
+        <div class="reason-box">
+            <div class="reason-label">Rejection Reason:</div>
+            <div class="reason-text">{{ reason }}</div>
+        </div>
+        {% endif %}
+        
+        <p><strong>Next Steps:</strong></p>
+        <ul>
+            <li>Review the rejection reason carefully</li>
+            <li>Correct any issues with your payment documentation</li>
+            <li>Submit a new payment with the correct information</li>
+        </ul>
+        
+        <p style="text-align: center;">
+            <a href="{{ url('manifest_workflow_detail', {id: manifest.id}) }}" class="button">View Manifest & Resubmit Payment</a>
+        </p>
+        
+        <p>If you have any questions about the rejection, please contact the shipping line's accounting department.</p>
+        
+        <p>Best regards,<br>
+        OPTIMUS System</p>
+    </div>
+    
+    <div class="footer">
+        <p>This is an automated email from OPTIMUS - Shipping Lines Portal</p>
+        <p>Please do not reply to this email</p>
+    </div>
+</body>
+</html>

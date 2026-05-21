@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergency Reset - Optimus</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #dc3545;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            background: white;
+            color: #333;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 { color: #dc3545; margin-bottom: 20px; }
+        button {
+            width: 100%;
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 0;
+            font-weight: 600;
+        }
+        button:active { transform: scale(0.98); }
+        .success { background: #28a745; }
+        #status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            display: none;
+        }
+        #status.show { display: block; }
+        #status.success { background: #d4edda; color: #155724; }
+        #status.error { background: #f8d7da; color: #721c24; }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            color: #856404;
+        }
+        .step {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 3px solid #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 Emergency Reset</h1>
+        <p style="margin-bottom: 20px;">This page bypasses the service worker to help you reset everything.</p>
+        
+        <div class="warning">
+            <strong>⚠️ Nuclear Option:</strong> This will delete ALL cached data and service workers.
+        </div>
+        
+        <button onclick="emergencyReset()" style="font-size: 18px; padding: 20px;">
+            💣 EMERGENCY RESET
+        </button>
+        
+        <div id="status"></div>
+        
+        <div class="step" style="margin-top: 20px;">
+            <strong>After reset:</strong><br>
+            1. Close this tab<br>
+            2. Close ALL browser tabs<br>
+            3. Restart your browser<br>
+            4. Visit the site fresh
+        </div>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        
+        <details>
+            <summary style="cursor: pointer; color: #dc3545; font-weight: 600;">Manual Steps (if button fails)</summary>
+            <div style="margin-top: 15px; font-size: 14px;">
+                <p><strong>Chrome DevTools Method:</strong></p>
+                <ol style="margin-left: 20px; line-height: 1.8;">
+                    <li>Press F12 to open DevTools</li>
+                    <li>Go to Application tab</li>
+                    <li>Click "Clear storage" (left sidebar)</li>
+                    <li>Check ALL boxes</li>
+                    <li>Click "Clear site data"</li>
+                    <li>Close DevTools</li>
+                    <li>Close browser completely</li>
+                    <li>Reopen and try again</li>
+                </ol>
+            </div>
+        </details>
+    </div>
+    
+    <script>
+        // This script runs WITHOUT service worker interference
+        async function emergencyReset() {
+            const status = document.getElementById('status');
+            status.textContent = '🔄 Resetting... Please wait...';
+            status.className = 'show';
+            
+            let results = [];
+            
+            try {
+                // 1. Unregister ALL service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                    }
+                    results.push(`✅ Unregistered ${registrations.length} service worker(s)`);
+                }
+                
+                // 2. Clear ALL caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    for (let name of cacheNames) {
+                        await caches.delete(name);
+                    }
+                    results.push(`✅ Deleted ${cacheNames.length} cache(s)`);
+                }
+                
+                // 3. Clear localStorage
+                localStorage.clear();
+                results.push('✅ Cleared localStorage');
+                
+                // 4. Clear sessionStorage
+                sessionStorage.clear();
+                results.push('✅ Cleared sessionStorage');
+                
+                // 5. Clear IndexedDB
+                if ('indexedDB' in window) {
+                    try {
+                        const databases = await indexedDB.databases();
+                        for (let db of databases) {
+                            indexedDB.deleteDatabase(db.name);
+                        }
+                        results.push(`✅ Deleted ${databases.length} database(s)`);
+                    } catch (e) {
+                        results.push('⚠️ IndexedDB: ' + e.message);
+                    }
+                }
+                
+                // 6. Clear cookies (best effort)
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                results.push('✅ Cleared cookies');
+                
+                status.innerHTML = results.join('<br>') + '<br><br><strong>✅ RESET COMPLETE!</strong><br>Now close ALL tabs and restart your browser.';
+                status.className = 'show success';
+                
+            } catch (error) {
+                status.textContent = '❌ Error: ' + error.message;
+                status.className = 'show error';
+            }
+        }
+        
+        // Log current state
+        console.log('=== EMERGENCY RESET PAGE ===');
+        console.log('Service Worker:', 'serviceWorker' in navigator ? 'Supported' : 'Not supported');
+        console.log('Cache API:', 'caches' in window ? 'Supported' : 'Not supported');
+        console.log('IndexedDB:', 'indexedDB' in window ? 'Supported' : 'Not supported');
+        
+        // Check for service workers
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                console.log('Active service workers:', regs.length);
+                regs.forEach((reg, i) => {
+                    console.log(`  ${i + 1}. Scope:`, reg.scope);
+                });
+            });
+        }
+        
+        // Check for caches
+        if ('caches' in window) {
+            caches.keys().then(names => {
+                console.log('Active caches:', names.length);
+                names.forEach((name, i) => {
+                    console.log(`  ${i + 1}.`, name);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

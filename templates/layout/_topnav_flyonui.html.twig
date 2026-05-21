@@ -1,0 +1,498 @@
+<nav class="navbar bg-base-100 shadow-base-300/20 shadow-sm sticky top-0" style="z-index: 9998;">
+    <div class="flex flex-1 items-center gap-3">
+        <button type="button" class="btn btn-text btn-circle md:hidden" onclick="toggleMobileSidebar()" aria-label="Toggle menu">
+            <span class="icon-[tabler--menu-2] size-5"></span>
+        </button>
+        <span class="text-base-content font-semibold text-base hidden md:block">
+            {% block page_title %}
+                {% if app.user.role.value == 'SYSTEM_ADMIN' %}System Administration
+                {% elseif app.user.role.value == 'CONSIGNEE' %}Consignee Portal
+                {% elseif app.user.role.value == 'BROKER' %}Broker Portal
+                {% elseif app.user.role.value == 'EVALUATOR' %}Evaluator Portal
+                {% elseif app.user.role.value == 'SHIPPING_LINES_ADMIN' %}Shipping Lines Admin
+                {% elseif app.user.role.value == 'SL_STAFF' %}SL Staff Portal
+                {% elseif app.user.role.value == 'ACCOUNTING' %}Accounting Portal
+                {% else %}OPTIMUS Portal
+                {% endif %}
+            {% endblock %}
+        </span>
+        {% if app.user.role.value == 'BROKER' and app.session.get('active_workspace_consignee_id') %}
+            <div class="hidden lg:flex items-center gap-2 bg-primary/10 rounded-lg px-3 py-1">
+                <span class="icon-[tabler--briefcase] size-4 text-primary"></span>
+                <span class="text-sm font-semibold text-primary">{{ app.session.get('active_workspace_consignee_name', 'Workspace') }}</span>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="navbar-end flex items-center gap-2">
+        
+        {# Search Bar (Consignee only) #}
+        {% if app.user.role.value == 'CONSIGNEE' %}
+        <!-- Mobile Search Button -->
+        <button class="btn btn-sm btn-text btn-circle size-8.5 md:hidden" onclick="document.getElementById('mobileSearchModal').showModal()">
+            <span class="icon-[tabler--search] size-5.5"></span>
+        </button>
+        
+        <!-- Desktop Search -->
+        <form method="GET" action="{{ path('consignee_manifest_list') }}" class="max-md:hidden">
+            <div class="input rounded-full max-w-56">
+                <span class="icon-[tabler--search] text-base-content/80 my-auto me-3 size-5 shrink-0"></span>
+                <label class="sr-only" for="topnavSearchInput">Search Manifests</label>
+                <input type="search" 
+                       name="search" 
+                       class="grow" 
+                       placeholder="Search manifests..." 
+                       id="topnavSearchInput" />
+            </div>
+        </form>
+        {% endif %}
+
+        {# Workspace Switcher (Brokers only) #}
+        {% if app.user.role.value == 'BROKER' and app.session.get('active_workspace_consignee_id') %}
+        <div class="relative">
+            <button type="button" id="workspaceSwitcherButton"
+                    class="btn btn-text btn-sm gap-2 dropdown-open:bg-base-content/10"
+                    onclick="toggleWorkspaceSwitcher()">
+                <span class="icon-[tabler--briefcase] size-4"></span>
+                <span class="hidden sm:inline text-sm">{{ app.session.get('active_workspace_consignee_name', 'Workspace') }}</span>
+                <span class="icon-[tabler--chevron-down] size-4"></span>
+            </button>
+            <div id="workspaceSwitcherDropdown"
+                 class="absolute right-0 top-full mt-2 w-64 rounded-box shadow-xl bg-base-100 z-[999999]"
+                 style="display:none;">
+                <div class="px-4 py-3/50">
+                    <h3 class="text-sm font-medium text-base-content">Switch Workspace</h3>
+                </div>
+                <div class="py-1 max-h-64 overflow-y-auto" id="workspaceList">
+                    <div class="flex items-center justify-center py-4">
+                        <span class="loading loading-spinner loading-sm"></span>
+                    </div>
+                </div>
+                <div class="px-4 py-3/50">
+                    <a href="{{ path('broker_workspace_selector') }}" class="text-xs text-base-content/50 hover:text-base-content">View all workspaces</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Theme Switcher — manual dropdown, no FlyonUI auto-close interference #}
+        <div class="relative" id="themeDropdownWrapper">
+            <button type="button"
+                    id="themeToggleBtn"
+                    class="btn btn-text btn-circle size-10"
+                    aria-label="Theme">
+                <span class="icon-[tabler--palette] text-base-content size-5.5"></span>
+            </button>
+            <ul id="themeDropdownMenu"
+                class="absolute right-0 top-full mt-2 min-w-44 rounded-box shadow-xl bg-base-100 z-[999999] hidden py-1"
+                role="menu">
+                <li class="px-4 py-2 text-xs font-semibold text-base-content/50 uppercase tracking-wider">Theme</li>
+                <li><button class="dropdown-item gap-3 w-full" onclick="setTheme('light')"><span class="icon-[tabler--sun] size-5 text-yellow-500"></span>Light</button></li>
+                <li><button class="dropdown-item gap-3 w-full" onclick="setTheme('dark')"><span class="icon-[tabler--moon] size-5 text-indigo-400"></span>Dark</button></li>
+                <li><button class="dropdown-item gap-3 w-full" onclick="setTheme('claude')"><span class="icon-[tabler--sparkles] size-5 text-orange-400"></span>Claude</button></li>
+                <li><button class="dropdown-item gap-3 w-full" onclick="setTheme('corporate')"><span class="icon-[tabler--briefcase] size-5 text-blue-500"></span>Corporate</button></li>
+            </ul>
+        </div>
+
+        {# Notifications #}
+        <div class="relative">
+            <button type="button" id="notificationButton"
+                    class="btn btn-text btn-circle size-10 relative"
+                    onclick="toggleNotifications()">
+                <span class="icon-[tabler--bell] text-base-content size-5.5"></span>
+                <span id="notificationBadge" class="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-error hidden"></span>
+            </button>
+            <div id="notificationDropdown"
+                 class="absolute right-0 top-full mt-2 w-80 rounded-box shadow-xl bg-base-100 z-[999999]"
+                 style="display:none; opacity:0; transform:scale(0.95); transition:opacity 0.2s,transform 0.2s;">
+                <div class="px-4 py-3/50 flex items-center justify-between">
+                    <h3 class="text-sm font-medium text-base-content">Notifications</h3>
+                    <button id="markAllReadBtn" class="text-xs text-primary hover:text-primary/80 font-medium" onclick="markAllNotificationsAsRead()">Mark all read</button>
+                </div>
+                <div id="notificationsList" class="max-h-96 overflow-y-auto">
+                    <div class="flex items-center justify-center py-8">
+                        <span class="loading loading-spinner loading-md"></span>
+                    </div>
+                </div>
+                <div class="px-4 py-3/50 text-center">
+                    <a href="{{ path('notifications_page') }}" class="text-xs text-base-content/50 hover:text-base-content">View all notifications</a>
+                </div>
+            </div>
+        </div>
+
+        {# User Profile #}
+        <div class="relative">
+            <button type="button"
+                    class="flex items-center gap-2 p-2 rounded-lg hover:bg-base-200 transition-colors duration-200"
+                    onclick="toggleUserMenu()">
+                <div class="size-8 rounded-full overflow-hidden {{ avatar_colors(app.user) }} flex items-center justify-center flex-shrink-0">
+                    {% if app.user.profilePhoto %}
+                        <img src="{{ path('profile_photo', {userId: app.user.id, filename: app.user.profilePhoto}) }}" alt="Profile" class="size-full object-cover">
+                    {% else %}
+                        <span class="text-sm font-medium">{{ app.user.email|slice(0,1)|upper }}</span>
+                    {% endif %}
+                </div>
+                <div class="hidden md:block text-left">
+                    <div class="text-sm font-medium text-base-content">{{ app.user.email }}</div>
+                    <div class="text-xs text-base-content/50">{{ app.user.role.value|replace({'_': ' '})|title }}</div>
+                </div>
+                <span class="icon-[tabler--chevron-down] size-4 text-base-content/40"></span>
+            </button>
+            <div id="user-menu"
+                 class="absolute right-0 top-full mt-2 w-64 rounded-box shadow-xl bg-base-100 z-[999999]"
+                 style="display:none; opacity:0; transform:scale(0.95); transition:opacity 0.2s,transform 0.2s;">
+                <div class="px-4 py-3/50">
+                    <div class="flex items-center gap-3">
+                        <div class="size-10 rounded-full overflow-hidden {{ avatar_colors(app.user) }} flex items-center justify-center flex-shrink-0">
+                            {% if app.user.profilePhoto %}
+                                <img src="{{ path('profile_photo', {userId: app.user.id, filename: app.user.profilePhoto}) }}" alt="Profile" class="size-full object-cover">
+                            {% else %}
+                                <span class="text-sm font-medium">{{ app.user.email|slice(0,1)|upper }}</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium text-base-content">{{ app.user.email }}</div>
+                            <div class="text-xs text-base-content/50">{{ app.user.role.value|replace({'_': ' '})|title }}</div>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        {% set roleClass = 'badge-ghost' %}
+                        {% if app.user.role.value == 'SYSTEM_ADMIN' %}{% set roleClass = 'badge-secondary' %}
+                        {% elseif app.user.role.value == 'SHIPPING_LINES_ADMIN' %}{% set roleClass = 'badge-primary' %}
+                        {% elseif app.user.role.value == 'EVALUATOR' %}{% set roleClass = 'badge-info' %}
+                        {% elseif app.user.role.value == 'SL_STAFF' %}{% set roleClass = 'badge-success' %}
+                        {% elseif app.user.role.value == 'ACCOUNTING' %}{% set roleClass = 'badge-warning' %}
+                        {% elseif app.user.role.value == 'BROKER' %}{% set roleClass = 'badge-accent' %}
+                        {% elseif app.user.role.value == 'CONSIGNEE' %}{% set roleClass = 'badge-error' %}
+                        {% endif %}
+                        <span class="badge badge-soft badge-sm {{ roleClass }}">{{ app.user.role.value|replace({'_': ' '})|title }}</span>
+                    </div>
+                </div>
+                <div class="py-1">
+                    <a href="{{ path('profile_settings') }}" class="flex items-center gap-3 px-4 py-2 text-sm text-base-content hover:bg-base-200 transition-colors">
+                        <span class="icon-[tabler--user] size-4 text-base-content/40"></span>Profile Settings
+                    </a>
+                    <a href="{{ path('account_settings') }}" class="flex items-center gap-3 px-4 py-2 text-sm text-base-content hover:bg-base-200 transition-colors">
+                        <span class="icon-[tabler--settings] size-4 text-base-content/40"></span>Account Settings
+                    </a>
+                    <div class="border-t border-base-300/50 my-1"></div>
+                    <a href="{{ path('app_logout') }}" class="flex items-center gap-3 px-4 py-2 text-sm text-base-content hover:bg-error/10 hover:text-error transition-colors">
+                        <span class="icon-[tabler--logout] size-4 text-base-content/40"></span>Sign out
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</nav>
+
+{# Mobile Search Modal (Consignee only) #}
+{% if app.user.role.value == 'CONSIGNEE' %}
+<dialog id="mobileSearchModal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">Search Manifests</h3>
+        <form method="GET" action="{{ path('consignee_manifest_list') }}">
+            <div class="form-control">
+                <div class="input">
+                    <span class="icon-[tabler--search] text-base-content/80 my-auto me-3 size-5 shrink-0"></span>
+                    <input type="search" 
+                           name="search" 
+                           class="grow" 
+                           placeholder="Search by manifest #, BL #, vessel..." 
+                           autofocus />
+                </div>
+            </div>
+            <div class="modal-action">
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('mobileSearchModal').close()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+{% endif %}
+
+{# Notification Detail Modal #}
+<div id="notificationModal" class="hidden fixed inset-0 z-[10001] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeNotificationModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10">
+
+        {# Header #}
+        <div class="flex items-center justify-between px-5 py-4 border-b border-base-300">
+            <h3 class="font-semibold text-base text-base-content">Notification Details</h3>
+            <button type="button" onclick="closeNotificationModal()" class="btn btn-ghost btn-sm btn-circle">
+                <span class="icon-[tabler--x] size-4"></span>
+            </button>
+        </div>
+
+        {# Body #}
+        <div class="px-5 py-4">
+            <div class="flex items-start gap-3">
+                <div id="modalNotificationIcon" class="size-9 rounded-full flex items-center justify-center flex-shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                    <div id="modalNotificationStatus" class="text-xs font-semibold mb-1"></div>
+                    <h4 class="text-sm font-semibold text-base-content mb-1" id="modalNotificationTitleText"></h4>
+                    <p class="text-sm text-base-content/60 mb-3" id="modalNotificationMessage"></p>
+                    <div class="flex items-center justify-between text-xs text-base-content/40">
+                        <span id="modalNotificationTime"></span>
+                        <span id="modalNotificationType" class="badge badge-sm"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Footer #}
+        <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-base-300">
+            <button type="button" onclick="closeNotificationModal()" class="btn btn-ghost btn-sm">Close</button>
+            <button type="button" id="modalActionButton" onclick="handleModalAction()" class="btn btn-primary btn-sm" style="display:none;"></button>
+            <button type="button" id="modalMarkReadButton" onclick="markNotificationAsReadFromModal()" class="btn btn-info btn-sm" style="display:none;">
+                <span class="icon-[tabler--check] size-4"></span>
+                Mark as Read
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+let notificationDropdownOpen = false;
+let topnavNotifications = [];
+let currentModalNotification = null;
+
+function closeAllDropdowns() {
+    // Close user menu
+    const userMenu = document.getElementById('user-menu');
+    if (userMenu && userMenu.style.display !== 'none') {
+        userMenu.style.opacity = '0'; userMenu.style.transform = 'scale(0.95)';
+        setTimeout(() => { userMenu.style.display = 'none'; }, 200);
+    }
+    // Close notifications
+    if (notificationDropdownOpen) {
+        const dropdown = document.getElementById('notificationDropdown');
+        if (dropdown) {
+            dropdown.style.opacity = '0'; dropdown.style.transform = 'scale(0.95)';
+            setTimeout(() => { dropdown.style.display = 'none'; }, 200);
+        }
+        notificationDropdownOpen = false;
+    }
+    // Close workspace switcher
+    const wsd = document.getElementById('workspaceSwitcherDropdown');
+    if (wsd && workspaceSwitcherOpen) { wsd.style.display = 'none'; workspaceSwitcherOpen = false; }
+    // Close theme
+    const themeMenu = document.getElementById('themeDropdownMenu');
+    if (themeMenu) themeMenu.classList.add('hidden');
+}
+
+function toggleUserMenu() {
+    const menu = document.getElementById('user-menu');
+    const isHidden = menu.style.display === 'none' || menu.style.display === '';
+    if (isHidden) {
+        closeAllDropdowns();
+        menu.style.display = 'block';
+        requestAnimationFrame(() => { menu.style.opacity = '1'; menu.style.transform = 'scale(1)'; });
+    } else {
+        menu.style.opacity = '0'; menu.style.transform = 'scale(0.95)';
+        setTimeout(() => { menu.style.display = 'none'; }, 200);
+    }
+}
+
+function toggleNotifications() {
+    const dropdown = document.getElementById('notificationDropdown');
+    if (!dropdown) return;
+    if (!notificationDropdownOpen) {
+        closeAllDropdowns();
+        loadNotifications();
+        dropdown.style.display = 'block';
+        requestAnimationFrame(() => { dropdown.style.opacity = '1'; dropdown.style.transform = 'scale(1)'; });
+        notificationDropdownOpen = true;
+    } else {
+        dropdown.style.opacity = '0'; dropdown.style.transform = 'scale(0.95)';
+        setTimeout(() => { dropdown.style.display = 'none'; }, 200);
+        notificationDropdownOpen = false;
+    }
+}
+
+function loadNotifications() {
+    const list = document.getElementById('notificationsList');
+    if (!list) return;
+    fetch('/notifications/api', { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) { topnavNotifications = data.notifications; renderNotifications(data.notifications); updateNotificationBadge(data.unreadCount); }
+            else { list.innerHTML = '<div class="px-4 py-3 text-sm text-base-content/50 text-center">Failed to load notifications</div>'; }
+        })
+        .catch(() => { list.innerHTML = '<div class="px-4 py-3 text-sm text-base-content/50 text-center">Failed to load notifications</div>'; });
+}
+
+function renderNotifications(notificationsData) {
+    const list = document.getElementById('notificationsList');
+    if (!list) return;
+    if (!notificationsData.length) {
+        list.innerHTML = '<div class="px-4 py-8 text-center"><p class="text-sm text-base-content/50">No notifications</p></div>';
+        return;
+    }
+    const typeColors = { success: 'text-success bg-success/10', error: 'text-error bg-error/10', warning: 'text-warning bg-warning/10', info: 'text-info bg-info/10' };
+    list.innerHTML = notificationsData.map(n => `
+        <div class="px-4 py-3 hover:bg-base-200 cursor-pointer ${n.isRead ? 'opacity-70' : ''}" onclick="showNotificationModal(${n.id})">
+            <div class="flex items-start gap-3">
+                <div class="size-2 rounded-full mt-2 flex-shrink-0 ${(typeColors[n.type]||typeColors.info).split(' ')[0].replace('text-','bg-')}"></div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-base-content">${n.title}</p>
+                    <p class="text-xs text-base-content/50 mt-1 line-clamp-2">${n.message}</p>
+                    <div class="flex items-center justify-between mt-2">
+                        <span class="text-xs text-base-content/40">${n.timeAgo}</span>
+                        ${n.actionText ? `<span class="text-xs text-primary font-medium">${n.actionText}</span>` : ''}
+                    </div>
+                </div>
+                ${!n.isRead ? '<div class="size-2 rounded-full bg-primary flex-shrink-0 mt-2"></div>' : ''}
+            </div>
+        </div>`).join('');
+}
+
+function updateNotificationBadge(count) {
+    const badge = document.getElementById('notificationBadge');
+    const sidebarBadge = document.getElementById('sidebarNotificationBadge');
+    if (badge) badge.classList.toggle('hidden', count === 0);
+    if (sidebarBadge) { sidebarBadge.classList.toggle('hidden', count === 0); if (count > 0) sidebarBadge.textContent = count > 99 ? '99+' : count; }
+}
+
+function markAllNotificationsAsRead() {
+    fetch('/notifications/mark-all-read', { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+        .then(r => r.json()).then(d => { if (d.success) loadNotifications(); });
+}
+
+function showNotificationModal(notificationId) {
+    const n = topnavNotifications.find(x => x.id === notificationId);
+    if (!n) return;
+    currentModalNotification = n;
+    document.getElementById('modalNotificationTitleText').textContent = n.title;
+    document.getElementById('modalNotificationMessage').textContent = n.message;
+    document.getElementById('modalNotificationTime').textContent = n.timeAgo;
+    const typeColors = { success: { bg: 'bg-success/10', text: 'text-success', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' }, error: { bg: 'bg-error/10', text: 'text-error', icon: 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' }, warning: { bg: 'bg-warning/10', text: 'text-warning', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z' }, info: { bg: 'bg-info/10', text: 'text-info', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' } };
+    const ts = typeColors[n.type] || typeColors.info;
+    const icon = document.getElementById('modalNotificationIcon');
+    icon.className = `size-8 rounded-full flex items-center justify-center flex-shrink-0 ${ts.bg}`;
+    icon.innerHTML = `<svg class="size-5 ${ts.text}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${ts.icon}"/></svg>`;
+    const typeEl = document.getElementById('modalNotificationType');
+    typeEl.textContent = n.type.charAt(0).toUpperCase() + n.type.slice(1);
+    typeEl.className = `badge badge-sm ${ts.bg} ${ts.text}`;
+    document.getElementById('modalNotificationStatus').innerHTML = n.isRead ? '<span class="text-base-content/50">● Read</span>' : '<span class="text-primary">● Unread</span>';
+    const actionBtn = document.getElementById('modalActionButton');
+    if (n.actionText && n.actionUrl) { actionBtn.textContent = n.actionText; actionBtn.style.display = 'inline-flex'; } else { actionBtn.style.display = 'none'; }
+    document.getElementById('modalMarkReadButton').style.display = n.isRead ? 'none' : 'inline-flex';
+    document.getElementById('notificationModal').classList.remove('hidden');
+    if (notificationDropdownOpen) toggleNotifications();
+}
+
+function closeNotificationModal() {
+    document.getElementById('notificationModal').classList.add('hidden');
+    currentModalNotification = null;
+}
+
+function handleModalAction() {
+    if (currentModalNotification?.actionUrl) { markNotificationAsReadFromModal(false); window.location.href = currentModalNotification.actionUrl; }
+}
+
+function markNotificationAsReadFromModal(closeModal = true) {
+    if (!currentModalNotification) return;
+    fetch(`/notifications/${currentModalNotification.id}/read`, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+        .then(r => r.json()).then(data => {
+            if (data.success) {
+                const n = topnavNotifications.find(x => x.id === currentModalNotification.id);
+                if (n) n.isRead = true;
+                loadNotifications();
+                if (closeModal) { closeNotificationModal(); }
+                else { document.getElementById('modalNotificationStatus').innerHTML = '<span class="text-base-content/50">● Read</span>'; document.getElementById('modalMarkReadButton').style.display = 'none'; }
+            }
+        });
+}
+
+// Workspace switcher
+let workspaceSwitcherOpen = false;
+function toggleWorkspaceSwitcher() {
+    const dropdown = document.getElementById('workspaceSwitcherDropdown');
+    if (!dropdown) return;
+    if (!workspaceSwitcherOpen) { closeAllDropdowns(); loadWorkspaces(); dropdown.style.display = 'block'; workspaceSwitcherOpen = true; }
+    else { dropdown.style.display = 'none'; workspaceSwitcherOpen = false; }
+}
+function loadWorkspaces() {
+    const list = document.getElementById('workspaceList');
+    if (!list) return;
+    fetch('/broker/workspace/list', { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+        .then(r => r.json()).then(data => {
+            if (data.success) renderWorkspaces(data.workspaces, data.activeWorkspaceId);
+            else list.innerHTML = '<div class="px-4 py-3 text-sm text-base-content/50 text-center">Failed to load</div>';
+        }).catch(() => { list.innerHTML = '<div class="px-4 py-3 text-sm text-base-content/50 text-center">Failed to load</div>'; });
+}
+function renderWorkspaces(workspaces, activeWorkspaceId) {
+    const list = document.getElementById('workspaceList');
+    if (!list) return;
+    if (!workspaces.length) { list.innerHTML = '<div class="px-4 py-3 text-sm text-base-content/50 text-center">No workspaces</div>'; return; }
+    list.innerHTML = workspaces.map(w => {
+        const isActive = w.consigneeId === activeWorkspaceId;
+        return `<a href="/broker/workspace/switch/${w.consigneeId}" class="flex items-center justify-between px-4 py-3 hover:bg-base-200 transition-colors ${isActive ? 'border-l-4 border-primary bg-primary/5' : ''}">
+            <div><p class="text-sm font-medium text-base-content">${w.businessName}</p><p class="text-xs text-base-content/50">${w.activeManifestCount} active manifest${w.activeManifestCount !== 1 ? 's' : ''}</p></div>
+            ${isActive ? '<span class="icon-[tabler--check] size-5 text-primary"></span>' : ''}
+        </a>`;
+    }).join('');
+}
+
+// On load: fetch unread count
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/notifications/unread-count', { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+        .then(r => r.json()).then(data => { if (data.success) updateNotificationBadge(data.count); }).catch(() => {});
+});
+
+// Poll every 30s
+setInterval(() => {
+    fetch('/notifications/unread-count', { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+        .then(r => r.json()).then(data => { if (data.success) updateNotificationBadge(data.count); }).catch(() => {});
+}, 30000);
+
+// Close dropdowns on outside click
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.relative')) {
+        const userMenu = document.getElementById('user-menu');
+        if (userMenu && userMenu.style.display !== 'none') {
+            userMenu.style.opacity = '0'; userMenu.style.transform = 'scale(0.95)';
+            setTimeout(() => { userMenu.style.display = 'none'; }, 200);
+        }
+        if (notificationDropdownOpen) toggleNotifications();
+        const wsd = document.getElementById('workspaceSwitcherDropdown');
+        if (wsd && workspaceSwitcherOpen) { wsd.style.display = 'none'; workspaceSwitcherOpen = false; }
+    }
+    const modal = document.getElementById('notificationModal');
+    if (modal && !modal.classList.contains('hidden') && e.target === modal) closeNotificationModal();
+});
+
+// Escape key closes modal
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('notificationModal');
+        if (modal && !modal.classList.contains('hidden')) closeNotificationModal();
+    }
+});
+
+// Theme dropdown — manual toggle
+document.addEventListener('DOMContentLoaded', function() {
+    var btn = document.getElementById('themeToggleBtn');
+    var menu = document.getElementById('themeDropdownMenu');
+    var wrapper = document.getElementById('themeDropdownWrapper');
+    if (!btn || !menu) return;
+
+    btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const isHidden = menu.classList.contains('hidden');
+        closeAllDropdowns();
+        if (isHidden) menu.classList.remove('hidden');
+    });
+
+    document.addEventListener('click', function(e) {
+        if (wrapper && !wrapper.contains(e.target)) {
+            menu.classList.add('hidden');
+        }
+    });
+});
+</script>

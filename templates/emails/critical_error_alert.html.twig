@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Critical System Error - OPTIMUS Portal</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #dc3545; color: white; padding: 20px; text-align: center; }
+        .content { background-color: #f8f9fa; padding: 20px; }
+        .error-details { background-color: #fff; border: 1px solid #dee2e6; padding: 15px; margin: 10px 0; }
+        .context-item { margin: 5px 0; }
+        .timestamp { color: #6c757d; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚨 Critical System Error</h1>
+            <p>OPTIMUS Portal</p>
+        </div>
+        
+        <div class="content">
+            <p><strong>A critical error has occurred in the OPTIMUS Portal system.</strong></p>
+            
+            <div class="error-details">
+                <h3>Exception Details</h3>
+                <p><strong>Type:</strong> {{ exception.class }}</p>
+                <p><strong>Message:</strong> {{ exception.message }}</p>
+                <p><strong>File:</strong> {{ exception.file }}:{{ exception.line }}</p>
+                <p class="timestamp"><strong>Timestamp:</strong> {{ timestamp|date('Y-m-d H:i:s T') }}</p>
+            </div>
+            
+            <div class="error-details">
+                <h3>Request Context</h3>
+                {% for key, value in context %}
+                    {% if key != 'exception' %}
+                        <div class="context-item">
+                            <strong>{{ key|title|replace({'_': ' '}) }}:</strong> 
+                            {% set displayValue = value %}
+                            {% if value is iterable %}
+                                {% set displayValue = value|json_encode %}
+                            {% endif %}
+                            {{ displayValue }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            
+            <div class="error-details">
+                <h3>Stack Trace</h3>
+                <pre style="white-space: pre-wrap; font-size: 0.8em;">{{ exception.traceAsString }}</pre>
+            </div>
+            
+            <p><strong>Action Required:</strong> Please investigate this error immediately and take appropriate action to resolve the issue.</p>
+            
+            <p>This is an automated alert from the OPTIMUS Portal error monitoring system.</p>
+        </div>
+    </div>
+</body>
+</html>

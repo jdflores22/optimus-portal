@@ -1,0 +1,30 @@
+# Avatar Colors Configuration
+# This file configures the dynamic color generation system for user avatars
+
+parameters:
+  avatar_colors:
+    # Role-based color mapping - each role gets a specific color
+    role_colors:
+      SYSTEM_ADMIN: { bg: 'bg-gray-600', text: 'text-white', hex_bg: '#4B5563', hex_text: '#FFFFFF' }
+      SHIPPING_LINES_ADMIN: { bg: 'bg-purple-500', text: 'text-white', hex_bg: '#8B5CF6', hex_text: '#FFFFFF' }
+      SL_STAFF: { bg: 'bg-blue-500', text: 'text-white', hex_bg: '#3B82F6', hex_text: '#FFFFFF' }
+      EVALUATOR: { bg: 'bg-green-500', text: 'text-white', hex_bg: '#10B981', hex_text: '#FFFFFF' }
+      ACCOUNTING: { bg: 'bg-yellow-500', text: 'text-black', hex_bg: '#F59E0B', hex_text: '#000000' }
+      TERMINAL_TEAM: { bg: 'bg-indigo-500', text: 'text-white', hex_bg: '#6366F1', hex_text: '#FFFFFF' }
+      CONSIGNEE: { bg: 'bg-teal-500', text: 'text-white', hex_bg: '#14B8A6', hex_text: '#FFFFFF' }
+      BROKER: { bg: 'bg-orange-500', text: 'text-white', hex_bg: '#F97316', hex_text: '#FFFFFF' }
+      TRUCKER: { bg: 'bg-cyan-500', text: 'text-white', hex_bg: '#06B6D4', hex_text: '#FFFFFF' }
+    
+    # Default fallback color
+    default_color: { bg: 'bg-gray-500', text: 'text-white', hex_bg: '#6B7280', hex_text: '#FFFFFF' }
+
+    # Caching configuration
+    cache:
+      enabled: true
+      ttl: 3600  # 1 hour
+      key_prefix: 'avatar_colors'
+
+    # Accessibility settings
+    accessibility:
+      min_contrast_ratio: 4.5
+      enforce_wcag_aa: true

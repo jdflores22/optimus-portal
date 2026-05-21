@@ -1,0 +1,407 @@
+{
+	"info": {
+		"_postman_id": "12345678-1234-1234-1234-123456789012",
+		"name": "OPTIMUS Shipping Portal API",
+		"description": "API collection for OPTIMUS Shipping Portal integration testing",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000/api",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('jwt_token', response.token);",
+									"    pm.test('Token received', function () {",
+									"        pm.expect(response.token).to.be.a('string');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"broker@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					}
+				},
+				{
+					"name": "Validate Token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/validate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"validate"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Accreditation",
+			"item": [
+				{
+					"name": "Submit Accreditation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"business_name\": \"Example Broker Company\",\n    \"registration_number\": \"REG123456\",\n    \"contact_person\": \"John Doe\",\n    \"phone\": \"+1234567890\",\n    \"address\": \"123 Main St, City, Country\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/accreditation/submit",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"accreditation",
+								"submit"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Accreditation Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/accreditation/status/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"accreditation",
+								"status",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Form Configuration - Broker",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/accreditation/forms/BROKER",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"accreditation",
+								"forms",
+								"BROKER"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Form Configuration - Consignee",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/accreditation/forms/CONSIGNEE",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"accreditation",
+								"forms",
+								"CONSIGNEE"
+							]
+						}
+					}
+				},
+				{
+					"name": "List All Submissions (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/accreditation/list",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"accreditation",
+								"list"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Shipments",
+			"item": [
+				{
+					"name": "Search Shipments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/shipments/search?manifest_number=MAN123",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"shipments",
+								"search"
+							],
+							"query": [
+								{
+									"key": "manifest_number",
+									"value": "MAN123"
+								},
+								{
+									"key": "arrival_date_from",
+									"value": "2024-01-01",
+									"disabled": true
+								},
+								{
+									"key": "arrival_date_to",
+									"value": "2024-12-31",
+									"disabled": true
+								},
+								{
+									"key": "consignee",
+									"value": "Example Consignee",
+									"disabled": true
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Shipment Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/shipments/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"shipments",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Shipment (Staff Only)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"manifest_number\": \"MAN123456\",\n    \"notice_of_arrival_date\": \"2024-01-25\",\n    \"actual_arrival_date\": \"2024-01-26\",\n    \"billing_information\": \"Invoice details and billing information for the shipment...\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/shipments",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"shipments"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Payments",
+			"item": [
+				{
+					"name": "Get Payment Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/payments/status/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"payments",
+								"status",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Submit Payment Proof",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"shipment_id\": 1,\n    \"proof_file_path\": \"optional_file_path_or_reference\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/payments/submit",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"payments",
+								"submit"
+							]
+						}
+					}
+				},
+				{
+					"name": "Verify Payment (Approve)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"approve\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/payments/verify/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"payments",
+								"verify",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Verify Payment (Reject)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"approve\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/payments/verify/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"payments",
+								"verify",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Pending Payments (Accounting)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/payments/pending",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"payments",
+								"pending"
+							]
+						}
+					}
+				}
+			]
+		}
+	]
+}

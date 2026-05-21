@@ -1,0 +1,369 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}eDO Release Metrics - OPTIMUS{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900">eDO Release Metrics</h1>
+        <p class="mt-2 text-gray-600">Monitor eDO release workflow efficiency and performance</p>
+    </div>
+
+    <!-- Date Range Filter -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <form id="filterForm" class="flex flex-wrap items-end gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <label for="startDate" class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                <input type="date" 
+                       id="startDate" 
+                       name="start_date" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="flex-1 min-w-[200px]">
+                <label for="endDate" class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                <input type="date" 
+                       id="endDate" 
+                       name="end_date" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <button type="button" 
+                        onclick="loadMetrics()" 
+                        class="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                    Apply Filter
+                </button>
+            </div>
+            <div>
+                <button type="button" 
+                        onclick="exportReport('csv')" 
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    Export CSV
+                </button>
+            </div>
+            <div>
+                <button type="button" 
+                        onclick="exportReport('pdf')" 
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    Export PDF
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Avg Release Time</p>
+                    <p class="text-2xl font-bold text-gray-900" id="avgReleaseTime">--</p>
+                    <p class="text-xs text-gray-500">hours</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Released</p>
+                    <p class="text-2xl font-bold text-gray-900" id="totalReleased">--</p>
+                    <p class="text-xs text-gray-500">in period</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Rejected</p>
+                    <p class="text-2xl font-bold text-gray-900" id="totalRejected">--</p>
+                    <p class="text-xs text-gray-500">in period</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Pending</p>
+                    <p class="text-2xl font-bold text-gray-900" id="totalPending">--</p>
+                    <p class="text-xs text-gray-500">current</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- eDOs Released Per Day Chart -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">eDOs Released Per Day</h3>
+                <p class="text-sm text-gray-500">Daily release volume</p>
+            </div>
+            <div class="p-6">
+                <div id="releasedPerDayChart" style="height: 300px;"></div>
+            </div>
+        </div>
+
+        <!-- Pending eDOs by Age Chart -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Pending eDOs by Age</h3>
+                <p class="text-sm text-gray-500">Age distribution of pending releases</p>
+            </div>
+            <div class="p-6">
+                <div id="pendingByAgeChart" style="height: 300px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rejected eDOs Table -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Rejected eDOs</h3>
+            <p class="text-sm text-gray-500">eDOs rejected with reasons</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            eDO Number
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Manifest Number
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Rejected Date
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Rejected By
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Reason
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="rejectedEdosTable" class="bg-white divide-y divide-gray-200">
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+let releasedPerDayChart = null;
+let pendingByAgeChart = null;
+
+function loadMetrics() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    let url = '/admin/reports/edo-release-metrics?';
+    if (startDate) url += `start_date=${startDate}&`;
+    if (endDate) url += `end_date=${endDate}&`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateMetrics(data.data);
+            } else {
+                alert('Error loading metrics: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while loading metrics');
+        });
+}
+
+function updateMetrics(data) {
+    // Update key metrics
+    document.getElementById('avgReleaseTime').textContent = 
+        data.average_release_time_hours ? data.average_release_time_hours.toFixed(2) : '0.00';
+    
+    const totalReleased = data.edos_released_per_day.reduce((sum, item) => sum + item.count, 0);
+    document.getElementById('totalReleased').textContent = totalReleased;
+    
+    document.getElementById('totalRejected').textContent = data.rejected_edos.length;
+    
+    const totalPending = Object.values(data.pending_edos_by_age).reduce((sum, count) => sum + count, 0);
+    document.getElementById('totalPending').textContent = totalPending;
+    
+    // Update charts
+    updateReleasedPerDayChart(data.edos_released_per_day);
+    updatePendingByAgeChart(data.pending_edos_by_age);
+    updateRejectedTable(data.rejected_edos);
+}
+
+function updateReleasedPerDayChart(data) {
+    const dates = data.map(item => item.date);
+    const counts = data.map(item => item.count);
+    
+    const options = {
+        series: [{
+            name: 'eDOs Released',
+            data: counts
+        }],
+        chart: {
+            type: 'area',
+            height: 300,
+            toolbar: { show: false }
+        },
+        colors: ['#10B981'],
+        dataLabels: { enabled: false },
+        stroke: { curve: 'smooth', width: 2 },
+        xaxis: {
+            categories: dates,
+            labels: {
+                rotate: -45,
+                rotateAlways: true
+            }
+        },
+        yaxis: {
+            title: { text: 'Count' }
+        },
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.7,
+                opacityTo: 0.3
+            }
+        }
+    };
+    
+    if (releasedPerDayChart) {
+        releasedPerDayChart.destroy();
+    }
+    releasedPerDayChart = new ApexCharts(document.querySelector("#releasedPerDayChart"), options);
+    releasedPerDayChart.render();
+}
+
+function updatePendingByAgeChart(data) {
+    const labels = Object.keys(data);
+    const values = Object.values(data);
+    
+    const options = {
+        series: values,
+        chart: {
+            type: 'donut',
+            height: 300
+        },
+        labels: labels,
+        colors: ['#10B981', '#F59E0B', '#EF4444'],
+        legend: { position: 'bottom' },
+        plotOptions: {
+            pie: {
+                donut: { size: '70%' }
+            }
+        }
+    };
+    
+    if (pendingByAgeChart) {
+        pendingByAgeChart.destroy();
+    }
+    pendingByAgeChart = new ApexCharts(document.querySelector("#pendingByAgeChart"), options);
+    pendingByAgeChart.render();
+}
+
+function updateRejectedTable(data) {
+    const tbody = document.getElementById('rejectedEdosTable');
+    
+    if (data.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-6 py-12 text-center">
+                    <p class="text-sm text-gray-500">No rejected eDOs in this period</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = data.map(edo => `
+        <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                ${edo.edo_number}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                ${edo.manifest_number}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                ${edo.rejected_at}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                ${edo.rejected_by}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-900">
+                ${edo.rejection_reason}
+            </td>
+        </tr>
+    `).join('');
+}
+
+function exportReport(format) {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    let url = `/admin/reports/edo-release-metrics/export/${format}?type=rejected_edos&`;
+    if (startDate) url += `start_date=${startDate}&`;
+    if (endDate) url += `end_date=${endDate}`;
+    
+    window.location.href = url;
+}
+
+// Set default date range (last 30 days)
+document.addEventListener('DOMContentLoaded', function() {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+    
+    document.getElementById('endDate').valueAsDate = endDate;
+    document.getElementById('startDate').valueAsDate = startDate;
+    
+    loadMetrics();
+});
+</script>
+{% endblock %}

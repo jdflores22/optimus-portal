@@ -1,0 +1,183 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Iconify Icon System Test{% endblock %}
+
+{% block body %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <h1 class="text-3xl font-bold mb-8 text-gray-900">Iconify Icon System Test</h1>
+    
+    <div class="space-y-8">
+        <!-- Common Icons Test -->
+        <section class="card p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">Common Icons</h2>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div class="flex flex-col items-center p-4 border rounded">
+                    <span class="icon-[tabler--plus] w-8 h-8 mb-2"></span>
+                    <span class="text-sm text-gray-600">Plus</span>
+                </div>
+                <div class="flex flex-col items-center p-4 border rounded">
+                    <span class="icon-[tabler--check] w-8 h-8 mb-2"></span>
+                    <span class="text-sm text-gray-600">Check</span>
+                </div>
+                <div class="flex flex-col items-center p-4 border rounded">
+                    <span class="icon-[tabler--x] w-8 h-8 mb-2"></span>
+                    <span class="text-sm text-gray-600">X</span>
+                </div>
+                <div class="flex flex-col items-center p-4 border rounded">
+                    <span class="icon-[tabler--arrow-left] w-8 h-8 mb-2"></span>
+                    <span class="text-sm text-gray-600">Arrow Left</span>
+                </div>
+                <div class="flex flex-col items-center p-4 border rounded">
+                    <span class="icon-[tabler--arrow-right] w-8 h-8 mb-2"></span>
+                    <span class="text-sm text-gray-600">Arrow Right</span>
+                </div>
+                <div class="flex flex-col items-center p-4 border rounded">
+                    <span class="icon-[tabler--trash] w-8 h-8 mb-2"></span>
+                    <span class="text-sm text-gray-600">Trash</span>
+                </div>
+                <div class="flex flex-col items-center p-4 border rounded">
+                    <span class="icon-[tabler--edit] w-8 h-8 mb-2"></span>
+                    <span class="text-sm text-gray-600">Edit</span>
+                </div>
+                <div class="flex flex-col items-center p-4 border rounded">
+                    <span class="icon-[tabler--search] w-8 h-8 mb-2"></span>
+                    <span class="text-sm text-gray-600">Search</span>
+                </div>
+                <div class="flex flex-col items-center p-4 border rounded">
+                    <span class="icon-[tabler--user] w-8 h-8 mb-2"></span>
+                    <span class="text-sm text-gray-600">User</span>
+                </div>
+                <div class="flex flex-col items-center p-4 border rounded">
+                    <span class="icon-[tabler--settings] w-8 h-8 mb-2"></span>
+                    <span class="text-sm text-gray-600">Settings</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Icon Sizes Test -->
+        <section class="card p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">Icon Sizes</h2>
+            <div class="flex items-center gap-4">
+                <div class="flex flex-col items-center">
+                    <span class="icon-[tabler--star] w-4 h-4 mb-2"></span>
+                    <span class="text-xs text-gray-600">w-4 h-4</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span class="icon-[tabler--star] w-5 h-5 mb-2"></span>
+                    <span class="text-xs text-gray-600">w-5 h-5</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span class="icon-[tabler--star] w-6 h-6 mb-2"></span>
+                    <span class="text-xs text-gray-600">w-6 h-6</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span class="icon-[tabler--star] w-8 h-8 mb-2"></span>
+                    <span class="text-xs text-gray-600">w-8 h-8</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span class="icon-[tabler--star] w-10 h-10 mb-2"></span>
+                    <span class="text-xs text-gray-600">w-10 h-10</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Icon Colors Test -->
+        <section class="card p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">Icon Colors</h2>
+            <div class="flex items-center gap-4">
+                <span class="icon-[tabler--heart] w-8 h-8 text-red-500"></span>
+                <span class="icon-[tabler--check] w-8 h-8 text-green-500"></span>
+                <span class="icon-[tabler--alert-triangle] w-8 h-8 text-yellow-500"></span>
+                <span class="icon-[tabler--info-circle] w-8 h-8 text-blue-500"></span>
+                <span class="icon-[tabler--user] w-8 h-8 text-meta-blue-500"></span>
+            </div>
+        </section>
+
+        <!-- Icons in Buttons Test -->
+        <section class="card p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">Icons in Buttons</h2>
+            <div class="flex flex-wrap gap-2">
+                <button class="btn btn-primary">
+                    <span class="icon-[tabler--plus] w-5 h-5"></span>
+                    Add Item
+                </button>
+                <button class="btn btn-success">
+                    <span class="icon-[tabler--check] w-5 h-5"></span>
+                    Approve
+                </button>
+                <button class="btn btn-error">
+                    <span class="icon-[tabler--trash] w-5 h-5"></span>
+                    Delete
+                </button>
+                <button class="btn btn-circle btn-ghost">
+                    <span class="icon-[tabler--edit] w-5 h-5"></span>
+                </button>
+                <button class="btn btn-circle btn-primary">
+                    <span class="icon-[tabler--search] w-5 h-5"></span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Icons in Alerts Test -->
+        <section class="card p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">Icons in Alerts</h2>
+            <div class="space-y-4">
+                <div class="alert alert-success">
+                    <span class="icon-[tabler--check] w-5 h-5"></span>
+                    <span>Operation completed successfully!</span>
+                </div>
+                <div class="alert alert-error">
+                    <span class="icon-[tabler--alert-circle] w-5 h-5"></span>
+                    <span>An error occurred. Please try again.</span>
+                </div>
+                <div class="alert alert-warning">
+                    <span class="icon-[tabler--alert-triangle] w-5 h-5"></span>
+                    <span>Please review your input.</span>
+                </div>
+                <div class="alert alert-info">
+                    <span class="icon-[tabler--info-circle] w-5 h-5"></span>
+                    <span>Here's some helpful information.</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Icons in Badges Test -->
+        <section class="card p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800">Icons in Badges</h2>
+            <div class="flex flex-wrap gap-2">
+                <span class="badge badge-success">
+                    <span class="icon-[tabler--check] w-4 h-4"></span>
+                    Approved
+                </span>
+                <span class="badge badge-error">
+                    <span class="icon-[tabler--x] w-4 h-4"></span>
+                    Denied
+                </span>
+                <span class="badge badge-warning">
+                    <span class="icon-[tabler--alert-triangle] w-4 h-4"></span>
+                    Pending
+                </span>
+                <span class="badge badge-info">
+                    <span class="icon-[tabler--info-circle] w-4 h-4"></span>
+                    Info
+                </span>
+            </div>
+        </section>
+
+        <!-- Test Results Summary -->
+        <section class="card p-6 bg-green-50 border-green-200">
+            <h2 class="text-xl font-semibold mb-4 text-green-900">Test Instructions</h2>
+            <div class="space-y-2 text-gray-700">
+                <p>✓ All icons should display correctly (not as text or broken)</p>
+                <p>✓ Icons should scale properly with different sizes</p>
+                <p>✓ Icons should display in the correct colors</p>
+                <p>✓ Icons should integrate seamlessly with buttons, alerts, and badges</p>
+            </div>
+            <div class="mt-4 p-4 bg-white rounded-lg border border-green-300">
+                <p class="font-semibold text-green-900">Expected Result:</p>
+                <p class="text-gray-700">All Tabler icons should render correctly, indicating that the Iconify system is properly configured and compiled.</p>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

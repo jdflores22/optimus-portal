@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>eDO Payment Rejected</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #dc3545;">eDO Payment Rejected</h2>
+        
+        <p>Dear {{ broker_name }},</p>
+        
+        <p>Your eDO payment submission has been rejected:</p>
+        
+        <div style="background-color: #f8d7da; padding: 15px; border-left: 4px solid #dc3545; margin: 20px 0;">
+            <p><strong>eDO Number:</strong> {{ edo_number }}</p>
+            <p><strong>Container Number:</strong> {{ container_number }}</p>
+            <p><strong>Manifest Number:</strong> {{ manifest_number }}</p>
+            <p><strong>Submitted Amount:</strong> ₱{{ amount|number_format(2) }}</p>
+            <p><strong>Rejection Reason:</strong> {{ rejection_reason }}</p>
+        </div>
+        
+        <p>Please review the rejection reason and resubmit your payment with the correct information.</p>
+        
+        <p style="margin-top: 30px;">
+            <a href="{{ resubmission_link }}" 
+               style="background-color: #dc3545; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                Resubmit Payment
+            </a>
+        </p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        
+        <p style="font-size: 12px; color: #666;">
+            This is an automated message from OPTIMUS Shipping Portal. Please do not reply to this email.
+        </p>
+    </div>
+</body>
+</html>

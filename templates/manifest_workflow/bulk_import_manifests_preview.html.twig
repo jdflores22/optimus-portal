@@ -1,0 +1,203 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Bulk Import Manifests - Preview - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+    {# Breadcrumb #}
+    <div class="breadcrumbs text-sm">
+        <ul>
+            <li>
+                <a href="{{ path('manifest_workflow_list') }}" class="inline-flex items-center gap-2">
+                    <span class="icon-[tabler--file-text] size-4"></span>
+                    NOA Workflow
+                </a>
+            </li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li>
+                <a href="{{ path('manifest_workflow_bulk_import_manifests') }}">Bulk Import Manifests</a>
+            </li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li aria-current="page">Preview</li>
+        </ul>
+    </div>
+
+    {# Header #}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <div class="size-12 rounded-xl bg-success/10 flex items-center justify-center flex-shrink-0">
+                <span class="icon-[tabler--file-check] size-7 text-success"></span>
+            </div>
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-base-content">Import Results</h1>
+                <p class="text-sm text-base-content/60 mt-1">Review the manifest import results</p>
+            </div>
+        </div>
+        <a href="{{ path('manifest_workflow_bulk_import_manifests') }}" class="btn btn-ghost btn-sm gap-2 rounded-full">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back to Import
+        </a>
+    </div>
+
+    {# Summary Cards #}
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="icon-[tabler--file-text] size-5 text-info"></span>
+                    <h3 class="text-xs font-medium text-base-content/70">Total Rows</h3>
+                </div>
+                <p class="text-3xl font-bold text-base-content">{{ result.total_count }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="icon-[tabler--circle-check] size-5 text-success"></span>
+                    <h3 class="text-xs font-medium text-base-content/70">Successful</h3>
+                </div>
+                <p class="text-3xl font-bold text-success">{{ result.success_count }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="icon-[tabler--circle-minus] size-5 text-warning"></span>
+                    <h3 class="text-xs font-medium text-base-content/70">Skipped</h3>
+                </div>
+                <p class="text-3xl font-bold text-warning">{{ result.skipped_count }}</p>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="icon-[tabler--alert-circle] size-5 text-error"></span>
+                    <h3 class="text-xs font-medium text-base-content/70">Failed</h3>
+                </div>
+                <p class="text-3xl font-bold text-error">{{ result.error_count }}</p>
+            </div>
+        </div>
+    </div>
+
+    {# Errors Section #}
+    {% if result.errors|length > 0 %}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h3 class="text-lg font-semibold text-error mb-4 flex items-center gap-2">
+                    <span class="icon-[tabler--alert-triangle] size-5"></span>
+                    Errors ({{ result.errors|length }})
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Row</th>
+                                <th>BL Number</th>
+                                <th>Manifest Number</th>
+                                <th>Error</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for error in result.errors %}
+                                <tr>
+                                    <td><span class="badge badge-error badge-sm">{{ error.row }}</span></td>
+                                    <td>{{ error.bl_number|default('N/A') }}</td>
+                                    <td>{{ error.manifest_number|default('N/A') }}</td>
+                                    <td class="text-error text-sm">{{ error.message }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {# Skipped Section #}
+    {% if result.skipped|length > 0 %}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h3 class="text-lg font-semibold text-warning mb-4 flex items-center gap-2">
+                    <span class="icon-[tabler--info-circle] size-5"></span>
+                    Skipped ({{ result.skipped|length }})
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Row</th>
+                                <th>BL Number</th>
+                                <th>Manifest Number</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for skip in result.skipped %}
+                                <tr>
+                                    <td><span class="badge badge-warning badge-sm">{{ skip.row }}</span></td>
+                                    <td>{{ skip.bl_number }}</td>
+                                    <td>{{ skip.manifest_number }}</td>
+                                    <td class="text-warning text-sm">{{ skip.reason }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {# Success Section #}
+    {% if result.success|length > 0 %}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h3 class="text-lg font-semibold text-success mb-4 flex items-center gap-2">
+                    <span class="icon-[tabler--circle-check] size-5"></span>
+                    Successfully Imported ({{ result.success|length }})
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Row</th>
+                                <th>BL Number</th>
+                                <th>Manifest Number</th>
+                                <th>NOA Number</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for success in result.success %}
+                                <tr>
+                                    <td><span class="badge badge-success badge-sm">{{ success.row }}</span></td>
+                                    <td>{{ success.bl_number }}</td>
+                                    <td>{{ success.manifest_number }}</td>
+                                    <td>{{ success.noa_number }}</td>
+                                    <td><span class="badge badge-success badge-sm">Manifest Generated</span></td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {# Actions #}
+    <div class="flex items-center justify-end gap-3">
+        <a href="{{ path('manifest_workflow_bulk_import_manifests') }}" class="btn btn-ghost rounded-full">
+            Import More
+        </a>
+        <a href="{{ path('manifest_workflow_list') }}" class="btn btn-success rounded-full">
+            <span class="icon-[tabler--list] size-5"></span>
+            View Manifest List
+        </a>
+    </div>
+
+</div>
+
+{% endblock %}

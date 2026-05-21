@@ -1,0 +1,6 @@
+services:
+    App\EventSubscriber\ExceptionSubscriber:
+        arguments:
+            $environment: '%kernel.environment%'
+        tags:
+            - { name: kernel.event_subscriber }

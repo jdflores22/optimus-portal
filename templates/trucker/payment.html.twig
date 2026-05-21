@@ -1,0 +1,515 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Payment for FREE-ADVICE Request{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header Section -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Payment for FREE-ADVICE Request</h1>
+                    <p class="mt-1 text-sm text-gray-600">Complete your payment to proceed with the FREE-ADVICE request</p>
+                </div>
+                <a href="{{ path('trucker_pre_advice_create') }}" 
+                   class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    Back to Request
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Payment Summary and Methods -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Payment Summary -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-4">
+                    <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
+                        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Payment Summary
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <h4 class="font-medium text-gray-900 mb-4">Service Details</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between py-2 border-b border-gray-100">
+                                        <span class="text-gray-600">FREE-ADVICE Processing Fee</span>
+                                        <span class="font-medium">$25.00</span>
+                                    </div>
+                                    <div class="flex justify-between py-2 border-b border-gray-100">
+                                        <span class="text-gray-600">Container Verification Fee</span>
+                                        <span class="font-medium">$15.00</span>
+                                    </div>
+                                    <div class="flex justify-between py-2 border-b border-gray-100">
+                                        <span class="text-gray-600">Photo Processing Fee</span>
+                                        <span class="font-medium">$10.00</span>
+                                    </div>
+                                    <div class="flex justify-between py-3 border-t-2 border-gray-200 bg-gray-50 px-3 rounded-md">
+                                        <span class="font-semibold text-gray-900">Total Amount</span>
+                                        <span class="font-bold text-lg text-green-600">$50.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-900 mb-4">Request Information</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between py-2">
+                                        <span class="font-medium text-gray-600">Container:</span>
+                                        <span class="text-gray-900">{{ container_number ?? 'Not specified' }}</span>
+                                    </div>
+                                    <div class="flex justify-between py-2">
+                                        <span class="font-medium text-gray-600">Terminal:</span>
+                                        <span class="text-gray-900">{{ terminal_name ?? 'Not specified' }}</span>
+                                    </div>
+                                    <div class="flex justify-between py-2">
+                                        <span class="font-medium text-gray-600">Trucker:</span>
+                                        <span class="text-gray-900">{{ app.user.fullName }}</span>
+                                    </div>
+                                    <div class="flex justify-between py-2">
+                                        <span class="font-medium text-gray-600">Date:</span>
+                                        <span class="text-gray-900">{{ 'now'|date('M d, Y') }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Methods -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                            </svg>
+                            Payment Methods
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <form id="paymentForm" method="post" action="{{ path('trucker_process_payment') }}">
+                            <input type="hidden" name="container_number" value="{{ container_number ?? '' }}">
+                            <input type="hidden" name="terminal_id" value="{{ terminal_id ?? '' }}">
+                            <input type="hidden" name="amount" value="50.00">
+                            
+                            <!-- Payment Method Selection -->
+                            <div class="mb-8">
+                                <h4 class="font-medium text-gray-900 mb-4">Select Payment Method</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="payment-method cursor-pointer border-2 border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all duration-200 relative" data-method="credit_card">
+                                        <div class="text-center">
+                                            <svg class="w-8 h-8 mx-auto mb-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                            </svg>
+                                            <h5 class="font-medium text-gray-900">Credit/Debit Card</h5>
+                                            <p class="text-sm text-gray-500">Visa, MasterCard, American Express</p>
+                                        </div>
+                                        <div class="absolute top-2 right-2 hidden" id="check-credit_card">
+                                            <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="payment-method cursor-pointer border-2 border-gray-200 rounded-lg p-4 hover:border-green-500 hover:shadow-md transition-all duration-200 relative" data-method="bank_transfer">
+                                        <div class="text-center">
+                                            <svg class="w-8 h-8 mx-auto mb-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/>
+                                            </svg>
+                                            <h5 class="font-medium text-gray-900">Bank Transfer</h5>
+                                            <p class="text-sm text-gray-500">Direct bank transfer</p>
+                                        </div>
+                                        <div class="absolute top-2 right-2 hidden" id="check-bank_transfer">
+                                            <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="payment-method cursor-pointer border-2 border-gray-200 rounded-lg p-4 hover:border-purple-500 hover:shadow-md transition-all duration-200 relative" data-method="digital_wallet">
+                                        <div class="text-center">
+                                            <svg class="w-8 h-8 mx-auto mb-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                            </svg>
+                                            <h5 class="font-medium text-gray-900">Digital Wallet</h5>
+                                            <p class="text-sm text-gray-500">PayPal, Apple Pay, Google Pay</p>
+                                        </div>
+                                        <div class="absolute top-2 right-2 hidden" id="check-digital_wallet">
+                                            <svg class="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="hidden" name="payment_method" id="selectedPaymentMethod" required>
+                            </div>
+
+                            <!-- Credit Card Form -->
+                            <div id="creditCardForm" class="payment-form hidden border-t border-gray-200 pt-6 mt-6">
+                                <h4 class="font-medium text-gray-900 mb-4">Credit Card Information</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="cardNumber" class="block text-sm font-medium text-gray-700 mb-2">Card Number</label>
+                                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                               id="cardNumber" name="card_number" placeholder="1234 5678 9012 3456" maxlength="19">
+                                    </div>
+                                    <div>
+                                        <label for="cardName" class="block text-sm font-medium text-gray-700 mb-2">Cardholder Name</label>
+                                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                               id="cardName" name="card_name" placeholder="John Doe">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-4 mt-4">
+                                    <div>
+                                        <label for="expiryMonth" class="block text-sm font-medium text-gray-700 mb-2">Expiry Month</label>
+                                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                                id="expiryMonth" name="expiry_month">
+                                            <option value="">Month</option>
+                                            {% for month in 1..12 %}
+                                                <option value="{{ month|number_format(0, '', '') }}">{{ month|number_format(2, '', '') }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="expiryYear" class="block text-sm font-medium text-gray-700 mb-2">Expiry Year</label>
+                                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                                id="expiryYear" name="expiry_year">
+                                            <option value="">Year</option>
+                                            {% for year in 'now'|date('Y')..'now'|date('Y') + 10 %}
+                                                <option value="{{ year }}">{{ year }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="cvv" class="block text-sm font-medium text-gray-700 mb-2">CVV</label>
+                                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                               id="cvv" name="cvv" placeholder="123" maxlength="4">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bank Transfer Form -->
+                            <div id="bankTransferForm" class="payment-form hidden border-t border-gray-200 pt-6 mt-6">
+                                <h4 class="font-medium text-gray-900 mb-4">Bank Transfer Information</h4>
+                                <div class="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+                                    <div class="flex">
+                                        <svg class="w-5 h-5 text-blue-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                        </svg>
+                                        <div>
+                                            <h5 class="text-sm font-medium text-blue-800">Bank Transfer Instructions</h5>
+                                            <p class="text-sm text-blue-700 mt-1">Please transfer the amount to the following account:</p>
+                                            <ul class="text-sm text-blue-700 mt-2 space-y-1">
+                                                <li><strong>Bank:</strong> Optimus Shipping Bank</li>
+                                                <li><strong>Account Number:</strong> 1234567890</li>
+                                                <li><strong>Routing Number:</strong> 987654321</li>
+                                                <li><strong>Reference:</strong> Use your trucker ID as reference</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="transferReference" class="block text-sm font-medium text-gray-700 mb-2">Transfer Reference Number</label>
+                                    <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                           id="transferReference" name="transfer_reference" placeholder="Enter bank transfer reference number">
+                                    <p class="text-sm text-gray-500 mt-1">Enter the reference number provided by your bank after the transfer.</p>
+                                </div>
+                            </div>
+
+                            <!-- Digital Wallet Form -->
+                            <div id="digitalWalletForm" class="payment-form hidden border-t border-gray-200 pt-6 mt-6">
+                                <h4 class="font-medium text-gray-900 mb-4">Digital Wallet Payment</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <button type="button" class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" id="paypalBtn">
+                                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.26-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81.394.45.663.96.807 1.507z"/>
+                                        </svg>
+                                        Pay with PayPal
+                                    </button>
+                                    <button type="button" class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500" id="applePayBtn">
+                                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                                        </svg>
+                                        Apple Pay
+                                    </button>
+                                    <button type="button" class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500" id="googlePayBtn">
+                                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                        </svg>
+                                        Google Pay
+                                    </button>
+                                </div>
+                                <input type="hidden" name="wallet_reference" id="walletReference">
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="mt-8">
+                                <button type="submit" class="w-full inline-flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed" id="submitPayment" disabled>
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                    </svg>
+                                    Process Payment - $50.00
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-8">
+                <!-- Payment Security -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-4">
+                    <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
+                        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                            Secure Payment
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <ul class="space-y-3">
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">256-bit SSL encryption</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">PCI DSS compliant</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Fraud protection</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Secure payment processing</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Need Help -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-yellow-50 to-orange-50">
+                        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Need Help?
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-gray-600 mb-4">If you encounter any issues with payment, please contact our support team.</p>
+                        <ul class="space-y-3">
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                                </svg>
+                                <span class="text-gray-700">+1 (555) 123-4567</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                </svg>
+                                <span class="text-gray-700">support@optimus.com</span>
+                            </li>
+                            <li class="flex items-center">
+                                <svg class="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="text-gray-700">24/7 Support</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentMethods = document.querySelectorAll('.payment-method');
+    const paymentForms = document.querySelectorAll('.payment-form');
+    const selectedMethodInput = document.getElementById('selectedPaymentMethod');
+    const submitButton = document.getElementById('submitPayment');
+    const paymentForm = document.getElementById('paymentForm');
+
+    console.log('Payment page initialized');
+    console.log('Payment methods found:', paymentMethods.length);
+    console.log('Payment forms found:', paymentForms.length);
+    console.log('Selected method input:', selectedMethodInput);
+    console.log('Submit button:', submitButton);
+
+    // Payment method selection
+    paymentMethods.forEach(method => {
+        method.addEventListener('click', function() {
+            console.log('Payment method clicked:', this.dataset.method);
+            
+            // Remove active class from all methods and hide checkmarks
+            paymentMethods.forEach(m => {
+                m.classList.remove('border-blue-500', 'bg-blue-50', 'border-green-500', 'bg-green-50', 'border-purple-500', 'bg-purple-50');
+                m.classList.add('border-gray-200');
+                
+                // Hide all checkmarks
+                const checkmark = m.querySelector('[id^="check-"]');
+                if (checkmark) {
+                    checkmark.classList.add('hidden');
+                }
+            });
+            
+            // Add active class to selected method
+            const methodType = this.dataset.method;
+            this.classList.remove('border-gray-200');
+            
+            // Show checkmark for selected method
+            const selectedCheckmark = document.getElementById('check-' + methodType);
+            if (selectedCheckmark) {
+                selectedCheckmark.classList.remove('hidden');
+            }
+            
+            if (methodType === 'credit_card') {
+                this.classList.add('border-blue-500', 'bg-blue-50');
+            } else if (methodType === 'bank_transfer') {
+                this.classList.add('border-green-500', 'bg-green-50');
+            } else if (methodType === 'digital_wallet') {
+                this.classList.add('border-purple-500', 'bg-purple-50');
+            }
+            
+            // Hide all payment forms
+            paymentForms.forEach(form => {
+                form.classList.add('hidden');
+            });
+            
+            // Show selected payment form
+            selectedMethodInput.value = methodType;
+            console.log('Selected payment method:', methodType);
+            
+            const formId = methodType + 'Form';
+            const selectedForm = document.getElementById(formId);
+            console.log('Looking for form:', formId, 'Found:', selectedForm);
+            
+            if (selectedForm) {
+                selectedForm.classList.remove('hidden');
+                console.log('Showing form:', formId);
+            }
+            
+            // Enable submit button
+            submitButton.disabled = false;
+            submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            console.log('Submit button enabled');
+        });
+    });
+
+    // Credit card number formatting
+    const cardNumberInput = document.getElementById('cardNumber');
+    if (cardNumberInput) {
+        cardNumberInput.addEventListener('input', function() {
+            let value = this.value.replace(/\s/g, '').replace(/[^0-9]/gi, '');
+            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+            this.value = formattedValue;
+        });
+    }
+
+    // CVV validation
+    const cvvInput = document.getElementById('cvv');
+    if (cvvInput) {
+        cvvInput.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    }
+
+    // Digital wallet buttons
+    document.getElementById('paypalBtn')?.addEventListener('click', function() {
+        simulateWalletPayment('paypal');
+    });
+
+    document.getElementById('applePayBtn')?.addEventListener('click', function() {
+        simulateWalletPayment('apple_pay');
+    });
+
+    document.getElementById('googlePayBtn')?.addEventListener('click', function() {
+        simulateWalletPayment('google_pay');
+    });
+
+    function simulateWalletPayment(walletType) {
+        const reference = 'WALLET_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        document.getElementById('walletReference').value = reference;
+        
+        // Create a custom notification instead of alert
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded z-50';
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <div>
+                    <strong>${walletType.replace('_', ' ').toUpperCase()}</strong> payment initiated<br>
+                    <small>Reference: ${reference}</small>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+
+    // Form submission
+    paymentForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        submitButton.disabled = true;
+        submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+        submitButton.innerHTML = `
+            <svg class="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Processing Payment...
+        `;
+        
+        // Simulate payment processing
+        setTimeout(() => {
+            // Generate payment reference
+            const paymentReference = 'PAY_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            
+            // Redirect to FREE-ADVICE creation with payment reference
+            const containerNumber = document.querySelector('input[name="container_number"]').value;
+            const terminalId = document.querySelector('input[name="terminal_id"]').value;
+            
+            const url = new URL('{{ path('trucker_pre_advice_create') }}', window.location.origin);
+            url.searchParams.set('container_number', containerNumber);
+            url.searchParams.set('terminal_id', terminalId);
+            url.searchParams.set('payment_reference', paymentReference);
+            url.searchParams.set('payment_success', '1');
+            
+            window.location.href = url.toString();
+        }, 2000);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,78 @@
+# Manifest Payment and NOA Workflow Routes
+# All routes are defined using PHP attributes in controllers
+# This file serves as documentation of the route structure
+
+# API Routes (prefix: /api)
+# Defined in: src/Controller/Api/
+
+# Manifest Management
+# POST   /api/manifests                          - Create manifest (SL_STAFF)
+# GET    /api/manifests/{id}                     - Get manifest details
+# POST   /api/manifests/{id}/declare-consignee   - Declare consignee (SL_STAFF)
+# GET    /api/manifests/{id}/download            - Download manifest PDF
+
+# Payment Management
+# POST   /api/manifests/{id}/payments/manifest-access  - Submit manifest access payment (Broker/Consignee)
+# POST   /api/manifests/{id}/payments/final            - Submit final payment (Broker)
+# GET    /api/payments/manifest-access/pending         - Get pending manifest access payments (SYSTEM_ADMIN)
+# GET    /api/payments/final/pending                   - Get pending final payments (ACCOUNTING)
+# POST   /api/payments/{id}/validate                   - Validate manifest access payment (SYSTEM_ADMIN)
+# POST   /api/payments/{id}/validate-final             - Validate final payment (ACCOUNTING)
+
+# NOA Management
+# POST   /api/manifests/{id}/noa                 - Generate NOA (SL_STAFF)
+# GET    /api/noa/{noaNumber}/download           - Download NOA PDF
+
+# BL Upload
+# POST   /api/manifests/{id}/bl                  - Upload Bill of Lading (Broker)
+
+# Billing Management
+# POST   /api/manifests/{id}/billing             - Generate billing (SL_STAFF)
+# GET    /api/manifests/{id}/billing             - Get billing details
+# GET    /api/billing/{billingId}/download       - Download billing PDF
+
+# EDO Management
+# GET    /api/manifests/{id}/edo                 - Get EDO details
+# GET    /api/edos/{edoNumber}/download          - Download EDO PDF
+
+# File Download
+# GET    /api/files/download/{type}/{id}         - Generic file download endpoint
+
+# Web Routes (no prefix)
+# Defined in: src/Controller/
+
+# Manifest Workflow (SL_STAFF)
+# GET    /manifest-workflow                      - List manifests
+# GET    /manifest-workflow/upload               - Upload manifest form
+# POST   /manifest-workflow/upload               - Process manifest upload
+# GET    /manifest-workflow/{id}                 - View manifest details
+# GET    /manifest-workflow/{id}/declare-consignee - Declare consignee form
+# POST   /manifest-workflow/{id}/declare-consignee - Process consignee declaration
+# GET    /manifest-workflow/{id}/generate-noa    - Generate NOA form
+# POST   /manifest-workflow/{id}/generate-noa    - Process NOA generation
+# GET    /manifest-workflow/{id}/generate-billing - Generate billing form
+# POST   /manifest-workflow/{id}/generate-billing - Process billing generation
+
+# Payment Validation (SYSTEM_ADMIN)
+# GET    /admin/payment-validation               - Payment validation dashboard
+# GET    /admin/payment-validation/manifest-access - Manifest access payments list
+# GET    /admin/payment-validation/manifest-access/{id} - Manifest access payment detail
+# POST   /admin/payment-validation/manifest-access/{id}/validate - Validate payment
+
+# Broker Manifest Management
+# GET    /broker/manifests                       - List broker manifests
+# GET    /broker/manifests/{id}                  - View manifest details
+# GET    /broker/manifests/{id}/payment          - Submit manifest access payment form
+# POST   /broker/manifests/{id}/payment          - Process payment submission
+# GET    /broker/manifests/{id}/upload-bl        - Upload BL form
+# POST   /broker/manifests/{id}/upload-bl        - Process BL upload
+# GET    /broker/manifests/{id}/final-payment    - Submit final payment form
+# POST   /broker/manifests/{id}/final-payment    - Process final payment
+# GET    /broker/manifests/{id}/documents        - View/download documents
+
+# Consignee Manifest Management
+# GET    /consignee/manifests                    - List consignee manifests
+# GET    /consignee/manifests/{id}               - View manifest details
+# GET    /consignee/manifests/{id}/payment       - Submit manifest access payment form
+# POST   /consignee/manifests/{id}/payment       - Process payment submission
+# GET    /consignee/manifests/{id}/documents     - View/download documents

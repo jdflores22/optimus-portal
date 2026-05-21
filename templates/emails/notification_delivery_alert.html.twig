@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #dc3545;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+        }
+        .alert-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .metrics-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: white;
+        }
+        .metrics-table th,
+        .metrics-table td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #dee2e6;
+        }
+        .metrics-table th {
+            background-color: #e9ecef;
+            font-weight: bold;
+        }
+        .rate-good {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .rate-warning {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        .rate-danger {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠️ Notification Delivery Rate Alert</h1>
+        </div>
+        
+        <div class="content">
+            <div class="alert-box">
+                <h2>Alert Summary</h2>
+                <p>
+                    <strong>Current Delivery Rate:</strong> 
+                    <span class="rate-danger">{{ deliveryRate|number_format(2) }}%</span>
+                </p>
+                <p>
+                    <strong>Threshold:</strong> {{ threshold|number_format(2) }}%
+                </p>
+                <p>
+                    <strong>Monitoring Period:</strong> Last {{ periodHours }} hours
+                    ({{ startDate|date('Y-m-d H:i') }} to {{ endDate|date('Y-m-d H:i') }})
+                </p>
+            </div>
+            
+            <h3>Delivery Rates by Notification Type</h3>
+            <table class="metrics-table">
+                <thead>
+                    <tr>
+                        <th>Notification Type</th>
+                        <th style="text-align: right;">Total Sent</th>
+                        <th style="text-align: right;">Delivered</th>
+                        <th style="text-align: right;">Failed</th>
+                        <th style="text-align: right;">Delivery Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for metric in metricsByType %}
+                    <tr>
+                        <td>{{ metric.type }}</td>
+                        <td style="text-align: right;">{{ metric.total|number_format }}</td>
+                        <td style="text-align: right;">{{ metric.delivered|number_format }}</td>
+                        <td style="text-align: right;">{{ metric.failed|number_format }}</td>
+                        <td style="text-align: right;">
+                            <span class="{% if metric.delivery_rate >= 95 %}rate-good{% elseif metric.delivery_rate >= 80 %}rate-warning{% else %}rate-danger{% endif %}">
+                                {{ metric.delivery_rate|number_format(2) }}%
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <h3>Recommended Actions</h3>
+            <ul>
+                <li>Check the notification metrics dashboard for detailed analysis</li>
+                <li>Review recent error logs for push notification failures</li>
+                <li>Verify FCM service status and credentials</li>
+                <li>Check for invalid or expired push subscriptions</li>
+                <li>Review network connectivity and firewall rules</li>
+            </ul>
+            
+            <p style="margin-top: 20px;">
+                <a href="{{ url('admin_notification_metrics') }}" 
+                   style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                    View Metrics Dashboard
+                </a>
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated alert from the Optimus Shipping notification monitoring system.</p>
+            <p>Generated at {{ "now"|date('Y-m-d H:i:s') }}</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,344 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit User - {{ user.firstName }} {{ user.lastName }}{% endblock %}
+{% block page_title %}Edit User{% endblock %}
+
+{% block body %}
+<div class="space-y-5">
+    {# Breadcrumb #}
+    <div class="text-sm breadcrumbs text-base-content/50">
+        <ul>
+            <li><a href="{{ path('admin_user_hierarchy_list') }}" class="hover:text-base-content">User Hierarchy</a></li>
+            <li><a href="{{ path('admin_user_hierarchy_detail', {id: user.id}) }}" class="hover:text-base-content">{{ user.email }}</a></li>
+            <li class="text-base-content">Edit</li>
+        </ul>
+    </div>
+
+    {# Header #}
+    <div>
+        <h1 class="text-2xl font-bold text-base-content">Edit User: {{ user.firstName }} {{ user.lastName }}</h1>
+        <p class="text-sm text-base-content/60 mt-1">Update user information, role, and hierarchy settings</p>
+    </div>
+    {# Flash Messages #}
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success"><span class="icon-[tabler--circle-check] size-5"></span><span>{{ message }}</span></div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error"><span class="icon-[tabler--alert-circle] size-5"></span><span>{{ message }}</span></div>
+    {% endfor %}
+    {% for message in app.flashes('warning') %}
+        <div class="alert alert-warning"><span class="icon-[tabler--alert-triangle] size-5"></span><span>{{ message }}</span></div>
+    {% endfor %}
+    {% for message in app.flashes('info') %}
+        <div class="alert alert-info"><span class="icon-[tabler--info-circle] size-5"></span><span>{{ message }}</span></div>
+    {% endfor %}
+
+    {# Edit User Form #}
+    <div class="card bg-base-100 shadow-sm">
+        <form method="POST" class="card-body p-6">
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                {# Basic Information #}
+                <div class="sm:col-span-2">
+                    <h3 class="text-lg font-semibold text-base-content mb-4">Basic Information</h3>
+                </div>
+
+                <div class="form-control">
+                    <label class="label" for="email">
+                        <span class="label-text">Email Address *</span>
+                    </label>
+                    <input type="email" 
+                           name="email" 
+                           id="email" 
+                           required
+                           class="input input-bordered w-full"
+                           value="{{ user.email }}">
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/50">Email changes require admin approval</span>
+                    </label>
+                </div>
+
+                <div class="form-control">
+                    <label class="label" for="firstName">
+                        <span class="label-text">First Name *</span>
+                    </label>
+                    <input type="text" 
+                           name="firstName" 
+                           id="firstName" 
+                           required
+                           class="input input-bordered w-full"
+                           value="{{ user.firstName }}">
+                </div>
+
+                <div class="form-control">
+                    <label class="label" for="lastName">
+                        <span class="label-text">Last Name *</span>
+                    </label>
+                    <input type="text" 
+                           name="lastName" 
+                           id="lastName" 
+                           required
+                           class="input input-bordered w-full"
+                           value="{{ user.lastName }}">
+                </div>
+
+                {# Status #}
+                <div class="sm:col-span-2">
+                    <h3 class="text-lg font-semibold text-base-content mb-4 mt-6">Account Status</h3>
+                </div>
+
+                <div class="form-control">
+                    <label class="label" for="isActive">
+                        <span class="label-text">Status *</span>
+                    </label>
+                    <select name="isActive" 
+                            id="isActive" 
+                            required
+                            class="select select-bordered w-full">
+                        <option value="1" {% if user.status.value == 'APPROVED' %}selected{% endif %}>Active</option>
+                        <option value="0" {% if user.status.value != 'APPROVED' %}selected{% endif %}>Inactive</option>
+                    </select>
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/50">Inactive users cannot log in to the system</span>
+                    </label>
+                </div>
+
+                {# Role Selection #}
+                {% if currentUser.role.value == 'SHIPPING_LINES_ADMIN' and user.role.value != 'SHIPPING_LINES_ADMIN' %}
+                    <div class="form-control">
+                        <label class="label" for="role">
+                            <span class="label-text">Role *</span>
+                        </label>
+                        <select name="role" 
+                                id="role" 
+                                required
+                                onchange="handleRoleChange()"
+                                class="select select-bordered w-full">
+                            <option value="SL_STAFF" {% if user.role.value == 'SL_STAFF' %}selected{% endif %}>SL Staff</option>
+                            <option value="EVALUATOR" {% if user.role.value == 'EVALUATOR' %}selected{% endif %}>Evaluator</option>
+                            <option value="ACCOUNTING" {% if user.role.value == 'ACCOUNTING' %}selected{% endif %}>Accounting</option>
+                            <option value="TERMINAL_TEAM" {% if user.role.value == 'TERMINAL_TEAM' %}selected{% endif %}>Terminal Team</option>
+                        </select>
+                        <label class="label">
+                            <span class="label-text-alt text-base-content/50">You can change the role of your team members</span>
+                        </label>
+                    </div>
+
+                    {# Role Description #}
+                    <div class="sm:col-span-2">
+                        <div id="roleDescription" class="alert alert-info">
+                            <span class="icon-[tabler--info-circle] size-5"></span>
+                            <div>
+                                <h3 class="font-semibold">Role Information</h3>
+                                <p id="roleDescriptionText" class="text-sm mt-1"></p>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Current Role</span>
+                        </label>
+                        <div class="p-3 bg-base-200 rounded-lg border border-base-300">
+                            {% if user.role.value == 'SHIPPING_LINES_ADMIN' %}
+                                <span class="badge badge-soft badge-secondary">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                            {% elseif user.role.value == 'SL_STAFF' %}
+                                <span class="badge badge-soft badge-primary">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                            {% elseif user.role.value == 'EVALUATOR' %}
+                                <span class="badge badge-soft badge-info">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                            {% elseif user.role.value == 'ACCOUNTING' %}
+                                <span class="badge badge-soft badge-warning">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                            {% elseif user.role.value == 'TERMINAL_TEAM' %}
+                                <span class="badge badge-soft badge-accent">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                            {% else %}
+                                <span class="badge badge-soft badge-ghost">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                            {% endif %}
+                        </div>
+                        <label class="label">
+                            {% if user.role.value == 'SHIPPING_LINES_ADMIN' %}
+                                <span class="label-text-alt text-base-content/50">Shipping line admin roles cannot be changed</span>
+                            {% else %}
+                                <span class="label-text-alt text-base-content/50">Role changes require system admin privileges</span>
+                            {% endif %}
+                        </label>
+                    </div>
+                {% endif %}
+            </div>
+
+            {# Form Actions #}
+            <div class="flex justify-end gap-3 mt-6 pt-6 border-t border-base-300">
+                <a href="{{ path('admin_user_hierarchy_detail', {id: user.id}) }}" class="btn btn-ghost gap-2">
+                    <span class="icon-[tabler--x] size-4"></span>Cancel
+                </a>
+                <button type="submit" class="btn btn-primary gap-2">
+                    <span class="icon-[tabler--check] size-4"></span>
+                    <span id="submitButtonText">Update User</span>
+                    <span id="submitButtonSpinner" class="loading loading-spinner loading-sm hidden"></span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# Confirmation Modal #}
+<dialog id="confirmationModal" class="modal">
+    <div class="modal-box">
+        <div class="flex items-start gap-4">
+            <span class="icon-[tabler--alert-triangle] size-6 text-warning flex-shrink-0 mt-1"></span>
+            <div class="flex-1">
+                <h3 id="modalTitle" class="text-lg font-bold mb-2">Confirm Changes</h3>
+                <p id="modalMessage" class="text-sm text-base-content/70">
+                    Are you sure you want to save these changes to the user account?
+                </p>
+            </div>
+        </div>
+        <div class="modal-action">
+            <button type="button" id="cancelButton" class="btn btn-ghost">Cancel</button>
+            <button type="button" id="confirmButton" class="btn btn-primary">Confirm</button>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+<script>
+// Role descriptions
+const roleDescriptions = {
+    'SL_STAFF': 'General staff member under a Shipping Lines Admin. Handles day-to-day operations and administrative tasks within the shipping line scope.',
+    'EVALUATOR': 'Specialized role for evaluation and assessment tasks. Reports to a Shipping Lines Admin and has access to evaluation-specific functionality.',
+    'ACCOUNTING': 'Handles financial and accounting operations within the shipping line. Reports to a Shipping Lines Admin and has access to financial data and reports.',
+    'TERMINAL_TEAM': 'Manages terminal operations, container assignments, and port logistics. Reports to a Shipping Lines Admin and has specialized access to terminal management features.'
+};
+
+function handleRoleChange() {
+    const roleSelect = document.getElementById('role');
+    const roleDescriptionText = document.getElementById('roleDescriptionText');
+    
+    if (roleSelect && roleDescriptionText) {
+        const selectedRole = roleSelect.value;
+        roleDescriptionText.textContent = roleDescriptions[selectedRole] || '';
+    }
+}
+
+// Initialize role description on page load
+document.addEventListener('DOMContentLoaded', function() {
+    handleRoleChange();
+});
+
+// Modal functionality
+let formToSubmit = null;
+
+function showConfirmationModal(title, message, onConfirm) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalMessage').textContent = message;
+    const modal = document.getElementById('confirmationModal');
+    modal.showModal();
+    
+    // Set up confirm button
+    const confirmButton = document.getElementById('confirmButton');
+    confirmButton.onclick = function() {
+        modal.close();
+        if (onConfirm) onConfirm();
+    };
+}
+
+// Cancel button handler
+document.getElementById('cancelButton').addEventListener('click', function() {
+    document.getElementById('confirmationModal').close();
+});
+
+// Toast notification helper
+function showToast(message, type = 'info') {
+    const typeClasses = {
+        success: 'alert-success',
+        error: 'alert-error',
+        warning: 'alert-warning',
+        info: 'alert-info'
+    };
+    
+    const typeIcons = {
+        success: 'icon-[tabler--circle-check]',
+        error: 'icon-[tabler--alert-circle]',
+        warning: 'icon-[tabler--alert-triangle]',
+        info: 'icon-[tabler--info-circle]'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = `alert ${typeClasses[type]} fixed top-4 right-4 w-auto max-w-md shadow-lg z-50`;
+    toast.innerHTML = `
+        <span class="${typeIcons[type]} size-5"></span>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Form validation and submission
+document.querySelector('form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('email').value;
+    const firstName = document.getElementById('firstName').value;
+    const lastName = document.getElementById('lastName').value;
+
+    // Basic validation
+    if (!email || email.trim() === '') {
+        showToast('Please enter an email address.', 'error');
+        document.getElementById('email').focus();
+        return;
+    }
+
+    if (!firstName || firstName.trim() === '') {
+        showToast('Please enter a first name.', 'error');
+        document.getElementById('firstName').focus();
+        return;
+    }
+
+    if (!lastName || lastName.trim() === '') {
+        showToast('Please enter a last name.', 'error');
+        document.getElementById('lastName').focus();
+        return;
+    }
+
+    // Store form reference
+    formToSubmit = this;
+    
+    // Check if role is being changed
+    const roleSelect = document.getElementById('role');
+    const originalRole = '{{ user.role.value }}';
+    const isActiveSelect = document.getElementById('isActive');
+    const originalStatus = '{{ user.status.value }}';
+    let confirmMessage = 'Are you sure you want to save these changes to the user account?';
+    let confirmTitle = 'Confirm Changes';
+    
+    if (roleSelect && roleSelect.value !== originalRole) {
+        confirmTitle = 'Confirm Role Change';
+        confirmMessage = `Are you sure you want to change this user's role from "${originalRole.replace(/_/g, ' ')}" to "${roleSelect.value.replace(/_/g, ' ')}"? This will affect their access permissions.`;
+    } else if (isActiveSelect && ((isActiveSelect.value === '1' && originalStatus !== 'APPROVED') || (isActiveSelect.value === '0' && originalStatus === 'APPROVED'))) {
+        confirmTitle = 'Confirm Status Change';
+        const newStatus = isActiveSelect.value === '1' ? 'Active' : 'Inactive';
+        const currentStatus = originalStatus === 'APPROVED' ? 'Active' : 'Inactive';
+        confirmMessage = `Are you sure you want to change this user's status from "${currentStatus}" to "${newStatus}"?`;
+    }
+    
+    // Show confirmation modal
+    showConfirmationModal(confirmTitle, confirmMessage, function() {
+        // Show loading state
+        const submitButton = document.querySelector('button[type="submit"]');
+        const submitButtonText = document.getElementById('submitButtonText');
+        const submitButtonSpinner = document.getElementById('submitButtonSpinner');
+        
+        submitButton.disabled = true;
+        submitButtonText.textContent = 'Updating...';
+        submitButtonSpinner.classList.remove('hidden');
+        
+        // Submit the form
+        formToSubmit.submit();
+    });
+});
+</script>
+{% endblock %}

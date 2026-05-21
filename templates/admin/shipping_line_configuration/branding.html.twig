@@ -1,0 +1,252 @@
+{% extends 'layout/admin_base.html.twig' %}
+
+{% block title %}Branding Configuration - {{ shipping_line.brandName }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-palette"></i>
+                        Branding Configuration - {{ shipping_line.brandName }}
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{{ path('admin_shipping_line_configuration_index', {id: shipping_line.id}) }}" 
+                           class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to Configurations
+                        </a>
+                    </div>
+                </div>
+                <form method="POST">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="company_name">Company Name</label>
+                                            <input type="text" class="form-control" id="company_name" name="company_name" 
+                                                   value="{{ branding.companyName ?? shipping_line.brandName }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="tagline">Tagline</label>
+                                            <input type="text" class="form-control" id="tagline" name="tagline" 
+                                                   value="{{ branding.tagline ?? '' }}">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="primary_color">Primary Color</label>
+                                            <div class="input-group">
+                                                <input type="color" class="form-control" id="primary_color" name="primary_color" 
+                                                       value="{{ branding.primaryColor ?? '#007bff' }}" style="width: 60px;">
+                                                <input type="text" class="form-control" id="primary_color_text" 
+                                                       value="{{ branding.primaryColor ?? '#007bff' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="secondary_color">Secondary Color</label>
+                                            <div class="input-group">
+                                                <input type="color" class="form-control" id="secondary_color" name="secondary_color" 
+                                                       value="{{ branding.secondaryColor ?? '#6c757d' }}" style="width: 60px;">
+                                                <input type="text" class="form-control" id="secondary_color_text" 
+                                                       value="{{ branding.secondaryColor ?? '#6c757d' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="logo_url">Logo URL</label>
+                                            <input type="url" class="form-control" id="logo_url" name="logo_url" 
+                                                   value="{{ branding.logoUrl ?? '' }}">
+                                            <small class="form-text text-muted">
+                                                URL to your company logo image
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="favicon_url">Favicon URL</label>
+                                            <input type="url" class="form-control" id="favicon_url" name="favicon_url" 
+                                                   value="{{ branding.faviconUrl ?? '' }}">
+                                            <small class="form-text text-muted">
+                                                URL to your favicon (.ico or .png)
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Live Preview</h5>
+                                    </div>
+                                    <div class="card-body" id="preview-area">
+                                        <div class="preview-header" id="preview-header">
+                                            <div class="d-flex align-items-center">
+                                                <img id="preview-logo" src="{{ branding.logoUrl ?? '/images/default-logo.png' }}" 
+                                                     alt="Logo" style="height: 40px; margin-right: 10px;" 
+                                                     onerror="this.style.display='none'">
+                                                <div>
+                                                    <h6 class="mb-0" id="preview-company-name">{{ branding.companyName ?? shipping_line.brandName }}</h6>
+                                                    <small id="preview-tagline">{{ branding.tagline ?? 'Your shipping partner' }}</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mt-3">
+                                            <button type="button" class="btn btn-sm" id="preview-primary-btn">Primary Button</button>
+                                            <button type="button" class="btn btn-sm" id="preview-secondary-btn">Secondary Button</button>
+                                        </div>
+                                        
+                                        <div class="mt-3">
+                                            <div class="card">
+                                                <div class="card-header" id="preview-card-header">
+                                                    Sample Card Header
+                                                </div>
+                                                <div class="card-body">
+                                                    <p class="card-text">This is how your portal will look with the selected branding.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Branding
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="resetToDefaults()">
+                            <i class="fas fa-undo"></i> Reset to Defaults
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+function updatePreview() {
+    const companyName = document.getElementById('company_name').value || '{{ shipping_line.brandName }}';
+    const tagline = document.getElementById('tagline').value || 'Your shipping partner';
+    const primaryColor = document.getElementById('primary_color').value;
+    const secondaryColor = document.getElementById('secondary_color').value;
+    const logoUrl = document.getElementById('logo_url').value;
+
+    // Update preview elements
+    document.getElementById('preview-company-name').textContent = companyName;
+    document.getElementById('preview-tagline').textContent = tagline;
+    
+    const logo = document.getElementById('preview-logo');
+    if (logoUrl) {
+        logo.src = logoUrl;
+        logo.style.display = 'block';
+    } else {
+        logo.style.display = 'none';
+    }
+
+    // Update colors
+    document.getElementById('preview-primary-btn').style.backgroundColor = primaryColor;
+    document.getElementById('preview-primary-btn').style.borderColor = primaryColor;
+    document.getElementById('preview-secondary-btn').style.backgroundColor = secondaryColor;
+    document.getElementById('preview-secondary-btn').style.borderColor = secondaryColor;
+    document.getElementById('preview-card-header').style.backgroundColor = primaryColor;
+    document.getElementById('preview-card-header').style.color = 'white';
+    document.getElementById('preview-header').style.borderLeft = '4px solid ' + primaryColor;
+}
+
+function syncColorInputs() {
+    const primaryColor = document.getElementById('primary_color');
+    const primaryColorText = document.getElementById('primary_color_text');
+    const secondaryColor = document.getElementById('secondary_color');
+    const secondaryColorText = document.getElementById('secondary_color_text');
+
+    primaryColor.addEventListener('input', function() {
+        primaryColorText.value = this.value;
+        updatePreview();
+    });
+
+    primaryColorText.addEventListener('input', function() {
+        if (/^#[0-9A-F]{6}$/i.test(this.value)) {
+            primaryColor.value = this.value;
+            updatePreview();
+        }
+    });
+
+    secondaryColor.addEventListener('input', function() {
+        secondaryColorText.value = this.value;
+        updatePreview();
+    });
+
+    secondaryColorText.addEventListener('input', function() {
+        if (/^#[0-9A-F]{6}$/i.test(this.value)) {
+            secondaryColor.value = this.value;
+            updatePreview();
+        }
+    });
+}
+
+function resetToDefaults() {
+    document.getElementById('company_name').value = '{{ shipping_line.brandName }}';
+    document.getElementById('tagline').value = '';
+    document.getElementById('primary_color').value = '#007bff';
+    document.getElementById('primary_color_text').value = '#007bff';
+    document.getElementById('secondary_color').value = '#6c757d';
+    document.getElementById('secondary_color_text').value = '#6c757d';
+    document.getElementById('logo_url').value = '';
+    document.getElementById('favicon_url').value = '';
+    updatePreview();
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    syncColorInputs();
+    updatePreview();
+    
+    // Add event listeners for real-time preview
+    ['company_name', 'tagline', 'logo_url'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updatePreview);
+    });
+});
+</script>
+
+<style>
+.preview-header {
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border-left: 4px solid #007bff;
+}
+
+#preview-area .btn {
+    color: white;
+    border: none;
+    margin-right: 5px;
+}
+
+#preview-card-header {
+    background-color: #007bff;
+    color: white;
+    border: none;
+}
+</style>
+{% endblock %}

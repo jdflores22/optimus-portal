@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Electronic Delivery Order - {{ pre_advice.edoNumber }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.4;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .edo-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c5aa0;
+        }
+        .section {
+            margin-bottom: 25px;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            background-color: #f8f9fa;
+            padding: 8px;
+            border-left: 4px solid #2c5aa0;
+            margin-bottom: 10px;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .info-table td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        .info-table td:first-child {
+            font-weight: bold;
+            width: 30%;
+        }
+        .footer {
+            margin-top: 40px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+        .qr-section {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px dashed #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ELECTRONIC DELIVERY ORDER</h1>
+        <div class="edo-number">{{ pre_advice.edoNumber }}</div>
+        <p>Container Return Authorization</p>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Container Information</div>
+        <table class="info-table">
+            <tr>
+                <td>Container Number:</td>
+                <td><strong>{{ pre_advice.container.containerNumber }}</strong></td>
+            </tr>
+            <tr>
+                <td>Container Size:</td>
+                <td>{{ pre_advice.container.size }}</td>
+            </tr>
+            <tr>
+                <td>Container Type:</td>
+                <td>{{ pre_advice.container.type }}</td>
+            </tr>
+            <tr>
+                <td>Current Location:</td>
+                <td>{{ pre_advice.container.currentLocation ?? 'Not specified' }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Terminal Information</div>
+        <table class="info-table">
+            <tr>
+                <td>Terminal Name:</td>
+                <td><strong>{{ pre_advice.selectedTerminal.name }}</strong></td>
+            </tr>
+            <tr>
+                <td>Terminal Type:</td>
+                <td>{{ pre_advice.selectedTerminal.type.value }}</td>
+            </tr>
+            <tr>
+                <td>Terminal Location:</td>
+                <td>{{ pre_advice.selectedTerminal.location }}</td>
+            </tr>
+            {% if pre_advice.assignedSlot %}
+            <tr>
+                <td>Assigned Return Date:</td>
+                <td><strong>{{ pre_advice.assignedSlot.date|date('F d, Y') }}</strong></td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Trucker Information</div>
+        <table class="info-table">
+            <tr>
+                <td>Trucker Name:</td>
+                <td>{{ pre_advice.trucker.fullName }}</td>
+            </tr>
+            <tr>
+                <td>Company:</td>
+                <td>{{ pre_advice.trucker.companyName ?? 'Not specified' }}</td>
+            </tr>
+            <tr>
+                <td>License Number:</td>
+                <td>{{ pre_advice.trucker.licenseNumber ?? 'Not specified' }}</td>
+            </tr>
+            <tr>
+                <td>Truck Plate:</td>
+                <td>{{ pre_advice.trucker.truckPlateNumber ?? 'Not specified' }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Authorization Details</div>
+        <table class="info-table">
+            <tr>
+                <td>FREE-ADVICE Request ID:</td>
+                <td>#{{ pre_advice.id }}</td>
+            </tr>
+            <tr>
+                <td>Payment Reference:</td>
+                <td>{{ pre_advice.paymentReference }}</td>
+            </tr>
+            <tr>
+                <td>Verified Date:</td>
+                <td>{{ pre_advice.verifiedAt|date('F d, Y H:i') }}</td>
+            </tr>
+            <tr>
+                <td>Verified By:</td>
+                <td>{{ pre_advice.verifiedBy.fullName ?? 'Terminal Team' }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="qr-section">
+        <h3>QR Code for Terminal Access</h3>
+        <p>Present this QR code at the terminal gate for container return authorization.</p>
+        <p><strong>QR Code ID:</strong> {{ pre_advice.qrCode }}</p>
+        <p><em>Download the QR code image separately for scanning at the terminal.</em></p>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Important Instructions</div>
+        <ul>
+            <li>This EDO is valid only for the specified container and terminal.</li>
+            <li>Present this document along with the QR code at the terminal gate.</li>
+            <li>Ensure the container is in good condition before return.</li>
+            <li>Follow all terminal safety and security procedures.</li>
+            <li>Contact the terminal team if you encounter any issues.</li>
+        </ul>
+    </div>
+
+    <div class="footer">
+        <p><strong>Generated:</strong> {{ generated_at|date('F d, Y H:i:s') }}</p>
+        <p>This is an electronically generated document. No signature is required.</p>
+        <p>For questions or support, please contact the Terminal Team through the Optimus Portal.</p>
+    </div>
+</body>
+</html>

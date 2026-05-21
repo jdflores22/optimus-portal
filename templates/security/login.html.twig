@@ -1,0 +1,268 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Login - OPTIMUS{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            10%,30%,50%,70%,90% { transform: translateX(-5px); }
+            20%,40%,60%,80% { transform: translateX(5px); }
+        }
+        .animate-shake { animation: shake 0.5s ease-in-out; }
+
+        @keyframes float {
+            0%,100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .gradient-animate { background-size: 200% 200%; animation: gradient-shift 15s ease infinite; }
+    </style>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('js/pwa-install-prompt.js') }}?v={{ 'now'|date('U') }}"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if error %}
+        const errorEl = document.getElementById('login-error');
+        if (errorEl) {
+            errorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+            setTimeout(() => document.getElementById('email').focus(), 500);
+        }
+        {% endif %}
+
+        const form = document.getElementById('login-form');
+        const button = document.getElementById('login-button');
+        const buttonText = document.getElementById('button-text');
+        const buttonSpinner = document.getElementById('button-spinner');
+        const csrfInput = document.querySelector('input[name="_csrf_token"]');
+
+        const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                      window.navigator.standalone === true ||
+                      document.referrer.includes('android-app://');
+
+        if (isPWA || sessionStorage.getItem('pwa_mode') === 'true') {
+            fetch(window.location.href, {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Cache-Control': 'no-cache' },
+                cache: 'no-store'
+            }).then(r => r.text()).then(html => {
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const fresh = doc.querySelector('input[name="_csrf_token"]');
+                if (fresh?.value) csrfInput.value = fresh.value;
+            }).catch(() => {});
+            sessionStorage.setItem('pwa_mode', 'true');
+        }
+
+        form.addEventListener('submit', function() {
+            sessionStorage.setItem('login_timestamp', Date.now().toString());
+            button.disabled = true;
+            buttonText.textContent = 'Signing in...';
+            buttonSpinner.classList.remove('hidden');
+        });
+
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && button) {
+                button.disabled = false;
+                buttonText.textContent = 'Sign in';
+                buttonSpinner.classList.add('hidden');
+            }
+        });
+
+        // Password toggle
+        document.getElementById('togglePassword')?.addEventListener('click', function() {
+            const pw = document.getElementById('password');
+            const isText = pw.type === 'text';
+            pw.type = isText ? 'password' : 'text';
+            document.getElementById('eyeIcon').classList.toggle('hidden', !isText);
+            document.getElementById('eyeOffIcon').classList.toggle('hidden', isText);
+        });
+    });
+    </script>
+{% endblock %}
+
+{% block body %}
+</div>{# close base wrapper #}
+
+<div class="fixed inset-0 flex overflow-hidden">
+
+    {# ── Left branding panel (desktop only) ── #}
+    <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 gradient-animate relative overflow-hidden flex-col justify-center px-12 py-12">
+        <div class="absolute inset-0 opacity-30"
+             style="background-image:url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAtMi4yMSAxLjc5LTQgNC00czQgMS43OSA0IDQtMS43OSA0LTQgNC00LTEuNzktNC00em0wIDI0YzAtMi4yMSAxLjc5LTQgNC00czQgMS43OSA0IDQtMS43OSA0LTQgNC00LTEuNzktNC00ek0xMiAxNmMwLTIuMjEgMS43OS00IDQtNHM0IDEuNzkgNCA0LTEuNzkgNC00IDQtNC0xLjc5LTQtNHptMCAyNGMwLTIuMjEgMS43OS00IDQtNHM0IDEuNzkgNCA0LTEuNzkgNC00IDQtNC0xLjc5LTQtNHoiLz48L2c+PC9nPjwvc3ZnPg==')">
+        </div>
+        <div class="relative z-10 space-y-8 overflow-y-auto">
+            <div class="animate-float">
+                <h1 class="text-6xl font-extrabold bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-300 bg-clip-text text-transparent">OPTIMUS</h1>
+                <p class="text-sm text-gray-400 mt-2 tracking-wider">Developed By: Trans-net Software Development Services</p>
+            </div>
+            <div>
+                <h2 class="text-3xl font-bold text-white leading-tight">Complete Shipping<br>Management Platform</h2>
+                <p class="text-gray-300 mt-4 leading-relaxed">Container-level eDO management that automates workflows, eliminates delays, and keeps cargo moving 24/7.</p>
+            </div>
+            <div class="space-y-4">
+                {% for item in [
+                    {icon: 'text-cyan-400', title: 'Container-Level eDO', desc: 'Individual eDO per container with <60s generation'},
+                    {icon: 'text-purple-400', title: 'Real-Time Monitoring', desc: '24/7 automated expiration detection'},
+                    {icon: 'text-green-400', title: 'Enterprise Security', desc: 'Role-based access with complete audit trails'}
+                ] %}
+                <div class="flex items-start gap-4">
+                    <div class="size-10 bg-white/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <span class="icon-[tabler--circle-check] size-5 {{ item.icon }}"></span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-white">{{ item.title }}</h3>
+                        <p class="text-sm text-gray-400">{{ item.desc }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="grid grid-cols-3 gap-6 pt-4">
+                {% for stat in [['99.9%','Uptime SLA'],['50K+','Containers/Month'],['24/7','Support']] %}
+                <div>
+                    <div class="text-3xl font-bold text-cyan-400">{{ stat[0] }}</div>
+                    <div class="text-xs text-gray-400 mt-1">{{ stat[1] }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {# ── Right login panel ── #}
+    <div class="flex-1 flex flex-col justify-center overflow-y-auto bg-base-100 px-4 sm:px-8 lg:px-16 xl:px-24">
+        <div class="mx-auto w-full max-w-md py-12">
+
+            {# Mobile logo #}
+            <div class="lg:hidden text-center mb-8">
+                <h1 class="text-5xl font-extrabold bg-gradient-to-r from-cyan-600 via-blue-600 to-cyan-500 bg-clip-text text-transparent">OPTIMUS</h1>
+                <p class="text-xs text-base-content/40 mt-2">Developed By: Trans-net Software Development Services</p>
+            </div>
+
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-base-content">Welcome back</h2>
+                <p class="mt-1 text-sm text-base-content/60">Sign in to access your shipping portal dashboard</p>
+            </div>
+
+            {# Flash messages #}
+            {% for message in app.flashes('success') %}
+                <div class="alert alert-success mb-4">
+                    <span class="icon-[tabler--circle-check] size-5"></span>
+                    <span>{{ message }}</span>
+                </div>
+            {% endfor %}
+
+            {% if error %}
+                <div id="login-error" class="alert alert-error mb-4 animate-shake">
+                    <span class="icon-[tabler--alert-circle] size-5"></span>
+                    <span>{{ error.messageKey|trans(error.messageData, 'security') }}</span>
+                </div>
+            {% endif %}
+
+            {% if lock_message is defined and lock_message %}
+                <div class="alert alert-warning mb-4">
+                    <span class="icon-[tabler--lock] size-5"></span>
+                    <span>{{ lock_message }}</span>
+                </div>
+            {% endif %}
+
+            {# Login form #}
+            <form method="post" action="{{ path('app_login') }}" id="login-form" class="space-y-5">
+
+                <div class="form-control">
+                    <label class="label pb-1" for="email">
+                        <span class="label-text font-semibold">Email address</span>
+                    </label>
+                    <input type="email" name="email" id="email"
+                           value="{{ last_username }}" required autofocus autocomplete="email"
+                           placeholder="you@example.com"
+                           class="input input-bordered w-full">
+                </div>
+
+                <div class="form-control">
+                    <label class="label pb-1" for="password">
+                        <span class="label-text font-semibold">Password</span>
+                    </label>
+                    <div class="relative">
+                        <input type="password" name="password" id="password"
+                               required autocomplete="current-password"
+                               placeholder="••••••••"
+                               class="input input-bordered w-full pr-12">
+                        <button type="button" id="togglePassword"
+                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-base-content/40 hover:text-base-content transition-colors">
+                            <span id="eyeIcon" class="icon-[tabler--eye] size-5"></span>
+                            <span id="eyeOffIcon" class="icon-[tabler--eye-off] size-5 hidden"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="_remember_me" id="_remember_me" value="1" class="checkbox checkbox-sm checkbox-primary">
+                        <span class="text-sm text-base-content/70">Remember me</span>
+                    </label>
+                    <a href="{{ path('forgot_password') }}" class="text-sm font-medium text-primary hover:text-primary/80 transition-colors">
+                        Forgot password?
+                    </a>
+                </div>
+
+                <button type="submit" id="login-button"
+                        class="btn btn-primary w-full gap-2 text-base">
+                    <span id="button-text">Sign in</span>
+                    <span id="button-spinner" class="loading loading-spinner loading-sm hidden"></span>
+                </button>
+
+            </form>
+
+            {# Divider #}
+            <div class="divider text-base-content/40 text-sm my-6">New to OPTIMUS?</div>
+
+            {# Register buttons #}
+            <div class="grid grid-cols-2 gap-3">
+                <a href="{{ path('consignee_register') }}" class="btn btn-outline gap-2">
+                    <span class="icon-[tabler--user] size-4"></span>
+                    Consignee
+                </a>
+                <a href="{{ path('broker_register') }}" class="btn btn-outline gap-2">
+                    <span class="icon-[tabler--briefcase] size-4"></span>
+                    Broker
+                </a>
+            </div>
+
+            {# Demo credentials collapsible #}
+            <div class="mt-6">
+                <button type="button"
+                        onclick="document.getElementById('demo-credentials').classList.toggle('hidden')"
+                        class="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-base-200 hover:bg-base-300 transition-colors text-sm font-medium text-base-content/70">
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--info-circle] size-4"></span>
+                        Demo Accounts
+                    </div>
+                    <span class="icon-[tabler--chevron-down] size-4"></span>
+                </button>
+                <div id="demo-credentials" class="hidden mt-2 p-4 rounded-xl bg-info/10 border border-info/20 text-xs space-y-1 text-base-content/70">
+                    <p class="font-semibold text-base-content mb-2">Available Demo Accounts:</p>
+                    <p><span class="font-semibold">SL Staff:</span> jdf.tns@gmail.com</p>
+                    <p><span class="font-semibold">SL Admin:</span> shipping.admin@optimus.com</p>
+                    <p><span class="font-semibold">Evaluator:</span> evaluatorcma@gmail.com</p>
+                    <p><span class="font-semibold">Accounting:</span> delacruzjaydee48@gmail.com</p>
+                    <p class="pt-2 border-t border-info/20"><span class="font-semibold">Password:</span> admin123</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

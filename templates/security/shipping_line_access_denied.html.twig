@@ -1,0 +1,83 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Access Denied - Shipping Line Deactivated{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="flex justify-center">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+            </div>
+        </div>
+        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Access Denied
+        </h2>
+        <p class="mt-2 text-center text-sm text-gray-600">
+            Shipping Line Deactivated
+        </p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+            <div class="text-center">
+                <div class="mb-6">
+                    <svg class="mx-auto h-12 w-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"/>
+                    </svg>
+                </div>
+                
+                <h3 class="text-lg font-medium text-gray-900 mb-4">
+                    Your Account Access Has Been Suspended
+                </h3>
+                
+                <div class="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-800">
+                                The shipping line associated with your account has been deactivated by the system administrator. 
+                                As a result, you no longer have access to the system.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4 text-sm text-gray-600">
+                    <p>
+                        <strong>What this means:</strong><br>
+                        Your shipping line has been temporarily or permanently suspended, which affects all users associated with it.
+                    </p>
+                    
+                    <p>
+                        <strong>What you can do:</strong><br>
+                        Please contact your system administrator for more information about when access will be restored.
+                    </p>
+                </div>
+
+                <div class="mt-8 space-y-3">
+                    <a href="{{ path('app_login') }}" 
+                       class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Return to Login
+                    </a>
+                    
+                    <div class="text-center">
+                        <p class="text-xs text-gray-500">
+                            Need help? Contact your system administrator
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+</content>
+</file></parameter>
+</invoke>

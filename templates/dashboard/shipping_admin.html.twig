@@ -1,0 +1,986 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Container Yard Management - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="space-y-6">
+
+    {# ── Page header ── #}
+    <div>
+        <h1 class="text-2xl font-bold text-base-content">Shipping Line Dashboard</h1>
+        <p class="mt-1 text-sm text-base-content/60">Complete overview of your shipping line operations, container yards, and terminal management</p>
+    </div>
+
+    {# ── Overview stat cards ── #}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body p-5 flex-row items-center gap-4">
+                <div class="size-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <span class="icon-[tabler--building-warehouse] size-6 text-primary"></span>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">Total Container Yards</p>
+                    <p class="text-3xl font-bold text-base-content">{{ stats.total_terminals }}</p>
+                    <p class="text-xs text-primary font-medium">{{ stats.active_terminals }} active</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body p-5 flex-row items-center gap-4">
+                <div class="size-12 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
+                    <span class="icon-[tabler--container] size-6 text-success"></span>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">Total Containers</p>
+                    <p class="text-3xl font-bold text-base-content">{{ stats.total_containers }}</p>
+                    <p class="text-xs text-success font-medium">Across all yards</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body p-5 flex-row items-center gap-4">
+                <div class="size-12 rounded-full bg-warning/10 flex items-center justify-center flex-shrink-0">
+                    <span class="icon-[tabler--clock] size-6 text-warning"></span>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">Pre-Forecast</p>
+                    <p class="text-3xl font-bold text-base-content">{{ stats.total_pre_forecast }}</p>
+                    <p class="text-xs text-warning font-medium">Pending arrival</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body p-5 flex-row items-center gap-4">
+                <div class="size-12 rounded-full bg-info/10 flex items-center justify-center flex-shrink-0">
+                    <span class="icon-[tabler--chart-bar] size-6 text-info"></span>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">Yard Capacity</p>
+                    <p class="text-2xl font-bold text-base-content">{{ stats.total_containers }} / {{ stats.allocated_capacity }} <span class="text-sm font-normal">TEUs</span></p>
+                    <p class="text-xs text-info font-medium">{{ stats.utilization_percentage }}% full</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    {# ── Shipping Line Operations Overview ── #}
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-0">
+            <div class="px-5 py-4 border-b border-base-300">
+                <h3 class="font-semibold text-lg text-base-content">Shipping Line Operations</h3>
+                <p class="text-xs text-base-content/50 mt-0.5">Complete overview of your shipping line activities</p>
+            </div>
+            <div class="p-5">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <a href="{{ path('manifest_workflow_list') }}" class="card bg-gradient-to-br from-blue-500/10 to-blue-600/10 border border-blue-500/20 hover:shadow-lg transition-all">
+                        <div class="card-body p-5 text-center">
+                            <div class="flex justify-center mb-3">
+                                <div class="size-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                                    <span class="icon-[tabler--file-text] size-6 text-blue-600"></span>
+                                </div>
+                            </div>
+                            <p class="text-3xl font-bold text-base-content mb-1">{{ stats.total_noas|default(0) }}</p>
+                            <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">NOAs</p>
+                        </div>
+                    </a>
+
+                    <a href="{{ path('manifest_workflow_list') }}" class="card bg-gradient-to-br from-purple-500/10 to-purple-600/10 border border-purple-500/20 hover:shadow-lg transition-all">
+                        <div class="card-body p-5 text-center">
+                            <div class="flex justify-center mb-3">
+                                <div class="size-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                                    <span class="icon-[tabler--clipboard-list] size-6 text-purple-600"></span>
+                                </div>
+                            </div>
+                            <p class="text-3xl font-bold text-base-content mb-1">{{ stats.total_manifests|default(0) }}</p>
+                            <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">Manifests</p>
+                        </div>
+                    </a>
+
+                    <a href="{{ path('broker_edo_list_page') }}" class="card bg-gradient-to-br from-green-500/10 to-green-600/10 border border-green-500/20 hover:shadow-lg transition-all">
+                        <div class="card-body p-5 text-center">
+                            <div class="flex justify-center mb-3">
+                                <div class="size-12 rounded-lg bg-green-500/20 flex items-center justify-center">
+                                    <span class="icon-[tabler--file-check] size-6 text-green-600"></span>
+                                </div>
+                            </div>
+                            <p class="text-3xl font-bold text-base-content mb-1">{{ stats.total_edos|default(0) }}</p>
+                            <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">EDOs</p>
+                        </div>
+                    </a>
+
+                    <a href="{{ path('app_shipping_admin_brokers') }}" class="card bg-gradient-to-br from-orange-500/10 to-orange-600/10 border border-orange-500/20 hover:shadow-lg transition-all">
+                        <div class="card-body p-5 text-center">
+                            <div class="flex justify-center mb-3">
+                                <div class="size-12 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                                    <span class="icon-[tabler--briefcase] size-6 text-orange-600"></span>
+                                </div>
+                            </div>
+                            <p class="text-3xl font-bold text-base-content mb-1">{{ stats.total_brokers|default(0) }}</p>
+                            <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">Brokers</p>
+                        </div>
+                    </a>
+
+                    <a href="{{ path('app_shipping_admin_consignees') }}" class="card bg-gradient-to-br from-pink-500/10 to-pink-600/10 border border-pink-500/20 hover:shadow-lg transition-all">
+                        <div class="card-body p-5 text-center">
+                            <div class="flex justify-center mb-3">
+                                <div class="size-12 rounded-lg bg-pink-500/20 flex items-center justify-center">
+                                    <span class="icon-[tabler--users] size-6 text-pink-600"></span>
+                                </div>
+                            </div>
+                            <p class="text-3xl font-bold text-base-content mb-1">{{ stats.total_consignees|default(0) }}</p>
+                            <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">Consignees</p>
+                        </div>
+                    </a>
+
+                    <a href="{{ path('app_dwell_time_monitoring') }}" class="card bg-gradient-to-br from-cyan-500/10 to-cyan-600/10 border border-cyan-500/20 hover:shadow-lg transition-all">
+                        <div class="card-body p-5 text-center">
+                            <div class="flex justify-center mb-3">
+                                <div class="size-12 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                                    <span class="icon-[tabler--container] size-6 text-cyan-600"></span>
+                                </div>
+                            </div>
+                            <p class="text-3xl font-bold text-base-content mb-1">{{ stats.total_containers_all|default(0) }}</p>
+                            <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">All Containers</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Dwell Time Monitoring ── #}
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-0">
+            <div class="flex items-center justify-between px-5 py-4">
+                <div class="flex items-center gap-3">
+                    <span class="icon-[tabler--clock] size-5 text-warning"></span>
+                    <div>
+                        <h3 class="font-semibold text-base text-base-content">Container Dwell Time Monitoring</h3>
+                        <p class="text-xs text-base-content/60">Track containers exceeding dwell time thresholds</p>
+                    </div>
+                </div>
+                <a href="{{ path('app_dwell_time_monitoring') }}" class="btn btn-warning btn-soft btn-sm gap-1">
+                    View All
+                    <span class="icon-[tabler--chevron-right] size-4"></span>
+                </a>
+            </div>
+
+            <div class="p-5">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {% for item in [
+                        {id: 'dwellTime60Count', label: '60-Day Threshold', sub: 'Containers 60–89 days', icon: 'icon-[tabler--alert-triangle]', color: 'warning'},
+                        {id: 'dwellTime90Count', label: '90-Day Threshold', sub: 'Containers ≥90 days', icon: 'icon-[tabler--alert-circle]', color: 'error'},
+                        {id: 'alertStatusCount', label: 'Alert Status', sub: 'Containers on alert', icon: 'icon-[tabler--bell-ringing]', color: 'error'},
+                        {id: 'pausedCount', label: 'Paused Tracking', sub: 'Dwell time paused', icon: 'icon-[tabler--player-pause]', color: 'info'}
+                    ] %}
+                    <div class="rounded-xl p-4 bg-base-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-base-content/60">{{ item.label }}</span>
+                            <span class="{{ item.icon }} size-5 text-{{ item.color }}"></span>
+                        </div>
+                        <p class="text-3xl font-bold text-base-content" id="{{ item.id }}">—</p>
+                        <p class="text-xs text-base-content/40 mt-1">{{ item.sub }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 text-sm">
+                    <div class="flex flex-wrap items-center gap-4 text-base-content/60">
+                        <span>Total Monitored: <span class="font-semibold text-base-content" id="totalMonitored">—</span></span>
+                        <span>Avg Dwell Time: <span class="font-semibold text-base-content" id="avgDwellTime">—</span></span>
+                        <span>Last Updated: <span class="font-semibold text-base-content" id="lastUpdated">Just now</span></span>
+                    </div>
+                    <button onclick="refreshDwellTimeData()" class="btn btn-ghost btn-xs gap-1">
+                        <span class="icon-[tabler--refresh] size-3.5" id="refreshIcon"></span>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Container Yard Allocations ── #}
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-0">
+            <div class="px-5 py-4">
+                <h3 class="font-semibold text-base text-base-content">Container Yard Allocations</h3>
+                <p class="text-xs text-base-content/50 mt-0.5">Manage the allowed TEU capacity for each container yard. Current TEUs is a real-time count of containers in the yard.</p>
+            </div>
+            <div class="p-5">
+                {% if terminalStats|length > 0 %}
+                    {% set terminalsByRegion = {} %}
+                    {% for stat in terminalStats %}
+                        {% set regionName = stat.terminal.region ? stat.terminal.region.name : 'Other' %}
+                        {% if terminalsByRegion[regionName] is not defined %}
+                            {% set terminalsByRegion = terminalsByRegion|merge({(regionName): []}) %}
+                        {% endif %}
+                        {% set terminalsByRegion = terminalsByRegion|merge({(regionName): terminalsByRegion[regionName]|merge([stat])}) %}
+                    {% endfor %}
+
+                    {% for regionName, regionStats in terminalsByRegion %}
+                        {% if regionStats|length > 0 %}
+                            {# Region divider #}
+                            <div class="flex items-center gap-3 mb-5 {% if not loop.first %}mt-8{% endif %}">
+                                <span class="icon-[tabler--map-pin] size-4 text-primary"></span>
+                                <span class="font-semibold text-base text-primary">{{ regionName }}</span>
+                                <div class="flex-1 h-px bg-base-300"></div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-4">
+                                {% for stat in regionStats %}
+                                    {% set pct = stat.utilizationPercentage %}
+                                    {% if pct >= 100 %}
+                                        {% set pctColor = 'text-error' %}
+                                        {% set barColor = 'bg-error' %}
+                                        {% set badgeType = 'badge-error' %}
+                                    {% elseif pct >= 80 %}
+                                        {% set pctColor = 'text-warning' %}
+                                        {% set barColor = 'bg-warning' %}
+                                        {% set badgeType = 'badge-warning' %}
+                                    {% else %}
+                                        {% set pctColor = 'text-success' %}
+                                        {% set barColor = 'bg-success' %}
+                                        {% set badgeType = 'badge-success' %}
+                                    {% endif %}
+
+                                    <div class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300">
+                                        <div class="card-body p-5">
+                                            <!-- Terminal Header -->
+                                            <div class="flex items-start justify-between mb-4">
+                                                <div class="flex items-center gap-3 flex-1 min-w-0">
+                                                    <div class="w-12 h-12 bg-base-content/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                        <span class="icon-[tabler--building-warehouse] size-6 text-base-content"></span>
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <h4 class="font-bold text-base text-base-content truncate">{{ stat.terminal.name }}</h4>
+                                                        <p class="text-xs text-base-content/60 truncate">
+                                                            {% if stat.terminal.region %}
+                                                                {{ stat.terminal.region.name }}{% if stat.terminal.city %}, {{ stat.terminal.city.name }}{% endif %}
+                                                            {% else %}
+                                                                {{ stat.terminal.location }}
+                                                            {% endif %}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <span class="badge badge-success badge-sm ml-2 flex-shrink-0">Available</span>
+                                            </div>
+                                            
+                                            <!-- 20ft Containers Section -->
+                                            <div class="mb-4">
+                                                <div class="flex items-center justify-between mb-3">
+                                                    <h5 class="text-sm font-bold text-base-content">20ft Containers</h5>
+                                                    <span class="badge badge-neutral badge-sm">20ft</span>
+                                                </div>
+                                                
+                                                <div class="grid grid-cols-4 gap-3 mb-3">
+                                                    <div class="text-center">
+                                                        <div class="flex items-center justify-center mb-1">
+                                                            <span class="icon-[tabler--box] size-4 text-base-content/40"></span>
+                                                        </div>
+                                                        <p class="text-xs text-base-content/60 mb-1">Capacity</p>
+                                                        <p class="text-lg font-bold text-base-content">{{ stat.capacity_20ft }}</p>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <div class="flex items-center justify-center mb-1">
+                                                            <span class="icon-[tabler--box-multiple] size-4 text-info"></span>
+                                                        </div>
+                                                        <p class="text-xs text-base-content/60 mb-1">Allocated</p>
+                                                        <p class="text-lg font-bold text-info">{{ stat.allocated_20ft }}</p>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <div class="flex items-center justify-center mb-1">
+                                                            <span class="icon-[tabler--clock] size-4 text-warning"></span>
+                                                        </div>
+                                                        <p class="text-xs text-base-content/60 mb-1">Pre-Forecast</p>
+                                                        <p class="text-lg font-bold text-warning">{{ stat.pre_forecast_20ft }}</p>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <div class="flex items-center justify-center mb-1">
+                                                            <span class="icon-[tabler--circle-check] size-4 text-success"></span>
+                                                        </div>
+                                                        <p class="text-xs text-base-content/60 mb-1">Available</p>
+                                                        <p class="text-lg font-bold text-success">{{ stat.available_20ft }}</p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div>
+                                                    <div class="flex justify-between items-center mb-2">
+                                                        <span class="text-xs text-base-content/60 flex items-center gap-1">
+                                                            <span class="icon-[tabler--chart-bar] size-3"></span>
+                                                            Utilization
+                                                        </span>
+                                                        <span class="text-sm font-bold text-base-content">{{ stat.utilization_20ft }}%</span>
+                                                    </div>
+                                                    <div class="w-full bg-base-300 rounded-full h-2.5">
+                                                        <div class="h-2.5 rounded-full transition-all 
+                                                            {{ stat.utilization_20ft >= 90 ? 'bg-error' : (stat.utilization_20ft >= 70 ? 'bg-warning' : 'bg-success') }}" 
+                                                             style="width: {{ stat.utilization_20ft > 100 ? 100 : stat.utilization_20ft }}%"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- 40ft Containers Section -->
+                                            <div class="mb-4">
+                                                <div class="flex items-center justify-between mb-3">
+                                                    <h5 class="text-sm font-bold text-base-content">40ft Containers</h5>
+                                                    <span class="badge badge-neutral badge-sm">40ft</span>
+                                                </div>
+                                                
+                                                <div class="grid grid-cols-4 gap-3 mb-3">
+                                                    <div class="text-center">
+                                                        <div class="flex items-center justify-center mb-1">
+                                                            <span class="icon-[tabler--box] size-4 text-base-content/40"></span>
+                                                        </div>
+                                                        <p class="text-xs text-base-content/60 mb-1">Capacity</p>
+                                                        <p class="text-lg font-bold text-base-content">{{ stat.capacity_40ft }}</p>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <div class="flex items-center justify-center mb-1">
+                                                            <span class="icon-[tabler--box-multiple] size-4 text-info"></span>
+                                                        </div>
+                                                        <p class="text-xs text-base-content/60 mb-1">Allocated</p>
+                                                        <p class="text-lg font-bold text-info">{{ stat.allocated_40ft }}</p>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <div class="flex items-center justify-center mb-1">
+                                                            <span class="icon-[tabler--clock] size-4 text-warning"></span>
+                                                        </div>
+                                                        <p class="text-xs text-base-content/60 mb-1">Pre-Forecast</p>
+                                                        <p class="text-lg font-bold text-warning">{{ stat.pre_forecast_40ft }}</p>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <div class="flex items-center justify-center mb-1">
+                                                            <span class="icon-[tabler--circle-check] size-4 text-success"></span>
+                                                        </div>
+                                                        <p class="text-xs text-base-content/60 mb-1">Available</p>
+                                                        <p class="text-lg font-bold text-success">{{ stat.available_40ft }}</p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div>
+                                                    <div class="flex justify-between items-center mb-2">
+                                                        <span class="text-xs text-base-content/60 flex items-center gap-1">
+                                                            <span class="icon-[tabler--chart-bar] size-3"></span>
+                                                            Utilization
+                                                        </span>
+                                                        <span class="text-sm font-bold text-base-content">{{ stat.utilization_40ft }}%</span>
+                                                    </div>
+                                                    <div class="w-full bg-base-300 rounded-full h-2.5">
+                                                        <div class="h-2.5 rounded-full transition-all 
+                                                            {{ stat.utilization_40ft >= 90 ? 'bg-error' : (stat.utilization_40ft >= 70 ? 'bg-warning' : 'bg-success') }}" 
+                                                             style="width: {{ stat.utilization_40ft > 100 ? 100 : stat.utilization_40ft }}%"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {% set totalContainers = stat.allocation.capacity20ft + stat.allocation.capacity40ft %}
+                                            {% if totalContainers > 0 %}
+                                                <a href="{{ path('app_detailed_stack_view', {depotId: stat.terminal.name}) }}"
+                                                   class="btn btn-primary btn-sm w-full gap-2">
+                                                    <span class="icon-[tabler--file-description] size-4"></span>
+                                                    View Detailed Stack
+                                                </a>
+                                            {% else %}
+                                                <button disabled class="btn btn-sm w-full btn-ghost opacity-40 gap-2">
+                                                    <span class="icon-[tabler--file-description] size-4"></span>
+                                                    View Detailed Stack
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <div class="flex flex-col items-center justify-center py-16 text-base-content/40 gap-3">
+                        <span class="icon-[tabler--building-warehouse] size-14"></span>
+                        <p class="font-medium text-base-content/60">No Container Yards Allocated</p>
+                        <p class="text-sm">No container yards have been allocated to your shipping line yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# ── Charts ── #}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-0">
+                <div class="px-5 py-4">
+                    <h3 class="font-semibold text-base text-base-content">Container Yard Utilization</h3>
+                    <p class="text-xs text-base-content/50">Current utilization percentage by yard</p>
+                </div>
+                <div class="p-5">
+                    <div id="terminalUtilizationChart" style="height:300px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-0">
+                <div class="px-5 py-4">
+                    <h3 class="font-semibold text-base text-base-content">Yard Type Distribution</h3>
+                    <p class="text-xs text-base-content/50">Allocation by terminal type</p>
+                </div>
+                <div class="p-5">
+                    <div id="terminalTypeChart" style="height:300px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Consignee Import Trends (Marketing Strategy) ── #}
+    <div class="card bg-base-100 shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="px-5 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="font-semibold text-lg text-base-content flex items-center gap-2">
+                            <span class="icon-[tabler--trending-up] size-5 text-primary"></span>
+                            Consignee Import Trends
+                        </h3>
+                        <p class="text-xs text-base-content/50 mt-1">Track top consignee import volumes over the last 12 weeks - Identify consistent clients for priority marketing</p>
+                    </div>
+                    <div class="badge badge-primary badge-lg gap-2">
+                        <span class="icon-[tabler--chart-line] size-4"></span>
+                        Marketing Strategy
+                    </div>
+                </div>
+            </div>
+            <div class="p-5">
+                <div id="consigneeImportTrendsChart" style="height:400px;" class="bg-base-100"></div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Recent Activity ── #}
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-0">
+            <div class="flex items-center justify-between px-5 py-4">
+                <h3 class="font-semibold text-base text-base-content">Recent Container Yard Activity</h3>
+                <span class="text-xs text-base-content/40">PRE-ADVICE requests for your yards</span>
+            </div>
+            <div class="p-5">
+                {% if recentActivity|length > 0 %}
+                    <div class="space-y-3 max-h-96 overflow-y-auto">
+                        {% for activity in recentActivity %}
+                            {% if activity.status.value == 'approved' %}
+                                {% set badgeCls = 'badge-success' %}
+                            {% elseif activity.status.value == 'rejected' %}
+                                {% set badgeCls = 'badge-error' %}
+                            {% elseif activity.status.value == 'pending' %}
+                                {% set badgeCls = 'badge-info' %}
+                            {% else %}
+                                {% set badgeCls = 'badge-ghost' %}
+                            {% endif %}
+
+                            <div class="rounded-xl p-4 hover:bg-base-200/50 transition-colors">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-medium text-sm text-base-content">{{ activity.selectedTerminal.name }}</span>
+                                    <span class="text-xs text-base-content/40">{{ activity.createdAt|date('M j, Y H:i') }}</span>
+                                </div>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-xs text-base-content/70 mb-3">
+                                    <div><span class="font-medium text-base-content/50">Container:</span> {{ activity.container.containerNumber }}</div>
+                                    <div><span class="font-medium text-base-content/50">Trucker:</span> {{ activity.trucker.companyName }}</div>
+                                    {% if activity.paymentReference %}
+                                        <div><span class="font-medium text-base-content/50">Payment Ref:</span> {{ activity.paymentReference }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="badge {{ badgeCls }} badge-sm">{{ activity.status.value|title }}</span>
+                                    <span class="text-xs text-base-content/30">ID: {{ activity.id }}</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="flex flex-col items-center justify-center py-12 text-base-content/40 gap-2">
+                        <span class="icon-[tabler--inbox] size-12"></span>
+                        <p class="text-sm font-medium">No recent activity</p>
+                        <p class="text-xs">Recent container yard activity will appear here.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function loadDwellTimeData() {
+    fetch('/shipping-admin/api/dwell-time/stats')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('dwellTime60Count').textContent = data.count_60_to_89_days ?? 0;
+            document.getElementById('dwellTime90Count').textContent = data.count_90_plus_days ?? 0;
+            document.getElementById('alertStatusCount').textContent = data.alert_status_count ?? 0;
+            document.getElementById('pausedCount').textContent = data.paused_count ?? 0;
+            document.getElementById('totalMonitored').textContent = data.total_monitored ?? 0;
+            document.getElementById('avgDwellTime').textContent = data.avg_dwell_time ? data.avg_dwell_time + ' days' : 'N/A';
+            document.getElementById('lastUpdated').textContent = 'Just now';
+        })
+        .catch(() => {
+            ['dwellTime60Count','dwellTime90Count','alertStatusCount','pausedCount','totalMonitored'].forEach(id => {
+                document.getElementById(id).textContent = '0';
+            });
+            document.getElementById('avgDwellTime').textContent = 'N/A';
+        });
+}
+
+function refreshDwellTimeData() {
+    const icon = document.getElementById('refreshIcon');
+    icon.classList.add('animate-spin');
+    loadDwellTimeData();
+    setTimeout(() => icon.classList.remove('animate-spin'), 1000);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadDwellTimeData();
+    setInterval(loadDwellTimeData, 300000);
+
+    const chartData = {{ chartData|json_encode|raw }};
+
+    // Tailwind color palette for charts
+    const chartColors = [
+        '#3b82f6', // blue-500
+        '#10b981', // emerald-500
+        '#f59e0b', // amber-500
+        '#ef4444', // red-500
+        '#8b5cf6', // violet-500
+        '#ec4899', // pink-500
+        '#06b6d4'  // cyan-500
+    ];
+
+    // Get theme colors - properly detect current theme
+    function getThemeColors() {
+        const root = getComputedStyle(document.documentElement);
+        const htmlElement = document.documentElement;
+        
+        // Check multiple ways themes can be set
+        const dataTheme = htmlElement.getAttribute('data-theme');
+        const hasClassDark = htmlElement.classList.contains('dark');
+        
+        // List of known dark themes
+        const darkThemes = ['dark', 'night', 'forest', 'black', 'luxury', 'dracula', 'business', 'coffee'];
+        const isDarkTheme = hasClassDark || (dataTheme && darkThemes.includes(dataTheme));
+        
+        return {
+            baseContent: isDarkTheme ? '#e5e7eb' : '#1f2937',
+            base200: isDarkTheme ? '#374151' : '#e5e7eb',
+            isDark: isDarkTheme
+        };
+    }
+    
+    const themeColors = getThemeColors();
+    const baseContent = themeColors.baseContent;
+    const base200 = themeColors.base200;
+
+    // Container Yard Utilization Bar Chart
+    const utilizationChartEl = document.querySelector('#terminalUtilizationChart');
+    if (utilizationChartEl) {
+        const ud = chartData.terminalUtilization || { labels: [], series: [] };
+        const utilizationConfig = {
+            series: [{ 
+                name: 'Utilization %', 
+                data: ud.series?.length ? ud.series : [0] 
+            }],
+            chart: { 
+                type: 'bar', 
+                height: 300, 
+                toolbar: { show: false }, 
+                background: 'transparent',
+                foreColor: baseContent,
+                fontFamily: 'inherit'
+            },
+            colors: chartColors,
+            plotOptions: { 
+                bar: { 
+                    borderRadius: 6, 
+                    columnWidth: '55%',
+                    distributed: true,
+                    dataLabels: {
+                        position: 'top'
+                    }
+                } 
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function (val) {
+                    return val + "%";
+                },
+                offsetY: -20,
+                style: {
+                    fontSize: '12px',
+                    colors: [baseContent]
+                }
+            },
+            xaxis: { 
+                categories: ud.labels?.length ? ud.labels : ['No Data'], 
+                labels: { 
+                    style: { 
+                        colors: Array(ud.labels?.length || 1).fill(baseContent),
+                        fontSize: '12px'
+                    },
+                    rotate: -45,
+                    rotateAlways: false
+                },
+                axisBorder: { 
+                    show: true,
+                    color: base200 
+                },
+                axisTicks: { 
+                    show: true,
+                    color: base200 
+                }
+            },
+            yaxis: { 
+                max: 100,
+                title: {
+                    text: 'Utilization (%)',
+                    style: {
+                        color: baseContent,
+                        fontSize: '12px'
+                    }
+                },
+                labels: { 
+                    style: { 
+                        colors: [baseContent],
+                        fontSize: '12px'
+                    },
+                    formatter: function (val) {
+                        return val + "%";
+                    }
+                }
+            },
+            grid: { 
+                borderColor: base200,
+                strokeDashArray: 4,
+                xaxis: {
+                    lines: {
+                        show: false
+                    }
+                }
+            },
+            legend: { show: false },
+            tooltip: {
+                theme: themeColors.isDark ? 'dark' : 'light',
+                y: {
+                    formatter: function(val) {
+                        return val + '%';
+                    }
+                }
+            },
+            noData: { 
+                text: 'No data available',
+                style: {
+                    color: baseContent
+                }
+            }
+        };
+        
+        try {
+            const utilizationChart = new ApexCharts(utilizationChartEl, utilizationConfig);
+            utilizationChart.render();
+        } catch(e) { 
+            console.error('Utilization chart error:', e); 
+        }
+    }
+
+    // Yard Type Distribution Donut Chart
+    const typeChartEl = document.querySelector('#terminalTypeChart');
+    if (typeChartEl) {
+        const td = chartData.terminalTypes || { labels: [], series: [] };
+        const typeConfig = {
+            series: td.series?.length ? td.series : [1],
+            chart: { 
+                type: 'donut', 
+                height: 300, 
+                background: 'transparent',
+                foreColor: baseContent,
+                fontFamily: 'inherit'
+            },
+            labels: td.labels?.length ? td.labels : ['No Data'],
+            colors: chartColors,
+            legend: { 
+                position: 'bottom',
+                horizontalAlign: 'center',
+                fontSize: '13px',
+                labels: { 
+                    colors: Array(td.labels?.length || 1).fill(baseContent)
+                },
+                markers: {
+                    width: 12,
+                    height: 12,
+                    radius: 3
+                },
+                itemMargin: {
+                    horizontal: 10,
+                    vertical: 5
+                }
+            },
+            plotOptions: { 
+                pie: { 
+                    donut: { 
+                        size: '65%',
+                        background: 'transparent',
+                        labels: {
+                            show: true,
+                            name: {
+                                show: true,
+                                fontSize: '14px',
+                                color: baseContent
+                            },
+                            value: {
+                                show: true,
+                                fontSize: '24px',
+                                fontWeight: 'bold',
+                                color: baseContent,
+                                formatter: function (val) {
+                                    return val;
+                                }
+                            },
+                            total: {
+                                show: true,
+                                label: 'Total',
+                                fontSize: '14px',
+                                color: baseContent,
+                                formatter: function (w) {
+                                    return w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+                                }
+                            }
+                        }
+                    } 
+                } 
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function (val) {
+                    return val.toFixed(1) + "%";
+                },
+                style: {
+                    colors: ['#ffffff'],
+                    fontSize: '13px',
+                    fontWeight: '600'
+                },
+                dropShadow: {
+                    enabled: true,
+                    top: 1,
+                    left: 1,
+                    blur: 1,
+                    opacity: 0.45
+                }
+            },
+            stroke: {
+                show: true,
+                width: 2,
+                colors: ['transparent']
+            },
+            tooltip: {
+                theme: themeColors.isDark ? 'dark' : 'light',
+                y: {
+                    formatter: function(val) {
+                        return val + ' yards';
+                    }
+                }
+            },
+            noData: { 
+                text: 'No data available',
+                style: {
+                    color: baseContent
+                }
+            }
+        };
+        
+        try {
+            const typeChart = new ApexCharts(typeChartEl, typeConfig);
+            typeChart.render();
+        } catch(e) { 
+            console.error('Type chart error:', e); 
+        }
+    }
+
+    // Consignee Import Trends Curved Area Chart
+    const importTrendsChartEl = document.querySelector('#consigneeImportTrendsChart');
+    if (importTrendsChartEl) {
+        const importData = chartData.consigneeImportTrends || { categories: [], series: [] };
+        const importConfig = {
+            series: importData.series?.length ? importData.series : [{
+                name: 'No Data',
+                data: []
+            }],
+            chart: {
+                type: 'area',
+                height: 400,
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: false,
+                        zoom: true,
+                        zoomin: true,
+                        zoomout: true,
+                        pan: false,
+                        reset: true
+                    }
+                },
+                background: 'transparent',
+                foreColor: baseContent,
+                fontFamily: 'inherit',
+                animations: {
+                    enabled: true,
+                    easing: 'easeinout',
+                    speed: 800
+                }
+            },
+            colors: chartColors,
+            dataLabels: {
+                enabled: false
+            },
+            stroke: {
+                curve: 'smooth',
+                width: 3,
+                lineCap: 'round'
+            },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.45,
+                    opacityTo: 0.05,
+                    stops: [0, 90, 100]
+                }
+            },
+            xaxis: {
+                categories: importData.categories?.length ? importData.categories : ['No Data'],
+                labels: {
+                    style: {
+                        colors: Array(importData.categories?.length || 1).fill(baseContent),
+                        fontSize: '12px'
+                    },
+                    rotate: -45,
+                    rotateAlways: false
+                },
+                axisBorder: {
+                    show: true,
+                    color: base200
+                },
+                axisTicks: {
+                    show: true,
+                    color: base200
+                },
+                title: {
+                    text: 'Week',
+                    style: {
+                        color: baseContent,
+                        fontSize: '13px',
+                        fontWeight: 600
+                    }
+                }
+            },
+            yaxis: {
+                title: {
+                    text: 'Container Count',
+                    style: {
+                        color: baseContent,
+                        fontSize: '13px',
+                        fontWeight: 600
+                    }
+                },
+                labels: {
+                    style: {
+                        colors: [baseContent],
+                        fontSize: '12px'
+                    },
+                    formatter: function (val) {
+                        return Math.floor(val);
+                    }
+                }
+            },
+            grid: {
+                borderColor: base200,
+                strokeDashArray: 4,
+                xaxis: {
+                    lines: {
+                        show: true
+                    }
+                },
+                yaxis: {
+                    lines: {
+                        show: true
+                    }
+                },
+                padding: {
+                    top: 0,
+                    right: 10,
+                    bottom: 0,
+                    left: 10
+                }
+            },
+            legend: {
+                show: true,
+                position: 'top',
+                horizontalAlign: 'left',
+                fontSize: '13px',
+                fontWeight: 500,
+                labels: {
+                    colors: baseContent
+                },
+                markers: {
+                    width: 12,
+                    height: 12,
+                    radius: 3
+                },
+                itemMargin: {
+                    horizontal: 15,
+                    vertical: 5
+                }
+            },
+            markers: {
+                size: 0,
+                hover: {
+                    size: 6,
+                    sizeOffset: 3
+                }
+            },
+            tooltip: {
+                theme: themeColors.isDark ? 'dark' : 'light',
+                shared: true,
+                intersect: false,
+                x: {
+                    show: true
+                },
+                y: {
+                    formatter: function(val) {
+                        return val + ' containers';
+                    }
+                },
+                style: {
+                    fontSize: '12px'
+                }
+            },
+            noData: {
+                text: 'No import data available for the last 12 weeks',
+                align: 'center',
+                verticalAlign: 'middle',
+                style: {
+                    color: baseContent,
+                    fontSize: '14px'
+                }
+            }
+        };
+        
+        try {
+            const importTrendsChart = new ApexCharts(importTrendsChartEl, importConfig);
+            importTrendsChart.render();
+        } catch(e) {
+            console.error('Import trends chart error:', e);
+        }
+    }
+});
+</script>
+{% endblock %}
