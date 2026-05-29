@@ -1,0 +1,369 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Resubmit Payment - {{ manifest.manifestNumber }}{% endblock %}
+
+{% block body %}
+<div class="w-full bg-base-200 min-h-screen">
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8">
+    {# Breadcrumb #}
+    <div class="breadcrumbs text-sm mb-6">
+        <ul>
+            <li>
+                <a href="{{ path('broker_manifests_list') }}" class="inline-flex items-center gap-2">
+                    <span class="icon-[tabler--home] size-4"></span>
+                    Dashboard
+                </a>
+            </li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li>
+                <a href="{{ path('broker_payments_rejected') }}">Rejected Payments</a>
+            </li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li aria-current="page">Payment #{{ payment.id }}</li>
+        </ul>
+    </div>
+
+    {# Page Header #}
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-base-content">Resubmit Payment</h1>
+        <p class="mt-2 text-sm text-base-content/60">Manifest {{ manifest.manifestNumber }}</p>
+    </div>
+
+    {# Rejection Notice #}
+    <div class="alert alert-error mb-6">
+        <span class="icon-[tabler--circle-x] size-6"></span>
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <h3 class="font-bold text-lg">Payment Rejected</h3>
+                {# Version Badge #}
+                {% include 'components/payment_version_badge.html.twig' with {
+                    version: payment.version,
+                    status: payment.status.value,
+                    submittedAt: payment.createdAt,
+                    size: 'md'
+                } %}
+            </div>
+            <p class="text-sm mt-1"><strong>Reason:</strong> {{ payment.rejectionReason }}</p>
+            <p class="text-sm mt-2"><strong>Rejected by:</strong> {{ payment.validatedBy.fullName }} on {{ payment.validatedAt|date('F d, Y H:i:s') }}</p>
+            
+            {# Show rejection count if this is a resubmission #}
+            {% if payment.version > 1 %}
+                <div class="mt-3 pt-3 border-t border-error/30">
+                    <p class="text-sm font-semibold">
+                        <span class="icon-[tabler--alert-triangle] size-4 inline-block"></span>
+                        This is attempt #{{ payment.version }}. 
+                        <a href="{{ path('broker_payment_history', {id: manifest.id}) }}" class="link link-hover underline">
+                            View all {{ payment.version }} submission(s)
+                        </a>
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {# Billing Information #}
+        <div class="card bg-base-100 shadow-lg">
+            <div class="card-header bg-primary text-primary-content">
+                <h3 class="card-title">Billing Information</h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Manifest Number:</span>
+                        <span class="font-medium">{{ manifest.manifestNumber }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Consignee:</span>
+                        <span class="font-medium">{{ manifest.consignee.businessName }}</span>
+                    </div>
+                    <div class="divider my-2"></div>
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Freight Charges:</span>
+                        <span>₱{{ billing.freightCharges|number_format(2) }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">THC Charges:</span>
+                        <span>₱{{ billing.thcCharges|number_format(2) }}</span>
+                    </div>
+                    {% if billing.additionalCharges %}
+                        {% for charge in billing.additionalCharges %}
+                            <div class="flex justify-between">
+                                <span class="text-base-content/60">{{ charge.description }}:</span>
+                                <span>₱{{ charge.amount|number_format(2) }}</span>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    <div class="divider my-2"></div>
+                    <div class="flex justify-between text-lg font-bold">
+                        <span>Total Amount:</span>
+                        <span class="text-primary">₱{{ billing.totalAmount|number_format(2) }}</span>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex flex-col gap-2">
+                    {% if billing.pdfPath %}
+                        <a href="/api/billing/{{ billing.id }}/download?inline=false" 
+                           target="_blank" 
+                           class="btn btn-sm btn-outline btn-primary w-full">
+                            <span class="icon-[tabler--download] size-4"></span>
+                            Download Billing Document
+                        </a>
+                    {% endif %}
+                    <a href="{{ path('broker_payment_history', {id: manifest.id}) }}" 
+                       class="btn btn-sm btn-outline w-full">
+                        <span class="icon-[tabler--history] size-4"></span>
+                        View My Submissions
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {# Previous Payment Details #}
+        <div class="card bg-base-100 shadow-lg">
+            <div class="card-header bg-error text-error-content">
+                <h3 class="card-title">Previous Payment (Rejected)</h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Payment ID:</span>
+                        <span class="font-medium">#{{ payment.id }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Amount Submitted:</span>
+                        <span class="font-medium">₱{{ payment.amount|number_format(2) }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Submitted At:</span>
+                        <span>{{ payment.createdAt|date('Y-m-d H:i') }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-base-content/60">Rejected At:</span>
+                        <span>{{ payment.validatedAt|date('Y-m-d H:i') }}</span>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <a href="{{ path('accounting_payment_receipt', {id: payment.id}) }}?inline=false" 
+                       target="_blank" 
+                       class="btn btn-sm btn-outline btn-error w-full">
+                        <span class="icon-[tabler--download] size-4"></span>
+                        View Previous Receipt
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Resubmission Form #}
+    <div class="card bg-base-100 shadow-lg border-2 border-success">
+        <div class="card-header bg-success/10">
+            <h3 class="card-title text-success">
+                <span class="icon-[tabler--upload] size-6"></span>
+                Resubmit Payment
+            </h3>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info mb-6">
+                <span class="icon-[tabler--info-circle] size-5"></span>
+                <div>
+                    <p class="text-sm">Please upload a corrected proof of payment. Make sure the amount matches the billing total and the receipt is clear and legible.</p>
+                </div>
+            </div>
+
+            <form id="resubmitForm" enctype="multipart/form-data">
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text font-medium">Payment Amount <span class="text-error">*</span></span>
+                    </label>
+                    <input type="number" 
+                           id="amount" 
+                           name="amount" 
+                           step="0.01" 
+                           min="0.01"
+                           value="{{ billing.totalAmount }}"
+                           class="input input-bordered w-full" 
+                           required>
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60">Expected: ₱{{ billing.totalAmount|number_format(2) }}</span>
+                    </label>
+                </div>
+
+                <div class="form-control mb-6">
+                    <label class="label">
+                        <span class="label-text font-medium">Proof of Payment <span class="text-error">*</span></span>
+                    </label>
+                    <input type="file" 
+                           id="receipt" 
+                           name="receipt" 
+                           accept=".pdf,.jpg,.jpeg,.png"
+                           class="file-input file-input-bordered w-full" 
+                           required>
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/60">Accepted formats: PDF, JPG, PNG (Max 5MB)</span>
+                    </label>
+                </div>
+
+                <div class="flex gap-4">
+                    <button type="submit" 
+                            id="submitBtn"
+                            class="btn btn-success flex-1">
+                        <span class="icon-[tabler--upload] size-5"></span>
+                        Resubmit Payment
+                    </button>
+                    <a href="{{ path('broker_payments_rejected') }}" 
+                       class="btn btn-ghost">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</div>
+
+{# Success Modal #}
+<div id="successModal" class="hidden fixed inset-0 z-[10000] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60"></div>
+    
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg z-10">
+        <div class="px-6 pt-8 pb-6 text-center">
+            <div class="flex items-center justify-center mb-4">
+                <div class="flex items-center justify-center size-20 rounded-full bg-success/20 animate-bounce-once">
+                    <span class="icon-[tabler--check] size-12 text-success"></span>
+                </div>
+            </div>
+            <h3 class="text-2xl font-bold text-base-content mb-4">Payment Resubmitted!</h3>
+            <p class="text-base text-base-content/80 mb-4">
+                Your payment has been successfully resubmitted for validation.
+            </p>
+            <p class="text-sm text-base-content/60">
+                You will be notified once the accounting team reviews your payment.
+            </p>
+        </div>
+        
+        <div class="px-6 py-4 border-t border-base-300">
+            <a href="{{ path('broker_manifests_list') }}" class="btn btn-success w-full">
+                <span class="icon-[tabler--home] size-4"></span>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+{# Error Modal #}
+<div id="errorModal" class="hidden fixed inset-0 z-[10000] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60"></div>
+    
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg z-10">
+        <div class="px-6 pt-8 pb-6 text-center">
+            <div class="flex items-center justify-center mb-4">
+                <div class="flex items-center justify-center size-20 rounded-full bg-error/20 animate-shake">
+                    <span class="icon-[tabler--x] size-12 text-error"></span>
+                </div>
+            </div>
+            <h3 class="text-2xl font-bold text-base-content mb-4">Error</h3>
+            <p class="text-base text-base-content/80" id="errorMessage"></p>
+        </div>
+        
+        <div class="px-6 py-4 border-t border-base-300">
+            <button type="button" onclick="closeErrorModal()" class="btn btn-error w-full">
+                <span class="icon-[tabler--x] size-4"></span>
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes bounce-once {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+.animate-bounce-once {
+    animation: bounce-once 0.6s ease-in-out;
+}
+
+.animate-shake {
+    animation: shake 0.5s ease-in-out;
+}
+</style>
+
+<script>
+document.getElementById('resubmitForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const submitBtn = document.getElementById('submitBtn');
+    const amount = document.getElementById('amount').value;
+    const receipt = document.getElementById('receipt').files[0];
+    
+    if (!receipt) {
+        showErrorModal('Please select a receipt file');
+        return;
+    }
+    
+    // Validate file size (5MB)
+    if (receipt.size > 5242880) {
+        showErrorModal('File size must be less than 5MB');
+        return;
+    }
+    
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+    if (!allowedTypes.includes(receipt.type)) {
+        showErrorModal('Invalid file type. Please upload PDF, JPG, or PNG');
+        return;
+    }
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span>Submitting...';
+    
+    const formData = new FormData();
+    formData.append('amount', amount);
+    formData.append('receipt', receipt);
+    
+    try {
+        const response = await fetch('/api/payments/{{ payment.id }}/resubmit', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            showErrorModal(data.error);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span class="icon-[tabler--upload] size-5"></span>Resubmit Payment';
+        } else if (data.paymentId) {
+            document.getElementById('successModal').classList.remove('hidden');
+        } else {
+            showErrorModal('Unexpected response from server');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span class="icon-[tabler--upload] size-5"></span>Resubmit Payment';
+        }
+    } catch (error) {
+        showErrorModal('An error occurred. Please try again.');
+        console.error('Error:', error);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span class="icon-[tabler--upload] size-5"></span>Resubmit Payment';
+    }
+});
+
+function showErrorModal(message) {
+    document.getElementById('errorMessage').textContent = message;
+    document.getElementById('errorModal').classList.remove('hidden');
+}
+
+function closeErrorModal() {
+    document.getElementById('errorModal').classList.add('hidden');
+}
+</script>
+{% endblock %}

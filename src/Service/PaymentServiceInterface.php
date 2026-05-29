@@ -27,4 +27,6 @@ interface PaymentServiceInterface
      * Get payment by ID
      */
     public function getPaymentById(int $paymentId): ?Payment;
+
+    public function resubmitRejectedPayment(int $paymentId, float $amount, UploadedFile $receipt, User $broker): Payment;
 }

@@ -1,0 +1,192 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Payment History - {{ manifest.manifestNumber }}{% endblock %}
+
+{% block body %}
+<div class="w-full bg-base-200 min-h-screen">
+<div class="w-full px-4 sm:px-6 lg:px-8 py-6">
+    {# Breadcrumb #}
+    <div class="breadcrumbs text-sm mb-4">
+        <ul>
+            <li>
+                <a href="{{ path('broker_manifest_list') }}" class="inline-flex items-center gap-2">
+                    <span class="icon-[tabler--home] size-4"></span>
+                    Dashboard
+                </a>
+            </li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li>
+                <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}">{{ manifest.manifestNumber }}</a>
+            </li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li aria-current="page">Payment History</li>
+        </ul>
+    </div>
+
+    {# Page Header with Actions #}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-base-content flex items-center gap-3">
+                <span class="icon-[tabler--history] size-7"></span>
+                Payment History
+            </h1>
+            <p class="mt-1 text-sm text-base-content/60">Manifest {{ manifest.manifestNumber }}</p>
+        </div>
+        
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" 
+               class="btn btn-outline btn-sm gap-2">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
+            </a>
+            
+            {% set latestPayment = payments|last %}
+            {% if latestPayment and latestPayment.status.value == 'rejected' %}
+            <a href="{{ path('broker_manifest_final_payment', {id: manifest.id}) }}" 
+               class="btn btn-error btn-sm gap-2">
+                <span class="icon-[tabler--upload] size-4"></span>
+                Resubmit Payment
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Two Column Layout #}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {# Main Content - Timeline (2/3 width) #}
+        <div class="lg:col-span-2">
+            <div class="card bg-base-100 shadow-lg">
+                <div class="card-body">
+                    <h2 class="card-title text-lg mb-4">
+                        <span class="icon-[tabler--timeline] size-5"></span>
+                        Submission Timeline
+                    </h2>
+                    
+                    {% if payments is empty %}
+                        <div class="flex flex-col items-center justify-center py-12">
+                            <span class="icon-[tabler--file-off] size-16 text-base-content/20 mb-4"></span>
+                            <p class="text-base-content/60 font-medium">No payment submissions yet</p>
+                            <p class="text-sm text-base-content/40 mt-1">Your payment submissions will appear here</p>
+                        </div>
+                    {% else %}
+                        {% include 'components/payment_history_timeline.html.twig' with {
+                            payments: payments,
+                            statistics: statistics,
+                            showActions: true,
+                            compact: false
+                        } %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# Sidebar - Statistics & Info (1/3 width) #}
+        <div class="space-y-6">
+            {# Statistics Summary #}
+            <div class="card bg-base-100 shadow-lg">
+                <div class="card-body">
+                    <h2 class="card-title text-lg mb-4">
+                        <span class="icon-[tabler--chart-bar] size-5"></span>
+                        Summary
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        {# Total Submissions #}
+                        <div class="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <span class="icon-[tabler--versions] size-6 text-primary"></span>
+                                <div>
+                                    <p class="text-xs text-base-content/60">Total Submissions</p>
+                                    <p class="text-2xl font-bold text-primary">{{ statistics.total_versions }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {# Current Version #}
+                        <div class="flex items-center justify-between p-3 bg-success/10 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <span class="icon-[tabler--check] size-6 text-success"></span>
+                                <div>
+                                    <p class="text-xs text-base-content/60">Current Version</p>
+                                    <p class="text-2xl font-bold text-success">v{{ statistics.current_version }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {# Rejections #}
+                        {% if statistics.total_rejections > 0 %}
+                        <div class="flex items-center justify-between p-3 bg-error/10 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <span class="icon-[tabler--x] size-6 text-error"></span>
+                                <div>
+                                    <p class="text-xs text-base-content/60">Rejections</p>
+                                    <p class="text-2xl font-bold text-error">{{ statistics.total_rejections }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {# First Submission Date #}
+                        {% if statistics.first_submission %}
+                        <div class="divider my-2"></div>
+                        <div class="flex items-center gap-3 text-sm">
+                            <span class="icon-[tabler--calendar] size-5 text-base-content/40"></span>
+                            <div>
+                                <p class="text-xs text-base-content/60">First Submitted</p>
+                                <p class="font-medium">{{ statistics.first_submission|date('M d, Y') }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {# Help Section #}
+            <div class="card bg-base-100 shadow-lg">
+                <div class="card-body">
+                    <h3 class="card-title text-base">
+                        <span class="icon-[tabler--info-circle] size-5"></span>
+                        Quick Guide
+                    </h3>
+                    <div class="space-y-3 text-sm">
+                        <div>
+                            <p class="font-semibold text-base-content mb-1">Version Numbers</p>
+                            <p class="text-base-content/70 text-xs">Each submission gets a version number (v1, v2, v3...). Higher numbers are newer submissions.</p>
+                        </div>
+                        
+                        <div class="divider my-2"></div>
+                        
+                        <div>
+                            <p class="font-semibold text-base-content mb-2">Status Colors</p>
+                            <div class="space-y-1.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="badge badge-success badge-xs"></span>
+                                    <span class="text-xs text-base-content/70">Verified & Approved</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="badge badge-error badge-xs"></span>
+                                    <span class="text-xs text-base-content/70">Rejected (see reason)</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="badge badge-warning badge-xs"></span>
+                                    <span class="text-xs text-base-content/70">Pending Review</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="divider my-2"></div>
+                        
+                        <div>
+                            <p class="font-semibold text-base-content mb-1">Resubmissions</p>
+                            <p class="text-base-content/70 text-xs">If rejected, review the reason carefully before resubmitting with corrected information.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+</div>
+{% endblock %}

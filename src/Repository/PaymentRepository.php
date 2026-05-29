@@ -209,4 +209,118 @@ class PaymentRepository extends ServiceEntityRepository
             'total_payment_amount' => (float) $totalResult['total_amount']
         ];
     }
+
+    /**
+     * Find all payment versions for a manifest ordered by version
+     * Includes eager loading of related entities for optimal performance
+     */
+    public function findAllVersionsByManifest(Manifest $manifest, string $paymentType): array
+    {
+        return $this->createQueryBuilder('p')
+            ->leftJoin('p.submittedBy', 'sb')
+            ->leftJoin('p.validatedBy', 'vb')
+            ->leftJoin('p.previousPayment', 'pp')
+            ->addSelect('sb', 'vb', 'pp')
+            ->where('p.manifest = :manifest')
+            ->andWhere('p.paymentType = :type')
+            ->setParameter('manifest', $manifest)
+            ->setParameter('type', $paymentType)
+            ->orderBy('p.version', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find the latest payment version for a manifest
+     */
+    public function findLatestVersion(Manifest $manifest, string $paymentType): ?Payment
+    {
+        return $this->createQueryBuilder('p')
+            ->leftJoin('p.submittedBy', 'sb')
+            ->leftJoin('p.validatedBy', 'vb')
+            ->leftJoin('p.previousPayment', 'pp')
+            ->addSelect('sb', 'vb', 'pp')
+            ->where('p.manifest = :manifest')
+            ->andWhere('p.paymentType = :type')
+            ->setParameter('manifest', $manifest)
+            ->setParameter('type', $paymentType)
+            ->orderBy('p.version', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * Get complete payment chain (follow previousPayment links)
+     * Returns array of payments from v1 to the latest version
+     */
+    public function getPaymentChain(Payment $payment): array
+    {
+        $chain = [];
+        $current = $payment;
+
+        // Walk backwards to find the root (version 1)
+        while ($current->getPreviousPayment() !== null) {
+            $current = $current->getPreviousPayment();
+        }
+
+        // Build forward chain starting from root
+        $chain[] = $current;
+
+        // Find all subsequent versions
+        while ($next = $this->findNextVersion($current)) {
+            $chain[] = $next;
+            $current = $next;
+        }
+
+        return $chain;
+    }
+
+    /**
+     * Find the next version after a given payment
+     */
+    private function findNextVersion(Payment $payment): ?Payment
+    {
+        return $this->createQueryBuilder('p')
+            ->leftJoin('p.submittedBy', 'sb')
+            ->leftJoin('p.validatedBy', 'vb')
+            ->addSelect('sb', 'vb')
+            ->where('p.previousPayment = :payment')
+            ->setParameter('payment', $payment)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * Get next version number for a manifest
+     * Returns 1 if no payments exist, otherwise returns max(version) + 1
+     */
+    public function getNextVersionNumber(Manifest $manifest, string $paymentType): int
+    {
+        $result = $this->createQueryBuilder('p')
+            ->select('MAX(p.version)')
+            ->where('p.manifest = :manifest')
+            ->andWhere('p.paymentType = :type')
+            ->setParameter('manifest', $manifest)
+            ->setParameter('type', $paymentType)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $result ? (int) $result + 1 : 1;
+    }
+
+    /**
+     * Count payment versions for a manifest
+     */
+    public function countVersions(Manifest $manifest, string $paymentType): int
+    {
+        return $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->where('p.manifest = :manifest')
+            ->andWhere('p.paymentType = :type')
+            ->setParameter('manifest', $manifest)
+            ->setParameter('type', $paymentType)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

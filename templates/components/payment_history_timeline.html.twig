@@ -1,0 +1,370 @@
+{#
+    Payment History Timeline Component
+    
+    Required variables:
+    - payments: array of Payment entities ordered by version
+    - statistics: array with total_versions, total_rejections, current_version, first_submission, last_submission
+    
+    Optional variables:
+    - showActions: boolean (default: true) - whether to show action buttons
+    - compact: boolean (default: false) - compact view for smaller spaces
+#}
+
+{% set showActions = showActions is defined ? showActions : true %}
+{% set compact = compact is defined ? compact : false %}
+
+<div class="payment-history-timeline" data-component="payment-history-timeline">
+    {# Timeline Header #}
+    <div class="timeline-header mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-bold text-base-content flex items-center gap-2">
+                    <span class="icon-[tabler--history] size-5"></span>
+                    Payment History
+                </h3>
+                <div class="text-sm text-base-content/60 mt-1">
+                    {{ statistics.total_versions }} version(s)
+                    {% if statistics.total_rejections > 0 %}
+                        <span class="text-error">• {{ statistics.total_rejections }} rejection(s)</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {# Statistics Badge #}
+            {% if not compact %}
+            <div class="stats shadow-sm bg-base-100 border border-base-300">
+                <div class="stat py-3 px-4">
+                    <div class="stat-title text-xs">Current Version</div>
+                    <div class="stat-value text-2xl text-primary">v{{ statistics.current_version }}</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Loading State #}
+    <div id="timeline-loading" class="hidden">
+        <div class="flex flex-col items-center justify-center py-12">
+            <span class="loading loading-spinner loading-lg text-primary"></span>
+            <p class="text-sm text-base-content/60 mt-4">Loading payment history...</p>
+        </div>
+    </div>
+
+    {# Error State #}
+    <div id="timeline-error" class="hidden">
+        <div class="alert alert-error">
+            <span class="icon-[tabler--alert-circle] size-5"></span>
+            <div>
+                <h4 class="font-bold">Failed to load payment history</h4>
+                <p class="text-sm" id="timeline-error-message"></p>
+            </div>
+        </div>
+    </div>
+
+    {# Empty State #}
+    {% if payments is empty %}
+    <div class="flex flex-col items-center justify-center py-12 bg-base-200 rounded-lg">
+        <span class="icon-[tabler--file-off] size-16 text-base-content/20 mb-4"></span>
+        <p class="text-base-content/60 font-medium">No payment history available</p>
+        <p class="text-sm text-base-content/40 mt-1">Payment submissions will appear here</p>
+    </div>
+    {% else %}
+    
+    {# Timeline Content #}
+    <div id="timeline-content" class="{% if compact %}space-y-4{% else %}space-y-0{% endif %}">
+        {% if compact %}
+            {# Compact View - Card-based layout #}
+            {% for payment in payments %}
+            <div class="card bg-base-100 shadow-sm border border-base-300 hover:shadow-md transition-shadow">
+                <div class="card-body p-4">
+                    <div class="flex items-start justify-between gap-4">
+                        {# Version Badge #}
+                        <div class="flex-shrink-0">
+                            <span class="badge {% if payment.status.value == 'verified' %}badge-success{% elseif payment.status.value == 'rejected' %}badge-error{% else %}badge-warning{% endif %} gap-1">
+                                <span class="icon-[tabler--versions] size-3"></span>
+                                v{{ payment.version }}
+                            </span>
+                        </div>
+                        
+                        {# Payment Info #}
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-semibold text-sm">Version {{ payment.version }}</span>
+                                {% if payment.status.value == 'verified' %}
+                                    <span class="badge badge-success badge-xs">Verified</span>
+                                {% elseif payment.status.value == 'rejected' %}
+                                    <span class="badge badge-error badge-xs">Rejected</span>
+                                {% else %}
+                                    <span class="badge badge-warning badge-xs">Pending</span>
+                                {% endif %}
+                            </div>
+                            <div class="text-xs text-base-content/60">
+                                ₱{{ payment.amount|number_format(2) }} • {{ payment.createdAt|date('M d, Y H:i') }}
+                            </div>
+                            
+                            {# Rejection Reason #}
+                            {% if payment.status.value == 'rejected' and payment.rejectionReason %}
+                            <div class="mt-2 text-xs text-error bg-error/10 rounded px-2 py-1">
+                                {{ payment.rejectionReason }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        {# Actions #}
+                        {% if showActions %}
+                        <div class="flex-shrink-0">
+                            <a href="{{ path('broker_payment_receipt', {id: payment.id}) }}" 
+                               target="_blank"
+                               class="btn btn-xs btn-ghost">
+                                <span class="icon-[tabler--file-text] size-3"></span>
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            {# Full Timeline View #}
+            <ul class="timeline timeline-vertical timeline-snap-icon">
+                {% for payment in payments %}
+                <li>
+                    {# Timeline connector line #}
+                    {% if not loop.first %}
+                    <hr class="{% if payment.status.value == 'verified' %}bg-success{% elseif payment.status.value == 'rejected' %}bg-error{% else %}bg-warning{% endif %}" />
+                    {% endif %}
+                    
+                    {# Timeline icon/badge #}
+                    <div class="timeline-middle">
+                        <div class="avatar placeholder">
+                            <div class="w-10 h-10 rounded-full {% if payment.status.value == 'verified' %}bg-success text-success-content{% elseif payment.status.value == 'rejected' %}bg-error text-error-content{% else %}bg-warning text-warning-content{% endif %}">
+                                <span class="text-xs font-bold">v{{ payment.version }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {# Timeline content #}
+                    <div class="{% if loop.index is odd %}timeline-start{% else %}timeline-end{% endif %} mb-10 {% if loop.index is even %}md:text-end{% endif %}">
+                        <time class="text-xs text-base-content/60">{{ payment.createdAt|date('M d, Y H:i') }}</time>
+                        
+                        <div class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow mt-2 {% if loop.index is even %}md:mr-0 md:ml-auto{% endif %} max-w-md">
+                            <div class="card-body p-4">
+                                {# Version header #}
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-base">Version {{ payment.version }}</span>
+                                        {% if payment.status.value == 'verified' %}
+                                            <span class="badge badge-success badge-sm gap-1">
+                                                <span class="icon-[tabler--circle-check] size-3"></span>
+                                                Verified
+                                            </span>
+                                        {% elseif payment.status.value == 'rejected' %}
+                                            <span class="badge badge-error badge-sm gap-1">
+                                                <span class="icon-[tabler--circle-x] size-3"></span>
+                                                Rejected
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-warning badge-sm gap-1">
+                                                <span class="icon-[tabler--clock] size-3"></span>
+                                                Pending
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                {# Payment details grid #}
+                                <div class="grid grid-cols-2 gap-3 text-sm mb-3">
+                                    <div>
+                                        <div class="text-xs text-base-content/60 mb-1">Amount</div>
+                                        <div class="font-semibold">₱{{ payment.amount|number_format(2) }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-base-content/60 mb-1">Submitted by</div>
+                                        <div class="font-medium truncate" title="{{ payment.submittedBy.fullName }}">
+                                            {{ payment.submittedBy.fullName }}
+                                        </div>
+                                    </div>
+                                    {% if payment.validatedBy %}
+                                    <div>
+                                        <div class="text-xs text-base-content/60 mb-1">Validated by</div>
+                                        <div class="font-medium truncate" title="{{ payment.validatedBy.fullName }}">
+                                            {{ payment.validatedBy.fullName }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-base-content/60 mb-1">Validated at</div>
+                                        <div class="text-xs">{{ payment.validatedAt|date('M d, Y H:i') }}</div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                {# Rejection reason alert #}
+                                {% if payment.status.value == 'rejected' and payment.rejectionReason %}
+                                <div class="alert alert-error py-2 px-3 text-xs mb-3">
+                                    <span class="icon-[tabler--alert-circle] size-4 flex-shrink-0"></span>
+                                    <div class="flex-1">
+                                        <div class="font-semibold mb-1">Rejection Reason:</div>
+                                        <div class="leading-relaxed">{{ payment.rejectionReason }}</div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                {# Action buttons #}
+                                {% if showActions %}
+                                <div class="flex flex-wrap gap-2">
+                                    <a href="{{ path('broker_payment_receipt', {id: payment.id}) }}" 
+                                       target="_blank"
+                                       class="btn btn-sm btn-outline gap-1 flex-1 min-w-[120px]">
+                                        <span class="icon-[tabler--file-text] size-4"></span>
+                                        View Receipt
+                                    </a>
+                                    {% if payment.officialReceiptPath %}
+                                    <a href="{{ path('broker_payment_receipt', {id: payment.id, type: 'official'}) }}" 
+                                       target="_blank"
+                                       class="btn btn-sm btn-outline btn-success gap-1 flex-1 min-w-[120px]">
+                                        <span class="icon-[tabler--receipt] size-4"></span>
+                                        Official Receipt
+                                    </a>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {# Timeline connector line #}
+                    {% if not loop.last %}
+                    <hr class="{% if payment.status.value == 'verified' %}bg-success{% elseif payment.status.value == 'rejected' %}bg-error{% else %}bg-warning{% endif %}" />
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+{# Responsive styles for mobile #}
+<style>
+@media (max-width: 768px) {
+    .payment-history-timeline .timeline-vertical .timeline-start,
+    .payment-history-timeline .timeline-vertical .timeline-end {
+        text-align: left !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    
+    .payment-history-timeline .timeline-vertical .card {
+        max-width: 100% !important;
+    }
+    
+    .payment-history-timeline .stats {
+        font-size: 0.875rem;
+    }
+    
+    .payment-history-timeline .stat-value {
+        font-size: 1.5rem !important;
+    }
+}
+
+/* Smooth transitions */
+.payment-history-timeline .card {
+    transition: all 0.2s ease-in-out;
+}
+
+.payment-history-timeline .card:hover {
+    transform: translateY(-2px);
+}
+
+/* Timeline line animations */
+.payment-history-timeline .timeline hr {
+    transition: background-color 0.3s ease;
+}
+
+/* Loading animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.payment-history-timeline #timeline-content {
+    animation: fadeIn 0.4s ease-out;
+}
+
+/* Print styles */
+@media print {
+    .payment-history-timeline .btn {
+        display: none;
+    }
+    
+    .payment-history-timeline .card {
+        box-shadow: none;
+        border: 1px solid #e5e7eb;
+    }
+}
+</style>
+
+{# JavaScript for dynamic loading and error handling #}
+<script>
+(function() {
+    const timeline = document.querySelector('[data-component="payment-history-timeline"]');
+    if (!timeline) return;
+    
+    const loadingEl = document.getElementById('timeline-loading');
+    const errorEl = document.getElementById('timeline-error');
+    const contentEl = document.getElementById('timeline-content');
+    
+    // Function to show loading state
+    window.showTimelineLoading = function() {
+        if (loadingEl) loadingEl.classList.remove('hidden');
+        if (errorEl) errorEl.classList.add('hidden');
+        if (contentEl) contentEl.classList.add('hidden');
+    };
+    
+    // Function to show error state
+    window.showTimelineError = function(message) {
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (errorEl) {
+            errorEl.classList.remove('hidden');
+            const errorMsg = document.getElementById('timeline-error-message');
+            if (errorMsg) errorMsg.textContent = message || 'An unexpected error occurred';
+        }
+        if (contentEl) contentEl.classList.add('hidden');
+    };
+    
+    // Function to show content
+    window.showTimelineContent = function() {
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (errorEl) errorEl.classList.add('hidden');
+        if (contentEl) contentEl.classList.remove('hidden');
+    };
+    
+    // Function to reload timeline via AJAX
+    window.reloadPaymentTimeline = async function(manifestId, paymentType = 'final_payment') {
+        showTimelineLoading();
+        
+        try {
+            const response = await fetch(`/api/manifests/${manifestId}/payments/history?type=${paymentType}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                showTimelineError(data.error);
+                return;
+            }
+            
+            // Reload the page to show updated timeline
+            // In a more sophisticated implementation, you could dynamically update the DOM
+            window.location.reload();
+            
+        } catch (error) {
+            console.error('Failed to reload payment timeline:', error);
+            showTimelineError(error.message);
+        }
+    };
+})();
+</script>

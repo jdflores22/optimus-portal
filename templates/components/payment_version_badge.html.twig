@@ -1,0 +1,45 @@
+{#
+    Payment Version Badge Component
+    
+    Parameters:
+    - version (int, required): The payment version number
+    - status (string, required): Payment status ('pending', 'verified', 'rejected')
+    - submittedAt (DateTime, optional): Submission date for tooltip
+    - size (string, optional): Badge size ('sm', 'md', 'lg'), defaults to 'sm'
+    
+    Usage:
+    {% include 'components/payment_version_badge.html.twig' with {
+        version: payment.version,
+        status: payment.status.value,
+        submittedAt: payment.createdAt,
+        size: 'sm'
+    } %}
+#}
+
+{% set badgeSize = size|default('sm') %}
+{% set badgeClass = 'badge-' ~ badgeSize %}
+
+{% if status == 'verified' %}
+    {% set statusClass = 'badge-success' %}
+    {% set statusLabel = 'Verified' %}
+{% elseif status == 'rejected' %}
+    {% set statusClass = 'badge-error' %}
+    {% set statusLabel = 'Rejected' %}
+{% else %}
+    {% set statusClass = 'badge-warning' %}
+    {% set statusLabel = 'Pending' %}
+{% endif %}
+
+<span 
+    class="badge {{ badgeClass }} {{ statusClass }} gap-1 cursor-help"
+    {% if submittedAt %}
+    data-tooltip="Version {{ version }} - {{ statusLabel }} - Submitted: {{ submittedAt|date('M d, Y H:i') }}"
+    title="Version {{ version }} - {{ statusLabel }} - Submitted: {{ submittedAt|date('M d, Y H:i') }}"
+    {% else %}
+    data-tooltip="Version {{ version }} - {{ statusLabel }}"
+    title="Version {{ version }} - {{ statusLabel }}"
+    {% endif %}
+>
+    <span class="icon-[tabler--versions] size-3"></span>
+    v{{ version }}
+</span>

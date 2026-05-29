@@ -13,6 +13,9 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_payments_submitted_by', columns: ['submitted_by_id'])]
 #[ORM\Index(name: 'idx_payments_shipping_line', columns: ['shipping_line_id'])]
 #[ORM\Index(name: 'idx_payments_created_at', columns: ['created_at'])]
+#[ORM\Index(name: 'idx_payments_version', columns: ['version'])]
+#[ORM\Index(name: 'idx_payments_previous_payment', columns: ['previous_payment_id'])]
+#[ORM\Index(name: 'idx_payments_manifest_type_version', columns: ['manifest_id', 'payment_type', 'version'])]
 class Payment
 {
     #[ORM\Id]
@@ -59,6 +62,13 @@ class Payment
 
     #[ORM\Column(type: 'datetime')]
     private \DateTimeInterface $createdAt;
+
+    #[ORM\Column(type: 'integer', options: ['default' => 1])]
+    private int $version = 1;
+
+    #[ORM\ManyToOne(targetEntity: Payment::class)]
+    #[ORM\JoinColumn(name: 'previous_payment_id', referencedColumnName: 'id', onDelete: 'SET NULL')]
+    private ?Payment $previousPayment = null;
 
     public function __construct()
     {
@@ -211,5 +221,55 @@ class Payment
     {
         $this->officialReceiptPath = $officialReceiptPath;
         return $this;
+    }
+
+    public function getVersion(): int
+    {
+        return $this->version;
+    }
+
+    public function setVersion(int $version): self
+    {
+        $this->version = $version;
+        return $this;
+    }
+
+    public function getPreviousPayment(): ?Payment
+    {
+        return $this->previousPayment;
+    }
+
+    public function setPreviousPayment(?Payment $previousPayment): self
+    {
+        $this->previousPayment = $previousPayment;
+        return $this;
+    }
+
+    public function isInitialVersion(): bool
+    {
+        return $this->version === 1;
+    }
+
+    public function isResubmission(): bool
+    {
+        return $this->previousPayment !== null;
+    }
+
+    public function getPaymentChain(): array
+    {
+        $chain = [];
+        $current = $this;
+
+        // Walk backwards to find the root (version 1)
+        while ($current->getPreviousPayment() !== null) {
+            $current = $current->getPreviousPayment();
+        }
+
+        // Build forward chain starting from root
+        $chain[] = $current;
+
+        // Note: This method only returns the chain up to the current payment
+        // To get subsequent versions, use PaymentRepository methods
+        return $chain;
     }
 }

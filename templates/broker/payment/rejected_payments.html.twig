@@ -1,0 +1,143 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Rejected Payments{% endblock %}
+
+{% block body %}
+<div class="w-full bg-base-200 min-h-screen">
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8">
+    {# Breadcrumb #}
+    <div class="breadcrumbs text-sm mb-6">
+        <ul>
+            <li>
+                <a href="{{ path('broker_manifest_list') }}" class="inline-flex items-center gap-2">
+                    <span class="icon-[tabler--home] size-4"></span>
+                    Dashboard
+                </a>
+            </li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li aria-current="page">Rejected Payments</li>
+        </ul>
+    </div>
+
+    {# Page Header #}
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-base-content">Rejected Payments</h1>
+        <p class="mt-2 text-sm text-base-content/60">Review rejected payments and resubmit with corrected proof of payment</p>
+    </div>
+
+    {% if total == 0 %}
+        <div class="card bg-base-100 shadow-lg">
+            <div class="card-body text-center py-12">
+                <span class="icon-[tabler--circle-check] size-16 text-success mx-auto mb-4"></span>
+                <h3 class="text-xl font-semibold text-base-content mb-2">No Rejected Payments</h3>
+                <p class="text-base-content/60">You don't have any rejected payments at the moment.</p>
+            </div>
+        </div>
+    {% else %}
+        {# Card Grid Layout #}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for payment in payments %}
+                <div class="card bg-base-100 shadow-lg border-l-4 border-error hover:shadow-xl transition-shadow">
+                    <div class="card-body p-5">
+                        {# Header #}
+                        <div class="flex items-start justify-between mb-3">
+                            <div>
+                                <div class="text-xs text-base-content/60 mb-1">Payment ID</div>
+                                <div class="font-mono font-bold text-base-content flex items-center gap-2">
+                                    #{{ payment.id }}
+                                    {# Version Badge #}
+                                    {% include 'components/payment_version_badge.html.twig' with {
+                                        version: payment.version,
+                                        status: payment.status.value,
+                                        submittedAt: payment.createdAt,
+                                        size: 'sm'
+                                    } %}
+                                </div>
+                            </div>
+                            <span class="badge badge-error gap-1">
+                                <span class="icon-[tabler--x] size-3"></span>
+                                Rejected
+                            </span>
+                        </div>
+
+                        {# Manifest Info #}
+                        <div class="mb-3">
+                            <div class="text-xs text-base-content/60 mb-1">Manifest Number</div>
+                            <a href="{{ path('broker_manifest_detail', {id: payment.manifest.id}) }}" 
+                               class="text-primary hover:text-primary/80 font-medium">
+                                {{ payment.manifest.manifestNumber }}
+                            </a>
+                        </div>
+
+                        {# Amount Comparison #}
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <div class="text-xs text-base-content/60 mb-1">Billing Amount</div>
+                                <div class="font-semibold text-base-content">₱{{ payment.manifest.billing.totalAmount|number_format(2) }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-base-content/60 mb-1">Submitted Amount</div>
+                                <div class="font-semibold text-base-content">₱{{ payment.amount|number_format(2) }}</div>
+                            </div>
+                        </div>
+
+                        {# Rejection Details #}
+                        <div class="mb-4 p-3 bg-error/10 rounded-lg border border-error/20">
+                            <div class="text-xs text-base-content/60 mb-1">Rejection Reason</div>
+                            <div class="text-sm text-error line-clamp-2" title="{{ payment.rejectionReason }}">
+                                {{ payment.rejectionReason }}
+                            </div>
+                            <div class="text-xs text-base-content/50 mt-2">
+                                Rejected by {{ payment.validatedBy.fullName }} on {{ payment.validatedAt|date('M j, Y g:i A') }}
+                            </div>
+                        </div>
+
+                        {# Action Button #}
+                        <div class="flex flex-col gap-2">
+                            <a href="{{ path('broker_payments_rejected_detail', {id: payment.id}) }}" 
+                               class="btn btn-error btn-sm gap-2">
+                                <span class="icon-[tabler--upload] size-4"></span>
+                                Resubmit Payment
+                            </a>
+                            <a href="{{ path('broker_payment_history', {id: payment.manifest.id}) }}" 
+                               class="btn btn-ghost btn-sm gap-2">
+                                <span class="icon-[tabler--history] size-4"></span>
+                                View My Submissions
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        {# Pagination #}
+        {% if totalPages > 1 %}
+            <div class="flex justify-center mt-6">
+                <div class="join">
+                    {% if currentPage > 1 %}
+                        <a href="{{ path('broker_payments_rejected', {page: currentPage - 1}) }}" 
+                           class="join-item btn btn-sm">«</a>
+                    {% endif %}
+                    
+                    {% for i in 1..totalPages %}
+                        {% if i == currentPage %}
+                            <button class="join-item btn btn-sm btn-active">{{ i }}</button>
+                        {% elseif i == 1 or i == totalPages or (i >= currentPage - 2 and i <= currentPage + 2) %}
+                            <a href="{{ path('broker_payments_rejected', {page: i}) }}" 
+                               class="join-item btn btn-sm">{{ i }}</a>
+                        {% elseif i == currentPage - 3 or i == currentPage + 3 %}
+                            <button class="join-item btn btn-sm btn-disabled">...</button>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if currentPage < totalPages %}
+                        <a href="{{ path('broker_payments_rejected', {page: currentPage + 1}) }}" 
+                           class="join-item btn btn-sm">»</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
+</div>
+{% endblock %}
