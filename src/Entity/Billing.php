@@ -7,7 +7,11 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity]
 #[ORM\Table(name: 'billings')]
 #[ORM\Index(name: 'idx_billings_manifest', columns: ['manifest_id'])]
+#[ORM\Index(name: 'idx_billings_type', columns: ['billing_type'])]
+#[ORM\Index(name: 'idx_billings_renewal_request', columns: ['edo_renewal_request_id'])]
 #[ORM\Index(name: 'idx_billings_created_at', columns: ['created_at'])]
+#[ORM\Index(name: 'idx_billings_version', columns: ['version'])]
+#[ORM\Index(name: 'idx_billings_previous', columns: ['previous_billing_id'])]
 class Billing
 {
     #[ORM\Id]
@@ -16,8 +20,21 @@ class Billing
     private ?int $id = null;
 
     #[ORM\OneToOne(targetEntity: Manifest::class, inversedBy: 'billing')]
-    #[ORM\JoinColumn(nullable: false, unique: true, onDelete: 'CASCADE')]
-    private Manifest $manifest;
+    #[ORM\JoinColumn(nullable: true, unique: true, onDelete: 'CASCADE')]
+    private ?Manifest $manifest = null;
+
+    #[ORM\Column(type: 'string', length: 50, options: ['default' => 'manifest'])]
+    private string $billingType = 'manifest';
+
+    #[ORM\ManyToOne(targetEntity: EDORenewalRequest::class)]
+    #[ORM\JoinColumn(name: 'edo_renewal_request_id', nullable: true, onDelete: 'SET NULL')]
+    private ?EDORenewalRequest $edoRenewalRequest = null;
+
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $detentionDays = null;
+
+    #[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
+    private ?float $detentionRate = null;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
     private float $freightCharges;
@@ -49,12 +66,29 @@ class Billing
     #[ORM\Column(type: 'string', length: 500, nullable: true)]
     private ?string $pdfPath = null;
 
+    #[ORM\Column(type: 'string', length: 500, nullable: true)]
+    private ?string $receiptFilePath = null;
+
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $paymentSubmittedAt = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'payment_submitted_by_id', nullable: true, onDelete: 'SET NULL')]
+    private ?User $paymentSubmittedBy = null;
+
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
     private User $generatedBy;
 
     #[ORM\Column(type: 'datetime')]
     private \DateTimeInterface $createdAt;
+
+    #[ORM\Column(type: 'integer', options: ['default' => 1])]
+    private int $version = 1;
+
+    #[ORM\ManyToOne(targetEntity: Billing::class)]
+    #[ORM\JoinColumn(name: 'previous_billing_id', referencedColumnName: 'id', onDelete: 'SET NULL')]
+    private ?Billing $previousBilling = null;
 
     public function __construct()
     {
@@ -77,14 +111,58 @@ class Billing
         return $this->id;
     }
 
-    public function getManifest(): Manifest
+    public function getManifest(): ?Manifest
     {
         return $this->manifest;
     }
 
-    public function setManifest(Manifest $manifest): self
+    public function setManifest(?Manifest $manifest): self
     {
         $this->manifest = $manifest;
+        return $this;
+    }
+
+    public function getBillingType(): string
+    {
+        return $this->billingType;
+    }
+
+    public function setBillingType(string $billingType): self
+    {
+        $this->billingType = $billingType;
+        return $this;
+    }
+
+    public function getEdoRenewalRequest(): ?EDORenewalRequest
+    {
+        return $this->edoRenewalRequest;
+    }
+
+    public function setEdoRenewalRequest(?EDORenewalRequest $edoRenewalRequest): self
+    {
+        $this->edoRenewalRequest = $edoRenewalRequest;
+        return $this;
+    }
+
+    public function getDetentionDays(): ?int
+    {
+        return $this->detentionDays;
+    }
+
+    public function setDetentionDays(?int $detentionDays): self
+    {
+        $this->detentionDays = $detentionDays;
+        return $this;
+    }
+
+    public function getDetentionRate(): ?float
+    {
+        return $this->detentionRate;
+    }
+
+    public function setDetentionRate(?float $detentionRate): self
+    {
+        $this->detentionRate = $detentionRate;
         return $this;
     }
 
@@ -140,6 +218,39 @@ class Billing
     public function setPdfPath(?string $pdfPath): self
     {
         $this->pdfPath = $pdfPath;
+        return $this;
+    }
+
+    public function getReceiptFilePath(): ?string
+    {
+        return $this->receiptFilePath;
+    }
+
+    public function setReceiptFilePath(?string $receiptFilePath): self
+    {
+        $this->receiptFilePath = $receiptFilePath;
+        return $this;
+    }
+
+    public function getPaymentSubmittedAt(): ?\DateTimeInterface
+    {
+        return $this->paymentSubmittedAt;
+    }
+
+    public function setPaymentSubmittedAt(?\DateTimeInterface $paymentSubmittedAt): self
+    {
+        $this->paymentSubmittedAt = $paymentSubmittedAt;
+        return $this;
+    }
+
+    public function getPaymentSubmittedBy(): ?User
+    {
+        return $this->paymentSubmittedBy;
+    }
+
+    public function setPaymentSubmittedBy(?User $paymentSubmittedBy): self
+    {
+        $this->paymentSubmittedBy = $paymentSubmittedBy;
         return $this;
     }
 
@@ -212,5 +323,37 @@ class Billing
     {
         $this->totalAmountUsd = $totalAmountUsd;
         return $this;
+    }
+
+    public function getVersion(): int
+    {
+        return $this->version;
+    }
+
+    public function setVersion(int $version): self
+    {
+        $this->version = $version;
+        return $this;
+    }
+
+    public function getPreviousBilling(): ?Billing
+    {
+        return $this->previousBilling;
+    }
+
+    public function setPreviousBilling(?Billing $previousBilling): self
+    {
+        $this->previousBilling = $previousBilling;
+        return $this;
+    }
+
+    public function isInitialVersion(): bool
+    {
+        return $this->version === 1;
+    }
+
+    public function isResubmission(): bool
+    {
+        return $this->previousBilling !== null;
     }
 }

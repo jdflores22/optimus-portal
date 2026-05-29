@@ -32,4 +32,9 @@ interface BillingServiceInterface
      * Get billing by billing ID
      */
     public function getBillingById(int $billingId): ?Billing;
+
+    /**
+     * Regenerate billing PDF
+     */
+    public function regenerateBillingPdf(int $billingId): Billing;
 }

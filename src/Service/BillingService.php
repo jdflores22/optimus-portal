@@ -155,4 +155,20 @@ class BillingService implements BillingServiceInterface
     {
         return $this->entityManager->getRepository(Billing::class)->find($billingId);
     }
+
+    public function regenerateBillingPdf(int $billingId): Billing
+    {
+        $billing = $this->getBillingById($billingId);
+        
+        if (!$billing) {
+            throw new \InvalidArgumentException('Billing not found');
+        }
+
+        // Generate PDF
+        $pdfPath = $this->documentService->generateBillingPDF($billing);
+        $billing->setPdfPath($pdfPath);
+        $this->entityManager->flush();
+
+        return $billing;
+    }
 }

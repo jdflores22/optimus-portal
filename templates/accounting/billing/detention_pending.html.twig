@@ -1,0 +1,263 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Pending Detention Payments - Accounting{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <!-- Header Section -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-base-content">Pending Detention Payments</h1>
+                    <p class="text-sm text-base-content/60 mt-1">Review and verify detention charge payments for eDO renewal requests</p>
+                </div>
+                <span class="badge badge-warning badge-lg">{{ billings|length }} Pending</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4 sm:px-6 lg:px-8 py-6">
+        {% if billings is empty %}
+            <!-- Empty State -->
+            <div class="card bg-base-100 shadow-sm">
+                <div class="p-12 text-center">
+                    <div class="size-16 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="icon-[tabler--circle-check] size-8 text-success"></span>
+                    </div>
+                    <h3 class="text-base font-semibold">No Pending Detention Payments</h3>
+                    <p class="mt-2 text-sm opacity-60">All detention payments have been verified</p>
+                </div>
+            </div>
+        {% else %}
+            <!-- Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for billing in billings %}
+                    {% set renewalRequest = billing.edoRenewalRequest %}
+                    {% set expiredEdo = renewalRequest.expiredEdo %}
+                    {% set container = expiredEdo.container %}
+                    <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="card-body">
+                            <!-- Header -->
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-lg">Billing #{{ billing.id }}</h3>
+                                    <p class="text-sm text-primary font-semibold">{{ expiredEdo.edoNumber }}</p>
+                                </div>
+                                <span class="badge badge-warning">Awaiting</span>
+                            </div>
+
+                            <!-- Container Info -->
+                            {% if container %}
+                                <div class="mb-4">
+                                    <div class="flex items-center gap-2 text-base-content/70 mb-1">
+                                        <span class="icon-[tabler--box] size-4"></span>
+                                        <span class="text-xs font-semibold uppercase">Container</span>
+                                    </div>
+                                    <div class="font-semibold">{{ container.containerNumber }}</div>
+                                    <div class="text-xs opacity-60">{{ container.containerSize.name }} - {{ container.containerType.name }}</div>
+                                </div>
+                            {% endif %}
+
+                            <!-- Broker Info -->
+                            <div class="mb-4">
+                                <div class="flex items-center gap-2 text-base-content/70 mb-1">
+                                    <span class="icon-[tabler--user] size-4"></span>
+                                    <span class="text-xs font-semibold uppercase">Broker</span>
+                                </div>
+                                <div class="text-sm">{{ renewalRequest.requestedBy.email }}</div>
+                            </div>
+
+                            <!-- Detention Details -->
+                            <div class="bg-warning/10 rounded-lg p-3 mb-4">
+                                <div class="grid grid-cols-2 gap-2 text-sm mb-2">
+                                    <div>
+                                        <div class="text-xs opacity-60">Detention Days</div>
+                                        <div class="font-semibold">{{ billing.detentionDays }} days</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs opacity-60">Rate/Day</div>
+                                        <div class="font-semibold">{{ billing.originalCurrency }} {{ billing.detentionRate|number_format(2) }}</div>
+                                    </div>
+                                </div>
+                                <div class="divider my-2"></div>
+                                <div>
+                                    <div class="text-xs opacity-60 mb-1">Total Amount</div>
+                                    <div class="text-2xl font-bold text-warning">{{ billing.originalCurrency }} {{ billing.totalAmount|number_format(2) }}</div>
+                                </div>
+                            </div>
+
+                            <!-- Dates -->
+                            <div class="grid grid-cols-2 gap-3 mb-4 text-sm">
+                                <div>
+                                    <div class="text-xs opacity-60 mb-1">Created</div>
+                                    <div class="font-medium">{{ billing.createdAt|date('M j, Y') }}</div>
+                                    <div class="text-xs opacity-60">{{ billing.createdAt|date('g:i A') }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs opacity-60 mb-1">Renewal Request</div>
+                                    <div class="font-medium">#{{ renewalRequest.id }}</div>
+                                </div>
+                            </div>
+
+                            <!-- Receipt Status -->
+                            {% if billing.receiptFilePath %}
+                                <div class="bg-success/10 rounded-lg p-3 mb-4">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="icon-[tabler--circle-check] size-5 text-success"></span>
+                                        <span class="text-sm font-semibold text-success">Receipt Uploaded</span>
+                                    </div>
+                                    <div class="text-xs opacity-70 mb-2">
+                                        Uploaded: {{ billing.paymentSubmittedAt|date('M j, Y g:i A') }}
+                                    </div>
+                                    <a href="/accounting/billings/{{ billing.id }}/receipt?inline=true" 
+                                       target="_blank"
+                                       class="btn btn-sm btn-outline btn-success gap-1">
+                                        <span class="icon-[tabler--file-text] size-4"></span>
+                                        View Receipt
+                                    </a>
+                                </div>
+                            {% else %}
+                                <div class="bg-warning/10 rounded-lg p-3 mb-4">
+                                    <div class="flex items-center gap-2">
+                                        <span class="icon-[tabler--clock] size-5 text-warning"></span>
+                                        <span class="text-sm font-semibold text-warning">Awaiting Receipt Upload</span>
+                                    </div>
+                                    <div class="text-xs opacity-70 mt-1">
+                                        Broker has not uploaded payment receipt yet
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <!-- Action Button -->
+                            {% if billing.receiptFilePath %}
+                                <button type="button" 
+                                        id="verify-btn-{{ billing.id }}"
+                                        class="btn btn-primary btn-block rounded-lg gap-2" 
+                                        onclick="openVerifyPaymentModal({{ billing.id }})">
+                                    <span class="icon-[tabler--check] size-5"></span>
+                                    Verify Payment
+                                </button>
+                            {% else %}
+                                <button type="button" 
+                                        class="btn btn-disabled btn-block rounded-lg gap-2"
+                                        disabled
+                                        title="Waiting for broker to upload payment receipt">
+                                    <span class="icon-[tabler--clock] size-5"></span>
+                                    Awaiting Receipt Upload
+                                </button>
+                            {% endif %}
+
+                            <!-- Confirmation Modal for this billing -->
+                            <div id="verify-payment-modal-{{ billing.id }}" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                                <div class="absolute inset-0 bg-black/60" onclick="closeVerifyPaymentModal({{ billing.id }})"></div>
+                                
+                                <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg z-10">
+                                    <div class="flex items-center justify-between px-5 py-4 border-b border-base-300">
+                                        <div class="flex items-center gap-3">
+                                            <div class="flex items-center justify-center size-10 rounded-full bg-info/10">
+                                                <span class="icon-[tabler--info-circle] size-5 text-info"></span>
+                                            </div>
+                                            <h3 class="font-semibold text-base text-base-content">Verify Detention Payment</h3>
+                                        </div>
+                                        <button type="button" onclick="closeVerifyPaymentModal({{ billing.id }})" class="btn btn-ghost btn-sm btn-circle">
+                                            <span class="icon-[tabler--x] size-4"></span>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="px-5 py-4">
+                                        <div class="space-y-4">
+                                            <div class="alert alert-info">
+                                                <span class="icon-[tabler--info-circle] size-5"></span>
+                                                <span>You are about to verify that the detention charge payment has been received. This will allow the renewal request to proceed.</span>
+                                            </div>
+
+                                            <div class="bg-base-200 rounded-lg p-4 space-y-3">
+                                                <div>
+                                                    <div class="text-xs opacity-60 mb-1">Billing ID</div>
+                                                    <div class="font-semibold">#{{ billing.id }}</div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-xs opacity-60 mb-1">eDO Number</div>
+                                                    <div class="font-semibold">{{ expiredEdo.edoNumber }}</div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-xs opacity-60 mb-1">Broker</div>
+                                                    <div class="font-semibold">{{ renewalRequest.requestedBy.email }}</div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-xs opacity-60 mb-1">Amount to Verify</div>
+                                                    <div class="text-2xl font-bold text-success">{{ billing.originalCurrency }} {{ billing.totalAmount|number_format(2) }}</div>
+                                                </div>
+                                            </div>
+
+                                            <p class="text-sm opacity-70">
+                                                Please confirm that you have received the payment before proceeding. The renewal request status will be updated to "Ready for Generation".
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex justify-end gap-2 px-5 py-4 border-t border-base-300">
+                                        <button type="button" onclick="closeVerifyPaymentModal({{ billing.id }})" class="btn btn-ghost">
+                                            Cancel
+                                        </button>
+                                        <button type="button" onclick="verifyPayment({{ billing.id }})" class="btn btn-success gap-1">
+                                            <span class="icon-[tabler--check] size-4"></span>
+                                            Confirm & Verify
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function openVerifyPaymentModal(billingId) {
+    document.getElementById('verify-payment-modal-' + billingId).classList.remove('hidden');
+}
+
+function closeVerifyPaymentModal(billingId) {
+    document.getElementById('verify-payment-modal-' + billingId).classList.add('hidden');
+}
+
+function verifyPayment(billingId) {
+    // Close the modal
+    closeVerifyPaymentModal(billingId);
+    
+    // Show loading state on button
+    const button = document.getElementById('verify-btn-' + billingId);
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Verifying...';
+    }
+
+    // Show loading toast
+    if (window.notyf) {
+        window.notyf.success('Redirecting to payment verification...');
+    }
+
+    // Redirect to the verify payment page after a short delay
+    setTimeout(() => {
+        window.location.href = `/accounting/billings/${billingId}/verify-payment`;
+    }, 500);
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modals = document.querySelectorAll('[id^="verify-payment-modal-"]');
+        modals.forEach(modal => {
+            if (!modal.classList.contains('hidden')) {
+                const billingId = modal.id.replace('verify-payment-modal-', '');
+                closeVerifyPaymentModal(billingId);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

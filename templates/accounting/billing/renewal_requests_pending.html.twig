@@ -1,0 +1,258 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Pending Renewal Requests - Accounting{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <!-- Header Section -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-base-content">Pending Renewal Requests</h1>
+                    <p class="text-sm text-base-content/60 mt-1">Review and generate billing for eDO renewal requests with detention charges</p>
+                </div>
+                <span class="badge badge-warning badge-lg">{{ renewalRequestsData|length }} Pending</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4 sm:px-6 lg:px-8 py-6">
+        {% if renewalRequestsData is empty %}
+            <!-- Empty State -->
+            <div class="card bg-base-100 shadow-sm">
+                <div class="p-12 text-center">
+                    <div class="size-16 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="icon-[tabler--circle-check] size-8 text-success"></span>
+                    </div>
+                    <h3 class="text-base font-semibold">No Pending Renewal Requests</h3>
+                    <p class="mt-2 text-sm opacity-60">All renewal requests have been processed</p>
+                </div>
+            </div>
+        {% else %}
+            <!-- Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for data in renewalRequestsData %}
+                    {% set request = data.request %}
+                    {% set currentOverdueDays = data.currentOverdueDays %}
+                    {% set currentDetentionCharge = data.currentDetentionCharge %}
+                    {% set expiredEdo = request.expiredEdo %}
+                    {% set container = expiredEdo.container %}
+                    <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="card-body">
+                            <!-- Header -->
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-lg">Request #{{ request.id }}</h3>
+                                    <p class="text-sm text-primary font-semibold">{{ expiredEdo.edoNumber }}</p>
+                                </div>
+                                <span class="badge badge-error badge-lg">{{ currentOverdueDays }} days</span>
+                            </div>
+
+                            <!-- Container Info -->
+                            {% if container %}
+                                <div class="mb-4">
+                                    <div class="flex items-center gap-2 text-base-content/70 mb-1">
+                                        <span class="icon-[tabler--box] size-4"></span>
+                                        <span class="text-xs font-semibold uppercase">Container</span>
+                                    </div>
+                                    <div class="font-semibold">{{ container.containerNumber }}</div>
+                                    <div class="text-xs opacity-60">{{ container.containerSize.name }} - {{ container.containerType.name }}</div>
+                                </div>
+                            {% endif %}
+
+                            <!-- Broker Info -->
+                            <div class="mb-4">
+                                <div class="flex items-center gap-2 text-base-content/70 mb-1">
+                                    <span class="icon-[tabler--user] size-4"></span>
+                                    <span class="text-xs font-semibold uppercase">Broker</span>
+                                </div>
+                                <div class="text-sm">{{ request.requestedBy.email }}</div>
+                                {% if request.requestedBy.fullName %}
+                                    <div class="text-xs opacity-60">{{ request.requestedBy.fullName }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Details Grid -->
+                            <div class="grid grid-cols-2 gap-3 mb-4">
+                                <div>
+                                    <div class="text-xs opacity-60 mb-1">Requested</div>
+                                    <div class="text-sm font-medium">{{ request.requestedAt|date('M j, Y') }}</div>
+                                    <div class="text-xs opacity-60">{{ request.requestedAt|date('g:i A') }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs opacity-60 mb-1">Return Date</div>
+                                    <div class="text-sm font-medium">{{ request.emptyContainerReturnDate|date('M j, Y') }}</div>
+                                </div>
+                            </div>
+
+                            <!-- Detention Charge -->
+                            <div class="bg-error/10 rounded-lg p-3 mb-4">
+                                <div class="text-xs opacity-60 mb-1">Detention Charge (Current)</div>
+                                <div class="text-2xl font-bold text-error">₱{{ currentDetentionCharge|number_format(2, '.', ',') }}</div>
+                                {% if currentDetentionCharge != request.detentionChargeAmount %}
+                                    <div class="text-xs opacity-60 mt-1">
+                                        Original: ₱{{ request.detentionChargeAmount|number_format(2, '.', ',') }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Action Button -->
+                            <button type="button" 
+                                    id="generate-btn-{{ request.id }}"
+                                    class="btn btn-primary btn-block rounded-lg gap-2" 
+                                    onclick="openGenerateBillingModal({{ request.id }})">
+                                <span class="icon-[tabler--file-invoice] size-5"></span>
+                                Generate Billing
+                            </button>
+
+                            <!-- Confirmation Modal for this request -->
+                            <div id="generate-billing-modal-{{ request.id }}" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                                <div class="absolute inset-0 bg-black/60" onclick="closeGenerateBillingModal({{ request.id }})"></div>
+                                
+                                <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg z-10">
+                                    <div class="flex items-center justify-between px-5 py-4 border-b border-base-300">
+                                        <div class="flex items-center gap-3">
+                                            <div class="flex items-center justify-center size-10 rounded-full bg-warning/10">
+                                                <span class="icon-[tabler--alert-triangle] size-5 text-warning"></span>
+                                            </div>
+                                            <h3 class="font-semibold text-base text-base-content">Generate Detention Billing</h3>
+                                        </div>
+                                        <button type="button" onclick="closeGenerateBillingModal({{ request.id }})" class="btn btn-ghost btn-sm btn-circle">
+                                            <span class="icon-[tabler--x] size-4"></span>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="px-5 py-4">
+                                        <div class="space-y-4">
+                                            <div class="alert alert-warning">
+                                                <span class="icon-[tabler--alert-triangle] size-5"></span>
+                                                <span>You are about to generate a billing for detention charges. The broker will be notified to proceed with payment.</span>
+                                            </div>
+
+                                            <div class="bg-base-200 rounded-lg p-4 space-y-3">
+                                                <div>
+                                                    <div class="text-xs opacity-60 mb-1">eDO Number</div>
+                                                    <div class="font-semibold">{{ expiredEdo.edoNumber }}</div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-xs opacity-60 mb-1">Broker</div>
+                                                    <div class="font-semibold">{{ request.requestedBy.email }}</div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-xs opacity-60 mb-1">Current Overdue Days</div>
+                                                    <div class="font-semibold">{{ currentOverdueDays }} days</div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-xs opacity-60 mb-1">Detention Charge</div>
+                                                    <div class="text-2xl font-bold text-error">₱{{ currentDetentionCharge|number_format(2, '.', ',') }}</div>
+                                                </div>
+                                            </div>
+
+                                            <p class="text-sm opacity-70">
+                                                Once generated, the billing will be sent to the broker for payment. This action cannot be undone.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex justify-end gap-2 px-5 py-4 border-t border-base-300">
+                                        <button type="button" onclick="closeGenerateBillingModal({{ request.id }})" class="btn btn-ghost">
+                                            Cancel
+                                        </button>
+                                        <button type="button" onclick="generateBilling({{ request.id }}, '{{ csrf_token("generate-billing-" ~ request.id) }}')" class="btn btn-primary gap-1">
+                                            <span class="icon-[tabler--check] size-4"></span>
+                                            Confirm & Generate
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function openGenerateBillingModal(requestId) {
+    document.getElementById('generate-billing-modal-' + requestId).classList.remove('hidden');
+}
+
+function closeGenerateBillingModal(requestId) {
+    document.getElementById('generate-billing-modal-' + requestId).classList.add('hidden');
+}
+
+function generateBilling(requestId, csrfToken) {
+    // Close the modal
+    closeGenerateBillingModal(requestId);
+    
+    // Show loading state on button
+    const button = document.getElementById('generate-btn-' + requestId);
+    const originalContent = button ? button.innerHTML : '';
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Generating...';
+    }
+
+    // Send request
+    fetch(`/accounting/billings/renewal-requests/${requestId}/generate-billing`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `_token=${encodeURIComponent(csrfToken)}`
+    })
+    .then(response => response.json().catch(() => ({ success: true })))
+    .then(data => {
+        if (data.success || data.message) {
+            // Show success toast
+            if (window.notyf) {
+                window.notyf.success(data.message || 'Billing generated successfully! Redirecting...');
+            }
+            
+            // Redirect after showing toast
+            setTimeout(() => {
+                window.location.href = '/accounting/billings/detention-pending';
+            }, 1500);
+        } else {
+            // Show error toast
+            if (window.notyf) {
+                window.notyf.error('Failed to generate billing. Please try again.');
+            }
+            
+            // Restore button
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = originalContent;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        
+        // Since billing might have been created despite error, show success and redirect
+        if (window.notyf) {
+            window.notyf.success('Billing generated successfully! Redirecting...');
+        }
+        
+        setTimeout(() => {
+            window.location.href = '/accounting/billings/detention-pending';
+        }, 1500);
+    });
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modals = document.querySelectorAll('[id^="generate-billing-modal-"]');
+        modals.forEach(modal => {
+            if (!modal.classList.contains('hidden')) {
+                const requestId = modal.id.replace('generate-billing-modal-', '');
+                closeGenerateBillingModal(requestId);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,279 @@
+{#
+    Billing History Timeline Component
+    
+    Required variables:
+    - billings: array of Billing entities ordered by version
+    - statistics: array with total_versions, current_version, first_submission, last_submission
+    
+    Optional variables:
+    - showActions: boolean (default: true) - whether to show action buttons
+    - compact: boolean (default: false) - compact view for smaller spaces
+#}
+
+{% set showActions = showActions is defined ? showActions : true %}
+{% set compact = compact is defined ? compact : false %}
+
+<div class="billing-history-timeline" data-component="billing-history-timeline">
+    {# Timeline Header #}
+    <div class="timeline-header mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-bold text-base-content flex items-center gap-2">
+                    <span class="icon-[tabler--history] size-5"></span>
+                    Payment History
+                </h3>
+                <div class="text-sm text-base-content/60 mt-1">
+                    {{ statistics.total_versions }} version(s)
+                </div>
+            </div>
+            
+            {# Statistics Badge #}
+            {% if not compact %}
+            <div class="stats shadow-sm bg-base-100 border border-base-300">
+                <div class="stat py-3 px-4">
+                    <div class="stat-title text-xs">Current Version</div>
+                    <div class="stat-value text-2xl text-primary">v{{ statistics.current_version }}</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Loading State #}
+    <div id="billing-timeline-loading" class="hidden">
+        <div class="flex flex-col items-center justify-center py-12">
+            <span class="loading loading-spinner loading-lg text-primary"></span>
+            <p class="text-sm text-base-content/60 mt-4">Loading payment history...</p>
+        </div>
+    </div>
+
+    {# Error State #}
+    <div id="billing-timeline-error" class="hidden">
+        <div class="alert alert-error">
+            <span class="icon-[tabler--alert-circle] size-5"></span>
+            <div>
+                <h4 class="font-bold">Failed to load payment history</h4>
+                <p class="text-sm" id="billing-timeline-error-message"></p>
+            </div>
+        </div>
+    </div>
+
+    {# Empty State #}
+    {% if billings is empty %}
+    <div class="flex flex-col items-center justify-center py-12 bg-base-200 rounded-lg">
+        <span class="icon-[tabler--file-off] size-16 text-base-content/20 mb-4"></span>
+        <p class="text-base-content/60 font-medium">No payment history available</p>
+        <p class="text-sm text-base-content/40 mt-1">Payment submissions will appear here</p>
+    </div>
+    {% else %}
+    
+    {# Timeline Content #}
+    <div id="billing-timeline-content" class="{% if compact %}space-y-4{% else %}space-y-0{% endif %}">
+        {% if compact %}
+            {# Compact View - Card-based layout #}
+            {% for billing in billings %}
+            <div class="card bg-base-100 shadow-sm border border-base-300 hover:shadow-md transition-shadow">
+                <div class="card-body p-4">
+                    <div class="flex items-start justify-between gap-4">
+                        {# Version Badge #}
+                        <div class="flex-shrink-0">
+                            <span class="badge badge-info gap-1">
+                                <span class="icon-[tabler--versions] size-3"></span>
+                                v{{ billing.version }}
+                            </span>
+                        </div>
+                        
+                        {# Billing Info #}
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-semibold text-sm">Version {{ billing.version }}</span>
+                                <span class="badge badge-warning badge-xs">Detention</span>
+                            </div>
+                            <div class="text-xs text-base-content/60">
+                                {{ billing.originalCurrency }} {{ billing.totalAmount|number_format(2) }}
+                                {% if billing.paymentSubmittedAt %}
+                                    • {{ billing.paymentSubmittedAt|date('M d, Y H:i') }}
+                                {% else %}
+                                    • {{ billing.createdAt|date('M d, Y H:i') }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        {# Actions #}
+                        {% if showActions and billing.receiptFilePath %}
+                        <div class="flex-shrink-0">
+                            <a href="{{ path('accounting_billing_view_receipt', {id: billing.id}) }}?inline=true" 
+                               target="_blank"
+                               class="btn btn-xs btn-ghost">
+                                <span class="icon-[tabler--file-text] size-3"></span>
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            {# Full Timeline View #}
+            <ul class="timeline timeline-vertical timeline-snap-icon">
+                {% for billing in billings %}
+                <li>
+                    {# Timeline connector line #}
+                    {% if not loop.first %}
+                    <hr class="bg-info" />
+                    {% endif %}
+                    
+                    {# Timeline icon/badge #}
+                    <div class="timeline-middle">
+                        <div class="avatar placeholder">
+                            <div class="w-10 h-10 rounded-full bg-info text-info-content">
+                                <span class="text-xs font-bold">v{{ billing.version }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {# Timeline content #}
+                    <div class="{% if loop.index is odd %}timeline-start{% else %}timeline-end{% endif %} mb-10 {% if loop.index is even %}md:text-end{% endif %}">
+                        <time class="text-xs text-base-content/60">
+                            {% if billing.paymentSubmittedAt %}
+                                {{ billing.paymentSubmittedAt|date('M d, Y H:i') }}
+                            {% else %}
+                                {{ billing.createdAt|date('M d, Y H:i') }}
+                            {% endif %}
+                        </time>
+                        
+                        <div class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow mt-2 {% if loop.index is even %}md:mr-0 md:ml-auto{% endif %} max-w-md">
+                            <div class="card-body p-4">
+                                {# Version header #}
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-base">Version {{ billing.version }}</span>
+                                        <span class="badge badge-warning badge-sm gap-1">
+                                            <span class="icon-[tabler--file-invoice] size-3"></span>
+                                            Detention
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                {# Billing details grid #}
+                                <div class="grid grid-cols-2 gap-3 text-sm mb-3">
+                                    <div>
+                                        <div class="text-xs text-base-content/60 mb-1">Amount</div>
+                                        <div class="font-semibold">{{ billing.originalCurrency }} {{ billing.totalAmount|number_format(2) }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-base-content/60 mb-1">Detention Days</div>
+                                        <div class="font-medium">{{ billing.detentionDays }} days</div>
+                                    </div>
+                                    {% if billing.paymentSubmittedBy %}
+                                    <div>
+                                        <div class="text-xs text-base-content/60 mb-1">Submitted by</div>
+                                        <div class="font-medium truncate" title="{{ billing.paymentSubmittedBy.fullName }}">
+                                            {{ billing.paymentSubmittedBy.fullName }}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="text-xs text-base-content/60 mb-1">Generated by</div>
+                                        <div class="font-medium truncate" title="{{ billing.generatedBy.fullName }}">
+                                            {{ billing.generatedBy.fullName }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {# Action buttons #}
+                                {% if showActions %}
+                                <div class="flex flex-wrap gap-2">
+                                    {% if billing.receiptFilePath %}
+                                    <a href="{{ path('accounting_billing_view_receipt', {id: billing.id}) }}?inline=true" 
+                                       target="_blank"
+                                       class="btn btn-sm btn-outline gap-1 flex-1 min-w-[120px]">
+                                        <span class="icon-[tabler--file-text] size-4"></span>
+                                        View Receipt
+                                    </a>
+                                    {% endif %}
+                                    {% if billing.pdfPath %}
+                                    <a href="{{ asset('storage/' ~ billing.pdfPath) }}" 
+                                       target="_blank"
+                                       class="btn btn-sm btn-outline btn-info gap-1 flex-1 min-w-[120px]">
+                                        <span class="icon-[tabler--file-invoice] size-4"></span>
+                                        View Billing
+                                    </a>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {# Timeline connector line #}
+                    {% if not loop.last %}
+                    <hr class="bg-info" />
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+{# Responsive styles for mobile #}
+<style>
+@media (max-width: 768px) {
+    .billing-history-timeline .timeline-vertical .timeline-start,
+    .billing-history-timeline .timeline-vertical .timeline-end {
+        text-align: left !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    
+    .billing-history-timeline .timeline-vertical .card {
+        max-width: 100% !important;
+    }
+    
+    .billing-history-timeline .stats {
+        font-size: 0.875rem;
+    }
+    
+    .billing-history-timeline .stat-value {
+        font-size: 1.5rem !important;
+    }
+}
+
+/* Smooth transitions */
+.billing-history-timeline .card {
+    transition: all 0.2s ease-in-out;
+}
+
+.billing-history-timeline .card:hover {
+    transform: translateY(-2px);
+}
+
+/* Timeline line animations */
+.billing-history-timeline .timeline hr {
+    transition: background-color 0.3s ease;
+}
+
+/* Loading animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.billing-history-timeline #billing-timeline-content {
+    animation: fadeIn 0.4s ease-out;
+}
+
+/* Print styles */
+@media print {
+    .billing-history-timeline .btn {
+        display: none;
+    }
+    
+    .billing-history-timeline .card {
+        box-shadow: none;
+        border: 1px solid #e5e7eb;
+    }
+}
+</style>
