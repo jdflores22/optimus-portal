@@ -36,6 +36,8 @@ package-lock.json
 
 ###> User Uploads & Generated Files ###
 /public/uploads/
+/public/assets/
+/public/vendor/
 *.pdf
 ###< User Uploads & Generated Files ###
 
