@@ -1,0 +1,18 @@
+# Symfony Scheduler Configuration
+# Note: The scheduler component requires additional setup
+# For now, we'll use cron jobs or manual commands to run scheduled tasks
+
+# when@prod:
+#     framework:
+#         scheduler:
+#             enabled: true
+
+# when@dev:
+#     framework:
+#         scheduler:
+#             enabled: true
+
+when@test:
+    framework:
+        scheduler:
+            enabled: false
