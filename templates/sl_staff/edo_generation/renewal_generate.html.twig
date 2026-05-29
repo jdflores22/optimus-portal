@@ -1,0 +1,483 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Generate New eDO - SL Staff{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <!-- Header Section -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center gap-3">
+                <a href="{{ path('sl_staff_renewal_requests_ready') }}" class="btn btn-ghost btn-sm btn-circle">
+                    <span class="icon-[tabler--arrow-left] size-5"></span>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold text-base-content">Generate New eDO</h1>
+                    <p class="text-sm text-base-content/60 mt-1">Select container yard location and generate new eDO from renewal request</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Loading State -->
+        <div id="loadingState" class="card bg-base-100 shadow-sm p-12 text-center">
+            <span class="loading loading-spinner loading-lg text-primary"></span>
+            <p class="mt-4 text-sm opacity-60">Loading renewal request details...</p>
+        </div>
+
+        <!-- Content -->
+        <div id="contentContainer" class="hidden space-y-6">
+            <!-- Renewal Request Info Card -->
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title text-lg flex items-center gap-2">
+                        <span class="icon-[tabler--info-circle] size-5"></span>
+                        Renewal Request Information
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4" id="requestInfo">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- CY Empty Return Locations -->
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="card-title text-lg flex items-center gap-2">
+                                <span class="icon-[tabler--map-pin] size-5"></span>
+                                CY Empty Return Locations
+                            </h2>
+                            <p class="text-sm text-base-content/60 mt-1">Real-time capacity utilization across your allocated terminals</p>
+                        </div>
+                        <div class="badge badge-lg badge-primary gap-2">
+                            <span class="icon-[tabler--building-warehouse] size-4"></span>
+                            <span id="locationCount">0 Locations</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Container Size Info -->
+                    <div class="alert alert-info mb-4">
+                        <span class="icon-[tabler--info-circle] size-5"></span>
+                        <div>
+                            <p class="text-sm font-semibold">Container to be returned: <span id="containerSizeInfo">-</span></p>
+                            <p class="text-xs opacity-70 mt-1">This container will occupy <span id="containerTeuInfo" class="font-semibold">-</span> TEU of capacity</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="cyLocationsGrid">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Notes -->
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title text-lg flex items-center gap-2">
+                        <span class="icon-[tabler--notes] size-5"></span>
+                        Additional Notes (Optional)
+                    </h2>
+                    <textarea id="additionalNotes" 
+                              class="textarea textarea-bordered w-full mt-4" 
+                              rows="4"
+                              placeholder="Enter any additional notes for this eDO..."></textarea>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center justify-end gap-3">
+                <a href="{{ path('sl_staff_renewal_requests_ready') }}" class="btn btn-ghost">Cancel</a>
+                <button type="button" id="generateBtn" class="btn btn-success gap-2" disabled>
+                    <span class="icon-[tabler--check] size-5"></span>
+                    <span id="generateBtnText">Generate New eDO</span>
+                    <span id="generateBtnSpinner" class="loading loading-spinner loading-sm hidden"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div id="successModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg z-10">
+        <div class="flex items-center gap-3 px-6 py-4 bg-success rounded-t-2xl">
+            <span class="icon-[tabler--circle-check] size-7 text-success-content"></span>
+            <h3 class="text-lg font-bold text-success-content">eDO Generated Successfully</h3>
+        </div>
+        <div class="px-6 py-5 space-y-4">
+            <p class="text-sm text-base-content/70">The new eDO has been generated successfully from the renewal request.</p>
+            <div class="grid grid-cols-2 gap-3 p-4 rounded-xl bg-success/10 border border-success/20 text-sm">
+                <div class="col-span-2">
+                    <span class="text-base-content/50 text-xs uppercase tracking-wide">New eDO Number</span>
+                    <p class="font-semibold text-base-content" id="successEdoNumber">-</p>
+                </div>
+                <div>
+                    <span class="text-base-content/50 text-xs uppercase tracking-wide">Container</span>
+                    <p class="font-semibold text-base-content" id="successContainerNumber">-</p>
+                </div>
+                <div>
+                    <span class="text-base-content/50 text-xs uppercase tracking-wide">CY Location</span>
+                    <p class="font-semibold text-base-content" id="successCyLocation">-</p>
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-end gap-2 px-6 py-4 border-t border-base-300">
+            <button type="button" onclick="redirectToList()" class="btn btn-success btn-sm">Back to List</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const renewalRequestId = {{ renewalRequestId }};
+let renewalData = null;
+let cyAllocations = [];
+let selectedCyAllocationId = null;
+
+// Load renewal request details on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadRenewalRequestDetails();
+});
+
+async function loadRenewalRequestDetails() {
+    try {
+        const response = await fetch(`/sl-staff/edo-generation/renewal-requests/${renewalRequestId}/generate`);
+        const result = await response.json();
+
+        if (!result.success) {
+            showError(result.error.message);
+            return;
+        }
+
+        renewalData = result.data;
+        cyAllocations = result.data.cyAllocations;
+        
+        displayRequestInfo(renewalData);
+        displayCyLocations(cyAllocations);
+
+        // Hide loading, show content
+        document.getElementById('loadingState').classList.add('hidden');
+        document.getElementById('contentContainer').classList.remove('hidden');
+
+    } catch (error) {
+        console.error('Error loading renewal request details:', error);
+        showError('Failed to load renewal request details. Please try again.');
+    }
+}
+
+function displayRequestInfo(data) {
+    const requestInfo = document.getElementById('requestInfo');
+    
+    requestInfo.innerHTML = `
+        <div>
+            <label class="block text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">Expired eDO</label>
+            <p class="text-sm font-semibold text-primary">${data.expiredEdo.edoNumber}</p>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">Container</label>
+            <p class="text-sm font-semibold">${data.expiredEdo.containerNumber}</p>
+            <p class="text-xs opacity-60">${data.expiredEdo.containerSize} - ${data.expiredEdo.containerType}</p>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">Broker</label>
+            <p class="text-sm">${data.broker.email}</p>
+        </div>
+    `;
+    
+    // Update container size info in CY section
+    const containerSize = data.expiredEdo.containerSize;
+    const containerTeu = getContainerTeu(containerSize);
+    document.getElementById('containerSizeInfo').textContent = `${data.expiredEdo.containerNumber} (${containerSize})`;
+    document.getElementById('containerTeuInfo').textContent = containerTeu;
+}
+
+function getContainerTeu(containerSize) {
+    // Convert container size to TEU
+    // 20ft = 1 TEU, 40ft = 2 TEU, 45ft = 2.25 TEU
+    if (!containerSize) return '1 TEU';
+    
+    const size = containerSize.toLowerCase();
+    if (size.includes('20')) return '1 TEU';
+    if (size.includes('40')) return '2 TEU';
+    if (size.includes('45')) return '2.25 TEU';
+    
+    return '1 TEU'; // Default
+}
+
+function displayCyLocations(allocations) {
+    const grid = document.getElementById('cyLocationsGrid');
+    
+    // Update location count
+    document.getElementById('locationCount').textContent = `${allocations.length} Location${allocations.length !== 1 ? 's' : ''}`;
+    
+    if (allocations.length === 0) {
+        grid.innerHTML = `
+            <div class="col-span-2 text-center py-8">
+                <span class="icon-[tabler--building-warehouse] size-12 opacity-20 mx-auto mb-3"></span>
+                <p class="text-sm opacity-60">No container yard locations available</p>
+            </div>
+        `;
+        return;
+    }
+
+    const cardsHtml = allocations.map(cy => createCyCard(cy)).join('');
+    grid.innerHTML = cardsHtml;
+}
+
+function createCyCard(cy) {
+    const utilizationPercent = cy.allocatedCapacity > 0 
+        ? ((cy.currentUtilization / cy.allocatedCapacity) * 100).toFixed(1)
+        : 0;
+    
+    // Calculate if this container will fit
+    const containerSize = renewalData?.expiredEdo?.containerSize || '';
+    const containerTeuValue = parseFloat(getContainerTeu(containerSize).split(' ')[0]);
+    const is20ft = containerSize.toLowerCase().includes('20');
+    const is40ft = containerSize.toLowerCase().includes('40') || containerSize.toLowerCase().includes('45');
+    
+    // Check if container will fit based on size-specific capacity
+    let willFit = cy.availableCapacity >= containerTeuValue;
+    if (is20ft && cy.available20ft <= 0) willFit = false;
+    if (is40ft && cy.available40ft <= 0) willFit = false;
+    
+    let statusBadge = '';
+    let statusClass = '';
+    
+    if (!willFit) {
+        statusBadge = '<span class="badge badge-error badge-sm">Insufficient Space</span>';
+        statusClass = 'border-error/30 bg-error/5 opacity-60';
+    } else if (utilizationPercent >= 90) {
+        statusBadge = '<span class="badge badge-warning badge-sm">Near Capacity</span>';
+        statusClass = 'border-warning/30 bg-warning/5';
+    } else if (utilizationPercent >= 70) {
+        statusBadge = '<span class="badge badge-warning badge-sm">Moderate</span>';
+        statusClass = 'border-warning/30 bg-warning/5';
+    } else {
+        statusBadge = '<span class="badge badge-success badge-sm">Available</span>';
+        statusClass = 'border-success/30 bg-success/5';
+    }
+
+    const isSelected = selectedCyAllocationId === cy.id;
+    const selectedClass = isSelected ? 'ring-2 ring-primary' : '';
+    const disabledClass = !willFit ? 'cursor-not-allowed' : 'cursor-pointer hover:shadow-md';
+
+    // Calculate utilization percentages for each size
+    const utilization20ft = cy.capacity20ft > 0 ? ((cy.allocated20ft / cy.capacity20ft) * 100).toFixed(0) : 0;
+    const utilization40ft = cy.capacity40ft > 0 ? ((cy.allocated40ft / cy.capacity40ft) * 100).toFixed(0) : 0;
+
+    return `
+        <div class="card border-2 ${statusClass} ${selectedClass} ${disabledClass} transition-all"
+             onclick="${willFit ? `selectCyLocation(${cy.id})` : ''}">
+            <div class="card-body p-4">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <span class="icon-[tabler--building-warehouse] size-5 opacity-60"></span>
+                            <h3 class="font-bold text-base">${cy.terminal.name}</h3>
+                        </div>
+                        ${cy.terminal.location ? `<p class="text-xs opacity-60 ml-7">${cy.terminal.location}</p>` : ''}
+                    </div>
+                    ${statusBadge}
+                </div>
+
+                <!-- 20ft Containers -->
+                <div class="mb-3 p-3 rounded-lg bg-base-200/50">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="badge badge-primary badge-sm">20ft</span>
+                        <span class="text-xs opacity-60">Utilization: ${utilization20ft}%</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 text-center text-xs mb-2">
+                        <div>
+                            <div class="flex items-center justify-center gap-1 opacity-60 mb-1">
+                                <span class="icon-[tabler--box] size-3"></span>
+                                <span>Capacity</span>
+                            </div>
+                            <div class="font-bold">${cy.capacity20ft}</div>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-center gap-1 opacity-60 mb-1">
+                                <span class="icon-[tabler--stack] size-3"></span>
+                                <span>Allocated</span>
+                            </div>
+                            <div class="font-bold text-info">${cy.allocated20ft}</div>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-center gap-1 opacity-60 mb-1">
+                                <span class="icon-[tabler--clock] size-3"></span>
+                                <span>Pre-Forecast</span>
+                            </div>
+                            <div class="font-bold text-warning">${cy.preForecast20ft}</div>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-center gap-1 opacity-60 mb-1">
+                                <span class="icon-[tabler--check] size-3"></span>
+                                <span>Available</span>
+                            </div>
+                            <div class="font-bold text-success">${cy.available20ft}</div>
+                        </div>
+                    </div>
+                    <div class="w-full bg-base-300 rounded-full h-1.5">
+                        <div class="h-1.5 rounded-full transition-all ${
+                            utilization20ft >= 90 ? 'bg-error' : 
+                            utilization20ft >= 70 ? 'bg-warning' : 
+                            'bg-success'
+                        }" style="width: ${Math.min(utilization20ft, 100)}%"></div>
+                    </div>
+                </div>
+
+                <!-- 40ft Containers -->
+                <div class="p-3 rounded-lg bg-base-200/50">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="badge badge-secondary badge-sm">40ft</span>
+                        <span class="text-xs opacity-60">Utilization: ${utilization40ft}%</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 text-center text-xs mb-2">
+                        <div>
+                            <div class="flex items-center justify-center gap-1 opacity-60 mb-1">
+                                <span class="icon-[tabler--box] size-3"></span>
+                                <span>Capacity</span>
+                            </div>
+                            <div class="font-bold">${cy.capacity40ft}</div>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-center gap-1 opacity-60 mb-1">
+                                <span class="icon-[tabler--stack] size-3"></span>
+                                <span>Allocated</span>
+                            </div>
+                            <div class="font-bold text-info">${cy.allocated40ft}</div>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-center gap-1 opacity-60 mb-1">
+                                <span class="icon-[tabler--clock] size-3"></span>
+                                <span>Pre-Forecast</span>
+                            </div>
+                            <div class="font-bold text-warning">${cy.preForecast40ft}</div>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-center gap-1 opacity-60 mb-1">
+                                <span class="icon-[tabler--check] size-3"></span>
+                                <span>Available</span>
+                            </div>
+                            <div class="font-bold text-success">${cy.available40ft}</div>
+                        </div>
+                    </div>
+                    <div class="w-full bg-base-300 rounded-full h-1.5">
+                        <div class="h-1.5 rounded-full transition-all ${
+                            utilization40ft >= 90 ? 'bg-error' : 
+                            utilization40ft >= 70 ? 'bg-warning' : 
+                            'bg-success'
+                        }" style="width: ${Math.min(utilization40ft, 100)}%"></div>
+                    </div>
+                </div>
+
+                ${!willFit ? `
+                <div class="flex items-center gap-1 text-xs text-error mt-3 p-2 bg-error/10 rounded">
+                    <span class="icon-[tabler--alert-circle] size-4"></span>
+                    <span>Insufficient space for ${containerSize} container</span>
+                </div>
+                ` : ''}
+
+                ${isSelected ? `
+                <div class="mt-3 flex items-center gap-2 text-primary text-sm font-semibold">
+                    <span class="icon-[tabler--check] size-4"></span>
+                    Selected
+                </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
+function selectCyLocation(cyId) {
+    selectedCyAllocationId = cyId;
+    displayCyLocations(cyAllocations);
+    
+    // Enable generate button
+    document.getElementById('generateBtn').disabled = false;
+}
+
+async function generateEdo() {
+    if (!selectedCyAllocationId) {
+        if (window.notyf) {
+            window.notyf.error('Please select a container yard location');
+        }
+        return;
+    }
+
+    const additionalNotes = document.getElementById('additionalNotes').value;
+    const generateBtn = document.getElementById('generateBtn');
+    const generateBtnText = document.getElementById('generateBtnText');
+    const generateBtnSpinner = document.getElementById('generateBtnSpinner');
+
+    // Disable button and show loading
+    generateBtn.disabled = true;
+    generateBtnText.classList.add('hidden');
+    generateBtnSpinner.classList.remove('hidden');
+
+    try {
+        const response = await fetch(`/sl-staff/edo-generation/renewal-requests/${renewalRequestId}/generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                cyAllocationId: selectedCyAllocationId,
+                additionalNotes: additionalNotes || null
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Show success modal
+            document.getElementById('successEdoNumber').textContent = result.data.newEdo.edoNumber;
+            document.getElementById('successContainerNumber').textContent = renewalData.expiredEdo.containerNumber;
+            document.getElementById('successCyLocation').textContent = result.data.newEdo.cyLocation;
+            document.getElementById('successModal').classList.remove('hidden');
+        } else {
+            if (window.notyf) {
+                window.notyf.error(result.error.message || 'Failed to generate eDO');
+            }
+            
+            // Restore button
+            generateBtn.disabled = false;
+            generateBtnText.classList.remove('hidden');
+            generateBtnSpinner.classList.add('hidden');
+        }
+
+    } catch (error) {
+        console.error('Error generating eDO:', error);
+        if (window.notyf) {
+            window.notyf.error('An error occurred while generating the eDO');
+        }
+        
+        // Restore button
+        generateBtn.disabled = false;
+        generateBtnText.classList.remove('hidden');
+        generateBtnSpinner.classList.add('hidden');
+    }
+}
+
+function redirectToList() {
+    window.location.href = '{{ path('sl_staff_renewal_requests_ready') }}';
+}
+
+function showError(message) {
+    document.getElementById('loadingState').classList.add('hidden');
+    
+    if (window.notyf) {
+        window.notyf.error(message);
+    }
+    
+    setTimeout(() => {
+        window.location.href = '{{ path('sl_staff_renewal_requests_ready') }}';
+    }, 2000);
+}
+
+// Add click handler to generate button
+document.getElementById('generateBtn').addEventListener('click', generateEdo);
+</script>
+{% endblock %}

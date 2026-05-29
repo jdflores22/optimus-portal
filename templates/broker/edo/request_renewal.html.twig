@@ -1,0 +1,209 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Request eDO Renewal - OPTIMUS{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('assets/js/edo-renewal-request.js') }}"></script>
+{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <!-- Header Section -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center gap-3">
+                <a href="{{ path('broker_edo_detail_page', {id: edo.id}) }}" class="btn btn-ghost btn-sm btn-circle">
+                    <span class="icon-[tabler--arrow-left] size-5"></span>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold text-base-content">Request eDO Renewal</h1>
+                    <p class="text-sm text-base-content/60 mt-1">Request a new eDO for expired container {{ edo.container.containerNumber }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4 sm:px-6 lg:px-8 py-6 max-w-4xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Form -->
+            <div class="lg:col-span-2">
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body">
+                        {% if existingRequest %}
+                            <!-- Existing Request Alert -->
+                            <div class="alert alert-info mb-6">
+                                <span class="icon-[tabler--info-circle] size-5"></span>
+                                <div class="flex-1">
+                                    <h3 class="font-bold">Renewal Request Already Submitted</h3>
+                                    <div class="text-sm mt-1">
+                                        A renewal request for this eDO was submitted on {{ existingRequest.requestedAt|date('M j, Y, g:i A') }}.
+                                        <br>
+                                        <strong>Status:</strong> 
+                                        {% set requestStatus = existingRequest.status.value %}
+                                        {% if requestStatus == 'pending_review' %}
+                                            <span class="badge badge-info badge-sm">Pending Review</span>
+                                        {% elseif requestStatus == 'awaiting_payment' %}
+                                            <span class="badge badge-warning badge-sm">Awaiting Payment</span>
+                                        {% elseif requestStatus == 'ready_for_generation' %}
+                                            <span class="badge badge-info badge-sm">Ready for Generation</span>
+                                        {% elseif requestStatus == 'completed' %}
+                                            <span class="badge badge-success badge-sm">Completed</span>
+                                        {% else %}
+                                            <span class="badge badge-ghost badge-sm">{{ requestStatus|title|replace({'_': ' '}) }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="mt-3">
+                                        <a href="{{ path('broker_edo_list_page') }}" class="btn btn-sm btn-ghost">
+                                            <span class="icon-[tabler--arrow-left] size-4"></span>
+                                            Back to eDO List
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Office Hours Notice -->
+                        <div class="alert alert-info mb-6">
+                            <span class="icon-[tabler--info-circle] size-5"></span>
+                            <div>
+                                <h3 class="font-bold">Shipping Line Operations</h3>
+                                <div class="text-sm">Please note: Shipping line operations are available Monday-Friday, 8:00 AM - 5:00 PM. Requests submitted outside these hours will be processed on the next business day.</div>
+                            </div>
+                        </div>
+
+                        <form method="POST" action="{{ path('broker_edo_request_renewal', {id: edo.id}) }}" id="renewalRequestForm" data-expiration-date="{{ edo.expiresAt|date('Y-m-d H:i:s') }}" {% if existingRequest %}style="opacity: 0.5; pointer-events: none;"{% endif %}>
+                            
+                            <!-- Empty Container Return Date -->
+                            <div class="form-control mb-6">
+                                <label class="label">
+                                    <span class="label-text font-semibold">Empty Container Return Date <span class="text-error">*</span></span>
+                                </label>
+                                <input 
+                                    type="date" 
+                                    name="return_date" 
+                                    id="returnDate"
+                                    class="input input-bordered w-full"
+                                    required
+                                    min="{{ 'tomorrow'|date('Y-m-d') }}"
+                                >
+                                <input type="hidden" name="return_time" id="returnTime" value="10:00">
+                                <label class="label">
+                                    <span class="label-text-alt text-base-content/60">Select when you plan to return the empty container (Time will be set to 10:00 AM)</span>
+                                </label>
+                            </div>
+
+                            <!-- Detention Charges Display -->
+                            <div id="chargesDisplay" class="hidden mb-6">
+                                <div class="card bg-error/10 border border-error/20">
+                                    <div class="card-body p-4">
+                                        <div class="flex items-start gap-3">
+                                            <span class="icon-[tabler--alert-circle] size-6 text-error flex-shrink-0 mt-0.5"></span>
+                                            <div class="flex-1">
+                                                <h4 class="font-bold text-error mb-2">Detention Charges Apply</h4>
+                                                <div class="space-y-2 text-sm">
+                                                    <div class="flex justify-between">
+                                                        <span class="text-base-content/70">Overdue Days:</span>
+                                                        <span class="font-semibold" id="overdueDaysDisplay">-</span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="text-base-content/70">Detention Rate:</span>
+                                                        <span class="font-semibold" id="detentionRateDisplay">-</span>
+                                                    </div>
+                                                    <div class="divider my-2"></div>
+                                                    <div class="flex justify-between text-base">
+                                                        <span class="font-bold">Total Detention Charge:</span>
+                                                        <span class="font-bold text-error" id="totalChargeDisplay">₱0.00</span>
+                                                    </div>
+                                                </div>
+                                                <div class="alert alert-info mt-3 text-xs">
+                                                    <span class="icon-[tabler--info-circle] size-4"></span>
+                                                    <span>Payment verification is required before eDO generation</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Additional Notes -->
+                            <div class="form-control mb-6">
+                                <label class="label">
+                                    <span class="label-text font-semibold">Additional Notes</span>
+                                    <span class="label-text-alt text-base-content/60">Optional</span>
+                                </label>
+                                <textarea 
+                                    name="notes" 
+                                    class="textarea textarea-bordered h-24"
+                                    placeholder="Add any special instructions or notes for this renewal request..."
+                                ></textarea>
+                            </div>
+
+                            <!-- Form Actions -->
+                            <div class="flex flex-col sm:flex-row gap-3 justify-end">
+                                <a href="{{ path('broker_edo_detail_page', {id: edo.id}) }}" class="btn btn-ghost">
+                                    Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary" id="submitBtn" {% if existingRequest %}disabled{% endif %}>
+                                    <span id="submitBtnIcon" class="icon-[tabler--send] size-5"></span>
+                                    <span id="submitBtnText">Submit Renewal Request</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar - eDO Information -->
+            <div class="lg:col-span-1">
+                <div class="card bg-base-100 shadow-sm sticky top-6">
+                    <div class="card-body">
+                        <h3 class="font-bold text-lg mb-4">Expired eDO Details</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">eDO Number</div>
+                                <div class="font-semibold">{{ edo.edoNumber }}</div>
+                            </div>
+                            
+                            <div>
+                                <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Container</div>
+                                <div class="font-semibold">{{ edo.container.containerNumber }}</div>
+                            </div>
+                            
+                            <div>
+                                <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Container Type</div>
+                                <div>{{ edo.container.containerType.name }}</div>
+                            </div>
+                            
+                            <div>
+                                <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Container Size</div>
+                                <div>{{ edo.container.containerSize.name }}</div>
+                            </div>
+                            
+                            <div class="divider my-2"></div>
+                            
+                            <div>
+                                <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Expiration Date</div>
+                                <div class="font-semibold text-error">{{ edo.expiresAt|date('M j, Y, g:i A') }}</div>
+                            </div>
+                            
+                            {% if edo.terminal %}
+                            <div>
+                                <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Terminal</div>
+                                <div>{{ edo.terminal.name }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            <div>
+                                <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Current Status</div>
+                                <span class="badge badge-error badge-sm">Expired</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,250 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Renewal Request Status - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <!-- Header Section -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center gap-3">
+                <a href="{{ path('broker_edo_renewal_list') }}" class="btn btn-ghost btn-sm btn-circle">
+                    <span class="icon-[tabler--arrow-left] size-5"></span>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold text-base-content">Renewal Request Status</h1>
+                    <p class="text-sm text-base-content/60 mt-1">Track your eDO renewal request progress</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4 sm:px-6 lg:px-8 py-6 max-w-6xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Content -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Status Card -->
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-bold">Request Status</h2>
+                            {% set statusClass = {
+                                'pending_review': 'badge-warning',
+                                'awaiting_payment': 'badge-error',
+                                'payment_verified': 'badge-info',
+                                'ready_for_generation': 'badge-success',
+                                'completed': 'badge-success',
+                                'cancelled': 'badge-ghost'
+                            } %}
+                            <span class="badge {{ statusClass[renewalRequest.status.value] ?? 'badge-ghost' }} badge-lg">
+                                {{ renewalRequest.status.value|replace({'_': ' '})|title }}
+                            </span>
+                        </div>
+
+                        <!-- Status Timeline -->
+                        <div class="relative">
+                            <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-base-300"></div>
+                            
+                            <ul class="space-y-6">
+                                <!-- Request Submitted -->
+                                <li class="relative flex gap-4">
+                                    <div class="flex-shrink-0">
+                                        <div class="size-8 rounded-full bg-success flex items-center justify-center ring-4 ring-base-100">
+                                            <span class="icon-[tabler--check] size-5 text-success-content"></span>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 pt-0.5">
+                                        <h3 class="font-semibold">Request Submitted</h3>
+                                        <p class="text-sm text-base-content/60 mt-1">{{ renewalRequest.requestedAt|date('M j, Y, g:i A') }}</p>
+                                        <p class="text-sm mt-1">Renewal request created successfully</p>
+                                    </div>
+                                </li>
+
+                                <!-- Payment Required (if applicable) -->
+                                {% if renewalRequest.detentionChargeAmount > 0 %}
+                                <li class="relative flex gap-4">
+                                    <div class="flex-shrink-0">
+                                        <div class="size-8 rounded-full {{ renewalRequest.paymentVerified ? 'bg-success' : 'bg-warning' }} flex items-center justify-center ring-4 ring-base-100">
+                                            {% if renewalRequest.paymentVerified %}
+                                                <span class="icon-[tabler--check] size-5 text-success-content"></span>
+                                            {% else %}
+                                                <span class="icon-[tabler--clock] size-5 text-warning-content"></span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 pt-0.5">
+                                        <h3 class="font-semibold">Payment Verification</h3>
+                                        {% if renewalRequest.paymentVerified %}
+                                            <p class="text-sm text-base-content/60 mt-1">{{ renewalRequest.paymentVerifiedAt|date('M j, Y, g:i A') }}</p>
+                                            <p class="text-sm mt-1">Payment verified by {{ renewalRequest.paymentVerifiedBy.fullName }}</p>
+                                        {% else %}
+                                            <p class="text-sm text-base-content/60 mt-1">Awaiting payment verification</p>
+                                            <p class="text-sm mt-1">Please submit payment for detention charges</p>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                                {% endif %}
+
+                                <!-- eDO Generation -->
+                                <li class="relative flex gap-4">
+                                    <div class="flex-shrink-0">
+                                        <div class="size-8 rounded-full {{ renewalRequest.newEdo ? 'bg-success' : 'bg-base-300' }} flex items-center justify-center ring-4 ring-base-100">
+                                            {% if renewalRequest.newEdo %}
+                                                <span class="icon-[tabler--check] size-5 text-success-content"></span>
+                                            {% else %}
+                                                <span class="icon-[tabler--dots] size-5 text-base-content/40"></span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 pt-0.5">
+                                        <h3 class="font-semibold">New eDO Generation</h3>
+                                        {% if renewalRequest.newEdo %}
+                                            <p class="text-sm text-base-content/60 mt-1">{{ renewalRequest.completedAt|date('M j, Y, g:i A') }}</p>
+                                            <p class="text-sm mt-1">New eDO generated: <span class="font-semibold text-primary">{{ renewalRequest.newEdo.edoNumber }}</span></p>
+                                        {% else %}
+                                            <p class="text-sm text-base-content/60 mt-1">Pending</p>
+                                            <p class="text-sm mt-1">Waiting for SL staff to generate new eDO</p>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detention Charges Card (if applicable) -->
+                {% if renewalRequest.detentionChargeAmount > 0 %}
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="font-bold text-lg mb-4">Detention Charges</h3>
+                        
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-base-content/70">Overdue Days</span>
+                                <span class="font-semibold">{{ renewalRequest.overdueDays }} days</span>
+                            </div>
+                            
+                            <div class="divider my-2"></div>
+                            
+                            <div class="flex justify-between items-center text-lg">
+                                <span class="font-bold">Total Detention Charge</span>
+                                <span class="font-bold text-error">₱{{ renewalRequest.detentionChargeAmount|number_format(2, '.', ',') }}</span>
+                            </div>
+                        </div>
+
+                        {% if renewalRequest.detentionBilling %}
+                        <div class="mt-4 pt-4 border-t border-base-300">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="text-sm text-base-content/60">Billing Reference</div>
+                                    <div class="font-semibold">{{ renewalRequest.detentionBilling.billingNumber }}</div>
+                                </div>
+                                {% if not renewalRequest.paymentVerified %}
+                                <a href="{{ path('broker_payment_submit', {billingId: renewalRequest.detentionBilling.id}) }}" class="btn btn-primary btn-sm">
+                                    <span class="icon-[tabler--credit-card] size-4"></span>
+                                    Pay Now
+                                </a>
+                                {% else %}
+                                <span class="badge badge-success">
+                                    <span class="icon-[tabler--check] size-4"></span>
+                                    Paid
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Additional Notes (if any) -->
+                {% if renewalRequest.additionalNotes %}
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body">
+                        <h3 class="font-bold text-lg mb-3">Additional Notes</h3>
+                        <p class="text-sm whitespace-pre-wrap">{{ renewalRequest.additionalNotes }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- New eDO Card (if completed) -->
+                {% if renewalRequest.newEdo %}
+                <div class="card bg-success/10 border border-success/20 shadow-sm">
+                    <div class="card-body">
+                        <div class="flex items-start gap-3">
+                            <span class="icon-[tabler--circle-check] size-8 text-success flex-shrink-0"></span>
+                            <div class="flex-1">
+                                <h3 class="font-bold text-lg text-success mb-2">New eDO Generated</h3>
+                                <p class="text-sm mb-4">Your renewal request has been completed. A new eDO has been generated.</p>
+                                
+                                <div class="flex flex-col sm:flex-row gap-3">
+                                    <a href="{{ path('broker_edo_detail_page', {id: renewalRequest.newEdo.id}) }}" class="btn btn-success btn-sm">
+                                        <span class="icon-[tabler--eye] size-4"></span>
+                                        View New eDO
+                                    </a>
+                                    <a href="{{ path('broker_edo_download', {id: renewalRequest.newEdo.id}) }}" class="btn btn-outline btn-success btn-sm">
+                                        <span class="icon-[tabler--download] size-4"></span>
+                                        Download PDF
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="lg:col-span-1">
+                <!-- Request Details Card -->
+                <div class="card bg-base-100 shadow-sm sticky top-6">
+                    <div class="card-body">
+                        <h3 class="font-bold text-lg mb-4">Request Details</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Request ID</div>
+                                <div class="font-semibold">#{{ renewalRequest.id }}</div>
+                            </div>
+                            
+                            <div>
+                                <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Expired eDO</div>
+                                <a href="{{ path('broker_edo_detail_page', {id: renewalRequest.expiredEdo.id}) }}" class="font-semibold text-primary hover:underline">
+                                    {{ renewalRequest.expiredEdo.edoNumber }}
+                                </a>
+                            </div>
+                            
+                            <div>
+                                <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Container</div>
+                                <div class="font-semibold">{{ renewalRequest.expiredEdo.container.containerNumber }}</div>
+                            </div>
+                            
+                            <div>
+                                <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Requested Return Date</div>
+                                <div>{{ renewalRequest.emptyContainerReturnDate|date('M j, Y, g:i A') }}</div>
+                            </div>
+                            
+                            <div>
+                                <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Requested By</div>
+                                <div>{{ renewalRequest.requestedBy.fullName }}</div>
+                            </div>
+                            
+                            <div>
+                                <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Requested At</div>
+                                <div>{{ renewalRequest.requestedAt|date('M j, Y, g:i A') }}</div>
+                            </div>
+                        </div>
+
+                        {% if renewalRequest.status.value == 'cancelled' %}
+                        <div class="alert alert-error mt-4">
+                            <span class="icon-[tabler--x] size-5"></span>
+                            <span class="text-sm">This request has been cancelled</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

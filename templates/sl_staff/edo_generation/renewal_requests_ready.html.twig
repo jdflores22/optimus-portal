@@ -1,0 +1,183 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Ready for Generation - SL Staff{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <!-- Header Section -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-base-content">eDO Renewal Requests</h1>
+                    <p class="text-sm text-base-content/60 mt-1">Generate new eDOs for verified renewal requests</p>
+                </div>
+                <span class="badge badge-success badge-lg" id="requestCount">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Loading State -->
+        <div id="loadingState" class="card bg-base-100 shadow-sm p-12 text-center">
+            <span class="loading loading-spinner loading-lg text-primary"></span>
+            <p class="mt-4 text-sm opacity-60">Loading renewal requests...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="card bg-base-100 shadow-sm hidden">
+            <div class="p-12 text-center">
+                <div class="size-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="icon-[tabler--circle-check] size-8 text-success"></span>
+                </div>
+                <h3 class="text-base font-semibold">No Pending Requests</h3>
+                <p class="mt-2 text-sm opacity-60">All renewal requests have been processed</p>
+            </div>
+        </div>
+
+        <!-- Cards Grid -->
+        <div id="requestsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 hidden">
+            <!-- Populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<script>
+let renewalRequests = [];
+
+// Load renewal requests on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadRenewalRequests();
+});
+
+async function loadRenewalRequests() {
+    try {
+        const response = await fetch('/sl-staff/edo-generation/renewal-requests');
+        const result = await response.json();
+
+        if (!result.success) {
+            showError('Failed to load renewal requests');
+            return;
+        }
+
+        renewalRequests = result.data.renewalRequests;
+        displayRenewalRequests(renewalRequests);
+
+        // Update count badge
+        document.getElementById('requestCount').textContent = `${renewalRequests.length} Request(s)`;
+
+    } catch (error) {
+        console.error('Error loading renewal requests:', error);
+        showError('Failed to load renewal requests. Please try again.');
+    }
+}
+
+function displayRenewalRequests(requests) {
+    const loadingState = document.getElementById('loadingState');
+    const emptyState = document.getElementById('emptyState');
+    const requestsGrid = document.getElementById('requestsGrid');
+
+    loadingState.classList.add('hidden');
+
+    if (requests.length === 0) {
+        emptyState.classList.remove('hidden');
+        requestsGrid.classList.add('hidden');
+        return;
+    }
+
+    emptyState.classList.add('hidden');
+    requestsGrid.classList.remove('hidden');
+
+    const cardsHtml = requests.map(request => createRequestCard(request)).join('');
+    requestsGrid.innerHTML = cardsHtml;
+}
+
+function createRequestCard(request) {
+    const statusBadge = request.paymentVerified 
+        ? '<span class="badge badge-success">Payment Verified</span>'
+        : '<span class="badge badge-info">Ready</span>';
+
+    return `
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body">
+                <!-- Header -->
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg">Request #${request.id}</h3>
+                        <p class="text-sm text-primary font-semibold">${request.expiredEdo.edoNumber}</p>
+                    </div>
+                    ${statusBadge}
+                </div>
+
+                <!-- Container Info -->
+                <div class="mb-4">
+                    <div class="flex items-center gap-2 text-base-content/70 mb-1">
+                        <span class="icon-[tabler--box] size-4"></span>
+                        <span class="text-xs font-semibold uppercase">Container</span>
+                    </div>
+                    <div class="font-semibold">${request.expiredEdo.containerNumber}</div>
+                </div>
+
+                <!-- Broker Info -->
+                <div class="mb-4">
+                    <div class="flex items-center gap-2 text-base-content/70 mb-1">
+                        <span class="icon-[tabler--user] size-4"></span>
+                        <span class="text-xs font-semibold uppercase">Broker</span>
+                    </div>
+                    <div class="text-sm">${request.broker.email}</div>
+                </div>
+
+                <!-- Detention Info -->
+                ${request.detentionChargeAmount > 0 ? `
+                <div class="bg-warning/10 rounded-lg p-3 mb-4">
+                    <div class="text-xs opacity-60 mb-1">Detention Charges</div>
+                    <div class="text-lg font-bold text-warning">₱${parseFloat(request.detentionChargeAmount).toFixed(2)}</div>
+                    <div class="text-xs opacity-60">${request.overdueDays} days overdue</div>
+                </div>
+                ` : ''}
+
+                <!-- Dates -->
+                <div class="grid grid-cols-2 gap-3 mb-4 text-sm">
+                    <div>
+                        <div class="text-xs opacity-60 mb-1">Requested</div>
+                        <div class="font-medium">${formatDate(request.requestedAt)}</div>
+                    </div>
+                    ${request.paymentVerifiedAt ? `
+                    <div>
+                        <div class="text-xs opacity-60 mb-1">Verified</div>
+                        <div class="font-medium text-success">${formatDate(request.paymentVerifiedAt)}</div>
+                    </div>
+                    ` : ''}
+                </div>
+
+                <!-- Action Button -->
+                <a href="/sl-staff/edo-generation/renewal-requests/${request.id}/generate-page"
+                   class="btn btn-success btn-block rounded-lg gap-2">
+                    <span class="icon-[tabler--file-plus] size-5"></span>
+                    Generate New eDO
+                </a>
+            </div>
+        </div>
+    `;
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+}
+
+function showError(message) {
+    const loadingState = document.getElementById('loadingState');
+    loadingState.classList.add('hidden');
+    
+    if (window.notyf) {
+        window.notyf.error(message);
+    }
+}
+</script>
+{% endblock %}
