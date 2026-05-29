@@ -1,0 +1,466 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Generate eDO from Renewal - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <!-- Header Section -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center gap-3">
+                <a href="{{ path('sl_staff_renewal_requests') }}" class="btn btn-ghost btn-sm btn-circle">
+                    <span class="icon-[tabler--arrow-left] size-5"></span>
+                </a>
+                <div>
+                    <h1 class="text-2xl font-bold text-base-content">Generate eDO from Renewal Request</h1>
+                    <p class="text-sm text-base-content/60 mt-1">Create a new eDO for the expired container</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4 sm:px-6 lg:px-8 py-6">
+        <div id="pageContainer">
+            <!-- Loading State -->
+            <div id="loadingState" class="flex items-center justify-center py-12">
+                <span class="loading loading-spinner loading-lg text-primary"></span>
+            </div>
+
+            <!-- Main Content (Hidden until loaded) -->
+            <div id="mainContent" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Main Form -->
+                <div class="lg:col-span-2">
+                    <div class="card bg-base-100 shadow-sm">
+                        <div class="card-body">
+                            <!-- Payment Verification Status -->
+                            <div id="paymentStatusAlert" class="hidden mb-6">
+                                <!-- Populated by JavaScript -->
+                            </div>
+
+                            <form id="edoGenerationForm">
+                                <!-- Container Yard Selection -->
+                                <div class="form-control mb-6">
+                                    <label class="label">
+                                        <span class="label-text font-semibold">Container Yard Location <span class="text-error">*</span></span>
+                                    </label>
+                                    <select 
+                                        name="cyAllocationId" 
+                                        id="cyAllocationId"
+                                        class="select select-bordered w-full"
+                                        required
+                                    >
+                                        <option value="">Select container yard...</option>
+                                        <!-- Populated by JavaScript -->
+                                    </select>
+                                    <label class="label">
+                                        <span class="label-text-alt text-base-content/60">Select the container yard for empty container return</span>
+                                    </label>
+                                </div>
+
+                                <!-- CY Allocation Details (shown when CY selected) -->
+                                <div id="cyDetails" class="hidden mb-6">
+                                    <div class="card bg-info/10 border border-info/20">
+                                        <div class="card-body p-4">
+                                            <div class="flex items-start gap-3">
+                                                <span class="icon-[tabler--info-circle] size-6 text-info flex-shrink-0 mt-0.5"></span>
+                                                <div class="flex-1">
+                                                    <h4 class="font-bold text-info mb-2">Container Yard Capacity</h4>
+                                                    <div class="space-y-2 text-sm">
+                                                        <div class="flex justify-between">
+                                                            <span class="text-base-content/70">Allocated Capacity:</span>
+                                                            <span class="font-semibold" id="allocatedCapacity">-</span>
+                                                        </div>
+                                                        <div class="flex justify-between">
+                                                            <span class="text-base-content/70">Current Utilization:</span>
+                                                            <span class="font-semibold" id="currentUtilization">-</span>
+                                                        </div>
+                                                        <div class="flex justify-between">
+                                                            <span class="text-base-content/70">Available Capacity:</span>
+                                                            <span class="font-semibold text-success" id="availableCapacity">-</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Preforecasting Assignment Fields -->
+                                <div class="mb-6">
+                                    <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+                                        <span class="icon-[tabler--calendar-event] size-5"></span>
+                                        Preforecasting Information
+                                    </h3>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <!-- Expected Return Date -->
+                                        <div class="form-control">
+                                            <label class="label">
+                                                <span class="label-text font-semibold">Expected Return Date</span>
+                                            </label>
+                                            <input 
+                                                type="date" 
+                                                name="expectedReturnDate" 
+                                                id="expectedReturnDate"
+                                                class="input input-bordered w-full"
+                                                readonly
+                                            >
+                                            <label class="label">
+                                                <span class="label-text-alt text-base-content/60">From renewal request</span>
+                                            </label>
+                                        </div>
+
+                                        <!-- eDO Expiration Date -->
+                                        <div class="form-control">
+                                            <label class="label">
+                                                <span class="label-text font-semibold">New eDO Expiration Date <span class="text-error">*</span></span>
+                                            </label>
+                                            <input 
+                                                type="date" 
+                                                name="expirationDate" 
+                                                id="expirationDate"
+                                                class="input input-bordered w-full"
+                                                required
+                                            >
+                                            <label class="label">
+                                                <span class="label-text-alt text-base-content/60">Must be at least 1 day from now</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Additional Notes -->
+                                <div class="form-control mb-6">
+                                    <label class="label">
+                                        <span class="label-text font-semibold">Additional Notes</span>
+                                        <span class="label-text-alt text-base-content/60">Optional</span>
+                                    </label>
+                                    <textarea 
+                                        name="additionalNotes" 
+                                        id="additionalNotes"
+                                        class="textarea textarea-bordered h-24"
+                                        placeholder="Add any special instructions or notes for this eDO..."
+                                    ></textarea>
+                                </div>
+
+                                <!-- Form Actions -->
+                                <div class="flex flex-col sm:flex-row gap-3 justify-end">
+                                    <a href="{{ path('sl_staff_renewal_requests') }}" class="btn btn-ghost">
+                                        Cancel
+                                    </a>
+                                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                                        <span class="icon-[tabler--file-plus] size-5"></span>
+                                        Generate eDO
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar - Request Information -->
+                <div class="lg:col-span-1">
+                    <!-- Renewal Request Details -->
+                    <div class="card bg-base-100 shadow-sm mb-6 sticky top-6">
+                        <div class="card-body">
+                            <h3 class="font-bold text-lg mb-4">Renewal Request Details</h3>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Request ID</div>
+                                    <div class="font-semibold" id="requestId">-</div>
+                                </div>
+                                
+                                <div>
+                                    <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Broker</div>
+                                    <div class="font-semibold" id="brokerName">-</div>
+                                    <div class="text-xs text-base-content/60" id="brokerEmail">-</div>
+                                </div>
+                                
+                                <div>
+                                    <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Requested At</div>
+                                    <div id="requestedAt">-</div>
+                                </div>
+                                
+                                <div class="divider my-2"></div>
+                                
+                                <div>
+                                    <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Overdue Days</div>
+                                    <div class="font-semibold" id="overdueDays">-</div>
+                                </div>
+                                
+                                <div>
+                                    <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Detention Charges</div>
+                                    <div class="font-semibold text-error" id="detentionCharges">-</div>
+                                </div>
+                                
+                                <div>
+                                    <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Payment Status</div>
+                                    <div id="paymentStatus">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Expired eDO Details -->
+                    <div class="card bg-base-100 shadow-sm sticky top-6">
+                        <div class="card-body">
+                            <h3 class="font-bold text-lg mb-4">Expired eDO Details</h3>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">eDO Number</div>
+                                    <div class="font-semibold" id="edoNumber">-</div>
+                                </div>
+                                
+                                <div>
+                                    <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Container Number</div>
+                                    <div class="font-semibold" id="containerNumber">-</div>
+                                </div>
+                                
+                                <div>
+                                    <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Container Type</div>
+                                    <div id="containerType">-</div>
+                                </div>
+                                
+                                <div>
+                                    <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Container Size</div>
+                                    <div id="containerSize">-</div>
+                                </div>
+                                
+                                <div class="divider my-2"></div>
+                                
+                                <div>
+                                    <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Manifest Number</div>
+                                    <div id="manifestNumber">-</div>
+                                </div>
+                                
+                                <div>
+                                    <div class="text-xs text-base-content/60 uppercase tracking-wider mb-1">Expired At</div>
+                                    <div class="font-semibold text-error" id="expiresAt">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const requestId = window.location.pathname.split('/').slice(-2)[0];
+    
+    let renewalData = null;
+    let cyAllocations = [];
+    
+    // Load renewal request data
+    function loadRenewalData() {
+        fetch(`{{ path('sl_staff_generate_from_renewal', {id: '__ID__'}) }}`.replace('__ID__', requestId))
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renewalData = data.data;
+                    cyAllocations = data.data.cyAllocations;
+                    populateForm();
+                    document.getElementById('loadingState').classList.add('hidden');
+                    document.getElementById('mainContent').classList.remove('hidden');
+                } else {
+                    window.notyf.error(data.error?.message || 'Failed to load renewal request');
+                    setTimeout(() => {
+                        window.location.href = '{{ path('sl_staff_renewal_requests') }}';
+                    }, 2000);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading renewal data:', error);
+                window.notyf.error('Failed to load renewal request');
+                setTimeout(() => {
+                    window.location.href = '{{ path('sl_staff_renewal_requests') }}';
+                }, 2000);
+            });
+    }
+    
+    // Populate form with data
+    function populateForm() {
+        const request = renewalData.renewalRequest;
+        const expiredEdo = renewalData.expiredEdo;
+        const broker = renewalData.broker;
+        
+        // Populate sidebar - Request Details
+        document.getElementById('requestId').textContent = `#${request.id}`;
+        document.getElementById('brokerName').textContent = broker.name;
+        document.getElementById('brokerEmail').textContent = broker.email;
+        document.getElementById('requestedAt').textContent = formatDate(request.requestedAt);
+        document.getElementById('overdueDays').textContent = `${request.overdueDays} days`;
+        document.getElementById('detentionCharges').textContent = request.detentionChargeAmount > 0 
+            ? `₱${formatNumber(request.detentionChargeAmount)}` 
+            : 'No charges';
+        
+        // Payment status badge
+        const paymentStatusEl = document.getElementById('paymentStatus');
+        if (request.detentionChargeAmount === 0) {
+            paymentStatusEl.innerHTML = '<span class="badge badge-success badge-sm">No Charges Required</span>';
+        } else if (request.paymentVerified) {
+            paymentStatusEl.innerHTML = '<span class="badge badge-success badge-sm">Payment Verified</span>';
+        } else {
+            paymentStatusEl.innerHTML = '<span class="badge badge-error badge-sm">Awaiting Payment</span>';
+        }
+        
+        // Populate sidebar - Expired eDO Details
+        document.getElementById('edoNumber').textContent = expiredEdo.edoNumber;
+        document.getElementById('containerNumber').textContent = expiredEdo.containerNumber;
+        document.getElementById('containerType').textContent = expiredEdo.containerType;
+        document.getElementById('containerSize').textContent = expiredEdo.containerSize;
+        document.getElementById('manifestNumber').textContent = expiredEdo.manifestNumber;
+        document.getElementById('expiresAt').textContent = formatDate(expiredEdo.expiresAt);
+        
+        // Show payment verification alert if needed
+        if (request.detentionChargeAmount > 0 && !request.paymentVerified) {
+            const alertEl = document.getElementById('paymentStatusAlert');
+            alertEl.innerHTML = `
+                <div class="alert alert-error">
+                    <span class="icon-[tabler--alert-circle] size-5"></span>
+                    <div>
+                        <h3 class="font-bold">Payment Not Verified</h3>
+                        <div class="text-sm">Detention charges of ₱${formatNumber(request.detentionChargeAmount)} must be verified before generating eDO.</div>
+                    </div>
+                </div>
+            `;
+            alertEl.classList.remove('hidden');
+            document.getElementById('submitBtn').disabled = true;
+        } else if (request.paymentVerified) {
+            const alertEl = document.getElementById('paymentStatusAlert');
+            alertEl.innerHTML = `
+                <div class="alert alert-success">
+                    <span class="icon-[tabler--circle-check] size-5"></span>
+                    <div>
+                        <h3 class="font-bold">Payment Verified</h3>
+                        <div class="text-sm">Detention charges have been verified. You can proceed with eDO generation.</div>
+                    </div>
+                </div>
+            `;
+            alertEl.classList.remove('hidden');
+        }
+        
+        // Populate CY allocations dropdown
+        const cySelect = document.getElementById('cyAllocationId');
+        cyAllocations.forEach(allocation => {
+            const option = document.createElement('option');
+            option.value = allocation.id;
+            option.textContent = `${allocation.terminal.name}${allocation.terminal.location ? ' - ' + allocation.terminal.location : ''}`;
+            option.dataset.allocation = JSON.stringify(allocation);
+            cySelect.appendChild(option);
+        });
+        
+        // Set expected return date (readonly)
+        const returnDate = new Date(request.emptyContainerReturnDate);
+        document.getElementById('expectedReturnDate').value = returnDate.toISOString().split('T')[0];
+        
+        // Set minimum expiration date (tomorrow)
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('expirationDate').min = tomorrow.toISOString().split('T')[0];
+        
+        // Pre-fill additional notes if any
+        if (request.additionalNotes) {
+            document.getElementById('additionalNotes').value = request.additionalNotes;
+        }
+    }
+    
+    // Handle CY selection change
+    document.getElementById('cyAllocationId').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        
+        if (this.value) {
+            const allocation = JSON.parse(selectedOption.dataset.allocation);
+            
+            document.getElementById('allocatedCapacity').textContent = `${allocation.allocatedCapacity} TEU`;
+            document.getElementById('currentUtilization').textContent = `${allocation.currentUtilization} TEU`;
+            document.getElementById('availableCapacity').textContent = `${allocation.availableCapacity} TEU`;
+            
+            document.getElementById('cyDetails').classList.remove('hidden');
+        } else {
+            document.getElementById('cyDetails').classList.add('hidden');
+        }
+    });
+    
+    // Handle form submission
+    document.getElementById('edoGenerationForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            cyAllocationId: parseInt(document.getElementById('cyAllocationId').value),
+            expirationDate: document.getElementById('expirationDate').value,
+            additionalNotes: document.getElementById('additionalNotes').value || null
+        };
+        
+        if (!formData.cyAllocationId) {
+            window.notyf.error('Please select a container yard location');
+            return;
+        }
+        
+        if (!formData.expirationDate) {
+            window.notyf.error('Please select an expiration date');
+            return;
+        }
+        
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Generating eDO...';
+        
+        fetch(`{{ path('sl_staff_generate_from_renewal_post', {id: '__ID__'}) }}`.replace('__ID__', requestId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.notyf.success('eDO generated successfully!');
+                setTimeout(() => {
+                    window.location.href = data.data.redirectUrl;
+                }, 1500);
+            } else {
+                window.notyf.error(data.error?.message || 'Failed to generate eDO');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span class="icon-[tabler--file-plus] size-5"></span> Generate eDO';
+            }
+        })
+        .catch(error => {
+            console.error('Error generating eDO:', error);
+            window.notyf.error('Failed to generate eDO');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span class="icon-[tabler--file-plus] size-5"></span> Generate eDO';
+        });
+    });
+    
+    // Format date
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        });
+    }
+    
+    // Format number
+    function formatNumber(num) {
+        return parseFloat(num).toLocaleString('en-PH', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+    
+    // Initial load
+    loadRenewalData();
+});
+</script>
+{% endblock %}

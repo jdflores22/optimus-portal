@@ -1,0 +1,378 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}eDO Renewal Requests - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <!-- Header Section -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h1 class="text-2xl font-bold text-base-content">eDO Renewal Requests</h1>
+                    <p class="text-sm text-base-content/60 mt-1">Review and process pending eDO renewal requests</p>
+                </div>
+                
+                <!-- Stats Badge -->
+                <div class="flex items-center gap-2 bg-primary/10 rounded-xl px-4 py-3">
+                    <span class="icon-[tabler--file-text] size-5 text-primary"></span>
+                    <div class="flex flex-col">
+                        <span class="text-xs text-primary/70 font-medium">Pending Requests</span>
+                        <span class="text-sm font-bold text-primary" id="pendingCount">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Filters -->
+        <div class="card bg-base-100 shadow-sm mb-6">
+            <div class="card-body p-4">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <!-- Payment Status Filter -->
+                    <div class="flex-1">
+                        <label for="paymentStatusFilter" class="block text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-2">Payment Status</label>
+                        <select id="paymentStatusFilter" class="select select-bordered w-full rounded-lg">
+                            <option value="">All Payment Statuses</option>
+                            <option value="no_charges">No Charges Required</option>
+                            <option value="awaiting_payment">Awaiting Payment</option>
+                            <option value="payment_verified">Payment Verified</option>
+                        </select>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div class="flex-1">
+                        <label for="statusFilter" class="block text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-2">Request Status</label>
+                        <select id="statusFilter" class="select select-bordered w-full rounded-lg">
+                            <option value="">All Statuses</option>
+                            <option value="pending_review">Pending Review</option>
+                            <option value="awaiting_payment">Awaiting Payment</option>
+                            <option value="payment_verified">Payment Verified</option>
+                            <option value="ready_for_generation">Ready for Generation</option>
+                        </select>
+                    </div>
+
+                    <!-- Sort Order -->
+                    <div class="flex-1">
+                        <label for="sortFilter" class="block text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-2">Sort By</label>
+                        <select id="sortFilter" class="select select-bordered w-full rounded-lg">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="charges_high">Highest Charges</option>
+                            <option value="charges_low">Lowest Charges</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Renewal Requests List -->
+        <div class="card bg-base-100 shadow-sm">
+            <div id="requestsContainer">
+                <!-- Loading State -->
+                <div id="loadingState" class="p-12 text-center">
+                    <span class="loading loading-spinner loading-lg text-primary"></span>
+                    <p class="mt-4 text-base-content/60">Loading renewal requests...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden p-12 text-center">
+                    <div class="size-16 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="icon-[tabler--file-off] size-8 opacity-40"></span>
+                    </div>
+                    <h3 class="text-base font-semibold">No renewal requests found</h3>
+                    <p class="mt-2 text-sm opacity-60">No pending eDO renewal requests match your current filters.</p>
+                </div>
+
+                <!-- Desktop Table -->
+                <div id="desktopTable" class="hidden lg:block overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>Broker</th>
+                                <th>Expired eDO</th>
+                                <th>Container</th>
+                                <th>Request Date</th>
+                                <th>Payment Status</th>
+                                <th>Detention Charges</th>
+                                <th class="text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requestsTableBody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Cards -->
+                <div id="mobileCards" class="hidden lg:hidden divide-y divide-base-300">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let renewalRequests = [];
+    
+    // Load renewal requests
+    function loadRenewalRequests() {
+        showLoading();
+        
+        fetch('{{ path('sl_staff_renewal_requests') }}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renewalRequests = data.data.renewalRequests;
+                    updatePendingCount(data.data.total);
+                    renderRequests();
+                } else {
+                    window.notyf.error(data.message || 'Failed to load renewal requests');
+                    showEmpty();
+                }
+            })
+            .catch(error => {
+                console.error('Error loading renewal requests:', error);
+                window.notyf.error('Failed to load renewal requests');
+                showEmpty();
+            });
+    }
+    
+    // Update pending count badge
+    function updatePendingCount(count) {
+        document.getElementById('pendingCount').textContent = count;
+    }
+    
+    // Show loading state
+    function showLoading() {
+        document.getElementById('loadingState').classList.remove('hidden');
+        document.getElementById('emptyState').classList.add('hidden');
+        document.getElementById('desktopTable').classList.add('hidden');
+        document.getElementById('mobileCards').classList.add('hidden');
+    }
+    
+    // Show empty state
+    function showEmpty() {
+        document.getElementById('loadingState').classList.add('hidden');
+        document.getElementById('emptyState').classList.remove('hidden');
+        document.getElementById('desktopTable').classList.add('hidden');
+        document.getElementById('mobileCards').classList.add('hidden');
+    }
+    
+    // Render requests
+    function renderRequests() {
+        const filtered = filterRequests();
+        
+        if (filtered.length === 0) {
+            showEmpty();
+            return;
+        }
+        
+        document.getElementById('loadingState').classList.add('hidden');
+        document.getElementById('emptyState').classList.add('hidden');
+        document.getElementById('desktopTable').classList.remove('hidden');
+        document.getElementById('mobileCards').classList.remove('hidden');
+        
+        renderDesktopTable(filtered);
+        renderMobileCards(filtered);
+    }
+    
+    // Filter requests based on selected filters
+    function filterRequests() {
+        const paymentStatus = document.getElementById('paymentStatusFilter').value;
+        const status = document.getElementById('statusFilter').value;
+        const sort = document.getElementById('sortFilter').value;
+        
+        let filtered = [...renewalRequests];
+        
+        // Filter by payment status
+        if (paymentStatus === 'no_charges') {
+            filtered = filtered.filter(r => r.detentionChargeAmount === 0);
+        } else if (paymentStatus === 'awaiting_payment') {
+            filtered = filtered.filter(r => r.detentionChargeAmount > 0 && !r.paymentVerified);
+        } else if (paymentStatus === 'payment_verified') {
+            filtered = filtered.filter(r => r.paymentVerified);
+        }
+        
+        // Filter by status
+        if (status) {
+            filtered = filtered.filter(r => r.status === status);
+        }
+        
+        // Sort
+        if (sort === 'newest') {
+            filtered.sort((a, b) => new Date(b.requestedAt) - new Date(a.requestedAt));
+        } else if (sort === 'oldest') {
+            filtered.sort((a, b) => new Date(a.requestedAt) - new Date(b.requestedAt));
+        } else if (sort === 'charges_high') {
+            filtered.sort((a, b) => b.detentionChargeAmount - a.detentionChargeAmount);
+        } else if (sort === 'charges_low') {
+            filtered.sort((a, b) => a.detentionChargeAmount - b.detentionChargeAmount);
+        }
+        
+        return filtered;
+    }
+    
+    // Render desktop table
+    function renderDesktopTable(requests) {
+        const tbody = document.getElementById('requestsTableBody');
+        tbody.innerHTML = '';
+        
+        requests.forEach(request => {
+            const row = document.createElement('tr');
+            row.className = 'hover';
+            
+            const paymentStatusBadge = getPaymentStatusBadge(request);
+            const statusBadge = getStatusBadge(request.status);
+            const actionButton = getActionButton(request);
+            
+            row.innerHTML = `
+                <td><span class="font-semibold">#${request.id}</span></td>
+                <td>
+                    <div class="font-medium">${request.broker.name}</div>
+                    <div class="text-xs text-base-content/60">${request.broker.email}</div>
+                </td>
+                <td><span class="text-primary font-medium">${request.expiredEdo.edoNumber}</span></td>
+                <td>${request.expiredEdo.containerNumber}</td>
+                <td>${formatDate(request.requestedAt)}</td>
+                <td>${paymentStatusBadge}</td>
+                <td>
+                    ${request.detentionChargeAmount > 0 
+                        ? `<span class="font-semibold text-error">₱${formatNumber(request.detentionChargeAmount)}</span>
+                           <div class="text-xs text-base-content/60">${request.overdueDays} days overdue</div>`
+                        : '<span class="text-base-content/60">No charges</span>'}
+                </td>
+                <td class="text-right">${actionButton}</td>
+            `;
+            
+            tbody.appendChild(row);
+        });
+    }
+    
+    // Render mobile cards
+    function renderMobileCards(requests) {
+        const container = document.getElementById('mobileCards');
+        container.innerHTML = '';
+        
+        requests.forEach(request => {
+            const card = document.createElement('div');
+            card.className = 'p-4 hover:bg-base-200';
+            
+            const paymentStatusBadge = getPaymentStatusBadge(request);
+            const statusBadge = getStatusBadge(request.status);
+            const actionButton = getActionButton(request);
+            
+            card.innerHTML = `
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex-1">
+                            <div class="font-bold">Request #${request.id}</div>
+                            <div class="text-sm text-primary font-medium mt-1">${request.expiredEdo.edoNumber}</div>
+                            <div class="text-sm opacity-60">Container: ${request.expiredEdo.containerNumber}</div>
+                            <div class="text-sm opacity-60 mt-1">Broker: ${request.broker.name}</div>
+                        </div>
+                        ${statusBadge}
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center gap-2">
+                        ${paymentStatusBadge}
+                        ${request.detentionChargeAmount > 0 
+                            ? `<span class="text-sm font-semibold text-error">₱${formatNumber(request.detentionChargeAmount)}</span>
+                               <span class="text-xs text-base-content/60">(${request.overdueDays} days)</span>`
+                            : '<span class="text-sm text-base-content/60">No charges</span>'}
+                    </div>
+                    
+                    <div class="text-sm opacity-60">
+                        Requested: ${formatDate(request.requestedAt)}
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        ${actionButton}
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(card);
+        });
+    }
+    
+    // Get payment status badge
+    function getPaymentStatusBadge(request) {
+        if (request.detentionChargeAmount === 0) {
+            return '<span class="badge badge-success badge-sm rounded-lg">No Charges</span>';
+        } else if (request.paymentVerified) {
+            return '<span class="badge badge-success badge-sm rounded-lg">Payment Verified</span>';
+        } else {
+            return '<span class="badge badge-error badge-sm rounded-lg">Awaiting Payment</span>';
+        }
+    }
+    
+    // Get status badge
+    function getStatusBadge(status) {
+        const badges = {
+            'pending_review': 'badge-warning',
+            'awaiting_payment': 'badge-error',
+            'payment_verified': 'badge-info',
+            'ready_for_generation': 'badge-success'
+        };
+        
+        const badgeClass = badges[status] || 'badge-ghost';
+        const statusText = status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        
+        return `<span class="badge ${badgeClass} text-xs rounded-lg">${statusText}</span>`;
+    }
+    
+    // Get action button
+    function getActionButton(request) {
+        const canGenerate = request.detentionChargeAmount === 0 || request.paymentVerified;
+        
+        if (canGenerate) {
+            return `<a href="${request.generateUrl}" class="btn btn-primary btn-sm rounded-lg gap-2">
+                        <span class="icon-[tabler--file-plus] size-4"></span>
+                        Generate eDO
+                    </a>`;
+        } else {
+            return `<button class="btn btn-ghost btn-sm rounded-lg gap-2" disabled>
+                        <span class="icon-[tabler--clock] size-4"></span>
+                        Awaiting Payment
+                    </button>`;
+        }
+    }
+    
+    // Format date
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        });
+    }
+    
+    // Format number
+    function formatNumber(num) {
+        return parseFloat(num).toLocaleString('en-PH', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+    
+    // Event listeners for filters
+    document.getElementById('paymentStatusFilter').addEventListener('change', renderRequests);
+    document.getElementById('statusFilter').addEventListener('change', renderRequests);
+    document.getElementById('sortFilter').addEventListener('change', renderRequests);
+    
+    // Initial load
+    loadRenewalRequests();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(loadRenewalRequests, 30000);
+});
+</script>
+{% endblock %}
