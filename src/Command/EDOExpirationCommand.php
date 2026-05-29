@@ -13,11 +13,19 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 /**
  * Command to check and process expired eDOs
  * 
- * This command should be run periodically (e.g., hourly) via cron job
- * Example cron configuration:
- * 0 * * * * cd /path/to/project && php bin/console app:edo:check-expiration
+ * This command can be run manually or scheduled via Symfony Scheduler or cron job
  * 
- * Requirements: 4.1
+ * Manual execution:
+ * php bin/console app:edo:check-expiration
+ * 
+ * Symfony Scheduler (recommended):
+ * Configure in config/packages/scheduler.yaml and run:
+ * php bin/console messenger:consume scheduler_default
+ * 
+ * Cron configuration (alternative):
+ * 0 1 * * * cd /path/to/project && php bin/console app:edo:check-expiration
+ * 
+ * Requirements: 2.1, 2.2
  */
 #[AsCommand(
     name: 'app:edo:check-expiration',
@@ -42,23 +50,50 @@ class EDOExpirationCommand extends Command
         try {
             $startTime = microtime(true);
             
-            // Process all active eDOs
-            $expiredCount = $this->expirationService->processExpiredEDOs();
+            // Detect expired eDOs
+            $expiredEDOs = $this->expirationService->detectExpiredEDOs();
             
-            $executionTime = round(microtime(true) - $startTime, 2);
-
-            if ($expiredCount > 0) {
+            if (count($expiredEDOs) > 0) {
+                $io->text(sprintf('Found %d expired eDO(s)', count($expiredEDOs)));
+                
+                // Process each expired eDO
+                $processedCount = 0;
+                foreach ($expiredEDOs as $edo) {
+                    try {
+                        // Mark as expired and send notifications
+                        $this->expirationService->markAsExpired($edo);
+                        $processedCount++;
+                    } catch (\Exception $e) {
+                        $io->warning(sprintf(
+                            'Failed to process eDO %s: %s',
+                            $edo->getEdoNumber(),
+                            $e->getMessage()
+                        ));
+                        
+                        $this->logger->error('Failed to process expired eDO', [
+                            'edoId' => $edo->getId(),
+                            'edoNumber' => $edo->getEdoNumber(),
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+                
+                $executionTime = round(microtime(true) - $startTime, 2);
+                
                 $io->success(sprintf(
-                    'Processed %d expired eDO(s) in %s seconds',
-                    $expiredCount,
+                    'Processed %d of %d expired eDO(s) in %s seconds',
+                    $processedCount,
+                    count($expiredEDOs),
                     $executionTime
                 ));
                 
                 $this->logger->info('eDO expiration check completed', [
-                    'expired_count' => $expiredCount,
+                    'expired_count' => count($expiredEDOs),
+                    'processed_count' => $processedCount,
                     'execution_time' => $executionTime
                 ]);
             } else {
+                $executionTime = round(microtime(true) - $startTime, 2);
                 $io->info('No expired eDOs found');
                 
                 $this->logger->info('eDO expiration check completed - no expired eDOs', [

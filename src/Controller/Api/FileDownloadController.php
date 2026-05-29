@@ -185,7 +185,7 @@ class FileDownloadController extends AbstractController
 
     #[Route('/billing/{billingId}/download', name: 'api_billing_download', methods: ['GET'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function downloadBilling(int $billingId): Response
+    public function downloadBilling(int $billingId, Request $request): Response
     {
         $user = $this->getUser();
         $billing = $this->entityManager->getRepository(Billing::class)->find($billingId);
@@ -212,14 +212,17 @@ class FileDownloadController extends AbstractController
             return $this->json(['error' => 'Billing file not found'], Response::HTTP_NOT_FOUND);
         }
 
-        // Log download
-        $this->auditService->logDocumentDownload($user, 'Billing', $billing->getId());
-        
-        // Log to activity log for notifications
-        $this->activityLogService->logManifestDocumentDownload($user, $manifest, 'billing');
+        // Check if inline viewing is requested
+        $inline = $request->query->get('inline', 'true') === 'true';
+
+        // Log download only if not inline viewing
+        if (!$inline) {
+            $this->auditService->logDocumentDownload($user, 'Billing', $billing->getId());
+            $this->activityLogService->logManifestDocumentDownload($user, $manifest, 'billing');
+        }
 
         // Serve file
-        return $this->serveFile($filePath, 'billing-' . $billing->getId() . '.pdf');
+        return $this->serveFile($filePath, 'billing-' . $billing->getId() . '.pdf', $inline);
     }
 
     #[Route('/edo/{edoNumber}/download', name: 'api_edo_download', methods: ['GET'])]

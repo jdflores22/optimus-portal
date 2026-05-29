@@ -215,15 +215,26 @@ class BillingController extends BaseApiController
                 }
             }
 
-            // Log document download
-            $this->auditService->logDocumentDownload($user, 'Billing', $billing->getId());
-
-            // Serve the PDF file
+            // Get PDF path
             $pdfPath = $billing->getPdfPath();
             
-            if (!file_exists($pdfPath)) {
-                return $this->errorResponse('Billing file not found', 404);
+            // If PDF doesn't exist or path is null, try to generate it
+            if (!$pdfPath || !file_exists($pdfPath)) {
+                try {
+                    // Regenerate the billing PDF
+                    $billing = $this->billingService->regenerateBillingPdf($billingId);
+                    $pdfPath = $billing->getPdfPath();
+                    
+                    if (!$pdfPath || !file_exists($pdfPath)) {
+                        return $this->errorResponse('Unable to generate billing PDF', 500);
+                    }
+                } catch (\Exception $e) {
+                    return $this->errorResponse('Failed to generate billing PDF: ' . $e->getMessage(), 500);
+                }
             }
+
+            // Log document download
+            $this->auditService->logDocumentDownload($user, 'Billing', $billing->getId());
 
             $response = new BinaryFileResponse($pdfPath);
             

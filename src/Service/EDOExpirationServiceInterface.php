@@ -43,4 +43,19 @@ interface EDOExpirationServiceInterface
      * @return int Number of eDOs marked as expired
      */
     public function processExpiredEDOs(int $batchSize = 100): int;
+
+    /**
+     * Detect expired eDOs that need notification
+     * 
+     * @return array<ElectronicDeliveryOrder> Array of expired eDOs
+     */
+    public function detectExpiredEDOs(): array;
+
+    /**
+     * Send expiration notifications to brokers and consignees
+     * 
+     * @param ElectronicDeliveryOrder $edo
+     * @return void
+     */
+    public function sendExpirationNotifications(ElectronicDeliveryOrder $edo): void;
 }

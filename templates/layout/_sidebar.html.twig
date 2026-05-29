@@ -133,7 +133,16 @@
                 <div class="divider text-base-content/50 py-4 after:border-0">My Work</div>
                 <li><a href="{{ path('accreditation_index') }}" class="{{ currentRoute starts with 'accreditation' ? 'active' : '' }}"><span class="icon-[tabler--id] size-5"></span>Accreditation</a></li>
                 <li><a href="{{ path('broker_manifest_list') }}" class="{{ currentRoute starts with 'broker_manifest' ? 'active' : '' }}"><span class="icon-[tabler--file-text] size-5"></span>My Manifests</a></li>
-                <li><a href="{{ path('broker_edo_list_page') }}" class="{{ currentRoute starts with 'broker_edo' ? 'active' : '' }}"><span class="icon-[tabler--file-invoice] size-5"></span>My eDOs</a></li>
+                <li>
+                    <a href="{{ path('broker_edo_list_page') }}" class="{{ currentRoute starts with 'broker_edo' ? 'active' : '' }}">
+                        <span class="icon-[tabler--file-invoice] size-5"></span>My eDOs
+                        {% set brokerPendingEdoCount = broker_pending_payment_edo_count() %}
+                        {% if brokerPendingEdoCount > 0 %}
+                            <span class="badge badge-soft badge-error badge-sm ml-auto">{{ brokerPendingEdoCount }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li><a href="{{ path('broker_detention_billings_page') }}" class="{{ currentRoute starts with 'broker_detention_billings' ? 'active' : '' }}"><span class="icon-[tabler--receipt] size-5"></span>Detention Billings</a></li>
 
             {% elseif app.user.role.value == 'EVALUATOR' %}
                 <div class="divider text-base-content/50 py-4 after:border-0">My Work</div>
@@ -153,11 +162,52 @@
                 <div class="divider text-base-content/50 py-4 after:border-0">Operations</div>
                 <li><a href="{{ path('manifest_workflow_list') }}" class="{{ currentRoute starts with 'manifest_workflow' ? 'active' : '' }}"><span class="icon-[tabler--file-text] size-5"></span>NOA & BL Workflow</a></li>
                 <li><a href="{{ path('app_container_inventory') }}" class="{{ currentRoute starts with 'app_container_inventory' ? 'active' : '' }}"><span class="icon-[tabler--box] size-5"></span>Container Inventory</a></li>
+                <li>
+                    <a href="{{ path('sl_staff_edo_generation_list') }}" class="{{ currentRoute starts with 'sl_staff_edo_generation' ? 'active' : '' }}">
+                        <span class="icon-[tabler--file-plus] size-5"></span>eDO Generation
+                        {% if manifestsReadyForEdoCount is defined and manifestsReadyForEdoCount > 0 %}
+                            <span class="badge badge-soft badge-success badge-sm ml-auto">{{ manifestsReadyForEdoCount }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <div class="divider text-base-content/50 py-4 after:border-0">eDO Renewals</div>
+                <li>
+                    <a href="{{ path('sl_staff_renewal_requests_ready') }}" class="{{ currentRoute starts with 'sl_staff_renewal_requests' ? 'active' : '' }}">
+                        <span class="icon-[tabler--file-check] size-5"></span>Request eDO
+                        {% if readyForGenerationCount is defined and readyForGenerationCount > 0 %}
+                            <span class="badge badge-soft badge-success badge-sm ml-auto">{{ readyForGenerationCount }}</span>
+                        {% endif %}
+                    </a>
+                </li>
 
             {% elseif app.user.role.value == 'ACCOUNTING' %}
                 <div class="divider text-base-content/50 py-4 after:border-0">Finance</div>
                 <li><a href="{{ path('payment_list') }}" class="{{ currentRoute starts with 'payment' ? 'active' : '' }}"><span class="icon-[tabler--cash] size-5"></span>Payments</a></li>
-                <li><a href="{{ path('accounting_payment_dashboard') }}" class="{{ currentRoute starts with 'accounting_payment' ? 'active' : '' }}"><span class="icon-[tabler--circle-check] size-5"></span>Final Payment Validation</a></li>
+                <li>
+                    <a href="{{ path('accounting_payment_dashboard') }}" class="{{ currentRoute starts with 'accounting_payment' ? 'active' : '' }}">
+                        <span class="icon-[tabler--circle-check] size-5"></span>Final Payment Validation
+                        {% if pendingEdoPaymentsCount is defined and pendingEdoPaymentsCount > 0 %}
+                            <span class="flex items-center justify-center size-5 rounded-full bg-warning/20 text-warning text-sm font-semibold">{{ pendingEdoPaymentsCount }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <div class="divider text-base-content/50 py-4 after:border-0">eDO Renewals</div>
+                <li>
+                    <a href="{{ path('accounting_renewal_requests_pending') }}" class="{{ currentRoute starts with 'accounting_renewal_requests' ? 'active' : '' }}">
+                        <span class="icon-[tabler--file-alert] size-5"></span>Pending Renewal Requests
+                        {% if pendingRenewalRequestsCount is defined and pendingRenewalRequestsCount > 0 %}
+                            <span class="flex items-center justify-center size-5 rounded-full bg-warning/20 text-warning text-sm font-semibold">{{ pendingRenewalRequestsCount }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ path('accounting_billing_detention_pending') }}" class="{{ currentRoute starts with 'accounting_billing_detention' ? 'active' : '' }}">
+                        <span class="icon-[tabler--receipt] size-5"></span>Detention Payment Verification
+                        {% if detentionPaymentsCount is defined and detentionPaymentsCount > 0 %}
+                            <span class="flex items-center justify-center size-5 rounded-full bg-warning/20 text-warning text-sm font-semibold">{{ detentionPaymentsCount }}</span>
+                        {% endif %}
+                    </a>
+                </li>
                 <div class="divider text-base-content/50 py-4 after:border-0">Operations</div>
                 <li><a href="{{ path('app_container_inventory') }}" class="{{ currentRoute starts with 'app_container_inventory' ? 'active' : '' }}"><span class="icon-[tabler--box] size-5"></span>Container Inventory</a></li>
 

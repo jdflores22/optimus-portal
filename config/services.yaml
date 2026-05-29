@@ -378,6 +378,17 @@ services:
     App\Service\PaymentServiceInterface:
         alias: App\Service\PaymentService
 
+    App\Service\PaymentHistoryServiceInterface:
+        alias: App\Service\PaymentHistoryService
+
+    App\Service\PaymentHistoryService:
+        public: true
+        arguments:
+            $paymentRepository: '@App\Repository\PaymentRepository'
+            $entityManager: '@doctrine.orm.entity_manager'
+            $paymentHistoryCache: '@payment_history.cache'
+            $logger: '@monolog.logger'
+
     App\Service\NOAServiceInterface:
         alias: App\Service\NOAService
 
@@ -444,13 +455,6 @@ services:
         arguments:
             $fileStorageService: '@App\Service\FileStorageServiceInterface'
             $dompdfFactory: '@App\Service\DompdfFactory'
-
-    App\Service\EDOAuditServiceInterface:
-        alias: App\Service\EDOAuditService
-        public: true
-
-    App\Service\EDOAuditService:
-        public: true
 
     App\Service\BatchEDOGenerationServiceInterface:
         alias: App\Service\BatchEDOGenerationService
@@ -557,6 +561,23 @@ services:
             $entityManager: '@doctrine.orm.entity_manager'
             $logger: '@logger'
             $auditService: '@App\Service\AuditService'
+
+    # eDO Renewal Workflow Services
+    App\Service\EDORenewalServiceInterface:
+        alias: App\Service\EDORenewalService
+        public: true
+
+    App\Service\EDORenewalService:
+        public: true
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Service\DetentionChargeServiceInterface:
+        alias: App\Service\DetentionChargeService
+        public: true
+
+    App\Service\DetentionChargeService:
+        public: true
 
     App\Service\PaymentFeeConfigurationServiceInterface:
         alias: App\Service\PaymentFeeConfigurationService
@@ -679,6 +700,52 @@ services:
         arguments:
             $entityManager: '@doctrine.orm.entity_manager'
             $params: '@parameter_bag'
+
+    # Firebase Service
+    App\Service\FirebaseService:
+        public: true
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    # Firebase Commands
+    App\Command\FirebaseTestConnectionCommand:
+        arguments:
+            $firebaseService: '@App\Service\FirebaseService'
+        tags:
+            - { name: 'console.command' }
+
+    App\Command\FirebaseMigrateCommand:
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $firebaseService: '@App\Service\FirebaseService'
+        tags:
+            - { name: 'console.command' }
+
+    App\Command\FirebaseExportDataCommand:
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $projectDir: '%kernel.project_dir%'
+        tags:
+            - { name: 'console.command' }
+
+    # EDO Expiration Services
+    App\Service\EDOExpirationServiceInterface:
+        alias: App\Service\EDOExpirationService
+        public: true
+
+    App\Service\EDOExpirationService:
+        public: true
+
+    App\Service\EDONotificationService:
+        public: true
+
+    # EDO Expiration Listener - Automatic expiration detection on every request
+    # IMPORTANT: High priority (256) to run BEFORE controllers load entities
+    App\EventListener\EDOExpirationListener:
+        arguments:
+            $cacheDir: '%kernel.cache_dir%'
+        tags:
+            - { name: kernel.event_listener, event: kernel.request, priority: 256 }
 
 imports:
     - { resource: services_api.yaml }

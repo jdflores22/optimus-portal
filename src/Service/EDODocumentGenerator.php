@@ -175,6 +175,18 @@ class EDODocumentGenerator
         // Authorized by (can be made dynamic)
         $authorizedBy = 'Authorized Representative';
         $authorizedByCompany = htmlspecialchars($shippingLine->getBrandName());
+        
+        // Check if this is a renewal eDO
+        $isRenewal = $edo->getPreviousVersion() !== null || 
+                     ($edo->getAdditionalNotes() && strpos($edo->getAdditionalNotes(), 'RENEWED FROM') !== false);
+        $renewalNote = '';
+        if ($isRenewal && $edo->getAdditionalNotes()) {
+            // Extract the original eDO number from additional notes
+            if (preg_match('/RENEWED FROM:\s*([^\|]+)/', $edo->getAdditionalNotes(), $matches)) {
+                $originalEdoNumber = trim($matches[1]);
+                $renewalNote = htmlspecialchars($originalEdoNumber);
+            }
+        }
 
         $html = '<!DOCTYPE html>
 <html lang="en">
@@ -203,6 +215,7 @@ body {
     background-color: #0f172a;
     padding: 25px 35px;
     color: white;
+    position: relative;
 }
 .header table {
     width: 100%;
@@ -236,6 +249,21 @@ body {
     opacity: 0.9;
     text-transform: uppercase;
 }
+/* Renewal Badge */
+.renewal-badge {
+    position: absolute;
+    top: 15px;
+    right: 35px;
+    background: #ef4444;
+    color: white;
+    padding: 8px 16px;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
 /* Summary Bar */
 .summary-bar {
     background: #f8fafc;
@@ -267,6 +295,22 @@ body {
     font-size: 11px;
     font-weight: 600;
     color: #0f172a;
+}
+/* Renewal Info Box */
+.renewal-info {
+    background: #fef2f2;
+    border-left: 4px solid #ef4444;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    font-size: 10px;
+    color: #991b1b;
+}
+.renewal-info strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 700;
 }
 /* Content */
 .content {
@@ -368,6 +412,7 @@ table.data-table {
 <body>
 <div class="order-card">
     <div class="header">
+        ' . ($isRenewal ? '<div class="renewal-badge">RENEWAL eDO</div>' : '') . '
         <table>
             <tr>
                 <td class="brand-box">
@@ -402,6 +447,7 @@ table.data-table {
     </div>
     
     <div class="content">
+        ' . ($isRenewal && $renewalNote ? '<div class="renewal-info"><strong>⚠ Renewal Notice:</strong>This is a renewed eDO. Original eDO: ' . $renewalNote . '</div>' : '') . '
         <table class="info-section">
             <tr>
                 <td colspan="3" class="highlight">

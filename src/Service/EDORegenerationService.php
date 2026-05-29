@@ -22,7 +22,6 @@ class EDORegenerationService implements EDORegenerationServiceInterface
     public function __construct(
         private RegenerationRequestRepository $regenerationRequestRepository,
         private EntityManagerInterface $entityManager,
-        private EDOAuditServiceInterface $auditService,
         private LoggerInterface $logger
     ) {
     }
@@ -63,8 +62,8 @@ class EDORegenerationService implements EDORegenerationServiceInterface
 
         $this->regenerationRequestRepository->save($request);
 
+        // TODO: Re-implement audit logging with general AuditService
         // Log regeneration request
-        $this->auditService->logRegenerationRequest($request, $requester);
 
         $this->logger->info('eDO regeneration request submitted', [
             'edo_number' => $edo->getEdoNumber(),

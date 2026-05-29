@@ -15,7 +15,7 @@ class LocalStorageAdapter implements StorageAdapterInterface
         ParameterBagInterface $parameterBag,
         LoggerInterface $logger
     ) {
-        $this->storageRoot = $parameterBag->get('kernel.project_dir') . '/var/share';
+        $this->storageRoot = $parameterBag->get('kernel.project_dir') . '/public/uploads';
         $this->logger = $logger;
 
         // Ensure storage root exists

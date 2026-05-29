@@ -83,7 +83,31 @@ class PushNotificationService
         }
         
         $this->entityManager->persist($subscription);
-        $this->entityManager->flush();
+        
+        try {
+            $this->entityManager->flush();
+        } catch (\Doctrine\DBAL\Exception\UniqueConstraintViolationException $e) {
+            // Handle race condition where subscription was created between check and insert
+            $this->logger->warning('Duplicate push subscription detected, fetching existing', [
+                'user_id' => $user->getId(),
+                'endpoint' => $subscriptionData['endpoint']
+            ]);
+            
+            // Clear the entity manager to recover from the error
+            $this->entityManager->clear();
+            
+            // Fetch the existing subscription
+            $existingSubscription = $repository->findOneBy([
+                'endpoint' => $subscriptionData['endpoint']
+            ]);
+            
+            if ($existingSubscription) {
+                return $existingSubscription;
+            }
+            
+            // If we still can't find it, throw the original exception
+            throw $e;
+        }
         
         $this->logger->info('Push subscription registered', [
             'user_id' => $user->getId(),
@@ -346,15 +370,25 @@ class PushNotificationService
      */
     private function buildNotificationUrl(string $type, array $metadata): string
     {
+        // For payment notifications, check payment type to build correct URL
+        if (in_array($type, ['payment_submitted', 'payment_approved', 'payment_rejected'])) {
+            $manifestId = $metadata['manifest_id'] ?? null;
+            $paymentType = $metadata['payment_type'] ?? null;
+            
+            if ($manifestId && $paymentType === 'final_payment') {
+                return "/manifests/{$manifestId}/final-payment";
+            } elseif ($manifestId) {
+                return "/manifests/{$manifestId}/payment";
+            }
+            return "/manifests/{$manifestId}/payments";
+        }
+        
         return match($type) {
             'manifest_payment_required',
             'manifest_consignee_declared',
             'manifest_access_granted' => "/manifests/{$metadata['manifest_id']}",
             'noa_generated' => "/manifests/{$metadata['manifest_id']}/noa",
             'billing_generated' => "/manifests/{$metadata['manifest_id']}/billing",
-            'payment_submitted',
-            'payment_approved',
-            'payment_rejected' => "/manifests/{$metadata['manifest_id']}/payments",
             'bl_uploaded' => "/manifests/{$metadata['manifest_id']}/documents",
             'edo_generated' => "/manifests/{$metadata['manifest_id']}/edo",
             default => "/notifications"

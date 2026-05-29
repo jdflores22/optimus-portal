@@ -12,216 +12,259 @@
             <span class="icon-[tabler--arrow-left] size-4 mr-2"></span>
             Back to Manifest Details
         </a>
-        <h1 class="text-3xl font-bold text-base-content">Final Payment Submission</h1>
+        <h1 class="text-3xl font-bold text-base-content">
+            {% if rejectedPayment %}Payment Resubmission{% else %}Final Payment Submission{% endif %}
+        </h1>
         <p class="mt-2 text-base-content/60">{{ manifest.manifestNumber }}</p>
     </div>
 
-    {# 2-Column Grid Layout - Billing Details wider (2/3) and Payment Form narrower (1/3) #}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {# Left Column - Billing Details (takes 2 columns = 2/3 width) #}
-        <div class="lg:col-span-2 card bg-base-100 shadow-lg">
-            <div class="card-body">
-                <h3 class="card-title mb-4">Billing Details</h3>
-                
-                {% if billing.originalCurrency == 'USD' and billing.exchangeRate %}
-                    <div class="alert alert-info mb-4">
-                        <span class="icon-[tabler--currency-dollar] size-5"></span>
-                        <div class="text-sm">
-                            <p class="font-medium">Dual Currency Billing</p>
-                            <p>Exchange Rate: ₱{{ billing.exchangeRate|number_format(4) }} per USD</p>
-                        </div>
-                    </div>
-                {% endif %}
-                
-                <div class="space-y-3">
-                    {# Freight Charges #}
-                    <div class="flex justify-between py-2 border-b border-base-300">
-                        <span class="text-sm text-base-content/60">Freight Charges</span>
-                        <div class="text-right">
-                            {% if billing.originalCurrency == 'USD' and billing.freightChargesUsd %}
-                                <div class="grid grid-cols-2 gap-4 text-sm font-medium text-base-content">
-                                    <div class="text-right">${{ billing.freightChargesUsd|number_format(2) }}</div>
-                                    <div class="text-right text-base-content/60">₱{{ billing.freightCharges|number_format(2) }}</div>
-                                </div>
-                            {% else %}
-                                <span class="text-sm font-medium text-base-content">₱{{ billing.freightCharges|number_format(2) }}</span>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    {# THC Charges #}
-                    <div class="flex justify-between py-2 border-b border-base-300">
-                        <span class="text-sm text-base-content/60">Terminal Handling Charges (THC)</span>
-                        <div class="text-right">
-                            {% if billing.originalCurrency == 'USD' and billing.thcChargesUsd %}
-                                <div class="grid grid-cols-2 gap-4 text-sm font-medium text-base-content">
-                                    <div class="text-right">${{ billing.thcChargesUsd|number_format(2) }}</div>
-                                    <div class="text-right text-base-content/60">₱{{ billing.thcCharges|number_format(2) }}</div>
-                                </div>
-                            {% else %}
-                                <span class="text-sm font-medium text-base-content">₱{{ billing.thcCharges|number_format(2) }}</span>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    {# Additional Charges #}
-                    {% if billing.additionalCharges %}
-                        {% for charge in billing.additionalCharges %}
-                            <div class="flex justify-between py-2 border-b border-base-300">
-                                <span class="text-sm text-base-content/60">{{ charge.description }}</span>
-                                <div class="text-right">
-                                    {% if charge.amountUsd %}
-                                        <div class="grid grid-cols-2 gap-4 text-sm font-medium text-base-content">
-                                            <div class="text-right">${{ charge.amountUsd|number_format(2) }}</div>
-                                            <div class="text-right text-base-content/60">₱{{ charge.amount|number_format(2) }}</div>
-                                        </div>
-                                    {% else %}
-                                        <span class="text-sm font-medium text-base-content">₱{{ charge.amount|number_format(2) }}</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-
-                    {# Total Amount #}
-                    <div class="flex justify-between py-3 bg-primary/10 px-4 rounded-lg mt-4">
-                        <span class="text-base font-medium text-base-content">Total Amount Due</span>
-                        <div class="text-right">
-                            {% if billing.originalCurrency == 'USD' and billing.totalAmountUsd %}
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div class="text-lg font-bold text-primary text-right">${{ billing.totalAmountUsd|number_format(2) }}</div>
-                                    <div class="text-base font-semibold text-base-content/70 text-right">₱{{ billing.totalAmount|number_format(2) }}</div>
-                                </div>
-                            {% else %}
-                                <span class="text-lg font-bold text-primary">₱{{ billing.totalAmount|number_format(2) }}</span>
-                            {% endif %}
-                        </div>
-                    </div>
+    {# Rejection Alert - Compact #}
+    {% if rejectedPayment %}
+        <div class="alert alert-error mb-4">
+            <span class="icon-[tabler--circle-x] size-5"></span>
+            <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                    <h3 class="font-bold">Payment Rejected</h3>
+                    {# Version Badge #}
+                    {% include 'components/payment_version_badge.html.twig' with {
+                        version: rejectedPayment.version,
+                        status: rejectedPayment.status.value,
+                        submittedAt: rejectedPayment.createdAt,
+                        size: 'sm'
+                    } %}
                 </div>
-
-                {# Download Billing #}
-                {% if billing.pdfPath %}
-                    <div class="mt-4">
-                        <a href="/api/billing/{{ billing.id }}/download" 
-                           target="_blank"
-                           class="inline-flex items-center text-sm text-primary hover:text-primary/80">
-                            <span class="icon-[tabler--download] size-4 mr-2"></span>
-                            Download Billing Document
+                <p class="text-xs mt-1"><strong>Reason:</strong> {{ rejectedPayment.rejectionReason }}</p>
+                {% if rejectedPayment.version > 1 %}
+                    <p class="text-xs mt-2">
+                        <span class="icon-[tabler--alert-triangle] size-3 inline-block"></span>
+                        This is attempt #{{ rejectedPayment.version }}. 
+                        <a href="{{ path('broker_payment_history', {id: manifest.id}) }}" class="link link-hover underline font-semibold">
+                            View all submissions
                         </a>
-                    </div>
+                    </p>
                 {% endif %}
             </div>
         </div>
+    {% endif %}
 
-        {# Right Column - Payment Submission Form (takes 1 column = 1/3 width) #}
-        <div class="lg:col-span-1 card bg-base-100 shadow-lg">
-            <div class="card-body">
-                <h3 class="card-title mb-4">Submit Payment Receipt</h3>
+    {# Compact 2-Column Layout #}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {# Left Column - Payment Form (1/3) #}
+        <div class="lg:col-span-1">
+            {# Payment Submission Form #}
+            <div class="card bg-base-100 shadow-lg">
+                <div class="card-body p-4">
+                    <h3 class="text-base font-bold mb-3">Submit Payment</h3>
 
-                <form id="paymentForm" class="space-y-6">
-                    {# Amount Field #}
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text">
-                                Payment Amount <span class="text-error">*</span>
-                            </span>
-                        </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <span class="text-base-content/60">₱</span>
-                            </div>
-                            <input type="number" 
-                                   id="amount" 
-                                   name="amount" 
-                                   value="{{ billing.totalAmount }}" 
-                                   step="0.01" 
-                                   min="0.01"
-                                   required
-                                   readonly
-                                   disabled
-                                   class="input input-bordered pl-7 w-full bg-base-200 cursor-not-allowed">
-                        </div>
-                        <label class="label">
-                            <span class="label-text-alt text-base-content/60">Amount is fixed based on billing total</span>
-                        </label>
-                    </div>
-
-                    {# Receipt Upload #}
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text">
-                                Payment Receipt <span class="text-error">*</span>
-                            </span>
-                        </label>
-                        
-                        {# Hidden file input #}
-                        <input id="receipt" name="receipt" type="file" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
-                        
-                        {# File Upload Area (shown when no file selected) #}
-                        <div id="uploadArea" class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-base-300 rounded-lg hover:border-primary transition-colors cursor-pointer">
-                            <div class="space-y-1 text-center">
-                                <span class="icon-[tabler--upload] size-12 text-base-content/40 mx-auto block"></span>
-                                <div class="flex text-sm text-base-content/60 justify-center">
-                                    <span class="font-medium text-primary hover:text-primary/80">Upload a file</span>
-                                    <p class="pl-1">or drag and drop</p>
+                    <form id="paymentForm" class="space-y-3">
+                        {# Amount Field - Compact #}
+                        <div class="form-control">
+                            <label class="label py-1">
+                                <span class="label-text text-xs font-medium">Amount</span>
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-base-content/60 text-sm">
+                                        {% if billing.originalCurrency == 'USD' %}${% else %}₱{% endif %}
+                                    </span>
                                 </div>
-                                <p class="text-xs text-base-content/60">PDF, JPG, PNG up to 5MB</p>
+                                <input type="number" 
+                                       id="amount" 
+                                       name="amount" 
+                                       value="{{ billing.originalCurrency == 'USD' ? billing.totalAmountUsd : billing.totalAmount }}" 
+                                       step="0.01" 
+                                       min="0.01"
+                                       required
+                                       readonly
+                                       disabled
+                                       class="input input-sm input-bordered pl-7 w-full bg-base-200 cursor-not-allowed">
                             </div>
                         </div>
 
-                        {# File Selected Area (shown when file is selected) #}
-                        <div id="fileSelectedArea" class="hidden mt-1 border-2 border-success bg-success/10 rounded-lg p-4">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center flex-1 min-w-0">
-                                    <span class="icon-[tabler--file] size-10 text-success flex-shrink-0"></span>
-                                    <div class="ml-4 flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-base-content truncate" id="selectedFileName"></p>
-                                        <p class="text-sm text-base-content/60" id="selectedFileSize"></p>
+                        {# Receipt Upload - Compact #}
+                        <div class="form-control">
+                            <label class="label py-1">
+                                <span class="label-text text-xs font-medium">Receipt</span>
+                            </label>
+                            
+                            <input id="receipt" name="receipt" type="file" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
+                            
+                            <div id="uploadArea" class="mt-1 flex justify-center px-4 py-4 border-2 border-dashed border-base-300 rounded-lg hover:border-primary transition-colors cursor-pointer">
+                                <div class="space-y-1 text-center">
+                                    <span class="icon-[tabler--upload] size-8 text-base-content/40 mx-auto block"></span>
+                                    <div class="text-xs text-base-content/60">
+                                        <span class="font-medium text-primary">Upload file</span>
+                                    </div>
+                                    <p class="text-[10px] text-base-content/50">PDF, JPG, PNG (5MB max)</p>
+                                </div>
+                            </div>
+
+                            <div id="fileSelectedArea" class="hidden mt-1 border border-success bg-success/10 rounded-lg p-2">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center flex-1 min-w-0">
+                                        <span class="icon-[tabler--file] size-6 text-success flex-shrink-0"></span>
+                                        <div class="ml-2 flex-1 min-w-0">
+                                            <p class="text-xs font-medium text-base-content truncate" id="selectedFileName"></p>
+                                            <p class="text-[10px] text-base-content/60" id="selectedFileSize"></p>
+                                        </div>
+                                    </div>
+                                    <button type="button" 
+                                            id="changeFileBtn"
+                                            class="btn btn-xs btn-ghost ml-2 flex-shrink-0">
+                                        Change
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {# Error/Success Messages - Compact #}
+                        <div id="errorMessage" class="alert alert-error py-2 hidden">
+                            <span class="icon-[tabler--alert-circle] size-4"></span>
+                            <span class="text-xs" id="errorText"></span>
+                        </div>
+
+                        <div id="successMessage" class="alert alert-success py-2 hidden">
+                            <span class="icon-[tabler--circle-check] size-4"></span>
+                            <span class="text-xs">Payment submitted! Redirecting...</span>
+                        </div>
+
+                        {# Submit Button - Compact #}
+                        <div class="flex flex-col gap-2 pt-2">
+                            <button type="submit" 
+                                    id="submitBtn"
+                                    class="btn btn-primary btn-sm btn-block">
+                                {% if rejectedPayment %}
+                                    <span class="icon-[tabler--upload] size-4"></span>
+                                    Resubmit
+                                {% else %}
+                                    <span class="icon-[tabler--send] size-4"></span>
+                                    Submit
+                                {% endif %}
+                            </button>
+                            {% if rejectedPayment %}
+                            <a href="{{ path('broker_payment_history', {id: manifest.id}) }}" 
+                               class="btn btn-ghost btn-xs btn-block">
+                                <span class="icon-[tabler--history] size-3"></span>
+                                View My Submissions
+                            </a>
+                            {% endif %}
+                            <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" 
+                               class="btn btn-ghost btn-xs btn-block">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {# Billing Summary - Compact #}
+            <div class="card bg-base-100 shadow-lg mt-4">
+                <div class="card-body p-4">
+                    <h3 class="text-base font-bold mb-3">Billing Summary</h3>
+                    
+                    <div class="space-y-1.5">
+                        {# Freight #}
+                        <div class="flex justify-between py-1.5 border-b border-base-300">
+                            <span class="text-xs text-base-content/60">Freight</span>
+                            <div class="text-right">
+                                {% if billing.originalCurrency == 'USD' and billing.freightChargesUsd %}
+                                    <div class="text-xs font-medium">
+                                        <div>${{ billing.freightChargesUsd|number_format(2) }}</div>
+                                        {% if billing.exchangeRate %}
+                                            <div class="text-[10px] text-base-content/60">₱{{ (billing.freightChargesUsd * billing.exchangeRate)|number_format(2) }}</div>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <span class="text-xs font-medium">₱{{ billing.freightCharges|number_format(2) }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {# THC #}
+                        <div class="flex justify-between py-1.5 border-b border-base-300">
+                            <span class="text-xs text-base-content/60">THC</span>
+                            <div class="text-right">
+                                {% if billing.originalCurrency == 'USD' and billing.thcChargesUsd %}
+                                    <div class="text-xs font-medium">
+                                        <div>${{ billing.thcChargesUsd|number_format(2) }}</div>
+                                        {% if billing.exchangeRate %}
+                                            <div class="text-[10px] text-base-content/60">₱{{ (billing.thcChargesUsd * billing.exchangeRate)|number_format(2) }}</div>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <span class="text-xs font-medium">₱{{ billing.thcCharges|number_format(2) }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {# Additional Charges #}
+                        {% if billing.additionalCharges %}
+                            {% for charge in billing.additionalCharges %}
+                                <div class="flex justify-between py-1.5 border-b border-base-300">
+                                    <span class="text-xs text-base-content/60">{{ charge.description }}</span>
+                                    <div class="text-right">
+                                        {% if billing.originalCurrency == 'USD' and charge.amountUsd %}
+                                            <div class="text-xs font-medium">
+                                                <div>${{ charge.amountUsd|number_format(2) }}</div>
+                                                {% if billing.exchangeRate %}
+                                                    <div class="text-[10px] text-base-content/60">₱{{ (charge.amountUsd * billing.exchangeRate)|number_format(2) }}</div>
+                                                {% endif %}
+                                            </div>
+                                        {% else %}
+                                            <span class="text-xs font-medium">₱{{ charge.amount|number_format(2) }}</span>
+                                        {% endif %}
                                     </div>
                                 </div>
-                                <button type="button" 
-                                        id="changeFileBtn"
-                                        class="btn btn-sm btn-ghost ml-4 flex-shrink-0">
-                                    <span class="icon-[tabler--refresh] size-4"></span>
-                                    Change File
-                                </button>
+                            {% endfor %}
+                        {% endif %}
+
+                        {# Total #}
+                        <div class="flex justify-between py-2 bg-primary/10 px-3 rounded-lg mt-2">
+                            <span class="text-sm font-semibold">Total</span>
+                            <div class="text-right">
+                                {% if billing.originalCurrency == 'USD' and billing.totalAmountUsd %}
+                                    <div class="text-base font-bold text-primary">${{ billing.totalAmountUsd|number_format(2) }}</div>
+                                    {% if billing.exchangeRate %}
+                                        <div class="text-xs font-semibold text-base-content/70">₱{{ (billing.totalAmountUsd * billing.exchangeRate)|number_format(2) }}</div>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-base font-bold text-primary">₱{{ billing.totalAmount|number_format(2) }}</span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
 
-                    {# Warning Message #}
-                    <div class="alert alert-warning">
-                        <span class="icon-[tabler--alert-triangle] size-5"></span>
-                        <span class="text-sm">
-                            Please ensure the payment amount matches the billing total. Your payment will be verified by the accounting department before eDO generation.
-                        </span>
+        {# Right Column - Billing Document (2/3) #}
+        <div class="lg:col-span-2">
+            <div class="card bg-base-100 shadow-lg sticky top-4">
+                <div class="card-body p-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-base font-bold">Billing Document</h3>
+                        {% if billing.pdfPath %}
+                            <a href="{{ path('api_billing_download', {billingId: billing.id, inline: 'false'}) }}" 
+                               target="_blank"
+                               class="btn btn-xs btn-ghost gap-1">
+                                <span class="icon-[tabler--external-link] size-3"></span>
+                                Open
+                            </a>
+                        {% endif %}
                     </div>
-
-                    {# Error Message #}
-                    <div id="errorMessage" class="alert alert-error hidden">
-                        <span class="icon-[tabler--alert-circle] size-5"></span>
-                        <span class="text-sm" id="errorText"></span>
-                    </div>
-
-                    {# Success Message #}
-                    <div id="successMessage" class="alert alert-success hidden">
-                        <span class="icon-[tabler--circle-check] size-5"></span>
-                        <span class="text-sm">Payment submitted successfully! Redirecting...</span>
-                    </div>
-
-                    {# Submit Button #}
-                    <div class="flex items-center justify-end gap-3">
-                        <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" 
-                           class="btn btn-ghost">
-                            Cancel
-                        </a>
-                        <button type="submit" 
-                                id="submitBtn"
-                                class="btn btn-primary">
-                            Submit Payment
-                        </button>
-                    </div>
-                </form>
+                    
+                    {% if billing.pdfPath %}
+                        <div class="border border-base-300 rounded-lg overflow-hidden bg-base-200" style="height: 600px;">
+                            <iframe src="{{ path('api_billing_download', {billingId: billing.id, inline: 'true'}) }}" 
+                                    class="w-full h-full border-0"></iframe>
+                        </div>
+                    {% else %}
+                        <div class="flex flex-col items-center justify-center text-center bg-base-200 rounded-lg border border-dashed border-base-300" style="height: 600px;">
+                            <span class="icon-[tabler--file-off] size-12 text-base-content/20 mb-2"></span>
+                            <p class="text-xs text-base-content/60">Document not available</p>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -331,8 +374,23 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('receipt', receiptInput.files[0]);
 
         try {
-            const response = await fetch('/api/manifests/{{ manifest.id }}/payments/final', {
-                method: 'POST',
+            // Check if this is a resubmission
+            const isResubmission = {{ rejectedPayment ? 'true' : 'false' }};
+            const rejectedPaymentId = {{ rejectedPayment ? rejectedPayment.id : 'null' }};
+            
+            let url, method;
+            if (isResubmission && rejectedPaymentId) {
+                // Use resubmit endpoint
+                url = `/api/payments/${rejectedPaymentId}/resubmit`;
+                method = 'POST';
+            } else {
+                // Use regular submit endpoint
+                url = '/api/manifests/{{ manifest.id }}/payments/final';
+                method = 'POST';
+            }
+
+            const response = await fetch(url, {
+                method: method,
                 body: formData
             });
 
@@ -344,7 +402,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.location.href = '{{ path('broker_manifest_detail', {id: manifest.id}) }}';
                 }, 2000);
             } else {
-                errorText.textContent = data.error || 'Failed to submit payment. Please try again.';
+                // Handle both error formats: {error: "message"} and {error: true, message: "message"}
+                let errorMsg = 'Failed to submit payment. Please try again.';
+                if (typeof data.error === 'string') {
+                    errorMsg = data.error;
+                } else if (data.message) {
+                    errorMsg = data.message;
+                }
+                errorText.textContent = errorMsg;
                 errorMessage.classList.remove('hidden');
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Submit Payment';

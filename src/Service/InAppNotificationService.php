@@ -23,6 +23,29 @@ class InAppNotificationService
         string $type = 'info',
         ?array $metadata = null
     ): Notification {
+        // Check for duplicate notifications within the last 5 minutes
+        $fiveMinutesAgo = new \DateTime('-5 minutes');
+        
+        $existingNotification = $this->entityManager
+            ->getRepository(Notification::class)
+            ->createQueryBuilder('n')
+            ->where('n.user = :user')
+            ->andWhere('n.title = :title')
+            ->andWhere('n.message = :message')
+            ->andWhere('n.createdAt > :fiveMinutesAgo')
+            ->setParameter('user', $user)
+            ->setParameter('title', $title)
+            ->setParameter('message', $message)
+            ->setParameter('fiveMinutesAgo', $fiveMinutesAgo)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+        
+        // If duplicate found, return existing notification instead of creating new one
+        if ($existingNotification) {
+            return $existingNotification;
+        }
+        
         // Map workflow event types to notification types
         $notificationType = $this->mapEventTypeToNotificationType($type);
         
@@ -168,9 +191,22 @@ class InAppNotificationService
                     break;
                 case 'payment_rejected':
                     if ($userRole === 'BROKER') {
-                        $url = "/broker/manifests/{$manifestId}/payment";
+                        // Check payment type to determine correct URL
+                        $paymentType = $metadata['payment_type'] ?? null;
+                        if ($paymentType === 'final_payment') {
+                            $url = "/broker/manifests/{$manifestId}/final-payment";
+                        } else {
+                            // manifest_access payment
+                            $url = "/broker/manifests/{$manifestId}/payment";
+                        }
                     } elseif ($userRole === 'CONSIGNEE') {
-                        $url = "/consignee/manifests/{$manifestId}/payment";
+                        // Check payment type for consignee as well
+                        $paymentType = $metadata['payment_type'] ?? null;
+                        if ($paymentType === 'final_payment') {
+                            $url = "/consignee/manifests/{$manifestId}/final-payment";
+                        } else {
+                            $url = "/consignee/manifests/{$manifestId}/payment";
+                        }
                     } else {
                         $url = "/manifest-workflow/{$manifestId}";
                     }

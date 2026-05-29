@@ -37,6 +37,17 @@ class EDONotificationService implements EDONotificationServiceInterface
                 $container = $edo->getContainer();
                 $manifest = $edo->getManifest();
                 
+                // Skip if container or manifest is missing
+                if (!$container || !$manifest) {
+                    $this->logger->warning('Cannot send expiration notification - missing container or manifest', [
+                        'edoId' => $edo->getId(),
+                        'edoNumber' => $edo->getEdoNumber(),
+                        'hasContainer' => $container !== null,
+                        'hasManifest' => $manifest !== null
+                    ]);
+                    return;
+                }
+                
                 // Get Broker and Consignee from manifest
                 $broker = $manifest->getBroker();
                 $consignee = $manifest->getConsignee();
@@ -358,7 +369,7 @@ class EDONotificationService implements EDONotificationServiceInterface
             $title,
             $message,
             $type,
-            $relatedId
+            ['related_id' => $relatedId]
         );
 
         // Send email notification with template if provided

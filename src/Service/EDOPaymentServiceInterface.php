@@ -118,4 +118,15 @@ interface EDOPaymentServiceInterface
      * @return EDOPayment[] Array of payments ordered by creation date descending
      */
     public function getPaymentHistory(ElectronicDeliveryOrder $edo): array;
+
+    /**
+     * Resubmit a rejected EDO payment (manifest access payment)
+     * 
+     * @param int $rejectedPaymentId The ID of the rejected payment
+     * @param UploadedFile $receipt The new payment receipt file
+     * @param User $broker The broker resubmitting the payment
+     * @return EDOPayment The newly created payment entity
+     * @throws \InvalidArgumentException If payment not found, not rejected, or not owned by broker
+     */
+    public function resubmitRejectedPayment(int $rejectedPaymentId, UploadedFile $receipt, User $broker): EDOPayment;
 }

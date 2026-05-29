@@ -26,7 +26,6 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
     public function __construct(
         private EntityManagerInterface $entityManager,
         private EDOGenerationServiceInterface $edoGenerationService,
-        private EDOAuditServiceInterface $auditService,
         private LoggerInterface $logger,
         private EDONumberGenerator $edoNumberGenerator,
         private NotificationService $notificationService,
@@ -149,23 +148,7 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
             }
             
             // Log batch generation start and completion with first eDO
-            if ($firstEdo !== null) {
-                $this->auditService->logBatchGenerationStart(
-                    $generatedBy,
-                    'manual_generation_' . $manifest->getId() . '_' . time(),
-                    count($generatedEDOs),
-                    $expirationDate,
-                    $firstEdo
-                );
-                
-                $this->auditService->logBatchGenerationCompletion(
-                    $generatedBy,
-                    'manual_generation_' . $manifest->getId() . '_' . time(),
-                    count($generatedEDOs),
-                    0, // No failures
-                    $firstEdo
-                );
-            }
+            // TODO: Re-implement audit logging with general AuditService
             
             // Commit transaction
             $this->entityManager->commit();
@@ -490,14 +473,8 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
                 // Track first and last eDO for audit logging
                 if ($firstEdo === null) {
                     $firstEdo = $edo;
+                    // TODO: Re-implement audit logging
                     // Log batch generation start with first eDO
-                    $this->auditService->logBatchGenerationStart(
-                        $user,
-                        $sessionId,
-                        count($containers),
-                        $expirationDate,
-                        $firstEdo
-                    );
                 }
                 $lastEdo = $edo;
 
@@ -513,12 +490,8 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
                     'edo_number' => $edo->getEdoNumber()
                 ]);
 
-                $this->auditService->logBatchEDOGeneration(
-                    $edo,
-                    $user,
-                    $sessionId,
-                    $batchSequence
-                );
+                // TODO: Re-implement audit logging
+                // $this->auditService->logBatchEDOGeneration(...);
 
             } catch (\Exception $e) {
                 // Handle container-level error (including timeout)
@@ -618,13 +591,8 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
                 'total' => $session->getTotalContainers()
             ]);
 
-            $this->auditService->logBatchGenerationCompletion(
-                $user,
-                $sessionId,
-                $session->getCompletedContainers(),
-                $session->getFailedContainers(),
-                $lastEdo
-            );
+            // TODO: Re-implement audit logging
+            // $this->auditService->logBatchGenerationCompletion(...);
         }
 
         return $session;
@@ -693,24 +661,8 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
             'total' => $session->getTotalContainers()
         ]);
 
+        // TODO: Re-implement audit logging with general AuditService
         // Find the last completed eDO in this session for audit log reference
-        $auditLogs = $this->auditService->queryByBatchSession($sessionId);
-        $lastEdo = null;
-        
-        foreach ($auditLogs as $log) {
-            if ($log->getEdo() && $log->getBatchSequence() !== null) {
-                $lastEdo = $log->getEdo();
-            }
-        }
-
-        // Only log cancellation if we have at least one completed eDO
-        if ($lastEdo !== null) {
-            $this->auditService->logBatchGenerationCancellation(
-                $user,
-                $sessionId,
-                $lastEdo
-            );
-        }
 
         return true;
     }
@@ -763,3 +715,4 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
         );
     }
 }
+

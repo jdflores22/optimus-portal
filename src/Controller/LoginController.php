@@ -51,9 +51,27 @@ class LoginController extends AbstractController
     }
 
     #[Route('/logout', name: 'app_logout')]
-    public function logout(): void
+    public function logout(Request $request): Response
     {
-        // This method can be blank - it will be intercepted by the logout key on your firewall
-        throw new \LogicException('This method can be blank - it will be intercepted by the logout key on your firewall.');
+        // This method should normally be intercepted by the logout key on the firewall
+        // If we reach here, it means the firewall didn't intercept (e.g., session already expired)
+        // In this case, manually clear the session and redirect to login
+        
+        $reason = $request->query->get('reason', 'manual');
+        
+        // Clear session if it exists
+        if ($request->hasSession()) {
+            $session = $request->getSession();
+            $session->invalidate();
+        }
+        
+        // Add flash message based on reason
+        if ($reason === 'session_timeout') {
+            $this->addFlash('warning', 'Your session has expired. Please log in again.');
+        } else {
+            $this->addFlash('success', 'You have been logged out successfully.');
+        }
+        
+        return $this->redirectToRoute('app_login');
     }
 }

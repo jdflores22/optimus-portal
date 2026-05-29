@@ -510,10 +510,14 @@ class Manifest
      */
     public function getManifestAccessPayment(): ?EDOPayment
     {
+        // Get the most recent payment (highest ID)
+        $latestPayment = null;
         foreach ($this->edoPayments as $payment) {
-            return $payment; // Only one eDO payment per manifest
+            if ($latestPayment === null || $payment->getId() > $latestPayment->getId()) {
+                $latestPayment = $payment;
+            }
         }
-        return null;
+        return $latestPayment;
     }
 
     /**

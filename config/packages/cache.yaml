@@ -48,3 +48,8 @@ framework:
             edo_pdf.cache:
                 adapter: cache.adapter.redis
                 default_lifetime: 86400 # 24 hours
+                
+            # Payment history cache - for payment version chains and statistics
+            payment_history.cache:
+                adapter: cache.adapter.redis
+                default_lifetime: 300 # 5 minutes

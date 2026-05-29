@@ -59,6 +59,7 @@
                                 <th>Container</th>
                                 <th>Manifest</th>
                                 <th>Status</th>
+                                <th>Expires At</th>
                                 <th>Fee Amount</th>
                                 <th>Submitted</th>
                                 <th class="text-right">Action</th>
@@ -73,6 +74,28 @@
                                 <tr class="hover" onclick="window.location.href='{{ path('broker_edo_detail_page', {id: edo.id}) }}'" style="cursor: pointer;">
                                     <td>
                                         <span class="font-semibold text-primary">{{ edo.edoNumber }}</span>
+                                        
+                                        {# Show renewal badges #}
+                                        {% if edo.previousVersion %}
+                                            <div class="mt-1">
+                                                <span class="badge badge-info badge-xs gap-1" 
+                                                   title="This eDO was renewed from {{ edo.previousVersion.edoNumber }}">
+                                                    <span class="icon-[tabler--arrow-back-up] size-3"></span>
+                                                    Renewed from {{ edo.previousVersion.edoNumber }}
+                                                </span>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        {% set renewedTo = renewedToEdos[edo.id] ?? null %}
+                                        {% if renewedTo %}
+                                            <div class="mt-1">
+                                                <span class="badge badge-success badge-xs gap-1" 
+                                                   title="This eDO was renewed to {{ renewedTo.edoNumber }}">
+                                                    <span class="icon-[tabler--arrow-forward-up] size-3"></span>
+                                                    Renewed to {{ renewedTo.edoNumber }}
+                                                </span>
+                                            </div>
+                                        {% endif %}
                                     </td>
                                     <td>{{ edo.container ? edo.container.containerNumber : 'N/A' }}</td>
                                     <td>{{ edo.manifest.manifestNumber ?? 'N/A' }}</td>
@@ -92,9 +115,25 @@
                                                 <span class="badge badge-soft badge-warning text-xs rounded-lg">Pending Validation</span>
                                             {% elseif edoStatus == 'released' %}
                                                 <span class="badge badge-soft badge-success text-xs rounded-lg">Released</span>
+                                            {% elseif edoStatus == 'expired' %}
+                                                <span class="badge badge-soft badge-error text-xs rounded-lg">Expired</span>
                                             {% else %}
                                                 <span class="badge badge-soft text-xs rounded-lg">Unknown</span>
                                             {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if edo.expiresAt %}
+                                            {% set now = date() %}
+                                            {% set expiresAt = edo.expiresAt %}
+                                            {% if expiresAt < now %}
+                                                <span class="text-error font-medium">{{ expiresAt|date('M j, Y') }}</span>
+                                                <span class="badge badge-error badge-xs ml-1">Expired</span>
+                                            {% else %}
+                                                <span>{{ expiresAt|date('M j, Y') }}</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="opacity-60">-</span>
                                         {% endif %}
                                     </td>
                                     <td>₱{{ edo.feeAmount|number_format(2, '.', ',') }}</td>
@@ -106,7 +145,51 @@
                                         {% endif %}
                                     </td>
                                     <td class="text-right" onclick="event.stopPropagation()">
-                                        {% if currentPayment %}
+                                        {% if edoStatus == 'expired' %}
+                                            {# Check if renewal request already exists #}
+                                            {% set renewalRequest = renewalRequests[edo.id] ?? null %}
+                                            {% if renewalRequest %}
+                                                {# Show renewal request status #}
+                                                {% set requestStatus = renewalRequest.status.value %}
+                                                {% if requestStatus == 'pending_review' %}
+                                                    <span class="badge badge-info gap-1">
+                                                        <span class="icon-[tabler--hourglass] size-3"></span>
+                                                        Pending Review
+                                                    </span>
+                                                {% elseif requestStatus == 'awaiting_payment' %}
+                                                    <span class="badge badge-warning gap-1">
+                                                        <span class="icon-[tabler--clock] size-3"></span>
+                                                        Awaiting Payment
+                                                    </span>
+                                                {% elseif requestStatus == 'payment_submitted' %}
+                                                    <span class="badge badge-info gap-1">
+                                                        <span class="icon-[tabler--file-check] size-3"></span>
+                                                        Payment Validation
+                                                    </span>
+                                                {% elseif requestStatus == 'ready_for_generation' %}
+                                                    <span class="badge badge-info gap-1">
+                                                        <span class="icon-[tabler--hourglass] size-3"></span>
+                                                        Ready for Generation
+                                                    </span>
+                                                {% elseif requestStatus == 'completed' %}
+                                                    <span class="badge badge-success gap-1">
+                                                        <span class="icon-[tabler--check] size-3"></span>
+                                                        Renewal Completed
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge badge-ghost gap-1">
+                                                        <span class="icon-[tabler--refresh] size-3"></span>
+                                                        {{ requestStatus|title|replace({'_': ' '}) }}
+                                                    </span>
+                                                {% endif %}
+                                            {% else %}
+                                                {# Show Request New eDO button for expired eDOs - Requirement 1.1 #}
+                                                <a href="{{ path('broker_edo_request_renewal', {id: edo.id}) }}" class="btn btn-primary btn-sm rounded-lg gap-2">
+                                                    <span class="icon-[tabler--refresh] size-4"></span>
+                                                    Request New eDO
+                                                </a>
+                                            {% endif %}
+                                        {% elseif currentPayment %}
                                             {% if paymentStatus == 'pending_validation' %}
                                                 <span class="btn btn-ghost btn-sm rounded-lg cursor-not-allowed opacity-50">
                                                     <span class="icon-[tabler--clock] size-4"></span>
@@ -166,7 +249,45 @@
                                         <div class="text-sm opacity-60">Manifest: {{ edo.manifest.manifestNumber ?? 'N/A' }}</div>
                                     </div>
                                     <div>
-                                        {% if currentPayment %}
+                                        {% if edoStatus == 'expired' %}
+                                            {# Check if renewal request already exists #}
+                                            {% set renewalRequest = renewalRequests[edo.id] ?? null %}
+                                            {% if renewalRequest %}
+                                                {# Show renewal request status #}
+                                                {% set requestStatus = renewalRequest.status.value %}
+                                                {% if requestStatus == 'pending_review' %}
+                                                    <span class="badge badge-info gap-1 text-xs">
+                                                        <span class="icon-[tabler--hourglass] size-3"></span>
+                                                        Pending Review
+                                                    </span>
+                                                {% elseif requestStatus == 'awaiting_payment' %}
+                                                    <span class="badge badge-warning gap-1 text-xs">
+                                                        <span class="icon-[tabler--clock] size-3"></span>
+                                                        Awaiting Payment
+                                                    </span>
+                                                {% elseif requestStatus == 'ready_for_generation' %}
+                                                    <span class="badge badge-info gap-1 text-xs">
+                                                        <span class="icon-[tabler--hourglass] size-3"></span>
+                                                        Ready
+                                                    </span>
+                                                {% elseif requestStatus == 'completed' %}
+                                                    <span class="badge badge-success gap-1 text-xs">
+                                                        <span class="icon-[tabler--check] size-3"></span>
+                                                        Completed
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge badge-ghost gap-1 text-xs">
+                                                        <span class="icon-[tabler--refresh] size-3"></span>
+                                                        {{ requestStatus|title|replace({'_': ' '}) }}
+                                                    </span>
+                                                {% endif %}
+                                            {% else %}
+                                                <a href="{{ path('broker_edo_request_renewal', {id: edo.id}) }}" class="btn btn-primary btn-sm rounded-lg gap-2">
+                                                    <span class="icon-[tabler--refresh] size-4"></span>
+                                                    Request
+                                                </a>
+                                            {% endif %}
+                                        {% elseif currentPayment %}
                                             {% if paymentStatus == 'pending_validation' %}
                                                 <span class="btn btn-ghost btn-sm rounded-lg cursor-not-allowed opacity-50">
                                                     <span class="icon-[tabler--clock] size-4"></span>

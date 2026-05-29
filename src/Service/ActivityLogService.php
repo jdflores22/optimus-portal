@@ -1504,6 +1504,20 @@ class ActivityLogService
     }
 
     /**
+     * Get activity logs for a specific entity
+     */
+    public function getEntityActivityLogs(string $entityType, int $entityId): array
+    {
+        return $this->activityLogRepository->findBy(
+            [
+                'entityType' => $entityType,
+                'entityId' => $entityId
+            ],
+            ['createdAt' => 'DESC']
+        );
+    }
+
+    /**
      * Log system operation (for integrity checks, etc.)
      */
     public function logSystemOperation(User $user, string $operation, array $details): void

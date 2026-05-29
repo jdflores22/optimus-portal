@@ -65,6 +65,8 @@ class EDOPaymentService implements EDOPaymentServiceInterface
         $edoPayment->setReceiptFilePath($relativePath);
         $edoPayment->setSubmittedBy($broker);
         $edoPayment->setStatus(PaymentStatus::PENDING_VALIDATION);
+        $edoPayment->setVersion(1); // Initial version
+        $edoPayment->setPreviousPayment(null);
 
         // Update EDO to reference this payment
         $edo->setEdoPayment($edoPayment);
@@ -82,7 +84,8 @@ class EDOPaymentService implements EDOPaymentServiceInterface
             [
                 'amount' => $feeAmount,
                 'manifest_id' => $manifestId,
-                'edo_number' => $edo->getEdoNumber()
+                'edo_number' => $edo->getEdoNumber(),
+                'version' => 1
             ]
         );
 
@@ -215,6 +218,8 @@ class EDOPaymentService implements EDOPaymentServiceInterface
         $payment->setSubmittedBy($broker);
         $payment->setStatus(PaymentStatus::PENDING_VALIDATION);
         $payment->setReceiptFilePath(null); // Will update after upload
+        $payment->setVersion(1); // Initial version
+        $payment->setPreviousPayment(null);
 
         // Step 4: Save to database to get ID
         $this->entityManager->persist($payment);
@@ -261,6 +266,7 @@ class EDOPaymentService implements EDOPaymentServiceInterface
                     'edo_id' => $edo->getId(),
                     'edo_number' => $edo->getEdoNumber(),
                     'amount' => $payment->getAmount(),
+                    'version' => 1
                 ]
             );
         } catch (\Exception $e) {
@@ -440,5 +446,80 @@ class EDOPaymentService implements EDOPaymentServiceInterface
     {
         return $this->entityManager->getRepository(EDOPayment::class)
             ->findByEDO($edo);
+    }
+
+    /**
+     * Resubmit a rejected EDO payment (manifest access payment)
+     * Creates a new payment record while preserving the rejected payment history
+     */
+    public function resubmitRejectedPayment(int $rejectedPaymentId, UploadedFile $receipt, User $broker): EDOPayment
+    {
+        // Validate rejected payment exists
+        $rejectedPayment = $this->entityManager->getRepository(EDOPayment::class)->find($rejectedPaymentId);
+        if (!$rejectedPayment) {
+            throw new \InvalidArgumentException('Payment not found');
+        }
+
+        // Validate payment is rejected
+        if ($rejectedPayment->getStatus() !== PaymentStatus::REJECTED) {
+            throw new \InvalidArgumentException('Payment is not rejected. Current status: ' . $rejectedPayment->getStatus()->value);
+        }
+
+        // Validate broker owns this payment
+        if ($rejectedPayment->getSubmittedBy()->getId() !== $broker->getId()) {
+            throw new \InvalidArgumentException('You do not have permission to resubmit this payment');
+        }
+
+        $manifest = $rejectedPayment->getManifest();
+
+        // Upload new receipt file using FileService
+        $storedFile = $this->fileService->uploadFile($receipt, 'receipt', $broker);
+        $relativePath = $this->getRelativePath($storedFile->getEncryptedPath());
+
+        // Get current manifest access fee from configuration
+        $feeAmount = $this->paymentFeeConfigService->getCurrentManifestAccessFee();
+
+        // Calculate next version number
+        $nextVersion = $rejectedPayment->getVersion() + 1;
+
+        // Create new EDOPayment entity with version tracking
+        $newPayment = new EDOPayment();
+        $newPayment->setManifest($manifest);
+        $newPayment->setShippingLine($manifest->getShippingLine());
+        $newPayment->setAmount($feeAmount);
+        $newPayment->setReceiptFilePath($relativePath);
+        $newPayment->setSubmittedBy($broker);
+        $newPayment->setStatus(PaymentStatus::PENDING_VALIDATION);
+        $newPayment->setVersion($nextVersion);
+        $newPayment->setPreviousPayment($rejectedPayment);
+
+        // Persist to database
+        $this->entityManager->persist($newPayment);
+        $this->entityManager->flush();
+
+        // Enhanced audit log with version information
+        $this->auditService->logAction(
+            $broker,
+            'edo_payment_resubmission',
+            'EDOPayment',
+            $newPayment->getId(),
+            [
+                'amount' => $feeAmount,
+                'manifest_id' => $manifest->getId(),
+                'rejected_payment_id' => $rejectedPaymentId,
+                'rejection_reason' => $rejectedPayment->getRejectionReason(),
+                'version' => $nextVersion,
+                'previous_version' => $rejectedPayment->getVersion(),
+                'previous_payment_id' => $rejectedPayment->getId()
+            ]
+        );
+
+        // Log to ActivityLogService
+        $this->activityLogService->logEDOPaymentSubmission($broker, $newPayment, $manifest);
+
+        // Send notification to SYSTEM_ADMIN
+        $this->notificationService->notifyEDOPaymentSubmitted($newPayment);
+
+        return $newPayment;
     }
 }

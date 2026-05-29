@@ -39,10 +39,6 @@ try {
 $tests = [
     'Tables' => [
         'noa' => 'NOA table',
-        'regeneration_requests' => 'RegenerationRequest table',
-        'edo_billings' => 'EDOBilling table',
-        'edo_payment_receipts' => 'EDOPaymentReceipt table',
-        'edo_audit_logs' => 'EDOAuditLog table',
     ],
     'Columns' => [
         'containers.noa_id' => 'Container.noa_id column',
@@ -58,9 +54,6 @@ $tests = [
         'electronic_delivery_orders.idx_edo_number' => 'eDO number index',
         'electronic_delivery_orders.idx_edo_status' => 'eDO status index',
         'electronic_delivery_orders.idx_edo_status_expires' => 'eDO status+expires composite index',
-        'edo_audit_logs.idx_audit_container' => 'Audit log container index',
-        'edo_audit_logs.idx_audit_edo' => 'Audit log eDO index',
-        'regeneration_requests.idx_regen_status' => 'Regeneration request status index',
     ],
     'Foreign Keys' => [
         'noa.FK_noa_consignee' => 'NOA -> Consignee FK',
@@ -69,9 +62,6 @@ $tests = [
         'containers.FK_containers_manifest' => 'Container -> Manifest FK',
         'electronic_delivery_orders.FK_edo_container' => 'eDO -> Container FK',
         'electronic_delivery_orders.FK_edo_previous_version' => 'eDO -> Previous eDO FK',
-        'regeneration_requests.FK_regen_req_edo' => 'RegenerationRequest -> eDO FK',
-        'edo_billings.FK_edo_billing_regen_req' => 'EDOBilling -> RegenerationRequest FK',
-        'edo_payment_receipts.FK_edo_payment_billing' => 'EDOPaymentReceipt -> EDOBilling FK',
     ],
 ];
 

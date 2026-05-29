@@ -15,8 +15,7 @@ use Doctrine\ORM\EntityManagerInterface;
 class EDOAdminService implements EDOAdminServiceInterface
 {
     public function __construct(
-        private EntityManagerInterface $entityManager,
-        private EDOAuditServiceInterface $auditService
+        private EntityManagerInterface $entityManager
     ) {
     }
 
@@ -58,8 +57,8 @@ class EDOAdminService implements EDOAdminServiceInterface
         // Persist changes
         $this->entityManager->flush();
 
-        // Log admin unlock using audit service
-        $this->auditService->logAdminUnlock($edo, $admin, $reason);
+        // TODO: Re-implement audit logging with general AuditService
+        // Log admin unlock action
     }
 
     /**

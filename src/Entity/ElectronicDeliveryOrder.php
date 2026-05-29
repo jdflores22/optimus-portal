@@ -64,6 +64,9 @@ class ElectronicDeliveryOrder
     #[ORM\JoinColumn(nullable: true)]
     private ?User $releasedBy = null;
 
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $generatedByName = null;
+
     #[ORM\Column(type: 'datetime', nullable: true)]
     private ?\DateTimeInterface $releasedAt = null;
 
@@ -75,6 +78,9 @@ class ElectronicDeliveryOrder
 
     #[ORM\Column(type: 'string', length: 100, nullable: true)]
     private ?string $cyLocation = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $additionalNotes = null;
 
     #[ORM\Column(type: 'integer', options: ['default' => 1])]
     #[ORM\Version]
@@ -196,6 +202,17 @@ class ElectronicDeliveryOrder
         return $this;
     }
 
+    public function getGeneratedByName(): ?string
+    {
+        return $this->generatedByName;
+    }
+
+    public function setGeneratedByName(?string $generatedByName): self
+    {
+        $this->generatedByName = $generatedByName;
+        return $this;
+    }
+
     public function getReleasedAt(): ?\DateTimeInterface
     {
         return $this->releasedAt;
@@ -308,6 +325,17 @@ class ElectronicDeliveryOrder
     public function setCyLocation(?string $cyLocation): self
     {
         $this->cyLocation = $cyLocation;
+        return $this;
+    }
+
+    public function getAdditionalNotes(): ?string
+    {
+        return $this->additionalNotes;
+    }
+
+    public function setAdditionalNotes(?string $additionalNotes): self
+    {
+        $this->additionalNotes = $additionalNotes;
         return $this;
     }
 

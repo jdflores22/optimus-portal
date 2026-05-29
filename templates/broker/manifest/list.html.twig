@@ -28,6 +28,21 @@
     </div>
 
     <div class="px-4 sm:px-6 lg:px-8 py-6">
+        {# Rejected Payments Alert #}
+        {% if rejectedPaymentsCount > 0 %}
+            <div class="alert alert-error mb-6 shadow-lg">
+                <span class="icon-[tabler--alert-triangle] size-6"></span>
+                <div class="flex-1">
+                    <h3 class="font-bold">Action Required: Rejected Payments</h3>
+                    <p class="text-sm">You have {{ rejectedPaymentsCount }} rejected payment{{ rejectedPaymentsCount > 1 ? 's' : '' }} that need to be resubmitted.</p>
+                </div>
+                <a href="{{ path('broker_payments_rejected') }}" class="btn btn-sm btn-ghost">
+                    <span class="icon-[tabler--arrow-right] size-4"></span>
+                    View & Resubmit
+                </a>
+            </div>
+        {% endif %}
+        
         <!-- Tabs -->
         <div class="card bg-base-100 shadow-sm mb-6">
             <div class="tabs tabs-boxed bg-base-200 p-2">

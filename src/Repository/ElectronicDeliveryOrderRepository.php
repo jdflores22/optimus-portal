@@ -87,7 +87,7 @@ class ElectronicDeliveryOrderRepository extends ServiceEntityRepository
             ->where('edo.status = :status')
             ->andWhere('edo.expiresAt IS NOT NULL')
             ->andWhere('edo.expiresAt < :now')
-            ->setParameter('status', EDOStatus::ACTIVE)
+            ->setParameter('status', EDOStatus::RELEASED)
             ->setParameter('now', new \DateTime('now', new \DateTimeZone('UTC')))
             ->orderBy('edo.expiresAt', 'ASC')
             ->setFirstResult($offset)
@@ -108,7 +108,7 @@ class ElectronicDeliveryOrderRepository extends ServiceEntityRepository
             ->where('edo.status = :status')
             ->andWhere('edo.expiresAt IS NOT NULL')
             ->andWhere('edo.expiresAt < :now')
-            ->setParameter('status', EDOStatus::ACTIVE)
+            ->setParameter('status', EDOStatus::RELEASED)
             ->setParameter('now', new \DateTime('now', new \DateTimeZone('UTC')))
             ->getQuery()
             ->getSingleScalarResult();
@@ -240,5 +240,28 @@ class ElectronicDeliveryOrderRepository extends ServiceEntityRepository
             ->setParameter('id', $id)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * Find expired eDOs with assigned terminals
+     * Returns eDOs that are past their expiration date and have a terminal assigned
+     * Used for renewal workflow eligibility checks
+     * 
+     * @return ElectronicDeliveryOrder[]
+     */
+    public function findExpiredEDOsWithTerminal(): array
+    {
+        return $this->createQueryBuilder('edo')
+            ->leftJoin('edo.manifest', 'm')
+            ->leftJoin('edo.container', 'c')
+            ->leftJoin('c.terminal', 't')
+            ->addSelect('m', 'c', 't')
+            ->where('edo.expiresAt IS NOT NULL')
+            ->andWhere('edo.expiresAt < :now')
+            ->andWhere('t.id IS NOT NULL')
+            ->setParameter('now', new \DateTime('now', new \DateTimeZone('UTC')))
+            ->orderBy('edo.expiresAt', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 }

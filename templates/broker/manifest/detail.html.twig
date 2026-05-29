@@ -5,410 +5,565 @@
 {% block body %}
 <div class="min-h-screen bg-base-200">
     <!-- Header Section -->
-    <div class="bg-base-100 shadow-sm">
-        <div class="px-4 sm:px-6 lg:px-8 py-4">
+    <div class="bg-base-100 shadow-md">
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div class="flex-1">
                     <a href="{{ path('broker_manifest_list') }}" 
-                       class="inline-flex items-center text-sm text-base-content/60 hover:text-base-content mb-2 gap-2">
-                        <span class="icon-[tabler--arrow-left] size-4"></span>
+                       class="inline-flex items-center text-xs sm:text-sm text-base-content/60 hover:text-primary mb-2">
+                        <span class="icon-[tabler--arrow-left] size-4 mr-1.5"></span>
                         Back to Manifests
                     </a>
                     <div class="flex flex-wrap items-center gap-3">
-                        <h1 class="text-2xl font-bold text-base-content">{{ manifest.manifestNumber }}</h1>
+                        <h1 class="text-xl sm:text-2xl font-bold text-base-content">{{ manifest.manifestNumber }}</h1>
                         
                         <!-- Status Badge -->
                         {% set state = manifest.workflowState %}
-                        {% if state.value == 'manifest_uploaded' %}
-                            <span class="badge badge-ghost badge-lg rounded-lg">{{ state.getDisplayName() }}</span>
-                        {% elseif state.value == 'noa_generated' %}
-                            <span class="badge badge-secondary badge-lg rounded-lg">{{ state.getDisplayName() }}</span>
-                        {% elseif state.value == 'bl_generated' %}
-                            <span class="badge badge-info badge-lg rounded-lg">{{ state.getDisplayName() }}</span>
-                        {% elseif state.value == 'bl_uploaded' %}
-                            <span class="badge badge-info badge-lg rounded-lg">{{ state.getDisplayName() }}</span>
-                        {% elseif state.value == 'billing_generated' %}
-                            <span class="badge badge-warning badge-lg rounded-lg">{{ state.getDisplayName() }}</span>
-                        {% elseif state.value == 'payment_submitted' %}
-                            <span class="badge badge-warning badge-lg rounded-lg">{{ state.getDisplayName() }}</span>
-                        {% elseif state.value == 'edo_generated' %}
-                            <span class="badge badge-info badge-lg rounded-lg">{{ state.getDisplayName() }}</span>
-                        {% elseif state.value == 'edo_released' %}
-                            <span class="badge badge-success badge-lg rounded-lg gap-2">
-                                <span class="icon-[tabler--check] size-4"></span>
-                                {{ state.getDisplayName() }}
-                            </span>
-                        {% else %}
-                            <span class="badge badge-ghost badge-lg rounded-lg">{{ state.getDisplayName() }}</span>
-                        {% endif %}
+                            {% if state.value == 'manifest_uploaded' %}
+                                <span class="badge badge-ghost">{{ state.getDisplayName() }}</span>
+                            {% elseif state.value == 'noa_generated' %}
+                                <span class="badge badge-primary">{{ state.getDisplayName() }}</span>
+                            {% elseif state.value == 'bl_generated' %}
+                                <span class="badge badge-info">{{ state.getDisplayName() }}</span>
+                            {% elseif state.value == 'bl_uploaded' %}
+                                <span class="badge badge-info">{{ state.getDisplayName() }}</span>
+                            {% elseif state.value == 'billing_generated' %}
+                                <span class="badge badge-warning">{{ state.getDisplayName() }}</span>
+                            {% elseif state.value == 'payment_submitted' %}
+                                <span class="badge badge-warning">{{ state.getDisplayName() }}</span>
+                            {% elseif state.value == 'edo_generated' %}
+                                <span class="badge badge-info">{{ state.getDisplayName() }}</span>
+                            {% elseif state.value == 'edo_released' %}
+                                <span class="badge badge-success">
+                                    <span class="icon-[tabler--circle-check] size-4 mr-1"></span>
+                                    {{ state.getDisplayName() }}
+                                </span>
+                            {% else %}
+                                <span class="badge badge-ghost">{{ state.getDisplayName() }}</span>
+                            {% endif %}
                     </div>
                 </div>
-                
-                <!-- Active Workspace Badge -->
-                {% if app.session.get('active_workspace_consignee_id') %}
-                    <div class="flex items-center gap-2 bg-primary/10 rounded-xl px-4 py-3">
-                        <span class="icon-[tabler--briefcase] size-5 text-primary"></span>
-                        <div class="flex flex-col">
-                            <span class="text-xs text-primary/70 font-medium">Active Workspace</span>
-                            <span class="text-sm font-bold text-primary truncate max-w-[200px]">{{ app.session.get('active_workspace_consignee_name', 'Workspace') }}</span>
-                        </div>
-                    </div>
-                {% endif %}
             </div>
         </div>
     </div>
 
-    <div class="px-4 sm:px-6 lg:px-8 py-6">
-        <!-- Workflow Progress -->
-        <div class="card bg-base-100 shadow-sm mb-6">
-            <div class="card-body p-6">
-                <h3 class="text-lg font-semibold text-base-content mb-6">Workflow Progress</h3>
+    <div class="w-full px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex flex-col lg:flex-row gap-4 sm:gap-6" style="align-items: flex-start;">
+            <!-- Main Content (Left Column) -->
+            <div class="flex-1 min-w-0 space-y-4 sm:space-y-6">
                 
-                {% set state = manifest.workflowState %}
-                {% set currentStep = 0 %}
-                {% if state.value == 'noa_generated' %}
-                    {% set currentStep = 1 %}
-                {% elseif state.value == 'bl_generated' %}
-                    {% set currentStep = 2 %}
-                {% elseif state.value == 'bl_uploaded' %}
-                    {% set currentStep = 3 %}
-                {% elseif state.value == 'billing_generated' %}
-                    {% set currentStep = 4 %}
-                {% elseif state.value == 'payment_submitted' %}
-                    {% set currentStep = 5 %}
-                {% elseif state.value == 'edo_generated' %}
-                    {% set currentStep = 6 %}
-                {% elseif state.value == 'edo_released' %}
-                    {% set currentStep = 7 %}
-                {% endif %}
-                
-                <!-- Stepper -->
-                <ul class="relative flex w-full gap-x-2">
-                    <!-- Step 1: NOA -->
-                    <li class="group flex-1 shrink basis-0">
-                        <div class="min-h-10 min-w-10 inline-flex w-full items-center align-middle">
-                            <span class="size-10 flex shrink-0 items-center justify-center rounded-full text-base font-semibold {% if currentStep >= 1 %}bg-primary text-primary-content{% else %}bg-base-200 text-base-content/60{% endif %}">
-                                {% if currentStep > 1 %}
-                                    <span class="icon-[tabler--check] size-5"></span>
-                                {% else %}
-                                    1
-                                {% endif %}
-                            </span>
-                            <div class="ms-2 h-0.5 w-full flex-1 group-last:hidden {% if currentStep >= 2 %}bg-primary{% else %}bg-base-300{% endif %}"></div>
-                        </div>
-                        <div class="mt-3">
-                            <span class="block text-sm font-medium {% if currentStep == 1 %}text-primary{% elseif currentStep > 1 %}text-base-content{% else %}text-base-content/60{% endif %}">NOA</span>
-                        </div>
-                    </li>
-                    
-                    <!-- Step 2: BL Gen -->
-                    <li class="group flex-1 shrink basis-0">
-                        <div class="min-h-10 min-w-10 inline-flex w-full items-center align-middle">
-                            <span class="size-10 flex shrink-0 items-center justify-center rounded-full text-base font-semibold {% if currentStep >= 2 %}bg-primary text-primary-content{% else %}bg-base-200 text-base-content/60{% endif %}">
-                                {% if currentStep > 2 %}
-                                    <span class="icon-[tabler--check] size-5"></span>
-                                {% else %}
-                                    2
-                                {% endif %}
-                            </span>
-                            <div class="ms-2 h-0.5 w-full flex-1 group-last:hidden {% if currentStep >= 3 %}bg-primary{% else %}bg-base-300{% endif %}"></div>
-                        </div>
-                        <div class="mt-3">
-                            <span class="block text-sm font-medium {% if currentStep == 2 %}text-primary{% elseif currentStep > 2 %}text-base-content{% else %}text-base-content/60{% endif %}">BL Gen</span>
-                        </div>
-                    </li>
-                    
-                    <!-- Step 3: BL Upload -->
-                    <li class="group flex-1 shrink basis-0">
-                        <div class="min-h-10 min-w-10 inline-flex w-full items-center align-middle">
-                            <span class="size-10 flex shrink-0 items-center justify-center rounded-full text-base font-semibold {% if currentStep >= 3 %}bg-primary text-primary-content{% else %}bg-base-200 text-base-content/60{% endif %}">
-                                {% if currentStep > 3 %}
-                                    <span class="icon-[tabler--check] size-5"></span>
-                                {% else %}
-                                    3
-                                {% endif %}
-                            </span>
-                            <div class="ms-2 h-0.5 w-full flex-1 group-last:hidden {% if currentStep >= 4 %}bg-primary{% else %}bg-base-300{% endif %}"></div>
-                        </div>
-                        <div class="mt-3">
-                            <span class="block text-sm font-medium {% if currentStep == 3 %}text-primary{% elseif currentStep > 3 %}text-base-content{% else %}text-base-content/60{% endif %}">BL Upload</span>
-                        </div>
-                    </li>
-                    
-                    <!-- Step 4: Billing -->
-                    <li class="group flex-1 shrink basis-0">
-                        <div class="min-h-10 min-w-10 inline-flex w-full items-center align-middle">
-                            <span class="size-10 flex shrink-0 items-center justify-center rounded-full text-base font-semibold {% if currentStep >= 4 %}bg-primary text-primary-content{% else %}bg-base-200 text-base-content/60{% endif %}">
-                                {% if currentStep > 4 %}
-                                    <span class="icon-[tabler--check] size-5"></span>
-                                {% else %}
-                                    4
-                                {% endif %}
-                            </span>
-                            <div class="ms-2 h-0.5 w-full flex-1 group-last:hidden {% if currentStep >= 5 %}bg-primary{% else %}bg-base-300{% endif %}"></div>
-                        </div>
-                        <div class="mt-3">
-                            <span class="block text-sm font-medium {% if currentStep == 4 %}text-primary{% elseif currentStep > 4 %}text-base-content{% else %}text-base-content/60{% endif %}">Billing</span>
-                        </div>
-                    </li>
-                    
-                    <!-- Step 5: Payment -->
-                    <li class="group flex-1 shrink basis-0">
-                        <div class="min-h-10 min-w-10 inline-flex w-full items-center align-middle">
-                            <span class="size-10 flex shrink-0 items-center justify-center rounded-full text-base font-semibold {% if currentStep >= 5 %}bg-primary text-primary-content{% else %}bg-base-200 text-base-content/60{% endif %}">
-                                {% if currentStep > 5 %}
-                                    <span class="icon-[tabler--check] size-5"></span>
-                                {% else %}
-                                    5
-                                {% endif %}
-                            </span>
-                            <div class="ms-2 h-0.5 w-full flex-1 group-last:hidden {% if currentStep >= 6 %}bg-primary{% else %}bg-base-300{% endif %}"></div>
-                        </div>
-                        <div class="mt-3">
-                            <span class="block text-sm font-medium {% if currentStep == 5 %}text-primary{% elseif currentStep > 5 %}text-base-content{% else %}text-base-content/60{% endif %}">Payment</span>
-                        </div>
-                    </li>
-                    
-                    <!-- Step 6: eDO Gen -->
-                    <li class="group flex-1 shrink basis-0">
-                        <div class="min-h-10 min-w-10 inline-flex w-full items-center align-middle">
-                            <span class="size-10 flex shrink-0 items-center justify-center rounded-full text-base font-semibold {% if currentStep >= 6 %}bg-primary text-primary-content{% else %}bg-base-200 text-base-content/60{% endif %}">
-                                {% if currentStep > 6 %}
-                                    <span class="icon-[tabler--check] size-5"></span>
-                                {% else %}
-                                    6
-                                {% endif %}
-                            </span>
-                            <div class="ms-2 h-0.5 w-full flex-1 group-last:hidden {% if currentStep >= 7 %}bg-success{% else %}bg-base-300{% endif %}"></div>
-                        </div>
-                        <div class="mt-3">
-                            <span class="block text-sm font-medium {% if currentStep == 6 %}text-primary{% elseif currentStep > 6 %}text-base-content{% else %}text-base-content/60{% endif %}">eDO Gen</span>
-                        </div>
-                    </li>
-                    
-                    <!-- Step 7: Released -->
-                    <li class="group flex-1 shrink basis-0">
-                        <div class="min-h-10 min-w-10 inline-flex w-full items-center align-middle">
-                            <span class="size-10 flex shrink-0 items-center justify-center rounded-full text-base font-semibold {% if currentStep >= 7 %}bg-success text-success-content{% else %}bg-base-200 text-base-content/60{% endif %}">
-                                {% if currentStep >= 7 %}
-                                    <span class="icon-[tabler--check] size-5"></span>
-                                {% else %}
-                                    7
-                                {% endif %}
-                            </span>
-                            <div class="ms-2 h-0.5 w-full flex-1 group-last:hidden bg-base-300"></div>
-                        </div>
-                        <div class="mt-3">
-                            <span class="block text-sm font-medium {% if currentStep >= 7 %}text-success{% else %}text-base-content/60{% endif %}">Released</span>
-                        </div>
-                    </li>
-                </ul>
-            </div>
-        </div>
+                <!-- Tabs Navigation -->
+                <nav class="tabs tabs-bordered" aria-label="Manifest Tabs" role="tablist" aria-orientation="horizontal">
+                <button type="button" 
+                        class="tab active-tab:tab-active active w-full sm:w-auto" 
+                        id="tab-details" 
+                        data-tab="#content-details" 
+                        aria-controls="content-details" 
+                        role="tab" 
+                        aria-selected="true">
+                    <span class="icon-[tabler--file-text] size-4 mr-1.5"></span>
+                    Details
+                </button>
+                <button type="button" 
+                        class="tab active-tab:tab-active w-full sm:w-auto" 
+                        id="tab-history" 
+                        data-tab="#content-history" 
+                        aria-controls="content-history" 
+                        role="tab" 
+                        aria-selected="false">
+                    <span class="icon-[tabler--history] size-4 mr-1.5"></span>
+                    Audit Trail
+                </button>
+            </nav>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Main Information -->
-        <div class="lg:col-span-2 space-y-6">
+            <!-- Tab Content -->
+            <div class="mt-4">
+                <!-- Details Tab -->
+                <div id="content-details" role="tabpanel" aria-labelledby="tab-details">
+                    <!-- 2 Column Grid Layout -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                        <!-- Left Column (2/3 width) - Main Content -->
+                        <div class="lg:col-span-2 space-y-4 sm:space-y-6">
+            
             <!-- Manifest Information -->
-            <div class="card bg-base-100 shadow-sm">
-                <div class="card-body p-6">
-                    <h3 class="text-lg font-semibold text-base-content mb-4">Manifest Information</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="card bg-base-100 shadow-md w-full">
+                <div class="card-body p-4 sm:p-6">
+                    <h3 class="card-title text-base sm:text-lg text-base-content">Manifest Information</h3>
+                    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div>
-                            <label class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Manifest Number</label>
-                            <p class="text-sm font-medium text-base-content mt-1">{{ manifest.manifestNumber }}</p>
+                            <dt class="text-sm font-medium text-base-content/60">Manifest Number</dt>
+                            <dd class="mt-1 text-sm text-base-content font-mono">{{ manifest.manifestNumber }}</dd>
                         </div>
                         <div>
-                            <label class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Created Date</label>
-                            <p class="text-sm font-medium text-base-content mt-1">{{ manifest.createdAt|date('M j, Y g:i A') }}</p>
+                            <dt class="text-sm font-medium text-base-content/60">Created Date</dt>
+                            <dd class="mt-1 text-sm text-base-content">{{ manifest.createdAt|date('M j, Y g:i A') }}</dd>
                         </div>
                         {% if manifest.vesselName %}
                             <div>
-                                <label class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Vessel Name</label>
-                                <p class="text-sm font-medium text-base-content mt-1">{{ manifest.vesselName }}</p>
+                                <dt class="text-sm font-medium text-base-content/60">Vessel Name</dt>
+                                <dd class="mt-1 text-sm text-base-content">{{ manifest.vesselName }}</dd>
                             </div>
                         {% endif %}
                         {% if manifest.voyageNumber %}
                             <div>
-                                <label class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Voyage Number</label>
-                                <p class="text-sm font-medium text-base-content mt-1">{{ manifest.voyageNumber }}</p>
+                                <dt class="text-sm font-medium text-base-content/60">Voyage Number</dt>
+                                <dd class="mt-1 text-sm text-base-content">{{ manifest.voyageNumber }}</dd>
                             </div>
                         {% endif %}
                         {% if manifest.arrivalDate %}
                             <div>
-                                <label class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Arrival Date</label>
-                                <p class="text-sm font-medium text-base-content mt-1">{{ manifest.arrivalDate|date('M j, Y g:i A') }}</p>
+                                <dt class="text-sm font-medium text-base-content/60">Arrival Date</dt>
+                                <dd class="mt-1 text-sm text-base-content">{{ manifest.arrivalDate|date('M j, Y g:i A') }}</dd>
                             </div>
                         {% endif %}
                         {% if manifest.blNumber %}
                             <div>
-                                <label class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">BL Number</label>
-                                <p class="text-sm font-medium text-base-content mt-1">{{ manifest.blNumber }}</p>
+                                <dt class="text-sm font-medium text-base-content/60">BL Number</dt>
+                                <dd class="mt-1 text-sm text-base-content">{{ manifest.blNumber }}</dd>
                             </div>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+
+            <!-- NOA Information -->
+            {% if manifest.noa %}
+            <div class="card bg-base-100 shadow-md w-full">
+                <div class="card-body p-4 sm:p-6">
+                    <h3 class="card-title text-base sm:text-lg text-base-content">NOA Information</h3>
+                    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/60">NOA Number</dt>
+                            <dd class="mt-1 text-sm text-base-content font-mono">{{ manifest.noa.noaNumber }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/60">Created Date</dt>
+                            <dd class="mt-1 text-sm text-base-content">{{ manifest.noa.createdAt|date('M j, Y g:i A') }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/60">BL Number</dt>
+                            <dd class="mt-1 text-sm text-base-content">{{ manifest.noa.blNumber }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/60">Vessel Number</dt>
+                            <dd class="mt-1 text-sm text-base-content">{{ manifest.noa.vesselNumber }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/60">ETA</dt>
+                            <dd class="mt-1 text-sm text-base-content">{{ manifest.noa.eta|date('M j, Y g:i A') }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/60">CY Location</dt>
+                            <dd class="mt-1 text-sm text-base-content">{{ manifest.noa.cyLocation }}</dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Consignee Information -->
+            <div class="card bg-base-100 shadow-md w-full">
+                <div class="card-body p-4 sm:p-6">
+                    <h3 class="card-title text-base sm:text-lg text-base-content">Parties</h3>
+                    <dl class="space-y-3 sm:space-y-4">
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/60">Consignee</dt>
+                            <dd class="mt-1">
+                                {% if manifest.consignee %}
+                                    <div class="text-sm text-base-content">{{ manifest.consignee.businessName }}</div>
+                                {% else %}
+                                    <span class="text-sm text-base-content/40">Not declared</span>
+                                {% endif %}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-base-content/60">Broker</dt>
+                            <dd class="mt-1">
+                                {% if manifest.broker %}
+                                    <div class="text-sm text-base-content">{{ manifest.broker.fullName }}</div>
+                                {% else %}
+                                    <span class="text-sm text-base-content/40">None</span>
+                                {% endif %}
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Containers & eDO Payment Status -->
+            <div class="card bg-base-100 shadow-md w-full">
+                <div class="card-body p-4 sm:p-6">
+
+                    {# Calculate eDO generation progress #}
+                    {% set totalContainers = manifest.noa ? manifest.noa.containers|length : 0 %}
+                    {% set containersWithEdo = 0 %}
+                    {% set paidEdos = 0 %}
+                    {% if manifest.noa %}
+                        {% for container in manifest.noa.containers %}
+                        {% set paymentStatus = containerPaymentStatus[container.id] ?? null %}
+                        {% if paymentStatus and paymentStatus.has_edo %}
+                            {% set containersWithEdo = containersWithEdo + 1 %}
+                            {% if paymentStatus.payment_status == 'verified' %}
+                                {% set paidEdos = paidEdos + 1 %}
+                            {% endif %}
+                        {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    {% set allEdosGenerated = containersWithEdo == totalContainers and totalContainers > 0 %}
+                    {% set allEdosPaid = paidEdos == containersWithEdo and containersWithEdo > 0 %}
+                    {% set edoProgress = totalContainers > 0 ? (containersWithEdo / totalContainers * 100)|round : 0 %}
+
+                    {# Header #}
+                    <div class="flex items-center justify-between mb-5">
+                        <div class="flex items-center gap-3">
+                            <span class="icon-[tabler--container] size-5 text-primary"></span>
+                            <h3 class="card-title text-base sm:text-lg text-base-content">Containers & eDO Payment Status</h3>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            {# Payment Progress Badge #}
+                            {% if allEdosPaid %}
+                                <div class="badge badge-success gap-1.5 font-semibold">
+                                    <span class="icon-[tabler--circle-check] size-4"></span>
+                                    All Paid
+                                </div>
+                            {% elseif paidEdos > 0 %}
+                                <div class="badge badge-warning gap-1.5 font-semibold">
+                                    <span class="icon-[tabler--clock] size-4"></span>
+                                    {{ paidEdos }}/{{ containersWithEdo }} Paid
+                                </div>
+                            {% endif %}
+                            
+                            {# eDO Generation Progress Badge #}
+                            {% if allEdosGenerated %}
+                                <div class="badge badge-success gap-1.5 font-semibold">
+                                    <span class="icon-[tabler--circle-check] size-4"></span>
+                                    All eDOs Generated
+                                </div>
+                            {% else %}
+                                <div class="badge badge-primary badge-outline font-semibold">
+                                    {{ containersWithEdo }}/{{ totalContainers }} eDOs
+                                </div>
+                            {% endif %}
+                            
+                            <div class="badge badge-ghost font-semibold">
+                                {{ totalContainers }} container{{ totalContainers != 1 ? 's' : '' }}
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Progress Bar - Only show if not all eDOs generated #}
+                    {% if not allEdosGenerated and totalContainers > 0 %}
+                        <div class="mb-4">
+                            <div class="flex items-center justify-between text-xs text-base-content/60 mb-1">
+                                <span>eDO Generation Progress</span>
+                                <span class="font-semibold">{{ edoProgress }}%</span>
+                            </div>
+                            <div class="w-full bg-base-300 rounded-full h-2">
+                                <div class="bg-primary h-2 rounded-full transition-all duration-300" style="width: {{ edoProgress }}%"></div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if manifest.noa and manifest.noa.containers|length > 0 %}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {% for container in manifest.noa.containers %}
+                        {% set paymentStatus = containerPaymentStatus[container.id] ?? null %}
+
+                        {# Determine accent color by payment status #}
+                        {% if paymentStatus and paymentStatus.has_edo %}
+                            {% if paymentStatus.payment_status == 'verified' %}
+                                {% set accentColor = 'border-success' %}
+                            {% elseif paymentStatus.payment_status == 'pending_validation' %}
+                                {% set accentColor = 'border-warning' %}
+                            {% elseif paymentStatus.payment_status == 'rejected' %}
+                                {% set accentColor = 'border-error' %}
+                            {% else %}
+                                {% set accentColor = 'border-info' %}
+                            {% endif %}
+                        {% else %}
+                            {% set accentColor = 'border-base-300' %}
+                        {% endif %}
+
+                        <div class="rounded-xl border border-base-300 border-l-4 {{ accentColor }} bg-base-50 hover:bg-base-200/50 transition-colors">
+                            <div class="p-4">
+                                {# Top row: container number + status badge #}
+                                <div class="mb-3">
+                                    <div class="flex items-center justify-between gap-2 mb-2">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <span class="icon-[tabler--container] size-4 text-base-content/50 flex-shrink-0"></span>
+                                            <span class="font-mono font-semibold text-sm text-base-content truncate">{{ container.containerNumber }}</span>
+                                        </div>
+                                        {# Payment status badge #}
+                                        {% if paymentStatus and paymentStatus.has_edo %}
+                                            {% if paymentStatus.payment_status == 'verified' %}
+                                                <span class="badge badge-success badge-sm gap-1">
+                                                    <span class="icon-[tabler--circle-check] size-3"></span>
+                                                    PAID
+                                                </span>
+                                            {% elseif paymentStatus.payment_status == 'pending_validation' %}
+                                                <span class="badge badge-warning badge-sm gap-1">
+                                                    <span class="icon-[tabler--clock] size-3"></span>
+                                                    Pending
+                                                </span>
+                                            {% elseif paymentStatus.payment_status == 'rejected' %}
+                                                <span class="badge badge-error badge-sm gap-1">
+                                                    <span class="icon-[tabler--x] size-3"></span>
+                                                    Rejected
+                                                </span>
+                                            {% else %}
+                                                <span class="badge badge-ghost badge-sm gap-1">
+                                                    <span class="icon-[tabler--alert-circle] size-3"></span>
+                                                    Unpaid
+                                                </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge badge-ghost badge-sm gap-1">
+                                                <span class="icon-[tabler--file-off] size-3"></span>
+                                                No eDO
+                                            </span>
+                                        {% endif %}
+                                    </div>
+
+                                    {# eDO Number if available #}
+                                    {% if paymentStatus and paymentStatus.has_edo %}
+                                        <div class="text-xs text-base-content/60">
+                                            eDO: <span class="font-mono text-base-content">{{ paymentStatus.edo_number }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                {# Container Info - Simplified #}
+                                <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs mb-3">
+                                    <div>
+                                        <span class="text-base-content/50 uppercase tracking-wide text-[10px]">Size/Type</span>
+                                        <div class="text-base-content font-medium">
+                                            {{ container.containerSize ? container.containerSize.name : '—' }} / 
+                                            {{ container.containerType ? container.containerType.name : '—' }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span class="text-base-content/50 uppercase tracking-wide text-[10px]">CY Location</span>
+                                        <div class="text-base-content font-medium">
+                                            {{ container.cyAllocation ? container.cyAllocation.containerYard.name : '—' }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {# Action Buttons - Prominent for brokers #}
+                                {% if paymentStatus and paymentStatus.has_edo %}
+                                    <div class="flex flex-wrap gap-2 pt-3 border-t border-base-300/60">
+                                        {% if paymentStatus.payment_status == 'verified' %}
+                                            {# Paid - Show download button #}
+                                            <a href="{{ path('api_edo_download', {id: paymentStatus.edo_id}) }}" 
+                                               class="btn btn-sm btn-success gap-2 flex-1">
+                                                <span class="icon-[tabler--download] size-4"></span>
+                                                Download eDO
+                                            </a>
+                                            {% if paymentStatus.official_receipt_path %}
+                                                <a href="{{ asset('uploads/receipts/' ~ paymentStatus.official_receipt_path) }}"
+                                                   target="_blank"
+                                                   class="btn btn-sm btn-outline btn-success gap-2">
+                                                    <span class="icon-[tabler--file-text] size-4"></span>
+                                                    Receipt
+                                                </a>
+                                            {% endif %}
+                                        {% elseif paymentStatus.payment_status == 'pending_validation' %}
+                                            {# Pending - Show status #}
+                                            <div class="alert alert-warning py-2 px-3 text-xs flex-1">
+                                                <span class="icon-[tabler--clock] size-4"></span>
+                                                <span>Payment under review by accounting</span>
+                                            </div>
+                                        {% elseif paymentStatus.payment_status == 'rejected' %}
+                                            {# Rejected - Show resubmit button #}
+                                            <a href="{{ path('broker_manifest_edo_payment_specific', {id: manifest.id, edoNumber: paymentStatus.edo_number}) }}" 
+                                               class="btn btn-sm btn-error gap-2 flex-1">
+                                                <span class="icon-[tabler--upload] size-4"></span>
+                                                Resubmit Payment
+                                            </a>
+                                        {% else %}
+                                            {# Unpaid - Show pay now button #}
+                                            <a href="{{ path('broker_manifest_edo_payment_specific', {id: manifest.id, edoNumber: paymentStatus.edo_number}) }}" 
+                                               class="btn btn-sm btn-primary gap-2 flex-1">
+                                                <span class="icon-[tabler--credit-card] size-4"></span>
+                                                Pay Now
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    {# No eDO yet #}
+                                    <div class="pt-3 border-t border-base-300/60">
+                                        <div class="alert alert-info py-2 px-3 text-xs">
+                                            <span class="icon-[tabler--info-circle] size-4"></span>
+                                            <span>eDO not yet generated by shipping line</span>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        </div>
+
+                        {# Info note - Dynamic based on completion status #}
+                        {% if allEdosPaid %}
+                            <div class="flex items-start gap-3 mt-4 p-3 rounded-lg bg-success/10 border border-success/20 text-xs text-success">
+                                <span class="icon-[tabler--circle-check] size-4 flex-shrink-0 mt-0.5"></span>
+                                <div>
+                                    <span class="font-semibold">All Payments Verified!</span> —
+                                    All {{ containersWithEdo }} eDO{{ containersWithEdo != 1 ? 's have' : ' has' }} been paid and verified. You can now download your eDOs.
+                                </div>
+                            </div>
+                        {% elseif containersWithEdo > 0 %}
+                            <div class="flex items-start gap-3 mt-4 p-3 rounded-lg bg-info/10 border border-info/20 text-xs text-info">
+                                <span class="icon-[tabler--info-circle] size-4 flex-shrink-0 mt-0.5"></span>
+                                <div>
+                                    <span class="font-semibold">eDO Payment Required</span> —
+                                    {{ containersWithEdo }} eDO{{ containersWithEdo != 1 ? 's are' : ' is' }} available. 
+                                    {% if paidEdos > 0 %}
+                                        {{ paidEdos }} paid, {{ containersWithEdo - paidEdos }} pending payment.
+                                    {% else %}
+                                        Click "Pay Now" to submit payment for each eDO.
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="flex items-start gap-3 mt-4 p-3 rounded-lg bg-base-200/50 border border-base-300 text-xs text-base-content/60">
+                                <span class="icon-[tabler--clock] size-4 flex-shrink-0 mt-0.5"></span>
+                                <div>
+                                    <span class="font-semibold">Waiting for eDO Generation</span> —
+                                    Shipping line will generate eDOs after final payment verification. You'll be notified when eDOs are ready.
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="flex flex-col items-center justify-center py-10 text-base-content/40 gap-2">
+                            <span class="icon-[tabler--container-off] size-10"></span>
+                            <p class="text-sm">No containers found</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Available Documents -->
+            <div class="card bg-base-100 shadow-md w-full">
+                <div class="card-body p-4 sm:p-6">
+                    <h3 class="card-title text-base sm:text-lg text-base-content">Available Documents</h3>
+                    <div class="space-y-2 sm:space-y-3">
+                        {# Notice of Arrival (NOA) PDF #}
+                        {% if noa.pdfPath %}
+                            <div class="flex items-center justify-between p-3 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors">
+                                <div class="flex items-center min-w-0 flex-1">
+                                    <div class="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-lg flex items-center justify-center mr-2 sm:mr-3">
+                                        <span class="icon-[tabler--file-text] size-5 sm:size-6 text-primary-content"></span>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center">
+                                            <div class="text-xs sm:text-sm font-medium text-base-content truncate">Notice of Arrival (NOA)</div>
+                                            <span class="icon-[tabler--circle-check] size-4 text-success ml-1 flex-shrink-0"></span>
+                                        </div>
+                                        <div class="text-xs text-base-content/60 truncate">{{ noa.noaNumber }}</div>
+                                    </div>
+                                </div>
+                                <a href="{{ path('api_noa_download', {noaNumber: noa.noaNumber}) }}" 
+                                   class="btn btn-sm btn-ghost text-primary ml-2 flex-shrink-0">
+                                    <span class="icon-[tabler--download] size-4 mr-1"></span>
+                                    Download
+                                </a>
+                            </div>
+                        {% endif %}
+
+                        {# Manifest/BL Document - Show if manifest exists and has PDF #}
+                        {% if manifest and manifest.noa and manifest.noa.manifestPdfPath %}
+                            <div class="flex items-center justify-between p-3 bg-info/10 rounded-lg hover:bg-info/20 transition-colors">
+                                <div class="flex items-center min-w-0 flex-1">
+                                    <div class="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-info rounded-lg flex items-center justify-center mr-2 sm:mr-3">
+                                        <span class="icon-[tabler--file-text] size-5 sm:size-6 text-info-content"></span>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center">
+                                            <div class="text-xs sm:text-sm font-medium text-base-content truncate">Manifest/BL Document</div>
+                                            <span class="icon-[tabler--circle-check] size-4 text-success ml-1 flex-shrink-0"></span>
+                                        </div>
+                                        <div class="text-xs text-base-content/60 truncate">{{ manifest.manifestNumber }}</div>
+                                    </div>
+                                </div>
+                                <a href="{{ path('api_manifest_download_by_id', {manifestId: manifest.id}) }}" 
+                                   target="_blank"
+                                   class="btn btn-sm btn-ghost text-info ml-2 flex-shrink-0">
+                                    <span class="icon-[tabler--download] size-4 mr-1"></span>
+                                    Download
+                                </a>
+                            </div>
+                        {% endif %}
+
+                        {# Bill of Lading - Show if BL exists #}
+                        {% if manifest and manifest.blNumber and manifest.blFilePath %}
+                            <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors">
+                                <div class="flex items-center min-w-0 flex-1">
+                                    <span class="icon-[tabler--file-description] size-6 sm:size-8 text-info mr-2 sm:mr-3 flex-shrink-0"></span>
+                                    <div class="min-w-0">
+                                        <div class="text-xs sm:text-sm font-medium text-base-content truncate">Bill of Lading</div>
+                                        <div class="text-xs text-base-content/60 truncate">{{ manifest.blNumber }}</div>
+                                    </div>
+                                </div>
+                                <a href="/api/bl/{{ manifest.blNumber }}/download" 
+                                   target="_blank"
+                                   class="btn btn-sm btn-ghost text-info ml-2 flex-shrink-0">Download</a>
+                            </div>
+                        {% endif %}
+
+                        {# Billing Document - Show if billing exists #}
+                        {% if manifest and manifest.billing %}
+                            <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors">
+                                <div class="flex items-center min-w-0 flex-1">
+                                    <span class="icon-[tabler--receipt] size-6 sm:size-8 text-warning mr-2 sm:mr-3 flex-shrink-0"></span>
+                                    <div class="min-w-0">
+                                        <div class="text-xs sm:text-sm font-medium text-base-content truncate">Billing Document</div>
+                                        <div class="text-xs text-base-content/60 truncate">Total: ₱{{ manifest.billing.totalAmount|number_format(2) }}</div>
+                                    </div>
+                                </div>
+                                <a href="/api/billing/{{ manifest.billing.id }}/download" 
+                                   target="_blank"
+                                   class="btn btn-sm btn-ghost text-info ml-2 flex-shrink-0">Download</a>
+                            </div>
+                        {% endif %}
+
+                        {# Official Receipt - Show if payment is verified #}
+                        {% if manifest %}
+                            {% set finalPayment = null %}
+                            {% for payment in manifest.payments %}
+                                {% if payment.paymentType.value == 'final_payment' and payment.status.value == 'verified' %}
+                                    {% set finalPayment = payment %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if finalPayment and finalPayment.officialReceiptPath %}
+                                <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors">
+                                    <div class="flex items-center min-w-0 flex-1">
+                                        <span class="icon-[tabler--circle-check] size-6 sm:size-8 text-success mr-2 sm:mr-3 flex-shrink-0"></span>
+                                        <div class="min-w-0">
+                                            <div class="text-xs sm:text-sm font-medium text-base-content truncate">Official Receipt</div>
+                                            <div class="text-xs text-base-content/60 truncate">Payment verified - OR issued</div>
+                                        </div>
+                                    </div>
+                                    <a href="{{ finalPayment.officialReceiptPath }}" 
+                                       target="_blank"
+                                       class="btn btn-sm btn-ghost text-info ml-2 flex-shrink-0">Download</a>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+
+                        {% if not noa.pdfPath and (not manifest or not manifest.noa or not manifest.noa.manifestPdfPath) %}
+                            <p class="text-sm text-base-content/60">No documents available yet</p>
                         {% endif %}
                     </div>
                 </div>
             </div>
 
-            <!-- Consignee Information -->
-            <div class="card bg-base-100 shadow-sm">
-                <div class="card-body p-6">
-                    <h3 class="text-lg font-semibold text-base-content mb-4">Parties</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Consignee</label>
-                            <div class="mt-1">
-                                {% if manifest.consignee %}
-                                    <p class="text-sm font-medium text-base-content">{{ manifest.consignee.businessName }}</p>
-                                {% else %}
-                                    <span class="text-sm text-base-content/40">Not declared</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div>
-                            <label class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Broker</label>
-                            <div class="mt-1">
-                                {% if manifest.broker %}
-                                    <p class="text-sm font-medium text-base-content">{{ manifest.broker.fullName }}</p>
-                                {% else %}
-                                    <span class="text-sm text-base-content/40">None</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Container Management -->
-            {% if manifest.noa and manifest.noa.containers|length > 0 %}
-            <div class="card bg-base-100 shadow-sm">
-                <div class="card-body p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-lg font-semibold text-base-content">Containers & eDO Payment Status</h3>
-                        <span class="badge badge-info badge-lg rounded-lg">
-                            {{ manifest.noa.containers|length }} container{{ manifest.noa.containers|length != 1 ? 's' : '' }}
-                        </span>
-                    </div>
-                
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {% for container in manifest.noa.containers %}
-                    {% set paymentStatus = containerPaymentStatus[container.id] ?? null %}
-                    <div class="border border-base-200 rounded-lg p-4 bg-base-100">
-                        <div class="flex items-start justify-between gap-4">
-                            <div class="flex-1 min-w-0">
-                                <!-- Container Number & Icon -->
-                                <div class="flex items-center gap-3 mb-3">
-                                    <div class="size-10 bg-base-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <span class="icon-[tabler--box] size-5 text-base-content/60"></span>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="font-mono font-bold text-base text-base-content">{{ container.containerNumber }}</div>
-                                        <div class="text-xs text-base-content/60 mt-0.5">
-                                            {{ container.containerSize ? container.containerSize.name : 'N/A' }} • {{ container.containerType ? container.containerType.name : 'N/A' }}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- eDO Payment Status -->
-                                {% if paymentStatus and paymentStatus.has_edo %}
-                                    <div class="space-y-3">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">eDO Number</span>
-                                            <span class="text-sm font-medium text-base-content">{{ paymentStatus.edo_number }}</span>
-                                        </div>
-                                        
-                                        {# Mobile: Stack vertically, Desktop: Badge on left, button on right #}
-                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-                                            <div class="flex flex-wrap items-center gap-2 flex-1">
-                                                {% if paymentStatus.has_payment %}
-                                                    {% if paymentStatus.payment_status == 'verified' %}
-                                                        <span class="badge badge-success badge-sm gap-1 text-xs">
-                                                            <span class="icon-[tabler--check] size-3"></span>
-                                                            <span class="truncate max-w-[120px]">Paid ₱{{ paymentStatus.payment_amount|number_format(2) }}</span>
-                                                        </span>
-                                                        {% if paymentStatus.official_receipt_path %}
-                                                            <a href="{{ path('broker_edo_official_receipt', {edoId: paymentStatus.edo_id}) }}" 
-                                                               target="_blank"
-                                                               class="text-xs text-primary hover:text-primary/80 font-medium inline-flex items-center gap-1">
-                                                                <span class="icon-[tabler--file-text] size-3"></span>
-                                                                Receipt
-                                                            </a>
-                                                        {% endif %}
-                                                    {% elseif paymentStatus.payment_status == 'pending_validation' %}
-                                                        <span class="badge badge-warning badge-sm gap-1 text-xs">
-                                                            <span class="icon-[tabler--clock] size-3"></span>
-                                                            <span class="truncate max-w-[100px]">Pending</span>
-                                                        </span>
-                                                    {% elseif paymentStatus.payment_status == 'rejected' %}
-                                                        <span class="badge badge-error badge-sm gap-1 text-xs">
-                                                            <span class="icon-[tabler--x] size-3"></span>
-                                                            <span class="truncate max-w-[100px]">Rejected</span>
-                                                        </span>
-                                                    {% endif %}
-                                                {% else %}
-                                                    <span class="badge badge-warning badge-sm gap-1 text-xs">
-                                                        <span class="icon-[tabler--alert-circle] size-3"></span>
-                                                        <span class="truncate max-w-[100px]">Awaiting</span>
-                                                    </span>
-                                                {% endif %}
-                                            </div>
-                                            
-                                            {% if paymentStatus.has_payment == false %}
-                                                <div class="flex-shrink-0 w-full sm:w-auto">
-                                                    <a href="{{ path('broker_manifest_edo_payment_specific', {id: manifest.id, edoNumber: paymentStatus.edo_number}) }}" 
-                                                       class="btn btn-warning btn-sm rounded-lg gap-2 w-full sm:w-auto whitespace-nowrap">
-                                                        <span class="icon-[tabler--credit-card] size-4"></span>
-                                                        Pay Now for eDO
-                                                    </a>
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                {% else %}
-                                    <div>
-                                        <span class="badge badge-ghost badge-sm gap-1 text-xs">
-                                            <span class="icon-[tabler--clock] size-3"></span>
-                                            <span class="truncate max-w-[100px]">No eDO</span>
-                                        </span>
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Status Badge -->
-                            <div class="flex-shrink-0">
-                                {% if container.manifest %}
-                                    <span class="badge badge-success badge-md rounded-lg gap-1.5">
-                                        <span class="icon-[tabler--check] size-3.5"></span>
-                                        Added
-                                    </span>
-                                {% else %}
-                                    <button onclick="addContainerToManifest({{ container.id }})" 
-                                            class="btn btn-primary btn-sm rounded-lg gap-1.5">
-                                        <span class="icon-[tabler--plus] size-4"></span>
-                                        Add
-                                    </button>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                
-                <div class="alert alert-info mt-6">
-                    <span class="icon-[tabler--info-circle] size-5 flex-shrink-0"></span>
-                    <div class="text-sm">
-                        <p class="font-semibold mb-1">Container Management</p>
-                        <p class="text-xs">After payment verification, SL Staff will generate individual eDOs for each container.</p>
-                    </div>
-                </div>
-                </div>
-            </div>
-            {% endif %}
-
             <!-- Payment History -->
-            <div class="card bg-base-100 shadow-sm">
-                <div class="card-body p-6">
-                    <h3 class="text-lg font-semibold text-base-content mb-4">Payment History</h3>
+            {% if manifest %}
+            <div class="card bg-base-100 shadow-md w-full">
+                <div class="card-body p-4 sm:p-6">
+                    <h3 class="card-title text-base sm:text-lg text-base-content">Payment History</h3>
                     {% set hasFinalPayment = false %}
                     {% for payment in manifest.payments %}
                         {% if payment.paymentType.value == 'final_payment' %}
@@ -416,420 +571,1212 @@
                         {% endif %}
                     {% endfor %}
                     
-                    {% if hasFinalPayment or manifest.edo.edoPayment %}
+                    {% if hasFinalPayment %}
                         <div class="space-y-3">
                             {# Final Payment #}
                             {% for payment in manifest.payments %}
                                 {% if payment.paymentType.value == 'final_payment' %}
-                                    <div class="p-4 bg-base-200 rounded-lg">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <span class="text-sm font-medium text-base-content">Final Payment</span>
-                                            {% if payment.status.value == 'verified' %}
-                                                <span class="badge badge-success badge-sm rounded-lg">Verified</span>
-                                            {% elseif payment.status.value == 'rejected' %}
-                                                <span class="badge badge-error badge-sm rounded-lg">Rejected</span>
-                                            {% else %}
-                                                <span class="badge badge-warning badge-sm rounded-lg">Pending</span>
+                                    <div class="card bg-base-200 shadow-sm">
+                                        <div class="card-body p-4">
+                                            <div class="flex items-center justify-between mb-2">
+                                                <span class="text-sm font-medium text-base-content">Final Payment</span>
+                                                {% if payment.status.value == 'verified' %}
+                                                    <span class="badge badge-success">Verified</span>
+                                                {% elseif payment.status.value == 'rejected' %}
+                                                    <span class="badge badge-error">Rejected</span>
+                                                {% else %}
+                                                    <span class="badge badge-warning">Pending</span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="text-sm text-base-content/80">
+                                                Amount: ₱{{ payment.amount|number_format(2) }}
+                                            </div>
+                                            <div class="text-xs text-base-content/60 mt-1">
+                                                Submitted: {{ payment.createdAt|date('M j, Y g:i A') }}
+                                            </div>
+                                            {% if payment.status.value == 'rejected' and payment.rejectionReason %}
+                                                <div class="alert alert-error mt-2">
+                                                    <span class="icon-[tabler--alert-circle] size-4"></span>
+                                                    <span class="text-xs">Reason: {{ payment.rejectionReason }}</span>
+                                                </div>
                                             {% endif %}
                                         </div>
-                                        <div class="text-sm text-base-content/70">
-                                            Amount: ₱{{ payment.amount|number_format(2) }}
-                                        </div>
-                                        <div class="text-xs text-base-content/60 mt-1">
-                                            Submitted: {{ payment.createdAt|date('M j, Y g:i A') }}
-                                        </div>
-                                        {% if payment.status.value == 'rejected' and payment.rejectionReason %}
-                                            <div class="mt-2 p-2 bg-error/10 border border-error/20 rounded text-xs text-error">
-                                                Reason: {{ payment.rejectionReason }}
-                                            </div>
-                                        {% endif %}
                                     </div>
                                 {% endif %}
                             {% endfor %}
                             
-                            {# EDO Access Payment #}
-                            {% if manifest.edo and manifest.edo.edoPayment %}
-                                <div class="p-4 bg-base-200 rounded-lg">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <span class="text-sm font-medium text-base-content">eDO Access Payment</span>
-                                        {% if manifest.edo.edoPayment.status.value == 'verified' %}
-                                            <span class="badge badge-success badge-sm rounded-lg">Paid</span>
-                                        {% elseif manifest.edo.edoPayment.status.value == 'rejected' %}
-                                            <span class="badge badge-error badge-sm rounded-lg">Rejected</span>
-                                        {% else %}
-                                            <span class="badge badge-warning badge-sm rounded-lg">Pending Validation</span>
+                            {# eDO Access Payment - Check container payment status #}
+                            {% set hasEdoPayment = false %}
+                            {% set edoPaymentData = null %}
+                            {% for containerId, paymentStatus in containerPaymentStatus %}
+                                {% if paymentStatus.has_payment %}
+                                    {% set hasEdoPayment = true %}
+                                    {% set edoPaymentData = paymentStatus %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if hasEdoPayment and edoPaymentData %}
+                                <div class="card bg-base-200 shadow-sm">
+                                    <div class="card-body p-4">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-sm font-medium text-base-content">eDO Access Payment</span>
+                                            {% if edoPaymentData.payment_status == 'verified' %}
+                                                <span class="badge badge-success">Paid</span>
+                                            {% elseif edoPaymentData.payment_status == 'rejected' %}
+                                                <span class="badge badge-error">Rejected</span>
+                                            {% else %}
+                                                <span class="badge badge-warning">Pending Validation</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-sm text-base-content/80">
+                                            Amount: ₱{{ edoPaymentData.payment_amount|number_format(2) }}
+                                        </div>
+                                        <div class="text-xs text-base-content/60 mt-1">
+                                            Submitted: {{ edoPaymentData.payment_verified_at ? edoPaymentData.payment_verified_at|date('M j, Y g:i A') : 'N/A' }}
+                                        </div>
+                                        {% if edoPaymentData.payment_status == 'verified' and edoPaymentData.payment_verified_at %}
+                                            <div class="text-xs text-base-content/60 mt-1">
+                                                Validated: {{ edoPaymentData.payment_verified_at|date('M j, Y g:i A') }}
+                                            </div>
                                         {% endif %}
                                     </div>
-                                    <div class="text-sm text-base-content/70">
-                                        Amount: ₱{{ manifest.edo.edoPayment.amount|number_format(2) }}
-                                    </div>
-                                    <div class="text-xs text-base-content/60 mt-1">
-                                        Submitted: {{ manifest.edo.edoPayment.createdAt|date('M j, Y g:i A') }}
-                                    </div>
-                                    {% if manifest.edo.edoPayment.status.value == 'verified' and manifest.edo.edoPayment.validatedAt %}
-                                        <div class="text-xs text-base-content/60 mt-1">
-                                            Validated: {{ manifest.edo.edoPayment.validatedAt|date('M j, Y g:i A') }}
-                                        </div>
-                                    {% endif %}
-                                    {% if manifest.edo.edoPayment.status.value == 'rejected' and manifest.edo.edoPayment.rejectionReason %}
-                                        <div class="mt-2 p-2 bg-error/10 border border-error/20 rounded text-xs text-error">
-                                            Reason: {{ manifest.edo.edoPayment.rejectionReason }}
-                                        </div>
-                                    {% endif %}
                                 </div>
                             {% endif %}
                         </div>
                     {% else %}
-                        <div class="text-center py-8">
-                            <div class="size-16 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <span class="icon-[tabler--receipt-off] size-8 text-base-content/40"></span>
-                            </div>
-                            <p class="text-sm text-base-content/60">No payments submitted yet</p>
-                        </div>
+                        <p class="text-sm text-base-content/60">No payments submitted yet</p>
                     {% endif %}
                 </div>
             </div>
+            {% endif %}
+                        </div>
+                        <!-- End Left Column -->
 
-            <!-- Documents -->
-            <div class="card bg-base-100 shadow-sm">
-                <div class="card-body p-6">
-                    <h3 class="text-lg font-semibold text-base-content mb-4">Available Documents</h3>
-                    <div class="space-y-3">
-                        {# Notice of Arrival (NOA) #}
-                        {% if manifest.noa %}
-                            <div class="flex items-center justify-between p-3 bg-secondary/10 rounded-lg hover:bg-secondary/20 transition-colors">
-                                <div class="flex items-center gap-3 flex-1 min-w-0">
-                                    <div class="size-10 bg-secondary rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <span class="icon-[tabler--file-text] size-6 text-secondary-content"></span>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <div class="flex items-center gap-2">
-                                            <div class="text-sm font-medium text-base-content truncate">Notice of Arrival (NOA)</div>
-                                            <span class="icon-[tabler--check] size-4 text-success"></span>
-                                        </div>
-                                        <div class="text-xs text-base-content/60 truncate">{{ manifest.noa.noaNumber }}</div>
-                                    </div>
-                                </div>
-                                <a href="{{ path('broker_manifest_noa_download', {id: manifest.id}) }}" 
-                                   class="btn btn-secondary btn-sm rounded-lg gap-2 flex-shrink-0">
-                                    <span class="icon-[tabler--download] size-4"></span>
-                                    Download
-                                </a>
-                            </div>
-                        {% endif %}
-
-                        {# Manifest/BL Document #}
-                        {% if manifest.noa and manifest.noa.manifestPdfPath %}
-                            <div class="flex items-center justify-between p-3 bg-info/10 rounded-lg hover:bg-info/20 transition-colors">
-                                <div class="flex items-center gap-3 flex-1 min-w-0">
-                                    <div class="size-10 bg-info rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <span class="icon-[tabler--file-description] size-6 text-info-content"></span>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <div class="flex items-center gap-2">
-                                            <div class="text-sm font-medium text-base-content truncate">Manifest/BL Document</div>
-                                            <span class="icon-[tabler--check] size-4 text-success"></span>
-                                        </div>
-                                        <div class="text-xs text-base-content/60 truncate">Generated manifest with BL details</div>
-                                    </div>
-                                </div>
-                                <a href="{{ path('api_manifest_download_by_id', {manifestId: manifest.id}) }}" 
-                                   target="_blank"
-                                   class="btn btn-info btn-sm rounded-lg gap-2 flex-shrink-0">
-                                    <span class="icon-[tabler--download] size-4"></span>
-                                    Download
-                                </a>
-                            </div>
-                        {% endif %}
-
-                        {# Bill of Lading #}
-                        {% if manifest.blNumber and manifest.blFilePath %}
-                            <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors">
-                                <div class="flex items-center gap-3 flex-1 min-w-0">
-                                    <div class="size-10 bg-info rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <span class="icon-[tabler--file] size-6 text-info-content"></span>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <div class="text-sm font-medium text-base-content truncate">Bill of Lading</div>
-                                        <div class="text-xs text-base-content/60 truncate">{{ manifest.blNumber }}</div>
-                                    </div>
-                                </div>
-                                <a href="/api/bl/{{ manifest.blNumber }}/download" 
-                                   target="_blank"
-                                   class="btn btn-ghost btn-sm rounded-lg gap-2 flex-shrink-0">
-                                    <span class="icon-[tabler--download] size-4"></span>
-                                    Download
-                                </a>
-                            </div>
-                        {% endif %}
-
-                        {# Billing Document #}
-                        {% if manifest.billing %}
-                            <div class="flex items-center justify-between p-3 bg-warning/10 rounded-lg hover:bg-warning/20 transition-colors">
-                                <div class="flex items-center gap-3 flex-1 min-w-0">
-                                    <div class="size-10 bg-warning rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <span class="icon-[tabler--receipt] size-6 text-warning-content"></span>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <div class="flex items-center gap-2">
-                                            <div class="text-sm font-medium text-base-content truncate">Billing Document</div>
-                                            <span class="icon-[tabler--check] size-4 text-success"></span>
-                                        </div>
-                                        <div class="text-xs text-base-content/60 truncate">Total: ₱{{ manifest.billing.totalAmount|number_format(2) }}</div>
-                                    </div>
-                                </div>
-                                <a href="/api/billing/{{ manifest.billing.id }}/download" 
-                                   target="_blank"
-                                   class="btn btn-warning btn-sm rounded-lg gap-2 flex-shrink-0">
-                                    <span class="icon-[tabler--download] size-4"></span>
-                                    Download
-                                </a>
-                            </div>
-                        {% endif %}
-
-                        {# Official Receipt #}
-                        {% set finalPayment = null %}
-                        {% for payment in manifest.payments %}
-                            {% if payment.paymentType.value == 'final_payment' and payment.status.value == 'verified' %}
-                                {% set finalPayment = payment %}
-                            {% endif %}
-                        {% endfor %}
-                        
-                        {% if finalPayment and finalPayment.officialReceiptPath %}
-                            <div class="flex items-center justify-between p-3 bg-success/10 rounded-lg hover:bg-success/20 transition-colors">
-                                <div class="flex items-center gap-3 flex-1 min-w-0">
-                                    <div class="size-10 bg-success rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <span class="icon-[tabler--file-check] size-6 text-success-content"></span>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <div class="flex items-center gap-2">
-                                            <div class="text-sm font-medium text-base-content truncate">Official Receipt</div>
-                                            <span class="icon-[tabler--check] size-4 text-success"></span>
-                                        </div>
-                                        <div class="text-xs text-base-content/60 truncate">Payment verified - OR issued</div>
-                                    </div>
-                                </div>
-                                <a href="{{ finalPayment.officialReceiptPath }}" 
-                                   target="_blank"
-                                   class="btn btn-success btn-sm rounded-lg gap-2 flex-shrink-0">
-                                    <span class="icon-[tabler--download] size-4"></span>
-                                    Download
-                                </a>
-                            </div>
-                        {% endif %}
-
-                        {# Electronic Delivery Orders - List all eDOs from containers #}
-                        {% set allEdos = [] %}
-                        {% for containerId, status in containerPaymentStatus %}
-                            {% if status.has_edo %}
-                                {% set allEdos = allEdos|merge([{
-                                    'edo_number': status.edo_number,
-                                    'edo_id': status.edo_id,
-                                    'edo_status': status.edo_status,
-                                    'pdf_path': status.pdf_path,
-                                    'container_number': status.container_number,
-                                    'has_payment': status.has_payment,
-                                    'payment_status': status.payment_status,
-                                    'payment_amount': status.payment_amount,
-                                    'official_receipt_path': status.official_receipt_path
-                                }]) %}
-                            {% endif %}
-                        {% endfor %}
-                        
-                        {% if allEdos|length > 0 %}
-                            <div class="border border-base-200 rounded-lg overflow-hidden">
-                                <div class="bg-success/10 px-3 py-2 border-b border-base-200">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center gap-2">
-                                            <span class="icon-[tabler--file-certificate] size-5 text-success"></span>
-                                            <span class="text-sm font-semibold text-base-content">Electronic Delivery Orders</span>
-                                        </div>
-                                        <span class="badge badge-success badge-sm">{{ allEdos|length }} eDO{{ allEdos|length != 1 ? 's' : '' }}</span>
-                                    </div>
-                                </div>
-                                <div class="divide-y divide-base-200">
-                                    {% for edoData in allEdos %}
-                                        <div class="flex items-center justify-between p-3 hover:bg-base-200 transition-colors">
-                                            <div class="flex items-center gap-3 flex-1 min-w-0">
-                                                <div class="size-10 bg-success/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                    <span class="icon-[tabler--container] size-5 text-success"></span>
-                                                </div>
-                                                <div class="min-w-0 flex-1">
-                                                    <div class="flex items-center gap-2 mb-1">
-                                                        <div class="text-sm font-medium text-base-content truncate">{{ edoData.edo_number }}</div>
-                                                        {% if edoData.has_payment and edoData.payment_status == 'verified' %}
-                                                            <span class="icon-[tabler--check] size-4 text-success"></span>
-                                                        {% endif %}
-                                                    </div>
-                                                    <div class="text-xs text-base-content/60 truncate">Container: {{ edoData.container_number }}</div>
-                                                    <div class="flex items-center gap-2 mt-1">
-                                                        {% if edoData.edo_status == 'pending_release' %}
-                                                            <span class="badge badge-warning badge-xs">Pending Payment</span>
-                                                        {% elseif edoData.edo_status == 'active' %}
-                                                            <span class="badge badge-success badge-xs">Active</span>
-                                                        {% endif %}
-                                                        
-                                                        {% if edoData.has_payment %}
-                                                            {% if edoData.payment_status == 'pending_validation' %}
-                                                                <span class="badge badge-info badge-xs">Payment Under Review</span>
-                                                            {% elseif edoData.payment_status == 'rejected' %}
-                                                                <span class="badge badge-error badge-xs">Payment Rejected</span>
-                                                            {% elseif edoData.payment_status == 'verified' %}
-                                                                <span class="badge badge-success badge-xs">Paid ₱{{ edoData.payment_amount|number_format(2) }}</span>
-                                                            {% endif %}
-                                                        {% endif %}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="flex items-center gap-2 flex-shrink-0">
-                                                {% if edoData.has_payment and edoData.payment_status == 'verified' %}
-                                                    {# Payment verified - show View PDF button #}
-                                                    <a href="{{ path('broker_edo_download', {id: edoData.edo_id}) }}" 
-                                                       target="_blank"
-                                                       class="btn btn-success btn-xs gap-1"
-                                                       title="View eDO PDF">
-                                                        <span class="icon-[tabler--file-text] size-4"></span>
-                                                        <span class="hidden sm:inline">View PDF</span>
-                                                    </a>
-                                                    
-                                                    {% if edoData.official_receipt_path and edoData.edo_id %}
-                                                        <a href="{{ path('broker_edo_official_receipt', {edoId: edoData.edo_id}) }}" 
-                                                           target="_blank"
-                                                           class="btn btn-ghost btn-xs gap-1"
-                                                           title="View Official Receipt">
-                                                            <span class="icon-[tabler--receipt] size-4"></span>
-                                                        </a>
-                                                    {% endif %}
-                                                {% else %}
-                                                    {# Payment not verified - show disabled View PDF button #}
-                                                    <button class="btn btn-disabled btn-xs gap-1 opacity-50 cursor-not-allowed"
-                                                            disabled
-                                                            title="Payment must be verified to view eDO">
-                                                        <span class="icon-[tabler--lock] size-4"></span>
-                                                        <span class="hidden sm:inline">Locked</span>
-                                                    </button>
-                                                    
-                                                    {% if not edoData.has_payment or edoData.payment_status == 'rejected' %}
-                                                        <a href="{{ path('broker_manifest_edo_payment_specific', {id: manifest.id, edoNumber: edoData.edo_number}) }}" 
-                                                           class="btn btn-warning btn-xs gap-1">
-                                                            <span class="icon-[tabler--credit-card] size-4"></span>
-                                                            Pay Now
-                                                        </a>
-                                                    {% elseif edoData.payment_status == 'pending_validation' %}
-                                                        <span class="text-xs text-base-content/60">Awaiting Verification</span>
+                        <!-- Right Column (1/3 width) - Quick Actions -->
+                        <div class="lg:col-span-1">
+                            <div class="card bg-base-100 shadow-md sticky top-6 w-full">
+                                <div class="card-body p-4 sm:p-6">
+                                    <h3 class="card-title text-base sm:text-lg mb-3 sm:mb-4 text-base-content">Quick Actions</h3>
+                                    <div class="space-y-2 sm:space-y-3 w-full">
+                                        {% if manifest %}
+                                            {# Check for rejected final payment and get latest payment version #}
+                                            {% set finalPaymentRejected = false %}
+                                            {% set latestFinalPayment = null %}
+                                            {% for payment in manifest.payments %}
+                                                {% if payment.paymentType.value == 'final_payment' %}
+                                                    {% if latestFinalPayment is null or payment.version > latestFinalPayment.version %}
+                                                        {% set latestFinalPayment = payment %}
                                                     {% endif %}
                                                 {% endif %}
+                                            {% endfor %}
+                                            
+                                            {# Set finalPaymentRejected based on LATEST payment status #}
+                                            {% if latestFinalPayment and latestFinalPayment.status.value == 'rejected' %}
+                                                {% set finalPaymentRejected = true %}
+                                            {% endif %}
+                                            
+                                            {# Payment Version Badge - Show if payment exists #}
+                                            {% if latestFinalPayment %}
+                                                <div class="alert {% if latestFinalPayment.status.value == 'verified' %}alert-success{% elseif latestFinalPayment.status.value == 'rejected' %}alert-error{% else %}alert-warning{% endif %} py-2 px-3">
+                                                    <div class="flex items-center justify-between w-full">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="icon-[tabler--receipt] size-4"></span>
+                                                            <span class="text-sm font-medium">Final Payment</span>
+                                                        </div>
+                                                        {% include 'components/payment_version_badge.html.twig' with {
+                                                            version: latestFinalPayment.version,
+                                                            status: latestFinalPayment.status.value,
+                                                            submittedAt: latestFinalPayment.createdAt,
+                                                            size: 'sm'
+                                                        } %}
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                            
+                                            {# Resubmit Payment Button - Show when payment is rejected AND not verified #}
+                                            {% if finalPaymentRejected and latestFinalPayment and latestFinalPayment.status.value != 'verified' %}
+                                                <a href="{{ path('broker_manifest_final_payment', {id: manifest.id}) }}" 
+                                                   class="btn btn-error w-full text-sm sm:text-base gap-2">
+                                                    <span class="icon-[tabler--upload] size-4"></span>
+                                                    Resubmit Payment
+                                                </a>
+                                            {% endif %}
+                                            
+                                            {# Submit Payment Button - Show when billing is generated #}
+                                            {% if manifest.workflowState.value == 'billing_generated' and not finalPaymentRejected %}
+                                                <a href="{{ path('broker_manifest_final_payment', {id: manifest.id}) }}" 
+                                                   class="btn btn-primary w-full text-sm sm:text-base gap-2">
+                                                    <span class="icon-[tabler--credit-card] size-4"></span>
+                                                    Submit Payment
+                                                </a>
+                                            {% endif %}
+                                            
+                                            {% if manifest.workflowState.value == 'noa_generated' %}
+                                                <a href="{{ path('manifest_workflow_generate_manifest_form', {id: manifest.noa.id}) }}" 
+                                                   class="btn btn-success w-full text-sm sm:text-base">
+                                                    Generate Manifest/BL
+                                                </a>
+                                            {% endif %}
+                                            
+                                            {# eDO Generation Button - Show when payment is verified #}
+                                            {% set finalPaymentVerified = false %}
+                                            {% for payment in manifest.payments %}
+                                                {% if payment.paymentType.value == 'final_payment' and payment.status.value == 'verified' %}
+                                                    {% set finalPaymentVerified = true %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            
+                                            {% if finalPaymentVerified and manifest.workflowState.value in ['payment_verified', 'edo_generated', 'edo_released'] %}
+                                                <button type="button" 
+                                                        onclick="openEDOGenerationModal()"
+                                                        class="btn btn-info w-full text-sm sm:text-base">
+                                                    <span class="icon-[tabler--file-certificate] size-4 mr-2"></span>
+                                                    Generate eDOs
+                                                </button>
+                                            {% endif %}
+                                        {% else %}
+                                            <a href="{{ path('manifest_workflow_generate_manifest_form', {id: manifest.noa.id}) }}" 
+                                               class="btn btn-success w-full text-sm sm:text-base">
+                                                Generate Manifest/BL
+                                            </a>
+                                        {% endif %}
+                                        
+                                        {# View Payment History Link - Show if payment exists #}
+                                        {% if latestFinalPayment %}
+                                            <a href="{{ path('broker_payment_history', {id: manifest.id}) }}" 
+                                               class="btn btn-outline btn-primary w-full text-sm sm:text-base gap-2">
+                                                <span class="icon-[tabler--history] size-4"></span>
+                                                View Payment History
+                                            </a>
+                                        {% endif %}
+                                        
+                                        <a href="{{ path('broker_manifest_list') }}" 
+                                           class="btn btn-outline w-full text-sm sm:text-base">
+                                            <span class="icon-[tabler--arrow-left] size-4 mr-2"></span>
+                                            Back to Manifests
+                                        </a>
+                                    </div>
+
+                                    <!-- Workflow Timeline -->
+                                    <div class="mt-6 pt-6 border-t border-base-content/10">
+                                        <div class="flex items-center justify-between mb-4">
+                                            <h4 class="text-sm font-medium text-base-content">Workflow Timeline</h4>
+                                            {% if currentStep >= 7 %}
+                                                <span class="badge badge-success badge-sm gap-1">
+                                                    <span class="icon-[tabler--circle-check] size-3"></span>
+                                                    Complete
+                                                </span>
+                                            {% else %}
+                                                <span class="text-xs text-base-content/40">{{ currentStep }}/7</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        {% if manifest %}
+                                            {% set state = manifest.workflowState %}
+                                            {% set currentStep = 0 %}
+                                            {% if state.value == 'noa_generated' %}
+                                                {% set currentStep = 1 %}
+                                            {% elseif state.value == 'bl_generated' %}
+                                                {% set currentStep = 2 %}
+                                            {% elseif state.value == 'bl_uploaded' %}
+                                                {% set currentStep = 3 %}
+                                            {% elseif state.value == 'billing_generated' %}
+                                                {% set currentStep = 4 %}
+                                            {% elseif state.value == 'payment_submitted' or state.value == 'payment_verified' %}
+                                                {% set currentStep = 5 %}
+                                            {% elseif state.value == 'edo_generated' %}
+                                                {% set currentStep = 6 %}
+                                            {% elseif state.value == 'edo_released' %}
+                                                {% set currentStep = 7 %}
+                                            {% endif %}
+                                        {% else %}
+                                            {% set currentStep = 1 %}
+                                        {% endif %}
+                                        
+                                        <ul class="timeline timeline-vertical timeline-compact">
+                                            <!-- Step 1: NOA Created -->
+                                            <li>
+                                                <hr class="{% if currentStep >= 1 %}bg-success{% endif %}" />
+                                                <div class="timeline-middle">
+                                                    <span class="{% if currentStep >= 1 %}bg-success/20{% else %}bg-base-content/20{% endif %} flex size-3 items-center justify-center rounded-full">
+                                                        <span class="badge {% if currentStep >= 1 %}badge-success{% else %}badge-ghost{% endif %} size-2 rounded-full p-0"></span>
+                                                    </span>
+                                                </div>
+                                                <div class="timeline-end">
+                                                    <div class="text-xs font-medium text-base-content">NOA Created</div>
+                                                    <div class="text-xs text-base-content/60">{{ noa.createdAt|date('M j, Y') }}</div>
+                                                </div>
+                                                <hr class="{% if currentStep > 1 %}bg-success{% endif %}" />
+                                            </li>
+
+                                            <!-- Step 2: BL Generated -->
+                                            <li>
+                                                <hr class="{% if currentStep > 1 %}bg-success{% endif %}" />
+                                                <div class="timeline-middle">
+                                                    <span class="{% if currentStep >= 2 %}bg-success/20{% else %}bg-base-content/20{% endif %} flex size-3 items-center justify-center rounded-full">
+                                                        <span class="badge {% if currentStep >= 2 %}badge-success{% else %}badge-ghost{% endif %} size-2 rounded-full p-0"></span>
+                                                    </span>
+                                                </div>
+                                                <div class="timeline-end">
+                                                    <div class="text-xs font-medium text-base-content">BL Generated</div>
+                                                    <div class="text-xs text-base-content/60">
+                                                        {% if currentStep >= 2 and manifest %}{{ manifest.createdAt|date('M j, Y') }}{% else %}Pending{% endif %}
+                                                    </div>
+                                                </div>
+                                                <hr class="{% if currentStep > 2 %}bg-success{% endif %}" />
+                                            </li>
+
+                                            <!-- Step 3: BL Uploaded -->
+                                            <li>
+                                                <hr class="{% if currentStep > 2 %}bg-success{% endif %}" />
+                                                <div class="timeline-middle">
+                                                    <span class="{% if currentStep >= 3 %}bg-success/20{% else %}bg-base-content/20{% endif %} flex size-3 items-center justify-center rounded-full">
+                                                        <span class="badge {% if currentStep >= 3 %}badge-success{% else %}badge-ghost{% endif %} size-2 rounded-full p-0"></span>
+                                                    </span>
+                                                </div>
+                                                <div class="timeline-end">
+                                                    <div class="text-xs font-medium text-base-content">BL Uploaded</div>
+                                                    <div class="text-xs text-base-content/60">
+                                                        {% if currentStep >= 3 and manifest and manifest.blNumber %}{{ manifest.updatedAt|date('M j, Y') }}{% else %}Pending{% endif %}
+                                                    </div>
+                                                </div>
+                                                <hr class="{% if currentStep > 3 %}bg-success{% endif %}" />
+                                            </li>
+
+                                            <!-- Step 4: Billing Generated -->
+                                            <li>
+                                                <hr class="{% if currentStep > 3 %}bg-success{% endif %}" />
+                                                <div class="timeline-middle">
+                                                    <span class="{% if currentStep >= 4 %}bg-warning/20{% else %}bg-base-content/20{% endif %} flex size-3 items-center justify-center rounded-full">
+                                                        <span class="badge {% if currentStep >= 4 %}badge-warning{% else %}badge-ghost{% endif %} size-2 rounded-full p-0"></span>
+                                                    </span>
+                                                </div>
+                                                <div class="timeline-end">
+                                                    <div class="text-xs font-medium text-base-content">Billing Generated</div>
+                                                    <div class="text-xs text-base-content/60">
+                                                        {% if currentStep >= 4 and manifest and manifest.billing %}{{ manifest.billing.createdAt|date('M j, Y') }}{% else %}Pending{% endif %}
+                                                    </div>
+                                                </div>
+                                                <hr class="{% if currentStep > 4 %}bg-success{% endif %}" />
+                                            </li>
+
+                                            <!-- Step 5: Payment Verified -->
+                                            <li>
+                                                <hr class="{% if currentStep > 4 %}bg-success{% endif %}" />
+                                                <div class="timeline-middle">
+                                                    {% set paymentRejected = false %}
+                                                    {% if manifest %}
+                                                        {% for p in manifest.payments %}
+                                                            {% if p.paymentType.value == 'final_payment' and p.status.value == 'rejected' %}
+                                                                {% set paymentRejected = true %}
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                    <span class="{% if currentStep >= 5 %}bg-secondary/20{% elseif paymentRejected %}bg-error/20{% else %}bg-base-content/20{% endif %} flex size-3 items-center justify-center rounded-full">
+                                                        <span class="badge {% if currentStep >= 5 %}badge-secondary{% elseif paymentRejected %}badge-error{% else %}badge-ghost{% endif %} size-2 rounded-full p-0"></span>
+                                                    </span>
+                                                </div>
+                                                <div class="timeline-end">
+                                                    <div class="text-xs font-medium text-base-content">Payment Verified</div>
+                                                    <div class="text-xs text-base-content/60">
+                                                        {% if currentStep >= 5 and manifest %}
+                                                            {% set verifiedPayment = null %}
+                                                            {% for p in manifest.payments %}
+                                                                {% if p.paymentType.value == 'final_payment' and p.status.value == 'verified' %}
+                                                                    {% set verifiedPayment = p %}
+                                                                {% endif %}
+                                                            {% endfor %}
+                                                            {% if verifiedPayment and verifiedPayment.validatedAt %}{{ verifiedPayment.validatedAt|date('M j, Y') }}{% else %}Completed{% endif %}
+                                                        {% elseif paymentRejected %}
+                                                            <span class="text-error">Rejected</span>
+                                                        {% else %}
+                                                            Pending
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                <hr class="{% if currentStep > 5 %}bg-success{% endif %}" />
+                                            </li>
+
+                                            <!-- Step 6: eDO Generated -->
+                                            <li>
+                                                <hr class="{% if currentStep > 5 %}bg-success{% endif %}" />
+                                                <div class="timeline-middle">
+                                                    <span class="{% if currentStep >= 6 %}bg-info/20{% else %}bg-base-content/20{% endif %} flex size-3 items-center justify-center rounded-full">
+                                                        <span class="badge {% if currentStep >= 6 %}badge-info{% else %}badge-ghost{% endif %} size-2 rounded-full p-0"></span>
+                                                    </span>
+                                                </div>
+                                                <div class="timeline-end">
+                                                    <div class="text-xs font-medium text-base-content">eDO Generated</div>
+                                                    <div class="text-xs text-base-content/60">
+                                                        {% if currentStep >= 6 and manifest and manifest.edoBillings is not empty %}{{ manifest.edoBillings|first.createdAt|date('M j, Y') }}{% elseif currentStep >= 6 %}Completed{% else %}Pending{% endif %}
+                                                    </div>
+                                                </div>
+                                                <hr class="{% if currentStep > 6 %}bg-success{% endif %}" />
+                                            </li>
+
+                                            <!-- Step 7: eDO Released -->
+                                            <li>
+                                                <hr class="{% if currentStep > 6 %}bg-success{% endif %}" />
+                                                <div class="timeline-middle">
+                                                    <span class="{% if currentStep >= 7 %}bg-success/20{% else %}bg-base-content/20{% endif %} flex size-3 items-center justify-center rounded-full">
+                                                        <span class="badge {% if currentStep >= 7 %}badge-success{% else %}badge-ghost{% endif %} size-2 rounded-full p-0"></span>
+                                                    </span>
+                                                </div>
+                                                <div class="timeline-end">
+                                                    <div class="text-xs font-medium text-base-content">eDO Released</div>
+                                                    <div class="text-xs text-base-content/60">
+                                                        {% if currentStep >= 7 and manifest and manifest.completedAt %}{{ manifest.completedAt|date('M j, Y') }}{% elseif currentStep >= 7 %}Completed{% else %}Pending{% endif %}
+                                                    </div>
+                                                </div>
+                                                <hr />
+                                            </li>
+                                        </ul>
+
+                                        {% if currentStep >= 7 %}
+                                            <div class="mt-4 flex items-center gap-2 p-3 rounded-lg bg-success/10 border border-success/20">
+                                                <span class="icon-[tabler--rosette-discount-check] size-5 text-success flex-shrink-0"></span>
+                                                <div>
+                                                    <div class="text-xs font-semibold text-success">Workflow Complete</div>
+                                                    <div class="text-xs text-base-content/50">All steps have been successfully completed.</div>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Summary Stats -->
+                                    <div class="mt-6 pt-6 border-t border-base-content/10">
+                                        <h4 class="text-sm font-medium text-base-content mb-3">Summary</h4>
+                                        <dl class="space-y-2">
+                                            <div class="flex justify-between">
+                                                <dt class="text-sm text-base-content/60">Total Containers</dt>
+                                                <dd class="text-sm font-medium text-base-content">
+                                                    {% if manifest.noa and manifest.noa.containers %}
+                                                        {{ manifest.noa.containers|length }}
+                                                    {% else %}
+                                                        0
+                                                    {% endif %}
+                                                </dd>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <dt class="text-sm text-base-content/60">Total TEU</dt>
+                                                <dd class="text-sm font-medium text-base-content">
+                                                    {% set totalTeu = 0 %}
+                                                    {% if manifest.noa and manifest.noa.containers %}
+                                                        {% for container in manifest.noa.containers %}
+                                                            {% set totalTeu = totalTeu + container.containerSize.teuValue %}
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                    {{ totalTeu }}
+                                                </dd>
+                                            </div>
+                                        </dl>
+                                    </div>
+
+                                    <!-- Status Info -->
+                                    <div class="mt-6 pt-6 border-t border-base-content/10">
+                                        <div class="alert alert-info">
+                                            <span class="icon-[tabler--info-circle] size-5"></span>
+                                            <div>
+                                                <h3 class="text-sm font-medium text-base-content">NOA Created</h3>
+                                                <p class="mt-1 text-xs">This NOA has been successfully created. Next step: Generate Manifest/BL.</p>
                                             </div>
                                         </div>
-                                    {% endfor %}
+                                    </div>
                                 </div>
                             </div>
-                        {% endif %}
+                        </div>
+                        <!-- End Right Column -->
+                    </div>
+                    <!-- End 2 Column Grid -->
+                    </div>
+                    <!-- End Details Tab -->
 
-                        {# No Documents Available #}
-                        {% if not manifest.noa and not manifest.blNumber and not manifest.billing and allEdos|length == 0 %}
-                            <div class="text-center py-8">
-                                <div class="size-16 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-3">
-                                    <span class="icon-[tabler--file-off] size-8 text-base-content/40"></span>
+                <!-- History/Audit Trail Tab -->
+                <div id="content-history" class="hidden" role="tabpanel" aria-labelledby="tab-history">
+                    <div class="card bg-base-100 shadow-md">
+                        <div class="card-body p-4 sm:p-6">
+                            <h3 class="card-title text-base sm:text-lg text-base-content mb-4">
+                                <span class="icon-[tabler--history] size-5"></span>
+                                Audit Trail
+                            </h3>
+                            
+                            {% if auditLogs|length > 0 %}
+                                <ul class="timeline timeline-snap-icon timeline-compact timeline-vertical w-full">
+                                    {% set currentDate = null %}
+                                    {% for log in auditLogs %}
+                                        {% set logDate = log.timestamp|date('F j, Y') %}
+                                        
+                                        {# Show date separator if date changed #}
+                                        {% if logDate != currentDate %}
+                                            <span class="text-sm {% if not loop.first %}mt-2{% endif %}">{{ logDate }}</span>
+                                            {% set currentDate = logDate %}
+                                        {% endif %}
+                                        
+                                        <!-- Timeline Item -->
+                                        <li>
+                                            <div class="timeline-middle">
+                                                <span class="flex items-center justify-center bg-primary size-4.5 rounded-full p-0">
+                                                    {% if log.action == 'NOA_CREATED' %}
+                                                        <span class="icon-[tabler--plus] text-primary-content size-3"></span>
+                                                    {% elseif log.action == 'NOA_UPDATED' %}
+                                                        <span class="icon-[tabler--edit] text-primary-content size-3"></span>
+                                                    {% elseif log.action == 'NOA_DELETED' %}
+                                                        <span class="icon-[tabler--trash] text-primary-content size-3"></span>
+                                                    {% elseif log.action == 'MANIFEST_CREATED' or log.action == 'MANIFEST_GENERATED' %}
+                                                        <span class="icon-[tabler--file-plus] text-primary-content size-3"></span>
+                                                    {% elseif log.action == 'MANIFEST_UPDATED' %}
+                                                        <span class="icon-[tabler--edit] text-primary-content size-3"></span>
+                                                    {% elseif log.action == 'PAYMENT_SUBMITTED' or log.action == 'PAYMENT_CREATED' %}
+                                                        <span class="icon-[tabler--cash] text-primary-content size-3"></span>
+                                                    {% elseif log.action == 'PAYMENT_VERIFIED' or log.action == 'PAYMENT_APPROVED' %}
+                                                        <span class="icon-[tabler--circle-check] text-primary-content size-3"></span>
+                                                    {% elseif log.action == 'PAYMENT_REJECTED' %}
+                                                        <span class="icon-[tabler--x] text-primary-content size-3"></span>
+                                                    {% elseif log.action == 'EDO_GENERATED' or log.action == 'EDO_CREATED' %}
+                                                        <span class="icon-[tabler--file-certificate] text-primary-content size-3"></span>
+                                                    {% elseif log.action == 'EDO_RELEASED' %}
+                                                        <span class="icon-[tabler--send] text-primary-content size-3"></span>
+                                                    {% elseif log.action == 'EDO_ACCESSED' or log.action == 'EDO_DOWNLOADED' %}
+                                                        <span class="icon-[tabler--download] text-primary-content size-3"></span>
+                                                    {% elseif log.action == 'CONTAINER_ALLOCATED' or log.action == 'CONTAINER_ASSIGNED' %}
+                                                        <span class="icon-[tabler--container] text-primary-content size-3"></span>
+                                                    {% elseif log.action == 'CONTAINER_RELEASED' %}
+                                                        <span class="icon-[tabler--truck-delivery] text-primary-content size-3"></span>
+                                                    {% elseif log.action == 'CONTAINER_UPDATED' %}
+                                                        <span class="icon-[tabler--edit] text-primary-content size-3"></span>
+                                                    {% else %}
+                                                        <span class="icon-[tabler--check] text-primary-content size-3"></span>
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                            <div class="timeline-end ms-2 m-3 w-full rounded-lg">
+                                                <div class="text-base-content pt-0.5 mb-3 font-medium">
+                                                    {{ log.action|replace({'_': ' '})|title }}
+                                                    <span class="badge badge-ghost badge-xs ml-2">{{ log.entityType }}</span>
+                                                </div>
+                                                
+                                                {% if log.changes.changes is defined and log.changes.changes|length > 0 %}
+                                                    <div class="mb-2">
+                                                        {% for change in log.changes.changes %}
+                                                            <p class="mb-1">{{ change }}</p>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+                                                
+                                                {# Display broker information for broker assignment #}
+                                                {% if log.action == 'broker_assigned' and log.changes.broker_email is defined %}
+                                                    <div class="mb-3 p-3 rounded-lg bg-base-200/50 border border-base-300">
+                                                        <div class="flex items-center gap-2 mb-1">
+                                                            <span class="icon-[tabler--user-check] size-4 text-primary"></span>
+                                                            <span class="text-sm font-semibold text-base-content">Broker Assigned</span>
+                                                        </div>
+                                                        <div class="text-sm text-base-content/80">
+                                                            <span class="font-medium">{{ log.changes.broker_email }}</span>
+                                                        </div>
+                                                        {% if log.changes.reason is defined and log.changes.reason %}
+                                                            <div class="text-xs text-base-content/60 mt-1">
+                                                                <span class="font-medium">Reason:</span> {{ log.changes.reason }}
+                                                            </div>
+                                                        {% endif %}
+                                                    </div>
+                                                {% endif %}
+                                                
+                                                <div class="flex gap-2">
+                                                    <div class="avatar">
+                                                        <div class="size-8 rounded-full bg-primary text-primary-content flex items-center justify-center">
+                                                            <span class="text-xs font-semibold">{{ log.user.email|slice(0, 2)|upper }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-sm">
+                                                        <p class="font-medium">{{ log.user.email }}</p>
+                                                        <p class="text-base-content/60">{{ log.timestamp|date('g:i A') }} • {{ log.ipAddress }}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <hr class="bg-primary" />
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <div class="flex flex-col items-center justify-center py-12 text-base-content/40">
+                                    <span class="icon-[tabler--history-off] size-12 mb-3"></span>
+                                    <p class="text-sm">No audit trail records found</p>
+                                    <p class="text-xs mt-1">Changes to this manifest will appear here</p>
                                 </div>
-                                <p class="text-sm text-base-content/60">No documents available yet</p>
-                            </div>
-                        {% endif %}
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
+                <!-- End History Tab -->
+            </div>
+            <!-- End Tab Content -->
+
+        </div>
+        <!-- End Main Content with Tabs -->
+
+    </div>
+</div>
+
+<!-- CY Reassignment Modal -->
+<div id="cyReassignmentModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeCYReassignmentModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-base-300">
+            <div class="flex items-center gap-2">
+                <span class="icon-[tabler--arrows-exchange] size-5 text-info"></span>
+                <h3 class="font-semibold text-base text-base-content">Change CY Location</h3>
+            </div>
+            <button type="button" onclick="closeCYReassignmentModal()" class="btn btn-ghost btn-sm btn-circle">
+                <span class="icon-[tabler--x] size-4"></span>
+            </button>
+        </div>
+        <div class="px-5 py-4 space-y-4">
+            <div class="space-y-2">
+                <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-base-200">
+                    <span class="icon-[tabler--container] size-4 text-base-content/50"></span>
+                    <span class="text-xs text-base-content/60">Container</span>
+                    <span id="reassignContainerNumber" class="font-mono font-semibold text-sm text-base-content ml-auto"></span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-base-200/50">
+                        <span class="icon-[tabler--ruler] size-4 text-base-content/50"></span>
+                        <div class="flex flex-col">
+                            <span class="text-xs text-base-content/60">Size</span>
+                            <span id="reassignContainerSize" class="font-semibold text-sm text-base-content"></span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-base-200/50">
+                        <span class="icon-[tabler--box] size-4 text-base-content/50"></span>
+                        <div class="flex flex-col">
+                            <span class="text-xs text-base-content/60">Type</span>
+                            <span id="reassignContainerType" class="font-semibold text-sm text-base-content"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-control">
+                <label class="label pb-1">
+                    <span class="label-text text-xs font-medium uppercase tracking-wide text-base-content/70">New CY Location</span>
+                </label>
+                <select id="cyAllocationSelect" class="select select-bordered w-full">
+                    <option value="">Loading available locations...</option>
+                </select>
+                <label class="label pt-1">
+                    <span class="label-text-alt text-base-content/40">Only locations with sufficient capacity are shown.</span>
+                </label>
+            </div>
+            <div id="cyReassignmentError" class="hidden alert alert-error py-2 text-sm">
+                <span class="icon-[tabler--alert-circle] size-4"></span>
+                <span></span>
+            </div>
+            <div id="cyReassignmentSpinner" class="hidden flex items-center justify-center gap-2 py-2">
+                <span class="loading loading-spinner loading-sm text-primary"></span>
+                <span class="text-sm text-base-content/60">Reassigning container...</span>
             </div>
         </div>
-
-        <!-- Actions Sidebar -->
-        <div class="lg:col-span-1">
-            <div class="card bg-base-100 shadow-sm lg:sticky lg:top-20">
-                <div class="card-body p-6">
-                    <h3 class="text-lg font-semibold text-base-content mb-4">Required Actions</h3>
-                    <div class="space-y-3">
-                        {% if manifest.workflowState.value == 'bl_generated' %}
-                            <div class="alert alert-info">
-                                <span class="icon-[tabler--info-circle] size-5"></span>
-                                <div class="text-sm">
-                                    <p class="font-medium">BL Upload Required</p>
-                                    <p class="text-xs mt-1">The shipping line has generated the Bill of Lading. Please upload your copy for confirmation.</p>
-                                </div>
-                            </div>
-                            <a href="{{ path('broker_manifest_upload_bl', {id: manifest.id}) }}" 
-                               class="btn btn-primary w-full rounded-lg gap-2">
-                                <span class="icon-[tabler--upload] size-4"></span>
-                                Upload BL
-                            </a>
-                        {% endif %}
-
-                        {% if manifest.workflowState.value == 'noa_generated' %}
-                            <a href="{{ path('broker_manifest_upload_bl', {id: manifest.id}) }}" 
-                               class="btn btn-primary w-full rounded-lg gap-2">
-                                <span class="icon-[tabler--upload] size-4"></span>
-                                Upload BL
-                            </a>
-                        {% endif %}
-
-                        {% if manifest.workflowState.value == 'billing_generated' %}
-                            <a href="{{ path('broker_manifest_final_payment', {id: manifest.id}) }}" 
-                               class="btn btn-warning w-full rounded-lg gap-2">
-                                <span class="icon-[tabler--credit-card] size-4"></span>
-                                Submit Final Payment
-                            </a>
-                        {% endif %}
-
-                        {% if manifest.workflowState.value == 'edo_generated' %}
-                            <div class="alert alert-info">
-                                <span class="icon-[tabler--file-text] size-5"></span>
-                                <div class="text-sm">
-                                    <p class="font-medium">eDOs Generated</p>
-                                    <p class="text-xs mt-1">Electronic Delivery Orders have been generated for each container. View and pay for individual eDOs.</p>
-                                </div>
-                            </div>
-                            <a href="{{ path('broker_edo_list_page') }}" 
-                               class="btn btn-info w-full rounded-lg gap-2">
-                                <span class="icon-[tabler--file-text] size-4"></span>
-                                View eDOs for this Manifest
-                            </a>
-                        {% endif %}
-
-                        {% if manifest.workflowState.value not in ['bl_generated', 'noa_generated', 'billing_generated', 'edo_generated'] %}
-                            <div class="alert">
-                                <span class="icon-[tabler--clock] size-5"></span>
-                                <p class="text-sm">No action required at this time. Please wait for the next workflow step.</p>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
+        <div class="flex justify-end gap-2 px-5 py-4 border-t border-base-300">
+            <button type="button" id="cyCancelButton" onclick="closeCYReassignmentModal()" class="btn btn-ghost">Cancel</button>
+            <button type="button" id="cyReassignButton" onclick="reassignContainerCY()" class="btn btn-info gap-1">
+                <span class="icon-[tabler--arrows-exchange] size-4"></span>
+                Reassign
+            </button>
         </div>
     </div>
 </div>
 
+<!-- eDO Generation Modal -->
+<div id="edoGenerationModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeEDOGenerationModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-base-300">
+            <h3 class="font-semibold text-base text-base-content">Generate eDOs</h3>
+            <button type="button" onclick="closeEDOGenerationModal()" class="btn btn-ghost btn-sm btn-circle">
+                <span class="icon-[tabler--x] size-4"></span>
+            </button>
+        </div>
+        <div class="px-5 py-4 space-y-4">
+            {# Selection Summary #}
+            <div class="alert alert-info">
+                <span class="icon-[tabler--info-circle] size-5"></span>
+                <div class="text-sm">
+                    <p id="edoModalSelectionText" class="font-medium">Select containers to generate eDOs</p>
+                    <p class="text-xs mt-1">Selected: <span id="selectedContainerCount" class="font-bold">0</span> containers</p>
+                </div>
+            </div>
+            
+            {# Expiration Date #}
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-medium">Expiration Date <span class="text-error">*</span></span>
+                </label>
+                <input type="date" 
+                       id="edoExpirationDate" 
+                       class="input input-bordered w-full" 
+                       min="{{ 'now'|date('Y-m-d') }}"
+                       required>
+                <label class="label pt-1">
+                    <span class="label-text-alt text-base-content/60">eDOs will expire on this date</span>
+                </label>
+            </div>
+            
+            {# Loading Spinner #}
+            <div id="edoGenerationSpinner" class="hidden flex items-center justify-center gap-2 py-2">
+                <span class="loading loading-spinner loading-sm text-primary"></span>
+                <span class="text-sm text-base-content/60">Generating eDOs...</span>
+            </div>
+        </div>
+        <div class="flex justify-end gap-2 px-5 py-4 border-t border-base-300">
+            <button type="button" 
+                    id="edoCancelButton" 
+                    onclick="closeEDOGenerationModal()" 
+                    class="btn btn-ghost">
+                Cancel
+            </button>
+            <button type="button" 
+                    id="edoGenerateButton" 
+                    onclick="generateEDOs()" 
+                    class="btn btn-primary gap-2"
+                    disabled>
+                <span class="icon-[tabler--file-certificate] size-4"></span>
+                Generate eDOs
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit NOA Modal -->
+<div id="editNoaModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeEditNoaModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-2xl z-10 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-base-300 sticky top-0 bg-base-100 z-10">
+            <div class="flex items-center gap-2">
+                <span class="icon-[tabler--edit] size-5 text-primary"></span>
+                <h3 class="font-semibold text-base text-base-content">Edit NOA Details</h3>
+            </div>
+            <button type="button" onclick="closeEditNoaModal()" class="btn btn-ghost btn-sm btn-circle">
+                <span class="icon-[tabler--x] size-4"></span>
+            </button>
+        </div>
+        <form id="editNoaForm" onsubmit="submitNoaEdit(event)">
+            <div class="px-5 py-4 space-y-4">
+                <!-- BL Number -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">BL Number <span class="text-error">*</span></span>
+                    </label>
+                    <input type="text" 
+                           id="editBlNumber" 
+                           name="blNumber"
+                           value="{{ noa.blNumber }}"
+                           class="input input-bordered w-full" 
+                           required>
+                </div>
+
+                <!-- Vessel Number -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Vessel Number <span class="text-error">*</span></span>
+                    </label>
+                    <input type="text" 
+                           id="editVesselNumber" 
+                           name="vesselNumber"
+                           value="{{ noa.vesselNumber }}"
+                           class="input input-bordered w-full" 
+                           required>
+                </div>
+
+                <!-- ETA -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">ETA (Estimated Time of Arrival) <span class="text-error">*</span></span>
+                    </label>
+                    <input type="datetime-local" 
+                           id="editEta" 
+                           name="eta"
+                           value="{{ noa.eta|date('Y-m-d\\TH:i') }}"
+                           class="input input-bordered w-full" 
+                           required>
+                </div>
+
+                <!-- CY Location -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">CY Location <span class="text-error">*</span></span>
+                    </label>
+                    <input type="text" 
+                           id="editCyLocation" 
+                           name="cyLocation"
+                           value="{{ noa.cyLocation }}"
+                           class="input input-bordered w-full" 
+                           required>
+                </div>
+
+                <!-- Error Message -->
+                <div id="editNoaError" class="hidden alert alert-error">
+                    <span class="icon-[tabler--alert-circle] size-4"></span>
+                    <span></span>
+                </div>
+
+                <!-- Loading Spinner -->
+                <div id="editNoaSpinner" class="hidden flex items-center justify-center gap-2 py-2">
+                    <span class="loading loading-spinner loading-sm text-primary"></span>
+                    <span class="text-sm text-base-content/60">Updating NOA...</span>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 px-5 py-4 border-t border-base-300 sticky bottom-0 bg-base-100">
+                <button type="button" 
+                        id="editNoaCancelButton" 
+                        onclick="closeEditNoaModal()" 
+                        class="btn btn-ghost">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        id="editNoaSaveButton" 
+                        class="btn btn-primary gap-1">
+                    <span class="icon-[tabler--device-floppy] size-4"></span>
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
-function addContainerToManifest(containerId) {
-    if (!confirm('Add this container to the manifest?')) {
+// Edit NOA Modal Functions
+function openEditNoaModal() {
+    document.getElementById('editNoaModal').classList.remove('hidden');
+}
+
+function closeEditNoaModal() {
+    document.getElementById('editNoaModal').classList.add('hidden');
+    document.getElementById('editNoaSpinner').classList.add('hidden');
+    document.getElementById('editNoaSaveButton').disabled = false;
+    document.getElementById('editNoaCancelButton').disabled = false;
+    document.getElementById('editNoaError').classList.add('hidden');
+}
+
+async function submitNoaEdit(event) {
+    event.preventDefault();
+    
+    const noaId = {{ noa.id }};
+    const formData = {
+        blNumber: document.getElementById('editBlNumber').value,
+        vesselNumber: document.getElementById('editVesselNumber').value,
+        eta: document.getElementById('editEta').value,
+        cyLocation: document.getElementById('editCyLocation').value
+    };
+    
+    // Show spinner and disable buttons
+    document.getElementById('editNoaSpinner').classList.remove('hidden');
+    document.getElementById('editNoaSaveButton').disabled = true;
+    document.getElementById('editNoaCancelButton').disabled = true;
+    document.getElementById('editNoaError').classList.add('hidden');
+    
+    try {
+        const response = await fetch(`/manifest-workflow/noa/${noaId}/edit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            showSuccessMessage(result.message || 'NOA updated successfully');
+            closeEditNoaModal();
+            
+            // Reload page to show updated data
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showEditNoaError(result.message || 'Error updating NOA');
+            // Hide spinner and re-enable buttons
+            document.getElementById('editNoaSpinner').classList.add('hidden');
+            document.getElementById('editNoaSaveButton').disabled = false;
+            document.getElementById('editNoaCancelButton').disabled = false;
+        }
+    } catch (error) {
+        showEditNoaError('Error updating NOA: ' + error.message);
+        // Hide spinner and re-enable buttons
+        document.getElementById('editNoaSpinner').classList.add('hidden');
+        document.getElementById('editNoaSaveButton').disabled = false;
+        document.getElementById('editNoaCancelButton').disabled = false;
+    }
+}
+
+function showEditNoaError(message) {
+    const errorDiv = document.getElementById('editNoaError');
+    errorDiv.querySelector('span:last-child').textContent = message;
+    errorDiv.classList.remove('hidden');
+}
+
+function openEDOGenerationModal() {
+    // Set default expiration date (30 days from now)
+    const expirationInput = document.getElementById('edoExpirationDate');
+    const defaultDate = new Date();
+    defaultDate.setDate(defaultDate.getDate() + 30);
+    expirationInput.value = defaultDate.toISOString().split('T')[0];
+    
+    // Update selection count in modal
+    if (window.edoContainerSelection) {
+        window.edoContainerSelection.updateSelectionCount();
+    } else {
+        console.error('EDO Container Selection module not loaded');
+        // Manually update count as fallback
+        const checkedBoxes = document.querySelectorAll('.container-checkbox:checked');
+        const countElement = document.getElementById('selectedContainerCount');
+        if (countElement) {
+            countElement.textContent = checkedBoxes.length;
+        }
+        const generateButton = document.getElementById('edoGenerateButton');
+        if (generateButton) {
+            generateButton.disabled = checkedBoxes.length === 0;
+        }
+    }
+    
+    // Show modal
+    document.getElementById('edoGenerationModal').classList.remove('hidden');
+}
+
+function closeEDOGenerationModal() {
+    document.getElementById('edoGenerationModal').classList.add('hidden');
+    document.getElementById('edoGenerationSpinner').classList.add('hidden');
+    document.getElementById('edoGenerateButton').disabled = false;
+    document.getElementById('edoCancelButton').disabled = false;
+}
+
+async function generateEDOs() {
+    const expirationDate = document.getElementById('edoExpirationDate').value;
+    
+    if (!expirationDate) {
+        alert('Please select an expiration date');
         return;
     }
     
-    fetch(`/broker/manifests/{{ manifest.id }}/add-container`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ containerId: containerId })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
+    const manifestId = {{ manifest ? manifest.id : 'null' }};
+    
+    if (!manifestId) {
+        alert('No manifest found');
+        return;
+    }
+    
+    // Get selected container IDs
+    let selectedContainerIds = [];
+    if (window.edoContainerSelection) {
+        selectedContainerIds = window.edoContainerSelection.getSelectedContainerIds();
+    } else {
+        // Fallback: manually get checked checkboxes
+        console.warn('EDO Container Selection module not loaded, using fallback');
+        const checkedBoxes = document.querySelectorAll('.container-checkbox:checked');
+        selectedContainerIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+    }
+    
+    if (selectedContainerIds.length === 0) {
+        alert('Please select at least one container');
+        return;
+    }
+    
+    console.log('Generating eDOs for containers:', selectedContainerIds);
+    
+    // Show spinner and disable buttons
+    document.getElementById('edoGenerationSpinner').classList.remove('hidden');
+    document.getElementById('edoGenerateButton').disabled = true;
+    document.getElementById('edoCancelButton').disabled = true;
+    
+    try {
+        const response = await fetch(`/sl-staff/edo-generation/generate/${manifestId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                expirationDate: expirationDate,
+                containerIds: selectedContainerIds  // Send selected container IDs
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(result.message);
+            closeEDOGenerationModal();
+            // Reload page to show updated eDO status
+            window.location.reload();
         } else {
-            alert('Error: ' + data.message);
+            alert('Error: ' + result.message);
+            // Hide spinner and re-enable buttons
+            document.getElementById('edoGenerationSpinner').classList.add('hidden');
+            document.getElementById('edoGenerateButton').disabled = false;
+            document.getElementById('edoCancelButton').disabled = false;
         }
-    })
-    .catch(error => {
-        alert('Error adding container');
-        console.error(error);
-    });
+    } catch (error) {
+        alert('Error generating eDOs: ' + error.message);
+        // Hide spinner and re-enable buttons
+        document.getElementById('edoGenerationSpinner').classList.add('hidden');
+        document.getElementById('edoGenerateButton').disabled = false;
+        document.getElementById('edoCancelButton').disabled = false;
+    }
+}
+
+// CY Reassignment Modal Functions
+let currentContainerId = null;
+let currentContainerNumber = null;
+let currentAllocationId = null;
+let currentContainerTeu = null;
+let currentShippingLineId = null; // Add shipping line ID variable
+
+function openCYReassignmentModal(containerId, containerNumber, allocationId, teuValue, shippingLineId, containerSize, containerType) {
+    currentContainerId = containerId;
+    currentContainerNumber = containerNumber;
+    currentAllocationId = allocationId;
+    currentContainerTeu = teuValue;
+    currentShippingLineId = shippingLineId; // Store shipping line ID
+    document.getElementById('reassignContainerNumber').textContent = containerNumber;
+    document.getElementById('reassignContainerSize').textContent = containerSize;
+    document.getElementById('reassignContainerType').textContent = containerType;
+    loadAvailableCYAllocations();
+    document.getElementById('cyReassignmentModal').classList.remove('hidden');
+}
+
+function closeCYReassignmentModal() {
+    document.getElementById('cyReassignmentModal').classList.add('hidden');
+    document.getElementById('cyReassignmentSpinner').classList.add('hidden');
+    document.getElementById('cyReassignButton').disabled = false;
+    document.getElementById('cyCancelButton').disabled = false;
+    document.getElementById('cyAllocationSelect').value = '';
+    document.getElementById('cyReassignmentError').classList.add('hidden');
+}
+
+async function loadAvailableCYAllocations() {
+    const shippingLineId = currentShippingLineId; // Use the container's shipping line
+    
+    if (!shippingLineId) {
+        showCYReassignmentError('No shipping line found');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/cy-allocations?shipping_line_id=${shippingLineId}`);
+        const data = await response.json();
+        
+        const select = document.getElementById('cyAllocationSelect');
+        select.innerHTML = '<option value="">Select CY Location...</option>';
+        
+        // Determine if container is 20ft or 40ft based on TEU value
+        const is20ft = currentContainerTeu === 1.0;
+        const is40ft = currentContainerTeu >= 2.0;
+        
+        // Sort by available capacity for the specific size
+        data.allocations.sort((a, b) => {
+            const availA = is20ft ? a.available_20ft : a.available_40ft;
+            const availB = is20ft ? b.available_20ft : b.available_40ft;
+            return availB - availA;
+        });
+        
+        data.allocations.forEach(allocation => {
+            const option = document.createElement('option');
+            option.value = allocation.id;
+            
+            // Show size-specific capacity
+            let capacityText;
+            let hasCapacity;
+            
+            if (is20ft) {
+                capacityText = `${allocation.used_20ft}/${allocation.capacity_20ft} (20ft)`;
+                hasCapacity = allocation.available_20ft > 0;
+            } else {
+                capacityText = `${allocation.used_40ft}/${allocation.capacity_40ft} (40ft+)`;
+                hasCapacity = allocation.available_40ft > 0;
+            }
+            
+            option.textContent = `${allocation.terminal.name} - ${capacityText}`;
+            
+            // Disable if insufficient capacity for this size
+            if (!hasCapacity) {
+                option.disabled = true;
+                option.textContent += ' - Insufficient Capacity';
+            }
+            
+            // Pre-select current allocation
+            if (allocation.id === currentAllocationId) {
+                option.selected = true;
+            }
+            
+            select.appendChild(option);
+        });
+    } catch (error) {
+        showCYReassignmentError('Error loading CY allocations: ' + error.message);
+    }
+}
+
+async function reassignContainerCY() {
+    const newAllocationId = document.getElementById('cyAllocationSelect').value;
+    
+    if (!newAllocationId) {
+        showCYReassignmentError('Please select a CY location');
+        return;
+    }
+    
+    if (parseInt(newAllocationId) === currentAllocationId) {
+        showCYReassignmentError('Please select a different CY location');
+        return;
+    }
+    
+    // Show spinner and disable buttons
+    document.getElementById('cyReassignmentSpinner').classList.remove('hidden');
+    document.getElementById('cyReassignButton').disabled = true;
+    document.getElementById('cyCancelButton').disabled = true;
+    document.getElementById('cyReassignmentError').classList.add('hidden');
+    
+    try {
+        const response = await fetch(`/api/containers/${currentContainerId}/reallocate`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                new_allocation_id: parseInt(newAllocationId)
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            // Show success message
+            showSuccessMessage(`Container ${currentContainerNumber} successfully reassigned to new CY location`);
+            closeCYReassignmentModal();
+            
+            // Reload page to show updated allocation
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showCYReassignmentError(result.message || 'Error reassigning container');
+            // Hide spinner and re-enable buttons
+            document.getElementById('cyReassignmentSpinner').classList.add('hidden');
+            document.getElementById('cyReassignButton').disabled = false;
+            document.getElementById('cyCancelButton').disabled = false;
+        }
+    } catch (error) {
+        showCYReassignmentError('Error reassigning container: ' + error.message);
+        // Hide spinner and re-enable buttons
+        document.getElementById('cyReassignmentSpinner').classList.add('hidden');
+        document.getElementById('cyReassignButton').disabled = false;
+        document.getElementById('cyCancelButton').disabled = false;
+    }
+}
+
+function showCYReassignmentError(message) {
+    const errorDiv = document.getElementById('cyReassignmentError');
+    errorDiv.querySelector('span:last-child').textContent = message;
+    errorDiv.classList.remove('hidden');
+}
+
+function showSuccessMessage(message) {
+    // Create a toast notification
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-top toast-end';
+    toast.innerHTML = `
+        <div class="alert alert-success">
+            <span class="icon-[tabler--circle-check] size-5"></span>
+            <span>${message}</span>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
 }
 </script>
+
+{# eDO Container Selection Module #}
+<script src="{{ asset('js/edo-container-selection.js') }}?v=5"></script>
+
+{# Tab Switching Functionality #}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get all tab buttons and content panels
+        const tabButtons = document.querySelectorAll('[role="tab"]');
+        const tabPanels = document.querySelectorAll('[role="tabpanel"]');
+        
+        // Add click event to each tab button
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-tab');
+                
+                // Remove active state from all tabs
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.setAttribute('aria-selected', 'false');
+                });
+                
+                // Hide all tab panels
+                tabPanels.forEach(panel => {
+                    panel.classList.add('hidden');
+                });
+                
+                // Activate clicked tab
+                this.classList.add('active');
+                this.setAttribute('aria-selected', 'true');
+                
+                // Show corresponding panel
+                const targetPanel = document.querySelector(targetId);
+                if (targetPanel) {
+                    targetPanel.classList.remove('hidden');
+                }
+            });
+        });
+    });
+</script>
+
+{# Show flash messages as toast notifications #}
+<script>
+    // Wait for both DOM and Notyf to be ready
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('[NOA Detail] Checking for flash messages...');
+        
+        // Wait a bit for Notyf to initialize
+        setTimeout(function() {
+            {% for message in app.flashes('success') %}
+                console.log('[NOA Detail] Success message:', '{{ message|e('js') }}');
+                if (window.notyf) {
+                    notyf.success('{{ message|e('js') }}');
+                } else {
+                    console.error('[NOA Detail] Notyf not initialized!');
+                }
+            {% endfor %}
+            
+            {% for message in app.flashes('error') %}
+                console.log('[NOA Detail] Error message:', '{{ message|e('js') }}');
+                if (window.notyf) {
+                    notyf.error('{{ message|e('js') }}');
+                } else {
+                    console.error('[NOA Detail] Notyf not initialized!');
+                }
+            {% endfor %}
+            
+            {% for message in app.flashes('warning') %}
+                console.log('[NOA Detail] Warning message:', '{{ message|e('js') }}');
+                if (window.notyf) {
+                    notyf.open({
+                        type: 'warning',
+                        message: '{{ message|e('js') }}',
+                        background: '#f59e0b',
+                        icon: false
+                    });
+                } else {
+                    console.error('[NOA Detail] Notyf not initialized!');
+                }
+            {% endfor %}
+            
+            console.log('[NOA Detail] Flash message check complete');
+        }, 100);
+    });
+</script>
+
 {% endblock %}

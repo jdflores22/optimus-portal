@@ -21,7 +21,6 @@ class EDOExpirationService implements EDOExpirationServiceInterface
         private ElectronicDeliveryOrderRepository $edoRepository,
         private ExpirationCalculator $expirationCalculator,
         private EDONotificationServiceInterface $notificationService,
-        private EDOAuditServiceInterface $auditService,
         private LoggerInterface $logger
     ) {
     }
@@ -70,6 +69,9 @@ class EDOExpirationService implements EDOExpirationServiceInterface
     public function markAsExpired(ElectronicDeliveryOrder $edo): void
     {
         try {
+            // Check if already expired - don't send duplicate notifications
+            $wasAlreadyExpired = $edo->getStatus() === EDOStatus::EXPIRED;
+            
             // Update status to EXPIRED
             $edo->setStatus(EDOStatus::EXPIRED);
             
@@ -80,18 +82,26 @@ class EDOExpirationService implements EDOExpirationServiceInterface
             // Persist changes
             $this->entityManager->flush();
             
-            // Log expiration event
-            $this->auditService->logExpiration($edo);
-            
-            // Send expiration notifications
-            $this->notificationService->notifyExpiration($edo);
-            
-            $this->logger->info('eDO marked as expired', [
-                'edoId' => $edo->getId(),
-                'edoNumber' => $edo->getEdoNumber(),
-                'expiredDays' => $expiredDays,
-                'containerNumber' => $edo->getContainer()->getContainerNumber()
-            ]);
+            // Only send notifications if status actually changed
+            if (!$wasAlreadyExpired) {
+                // TODO: Re-implement audit logging with general AuditService
+                // Log expiration event
+                
+                // Send expiration notifications
+                $this->notificationService->notifyExpiration($edo);
+                
+                $this->logger->info('eDO marked as expired', [
+                    'edoId' => $edo->getId(),
+                    'edoNumber' => $edo->getEdoNumber(),
+                    'expiredDays' => $expiredDays,
+                    'containerNumber' => $edo->getContainer()->getContainerNumber()
+                ]);
+            } else {
+                $this->logger->debug('eDO already expired, skipping notification', [
+                    'edoId' => $edo->getId(),
+                    'edoNumber' => $edo->getEdoNumber()
+                ]);
+            }
         } catch (\Exception $e) {
             $this->logger->error('Failed to mark eDO as expired', [
                 'edoId' => $edo->getId(),
@@ -167,6 +177,61 @@ class EDOExpirationService implements EDOExpirationServiceInterface
                 'error' => $e->getMessage()
             ]);
             throw $e;
+        }
+    }
+
+    /**
+     * Detect expired eDOs that need notification
+     * 
+     * @return array<ElectronicDeliveryOrder> Array of expired eDOs
+     */
+    public function detectExpiredEDOs(): array
+    {
+        try {
+            $this->logger->info('Detecting expired eDOs');
+
+            // Find all eDOs that are past their expiration date
+            $expiredEDOs = $this->edoRepository->findExpiredEDOs();
+
+            $this->logger->info('Expired eDOs detected', [
+                'count' => count($expiredEDOs)
+            ]);
+
+            return $expiredEDOs;
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to detect expired eDOs', [
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Send expiration notifications to brokers and consignees
+     * 
+     * @param ElectronicDeliveryOrder $edo
+     * @return void
+     */
+    public function sendExpirationNotifications(ElectronicDeliveryOrder $edo): void
+    {
+        try {
+            $this->logger->info('Sending expiration notifications', [
+                'edoId' => $edo->getId(),
+                'edoNumber' => $edo->getEdoNumber()
+            ]);
+
+            // Delegate to notification service
+            $this->notificationService->notifyExpiration($edo);
+
+            $this->logger->info('Expiration notifications sent successfully', [
+                'edoId' => $edo->getId()
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to send expiration notifications', [
+                'edoId' => $edo->getId(),
+                'error' => $e->getMessage()
+            ]);
+            // Don't throw - notification failure shouldn't break the workflow
         }
     }
 }

@@ -139,15 +139,32 @@
                 <!-- Payment History -->
                 <div class="card bg-base-100 shadow-sm">
                     <div class="card-body p-6">
-                        <h3 class="text-lg font-semibold text-base-content mb-4">Payment History</h3>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-base-content">Payment History</h3>
+                            {% if manifest.payments|length > 0 %}
+                                <a href="{{ path('broker_payment_history', {id: manifest.id}) }}" 
+                                   class="btn btn-sm btn-outline btn-primary gap-2">
+                                    <span class="icon-[tabler--history] size-4"></span>
+                                    View Full History
+                                </a>
+                            {% endif %}
+                        </div>
                         {% if manifest.payments|length > 0 %}
                             <div class="space-y-3">
                                 {% for payment in manifest.payments %}
                                     <div class="border border-base-300 rounded-lg p-4">
                                         <div class="flex items-center justify-between mb-2">
-                                            <span class="text-sm font-medium text-base-content">
-                                                {{ payment.paymentType.value == 'manifest_access' ? 'Manifest Access Payment' : 'Final Payment' }}
-                                            </span>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-sm font-medium text-base-content">
+                                                    {{ payment.paymentType.value == 'manifest_access' ? 'Manifest Access Payment' : 'Final Payment' }}
+                                                </span>
+                                                {% include 'components/payment_version_badge.html.twig' with {
+                                                    version: payment.version,
+                                                    status: payment.status.value,
+                                                    submittedAt: payment.createdAt,
+                                                    size: 'sm'
+                                                } %}
+                                            </div>
                                             {% if payment.status.value == 'verified' %}
                                                 <span class="badge badge-success badge-sm">
                                                     Verified
@@ -168,6 +185,15 @@
                                         <div class="text-xs text-base-content/50 mt-1">
                                             Submitted: {{ payment.createdAt|date('M j, Y g:i A') }}
                                         </div>
+                                        {% if payment.status.value == 'rejected' and payment.rejectionReason %}
+                                            <div class="alert alert-error py-2 px-3 text-xs mt-2">
+                                                <span class="icon-[tabler--alert-circle] size-4"></span>
+                                                <div>
+                                                    <div class="font-semibold">Rejection Reason:</div>
+                                                    <div>{{ payment.rejectionReason }}</div>
+                                                </div>
+                                            </div>
+                                        {% endif %}
                                     </div>
                                 {% endfor %}
                             </div>

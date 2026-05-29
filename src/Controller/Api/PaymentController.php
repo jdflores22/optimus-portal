@@ -88,13 +88,81 @@ class PaymentController extends BaseApiController
                 'manifestId' => $payment->getManifest()->getId(),
                 'paymentType' => $payment->getPaymentType()->value,
                 'amount' => $payment->getAmount(),
-                'status' => $payment->getStatus()->value
+                'status' => $payment->getStatus()->value,
+                'version' => $payment->getVersion(),
+                'isInitialVersion' => $payment->isInitialVersion(),
+                'previousPaymentId' => $payment->getPreviousPayment()?->getId()
             ], 201);
 
         } catch (\InvalidArgumentException $e) {
-            return $this->errorResponse($e->getMessage(), 400);
+            return $this->errorResponse('Failed to submit payment (initial version): ' . $e->getMessage(), 400);
         } catch (\Exception $e) {
-            return $this->errorResponse('Failed to submit payment: ' . $e->getMessage(), 500);
+            return $this->errorResponse('Failed to submit payment (initial version): ' . $e->getMessage(), 500);
+        }
+    }
+
+    #[Route('/payments/{id}/resubmit', name: 'resubmit_rejected', methods: ['POST'])]
+    public function resubmitRejectedPayment(int $id, Request $request): JsonResponse
+    {
+        $user = $this->requireAuthentication($request);
+        if ($user instanceof JsonResponse) {
+            return $user;
+        }
+
+        // Apply rate limiting
+        $limiter = $this->paymentSubmissionLimiter->create($user->getId());
+        if (false === $limiter->consume(1)->isAccepted()) {
+            return $this->errorResponse('Too many payment submission requests. Please try again later.', 429);
+        }
+
+        // Only Broker can resubmit payment
+        $roleCheck = $this->requireRole($user, [UserRole::BROKER->value]);
+        if ($roleCheck) {
+            return $roleCheck;
+        }
+
+        try {
+            $receipt = $request->files->get('receipt');
+            $amount = $request->request->get('amount');
+
+            // Validate file upload
+            $fileValidation = $this->validateFileUpload(
+                $receipt,
+                ['application/pdf', 'image/jpeg', 'image/png'],
+                5242880 // 5MB
+            );
+            if ($fileValidation) {
+                return $fileValidation;
+            }
+
+            // Validate amount
+            if (!$amount) {
+                return $this->errorResponse('Amount is required');
+            }
+
+            $numValidation = $this->validateNumeric($amount, 'amount', 0.01);
+            if ($numValidation) {
+                return $numValidation;
+            }
+
+            $payment = $this->paymentService->resubmitRejectedPayment($id, (float) $amount, $receipt, $user);
+
+            return $this->jsonResponse([
+                'paymentId' => $payment->getId(),
+                'manifestId' => $payment->getManifest()->getId(),
+                'paymentType' => $payment->getPaymentType()->value,
+                'amount' => $payment->getAmount(),
+                'status' => $payment->getStatus()->value,
+                'version' => $payment->getVersion(),
+                'isInitialVersion' => $payment->isInitialVersion(),
+                'previousPaymentId' => $payment->getPreviousPayment()?->getId(),
+                'message' => sprintf('Payment resubmitted successfully as version %d', $payment->getVersion())
+            ], 201);
+
+        } catch (\InvalidArgumentException $e) {
+            return $this->errorResponse('Failed to resubmit payment: ' . $e->getMessage(), 400);
+        } catch (\Exception $e) {
+            return $this->errorResponse('Failed to resubmit payment: ' . $e->getMessage(), 500);
         }
     }
 
@@ -125,7 +193,10 @@ class PaymentController extends BaseApiController
                     'submittedBy' => $payment->getSubmittedBy()->getFullName(),
                     'submittedAt' => $payment->getCreatedAt()->format('Y-m-d H:i:s'),
                     'receiptUrl' => $payment->getReceiptFilePath(),
-                    'billingUrl' => $billing ? $billing->getPdfPath() : null
+                    'billingUrl' => $billing ? $billing->getPdfPath() : null,
+                    'version' => $payment->getVersion(),
+                    'isResubmission' => $payment->isResubmission(),
+                    'previousPaymentId' => $payment->getPreviousPayment()?->getId()
                 ];
             }, $payments);
 
@@ -185,23 +256,32 @@ class PaymentController extends BaseApiController
                 'validatedBy' => $user->getFullName(),
                 'validatedAt' => (new \DateTime())->format('Y-m-d H:i:s'),
                 'manifestState' => $manifest->getWorkflowState()->value,
+                'version' => $payment->getVersion(),
+                'isResubmission' => $payment->isResubmission()
             ];
 
             // If approved, include official receipt information
             if ($approved) {
                 $response['officialReceiptGenerated'] = $payment->getOfficialReceiptPath() !== null;
                 $response['officialReceiptPath'] = $payment->getOfficialReceiptPath();
-                $response['message'] = 'Payment approved successfully. Official receipt has been generated.';
+                $response['message'] = sprintf(
+                    'Payment version %d approved successfully. Official receipt has been generated.',
+                    $payment->getVersion()
+                );
                 $response['nextStep'] = 'SL_STAFF will now generate the eDO with expiration date.';
             } else {
-                $response['message'] = 'Payment rejected. Reason: ' . $reason;
+                $response['message'] = sprintf(
+                    'Payment version %d rejected. Reason: %s',
+                    $payment->getVersion(),
+                    $reason
+                );
                 $response['rejectionReason'] = $reason;
             }
 
             return $this->jsonResponse($response);
 
         } catch (\InvalidArgumentException $e) {
-            return $this->errorResponse($e->getMessage(), 400);
+            return $this->errorResponse('Failed to validate payment: ' . $e->getMessage(), 400);
         } catch (\Exception $e) {
             return $this->errorResponse('Failed to validate payment: ' . $e->getMessage(), 500);
         }
@@ -228,12 +308,18 @@ class PaymentController extends BaseApiController
             $isValidator = in_array($userRole, [UserRole::SYSTEM_ADMIN->value, UserRole::ACCOUNTING->value, UserRole::SL_STAFF->value]);
 
             if (!$isSubmitter && !$isValidator) {
-                return $this->errorResponse('Access denied', 403);
+                return $this->errorResponse(
+                    sprintf('Access denied to payment version %d receipt', $payment->getVersion()),
+                    403
+                );
             }
 
             $filePath = $payment->getReceiptFilePath();
             if (!$filePath) {
-                return $this->errorResponse('Receipt file path not set for this payment', 404);
+                return $this->errorResponse(
+                    sprintf('Receipt file path not set for payment version %d', $payment->getVersion()),
+                    404
+                );
             }
             
             // Fix: Remove /uploads/ prefix if it exists (legacy data issue)
@@ -244,7 +330,10 @@ class PaymentController extends BaseApiController
             }
             
             if (!$this->fileStorage->fileExists($filePath)) {
-                return $this->errorResponse('Receipt file not found at path: ' . $filePath, 404);
+                return $this->errorResponse(
+                    sprintf('Receipt file not found for payment version %d at path: %s', $payment->getVersion(), $filePath),
+                    404
+                );
             }
 
             // Log download
@@ -257,7 +346,10 @@ class PaymentController extends BaseApiController
             $fullPath = $this->fileStorage->getFullPath($filePath);
             
             if (!file_exists($fullPath)) {
-                return $this->errorResponse('Physical file not found at: ' . $fullPath, 404);
+                return $this->errorResponse(
+                    sprintf('Physical file not found for payment version %d at: %s', $payment->getVersion(), $fullPath),
+                    404
+                );
             }
             
             $response = new BinaryFileResponse($fullPath);
@@ -295,6 +387,105 @@ class PaymentController extends BaseApiController
 
         } catch (\Exception $e) {
             return $this->errorResponse('Failed to download receipt: ' . $e->getMessage(), 500);
+        }
+    }
+
+    #[Route('/manifests/{id}/payments/manifest-access', name: 'submit_manifest_access', methods: ['POST'])]
+    public function submitManifestAccessPayment(int $id, Request $request): JsonResponse
+    {
+        $user = $this->requireAuthentication($request);
+        if ($user instanceof JsonResponse) {
+            return $user;
+        }
+
+        // Apply rate limiting
+        $limiter = $this->paymentSubmissionLimiter->create($user->getId());
+        if (false === $limiter->consume(1)->isAccepted()) {
+            return $this->errorResponse('Too many payment submission requests. Please try again later.', 429);
+        }
+
+        // Only Broker can submit manifest access payment
+        $roleCheck = $this->requireRole($user, [UserRole::BROKER->value]);
+        if ($roleCheck) {
+            return $roleCheck;
+        }
+
+        try {
+            $receipt = $request->files->get('receipt');
+
+            // Validate file upload
+            $fileValidation = $this->validateFileUpload(
+                $receipt,
+                ['application/pdf', 'image/jpeg', 'image/png'],
+                5242880 // 5MB
+            );
+            if ($fileValidation) {
+                return $fileValidation;
+            }
+
+            $edoPayment = $this->edoPaymentService->submitEDOAccessPayment($id, $receipt, $user);
+
+            return $this->jsonResponse([
+                'paymentId' => $edoPayment->getId(),
+                'manifestId' => $edoPayment->getManifest()->getId(),
+                'amount' => $edoPayment->getAmount(),
+                'status' => $edoPayment->getStatus()->value
+            ], 201);
+
+        } catch (\InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), 400);
+        } catch (\Exception $e) {
+            return $this->errorResponse('Failed to submit payment: ' . $e->getMessage(), 500);
+        }
+    }
+
+    #[Route('/edo-payments/{id}/resubmit', name: 'resubmit_rejected_edo_payment', methods: ['POST'])]
+    public function resubmitRejectedEDOPayment(int $id, Request $request): JsonResponse
+    {
+        $user = $this->requireAuthentication($request);
+        if ($user instanceof JsonResponse) {
+            return $user;
+        }
+
+        // Apply rate limiting
+        $limiter = $this->paymentSubmissionLimiter->create($user->getId());
+        if (false === $limiter->consume(1)->isAccepted()) {
+            return $this->errorResponse('Too many payment submission requests. Please try again later.', 429);
+        }
+
+        // Only Broker can resubmit payment
+        $roleCheck = $this->requireRole($user, [UserRole::BROKER->value]);
+        if ($roleCheck) {
+            return $roleCheck;
+        }
+
+        try {
+            $receipt = $request->files->get('receipt');
+
+            // Validate file upload
+            $fileValidation = $this->validateFileUpload(
+                $receipt,
+                ['application/pdf', 'image/jpeg', 'image/png'],
+                5242880 // 5MB
+            );
+            if ($fileValidation) {
+                return $fileValidation;
+            }
+
+            $edoPayment = $this->edoPaymentService->resubmitRejectedPayment($id, $receipt, $user);
+
+            return $this->jsonResponse([
+                'paymentId' => $edoPayment->getId(),
+                'manifestId' => $edoPayment->getManifest()->getId(),
+                'amount' => $edoPayment->getAmount(),
+                'status' => $edoPayment->getStatus()->value,
+                'message' => 'Payment resubmitted successfully'
+            ], 201);
+
+        } catch (\InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), 400);
+        } catch (\Exception $e) {
+            return $this->errorResponse('Failed to resubmit payment: ' . $e->getMessage(), 500);
         }
     }
 

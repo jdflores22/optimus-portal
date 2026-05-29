@@ -40,6 +40,19 @@ class BrokerManifestController extends AbstractController
             return $this->redirectToRoute('broker_workspace_selector');
         }
         
+        // Get rejected payments count for alert banner
+        $rejectedPaymentsCount = $this->entityManager->getRepository(\App\Entity\Payment::class)
+            ->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->where('p.submittedBy = :broker')
+            ->andWhere('p.status = :status')
+            ->andWhere('p.paymentType = :type')
+            ->setParameter('broker', $user)
+            ->setParameter('status', \App\Entity\Enum\PaymentStatus::REJECTED)
+            ->setParameter('type', \App\Entity\Enum\PaymentType::FINAL_PAYMENT)
+            ->getQuery()
+            ->getSingleScalarResult();
+        
         // Get filter parameters
         $tab = $request->query->get('tab', 'active'); // active, completed, all
         $status = $request->query->get('status');
@@ -201,6 +214,7 @@ class BrokerManifestController extends AbstractController
             'workflowStates' => WorkflowState::cases(),
             'activeCount' => $activeCount,
             'completedCount' => $completedCount,
+            'rejectedPaymentsCount' => $rejectedPaymentsCount,
         ]);
     }
 
@@ -259,9 +273,133 @@ class BrokerManifestController extends AbstractController
             }
         }
 
+        // Fetch audit logs for this manifest and all related entities (comprehensive)
+        $auditLogs = [];
+        
+        // 1. Get Manifest audit logs
+        $manifestLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
+            ->createQueryBuilder('a')
+            ->where('a.entityType = :entityType')
+            ->andWhere('a.entityId = :entityId')
+            ->setParameter('entityType', 'Manifest')
+            ->setParameter('entityId', $manifest->getId())
+            ->getQuery()
+            ->getResult();
+        $auditLogs = array_merge($auditLogs, $manifestLogs);
+        
+        // 2. Get NOA audit logs if NOA exists
+        if ($manifest->getNoa()) {
+            $noaLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
+                ->createQueryBuilder('a')
+                ->where('a.entityType = :entityType')
+                ->andWhere('a.entityId = :entityId')
+                ->setParameter('entityType', 'NOA')
+                ->setParameter('entityId', $manifest->getNoa()->getId())
+                ->getQuery()
+                ->getResult();
+            $auditLogs = array_merge($auditLogs, $noaLogs);
+            
+            // 3. Get Container audit logs
+            $containers = $manifest->getNoa()->getContainers();
+            if ($containers && count($containers) > 0) {
+                foreach ($containers as $container) {
+                    $containerLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
+                        ->createQueryBuilder('a')
+                        ->where('a.entityType = :entityType')
+                        ->andWhere('a.entityId = :entityId')
+                        ->setParameter('entityType', 'Container')
+                        ->setParameter('entityId', $container->getId())
+                        ->getQuery()
+                        ->getResult();
+                    $auditLogs = array_merge($auditLogs, $containerLogs);
+                }
+            }
+        }
+        
+        // 4. Get Payment audit logs
+        $payments = $manifest->getPayments();
+        if ($payments && count($payments) > 0) {
+            foreach ($payments as $payment) {
+                $paymentLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
+                    ->createQueryBuilder('a')
+                    ->where('a.entityType = :entityType')
+                    ->andWhere('a.entityId = :entityId')
+                    ->setParameter('entityType', 'Payment')
+                    ->setParameter('entityId', $payment->getId())
+                    ->getQuery()
+                    ->getResult();
+                $auditLogs = array_merge($auditLogs, $paymentLogs);
+            }
+        }
+        
+        // 5. Get EDO audit logs
+        $edos = $manifest->getEdos();
+        if ($edos && count($edos) > 0) {
+            foreach ($edos as $edo) {
+                $edoLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
+                    ->createQueryBuilder('a')
+                    ->where('a.entityType = :entityType')
+                    ->andWhere('a.entityId = :entityId')
+                    ->setParameter('entityType', 'ElectronicDeliveryOrder')
+                    ->setParameter('entityId', $edo->getId())
+                    ->getQuery()
+                    ->getResult();
+                $auditLogs = array_merge($auditLogs, $edoLogs);
+            }
+        }
+        
+        // 6. Get EDO Payment audit logs
+        $edoPayments = $manifest->getEdoPayments();
+        if ($edoPayments && count($edoPayments) > 0) {
+            foreach ($edoPayments as $edoPayment) {
+                $edoPaymentLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
+                    ->createQueryBuilder('a')
+                    ->where('a.entityType = :entityType')
+                    ->andWhere('a.entityId = :entityId')
+                    ->setParameter('entityType', 'EDOPayment')
+                    ->setParameter('entityId', $edoPayment->getId())
+                    ->getQuery()
+                    ->getResult();
+                $auditLogs = array_merge($auditLogs, $edoPaymentLogs);
+            }
+        }
+        
+        // 7. Get Billing audit logs if billing exists
+        if ($manifest->getBilling()) {
+            $billingLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
+                ->createQueryBuilder('a')
+                ->where('a.entityType = :entityType')
+                ->andWhere('a.entityId = :entityId')
+                ->setParameter('entityType', 'Billing')
+                ->setParameter('entityId', $manifest->getBilling()->getId())
+                ->getQuery()
+                ->getResult();
+            $auditLogs = array_merge($auditLogs, $billingLogs);
+        }
+        
+        // Sort all logs by timestamp descending (newest first)
+        usort($auditLogs, function($a, $b) {
+            return $b->getTimestamp() <=> $a->getTimestamp();
+        });
+
+        // Also fetch activity logs for backward compatibility
+        $activityLogs = $this->entityManager->getRepository(\App\Entity\ActivityLog::class)
+            ->createQueryBuilder('a')
+            ->leftJoin('a.user', 'u')
+            ->addSelect('u')
+            ->where('a.entityType = :entityType')
+            ->andWhere('a.entityId = :entityId')
+            ->setParameter('entityType', 'Manifest')
+            ->setParameter('entityId', $manifest->getId())
+            ->orderBy('a.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+
         return $this->render('broker/manifest/detail.html.twig', [
             'manifest' => $manifest,
             'containerPaymentStatus' => $containerPaymentStatus,
+            'activityLogs' => $activityLogs,
+            'auditLogs' => $auditLogs,
         ]);
     }
 
@@ -361,9 +499,16 @@ class BrokerManifestController extends AbstractController
             return $this->redirectToRoute('broker_manifest_detail', ['id' => $id]);
         }
 
+        // Check for rejected payment
+        $rejectedPayment = null;
+        if ($accessPayment && $accessPayment->getStatus() === \App\Entity\Enum\PaymentStatus::REJECTED) {
+            $rejectedPayment = $accessPayment;
+        }
+
         return $this->render('broker/manifest/payment.html.twig', [
             'manifest' => $manifest,
             'existingPayment' => $accessPayment,
+            'rejectedPayment' => $rejectedPayment,
         ]);
     }
 
@@ -430,9 +575,26 @@ class BrokerManifestController extends AbstractController
             return $this->redirectToRoute('broker_manifest_detail', ['id' => $id]);
         }
 
+        // Check for rejected payment
+        $rejectedPayment = $this->entityManager->getRepository(\App\Entity\Payment::class)
+            ->createQueryBuilder('p')
+            ->where('p.manifest = :manifest')
+            ->andWhere('p.paymentType = :type')
+            ->andWhere('p.status = :status')
+            ->andWhere('p.submittedBy = :user')
+            ->setParameter('manifest', $manifest)
+            ->setParameter('type', \App\Entity\Enum\PaymentType::FINAL_PAYMENT)
+            ->setParameter('status', \App\Entity\Enum\PaymentStatus::REJECTED)
+            ->setParameter('user', $user)
+            ->orderBy('p.validatedAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
         return $this->render('broker/manifest/final_payment.html.twig', [
             'manifest' => $manifest,
             'billing' => $billing,
+            'rejectedPayment' => $rejectedPayment,
         ]);
     }
 

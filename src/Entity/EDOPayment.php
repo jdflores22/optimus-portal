@@ -61,6 +61,13 @@ class EDOPayment
     #[ORM\Column(type: 'datetime')]
     private \DateTimeInterface $createdAt;
 
+    #[ORM\Column(type: 'integer', options: ['default' => 1])]
+    private int $version = 1;
+
+    #[ORM\ManyToOne(targetEntity: EDOPayment::class)]
+    #[ORM\JoinColumn(name: 'previous_payment_id', referencedColumnName: 'id', onDelete: 'SET NULL')]
+    private ?EDOPayment $previousPayment = null;
+
     public function __construct()
     {
         $this->status = PaymentStatus::PENDING_VALIDATION;
@@ -212,5 +219,55 @@ class EDOPayment
     {
         $this->officialReceiptPath = $officialReceiptPath;
         return $this;
+    }
+
+    public function getVersion(): int
+    {
+        return $this->version;
+    }
+
+    public function setVersion(int $version): self
+    {
+        $this->version = $version;
+        return $this;
+    }
+
+    public function getPreviousPayment(): ?EDOPayment
+    {
+        return $this->previousPayment;
+    }
+
+    public function setPreviousPayment(?EDOPayment $previousPayment): self
+    {
+        $this->previousPayment = $previousPayment;
+        return $this;
+    }
+
+    public function isInitialVersion(): bool
+    {
+        return $this->version === 1;
+    }
+
+    public function isResubmission(): bool
+    {
+        return $this->previousPayment !== null;
+    }
+
+    public function getPaymentChain(): array
+    {
+        $chain = [];
+        $current = $this;
+
+        // Walk backwards to find the root (version 1)
+        while ($current->getPreviousPayment() !== null) {
+            $current = $current->getPreviousPayment();
+        }
+
+        // Build forward chain starting from root
+        $chain[] = $current;
+
+        // Note: This method only returns the chain up to the current payment
+        // To get subsequent versions, use EDOPaymentRepository methods
+        return $chain;
     }
 }

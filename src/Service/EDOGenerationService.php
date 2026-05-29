@@ -18,7 +18,6 @@ class EDOGenerationService implements EDOGenerationServiceInterface
     public function __construct(
         private EntityManagerInterface $entityManager,
         private EDONumberGenerator $edoNumberGenerator,
-        private EDOAuditServiceInterface $auditService,
         private ConfigurationService $configurationService,
         private PaymentFeeConfigurationServiceInterface $paymentFeeConfigurationService,
         private EDODocumentGenerator $edoDocumentGenerator,
@@ -52,11 +51,8 @@ class EDOGenerationService implements EDOGenerationServiceInterface
                 $edo = $this->generateEDOForContainer($container, $manifest);
                 $edos[] = $edo;
                 
-                // Log eDO creation (use manifest creator as the user)
-                $creator = $manifest->getCreatedBy();
-                if ($creator) {
-                    $this->auditService->logEDOCreation($edo, $creator);
-                }
+                // TODO: Re-implement audit logging with general AuditService
+                // Log eDO creation
             }
 
             $this->entityManager->flush();
