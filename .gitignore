@@ -59,3 +59,62 @@ package-lock.json
 /.env.prod.template
 /.env.test
 ###< Environment Files ###
+ 
+# Firebase credentials 
+config/firebase/service-account.json 
+
+###> Test & Debug Scripts ###
+test_*.php
+check_*.php
+verify_*.php
+fix_*.php
+cleanup_*.php
+remove_*.php
+update_*.php
+migrate_*.php
+run_*.php
+*_test.php
+*.bat
+###< Test & Debug Scripts ###
+
+###> Backup & Archive Files ###
+backup_*/
+*.zip
+*.tar.gz
+*.tar
+*.rar
+*.7z
+###< Backup & Archive Files ###
+
+###> Temporary & Build Files ###
+*.log
+*.tmp
+*.cache
+*.bak
+*.old
+*_backup.*
+*_old.*
+###< Temporary & Build Files ###
+
+###> Deployment Scripts ###
+deploy-*.ps1
+deploy-*.sh
+*-upload.zip
+###< Deployment Scripts ###
+
+###> SSH & Config Files ###
+*_ssh_config.txt
+###< SSH & Config Files ###
+
+###> Direct Upload Scripts ###
+index_direct_upload.php
+index_hostinger.php
+###< Direct Upload Scripts ###
+
+###> Test Response Files ###
+*.json
+!composer.json
+!package.json
+*.txt
+!.gitignore
+###< Test Response Files ###
