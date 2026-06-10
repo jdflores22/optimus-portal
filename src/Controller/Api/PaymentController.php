@@ -88,6 +88,7 @@ class PaymentController extends BaseApiController
                 'manifestId' => $payment->getManifest()->getId(),
                 'paymentType' => $payment->getPaymentType()->value,
                 'amount' => $payment->getAmount(),
+                'currency' => $payment->getCurrency(),
                 'status' => $payment->getStatus()->value,
                 'version' => $payment->getVersion(),
                 'isInitialVersion' => $payment->isInitialVersion(),

@@ -2,7 +2,9 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Service\EmailVerificationService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -11,7 +13,8 @@ use Symfony\Component\Routing\Attribute\Route;
 class EmailVerificationController extends AbstractController
 {
     public function __construct(
-        private EmailVerificationService $emailVerificationService
+        private EmailVerificationService $emailVerificationService,
+        private EntityManagerInterface $entityManager
     ) {
     }
 
@@ -48,7 +51,7 @@ class EmailVerificationController extends AbstractController
             }
 
             // Find user by email
-            $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)
+            $user = $this->entityManager->getRepository(User::class)
                 ->findOneBy(['email' => $email]);
 
             if (!$user) {

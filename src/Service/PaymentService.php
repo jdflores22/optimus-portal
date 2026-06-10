@@ -44,6 +44,9 @@ class PaymentService implements PaymentServiceInterface
             throw new \InvalidArgumentException('Billing not found for manifest');
         }
 
+        // Extract currency from billing (defaults to 'PHP' for legacy data)
+        $currency = $billing->getOriginalCurrency() ?? 'PHP';
+
         if (abs($amount - $billing->getTotalAmount()) > 0.01) {
             // Log discrepancy but allow submission
             $this->auditService->logAction(
@@ -55,7 +58,8 @@ class PaymentService implements PaymentServiceInterface
                     'manifest_id' => $manifestId,
                     'expected_amount' => $billing->getTotalAmount(),
                     'submitted_amount' => $amount,
-                    'discrepancy' => abs($amount - $billing->getTotalAmount())
+                    'discrepancy' => abs($amount - $billing->getTotalAmount()),
+                    'currency' => $currency
                 ]
             );
         }
@@ -75,6 +79,7 @@ class PaymentService implements PaymentServiceInterface
         $payment->setShippingLine($manifest->getShippingLine()); // Set shipping line from manifest
         $payment->setPaymentType(PaymentType::FINAL_PAYMENT);
         $payment->setAmount($amount);
+        $payment->setCurrency($currency); // Store currency from billing
         $payment->setReceiptFilePath($relativePath);
         $payment->setSubmittedBy($broker);
         $payment->setStatus(PaymentStatus::PENDING_VALIDATION);
@@ -102,6 +107,7 @@ class PaymentService implements PaymentServiceInterface
             [
                 'payment_type' => PaymentType::FINAL_PAYMENT->value,
                 'amount' => $amount,
+                'currency' => $currency,
                 'manifest_id' => $manifestId,
                 'version' => 1,
                 'is_initial_version' => true
@@ -133,7 +139,7 @@ class PaymentService implements PaymentServiceInterface
         }
 
         if ($approved) {
-            $payment->verify($accounting);
+            $payment->verify($accounting, $reason); // Pass approval notes/remarks
             
             // Update manifest state to payment_verified (NOT edo_generated)
             $manifest = $payment->getManifest();
@@ -268,6 +274,13 @@ class PaymentService implements PaymentServiceInterface
             throw new \InvalidArgumentException('Manifest must be in billing_generated state');
         }
 
+        // Extract currency from billing (preserve currency through resubmissions)
+        $billing = $manifest->getBilling();
+        if (!$billing) {
+            throw new \InvalidArgumentException('Billing not found for manifest');
+        }
+        $currency = $billing->getOriginalCurrency() ?? 'PHP';
+
         // Calculate next version number
         $nextVersion = $oldPayment->getVersion() + 1;
 
@@ -287,6 +300,7 @@ class PaymentService implements PaymentServiceInterface
         $payment->setShippingLine($manifest->getShippingLine());
         $payment->setPaymentType(PaymentType::FINAL_PAYMENT);
         $payment->setAmount($amount);
+        $payment->setCurrency($currency); // Store currency from billing
         $payment->setReceiptFilePath($relativePath);
         $payment->setSubmittedBy($broker);
         $payment->setStatus(PaymentStatus::PENDING_VALIDATION);
@@ -314,6 +328,7 @@ class PaymentService implements PaymentServiceInterface
             [
                 'payment_type' => PaymentType::FINAL_PAYMENT->value,
                 'amount' => $amount,
+                'currency' => $currency,
                 'manifest_id' => $manifest->getId(),
                 'version' => $nextVersion,
                 'previous_version' => $oldPayment->getVersion(),

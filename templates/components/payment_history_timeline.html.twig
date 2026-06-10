@@ -99,7 +99,7 @@
                                 {% endif %}
                             </div>
                             <div class="text-xs text-base-content/60">
-                                ₱{{ payment.amount|number_format(2) }} • {{ payment.createdAt|date('M d, Y H:i') }}
+                                {% if payment.currency == 'USD' %}${% else %}₱{% endif %}{{ payment.amount|number_format(2) }} • {{ payment.createdAt|date('M d, Y H:i') }}
                             </div>
                             
                             {# Rejection Reason #}
@@ -176,7 +176,7 @@
                                 <div class="grid grid-cols-2 gap-3 text-sm mb-3">
                                     <div>
                                         <div class="text-xs text-base-content/60 mb-1">Amount</div>
-                                        <div class="font-semibold">₱{{ payment.amount|number_format(2) }}</div>
+                                        <div class="font-semibold">{% if payment.currency == 'USD' %}${% else %}₱{% endif %}{{ payment.amount|number_format(2) }}</div>
                                     </div>
                                     <div>
                                         <div class="text-xs text-base-content/60 mb-1">Submitted by</div>

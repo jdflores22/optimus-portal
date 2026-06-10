@@ -18,7 +18,8 @@ framework:
 
         routing:
             # Route Symfony Mailer messages to async transport
-            'Symfony\Component\Mailer\Messenger\SendEmailMessage': async
+            # DISABLED: Send emails synchronously for immediate delivery
+            # 'Symfony\Component\Mailer\Messenger\SendEmailMessage': async
             
             # Route notification messages to async transport
             'App\Message\SendEmailNotificationMessage': async

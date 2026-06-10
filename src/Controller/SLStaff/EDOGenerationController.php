@@ -486,35 +486,46 @@ class EDOGenerationController extends AbstractController
     #[Route('/renewal-requests/{id}/generate', name: 'sl_staff_generate_from_renewal', methods: ['GET'])]
     public function generateFromRenewalForm(int $id): JsonResponse
     {
-        $user = $this->getUser();
+        try {
+            $user = $this->getUser();
 
-        // Fetch renewal request by ID
-        $renewalRequest = $this->renewalRequestRepository->find($id);
+            // Fetch renewal request by ID
+            $renewalRequest = $this->renewalRequestRepository->find($id);
 
-        if (!$renewalRequest) {
-            return $this->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'REQUEST_NOT_FOUND',
-                    'message' => 'Renewal request not found',
-                ],
-            ], 404);
-        }
+            if (!$renewalRequest) {
+                return $this->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'REQUEST_NOT_FOUND',
+                        'message' => 'Renewal request not found',
+                    ],
+                ], 404);
+            }
 
-        // Check GENERATE_EDO permission using voter
-        $this->denyAccessUnlessGranted('generate_edo', $renewalRequest);
+            // Check GENERATE_EDO permission using voter
+            try {
+                $this->denyAccessUnlessGranted('generate_edo', $renewalRequest);
+            } catch (\Exception $e) {
+                return $this->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'ACCESS_DENIED',
+                        'message' => 'You do not have permission to generate eDO from this renewal request',
+                    ],
+                ], 403);
+            }
 
-        // Fetch available container yard allocations
-        $shippingLine = $user->getShippingLineScope();
-        if (!$shippingLine) {
-            return $this->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'NO_SHIPPING_LINE',
-                    'message' => 'User has no shipping line scope',
-                ],
-            ], 400);
-        }
+            // Fetch available container yard allocations
+            $shippingLine = $user->getShippingLineScope();
+            if (!$shippingLine) {
+                return $this->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'NO_SHIPPING_LINE',
+                        'message' => 'User has no shipping line scope',
+                    ],
+                ], 400);
+            }
 
         $cyAllocations = $this->allocationRepository->findByShippingLineWithRelations($shippingLine);
 
@@ -611,6 +622,19 @@ class EDOGenerationController extends AbstractController
                 'cyAllocations' => $allocationsData,
             ],
         ]);
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            error_log("Error in generateFromRenewalForm: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            
+            return $this->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'INTERNAL_ERROR',
+                    'message' => 'An error occurred while loading renewal request details: ' . $e->getMessage(),
+                ],
+            ], 500);
+        }
     }
 
     /**

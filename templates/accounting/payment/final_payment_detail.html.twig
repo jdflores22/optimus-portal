@@ -123,12 +123,41 @@
                 <div class="card-body space-y-4">
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-base-content/60">Billing Amount</span>
-                        <span class="text-xl font-bold">₱{{ billing.totalAmount|number_format(2) }}</span>
+                        <div class="text-right">
+                            {% if billing.originalCurrency == 'USD' %}
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xl font-bold">${{ billing.totalAmountUsd|number_format(2) }}</span>
+                                    <span class="badge badge-warning badge-sm font-bold">USD</span>
+                                </div>
+                                {% if billing.exchangeRate %}
+                                    <div class="text-xs text-base-content/60">(₱{{ billing.totalAmount|number_format(2) }} PHP at rate {{ billing.exchangeRate }})</div>
+                                {% endif %}
+                            {% else %}
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xl font-bold">₱{{ billing.totalAmount|number_format(2) }}</span>
+                                    <span class="badge badge-info badge-sm font-bold">PHP</span>
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-base-content/60">Payment Amount</span>
-                        <span class="text-xl font-bold">₱{{ payment.amount|number_format(2) }}</span>
+                        <div class="text-right">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xl font-bold">{% if payment.currency == 'USD' %}${% else %}₱{% endif %}{{ payment.amount|number_format(2) }}</span>
+                                <span class="badge {% if payment.currency == 'USD' %}badge-warning{% else %}badge-info{% endif %} badge-sm font-bold">{{ payment.currency }}</span>
+                            </div>
+                        </div>
                     </div>
+                    
+                    {# Currency Mismatch Warning #}
+                    {% if billing.originalCurrency and payment.currency and billing.originalCurrency != payment.currency %}
+                        <div class="alert alert-error py-2 text-xs">
+                            <span class="icon-[tabler--alert-triangle] size-4"></span>
+                            <span><strong>CURRENCY MISMATCH:</strong> Billing is in {{ billing.originalCurrency }} but payment was submitted in {{ payment.currency }}. Verify with broker.</span>
+                        </div>
+                    {% endif %}
+                    
                     <div class="divider my-2"></div>
                     <div class="text-center p-4 rounded-lg {% if discrepancy > 0.01 %}bg-error/10{% else %}bg-success/10{% endif %}">
                         {% if discrepancy > 0.01 %}

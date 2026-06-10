@@ -3,134 +3,127 @@
 {% block title %}Shipping Lines Management - OPTIMUS{% endblock %}
 
 {% block body %}
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-base-200">
     <!-- Header -->
-    <div class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="py-6">
-                <h1 class="text-3xl font-bold text-gray-900">Shipping Lines Management</h1>
-                <p class="mt-2 text-gray-600">Manage shipping lines and their configurations</p>
+    <div class="bg-base-100 border-b border-base-300">
+        <div class="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+            <div class="py-4 sm:py-6">
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold">Shipping Lines Management</h1>
+                <p class="mt-1 sm:mt-2 text-xs sm:text-sm text-base-content/70">Manage shipping lines and their configurations</p>
             </div>
         </div>
     </div>
 
     <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
         <!-- Flash Messages -->
         {% for message in app.flashes('success') %}
-            <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg">
-                {{ message }}
+            <div class="alert alert-success mb-4">
+                <span class="icon-[tabler--check] size-5"></span>
+                <span>{{ message }}</span>
             </div>
         {% endfor %}
         {% for message in app.flashes('error') %}
-            <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg">
-                {{ message }}
+            <div class="alert alert-error mb-4">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <span>{{ message }}</span>
             </div>
         {% endfor %}
 
         <!-- Quick Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                            </svg>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+                <div class="card-body p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="avatar placeholder">
+                            <div class="w-10 sm:w-12 bg-primary/10 text-primary rounded-full">
+                                <span class="icon-[tabler--building] size-5 sm:size-6"></span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Total Lines</p>
-                        <p class="text-3xl font-bold text-gray-900">{{ shippingLines|length }}</p>
-                        <p class="text-xs text-blue-600 font-medium">Registered</p>
+                        <div>
+                            <p class="text-xs sm:text-sm text-base-content/70">Total Lines</p>
+                            <p class="text-2xl sm:text-3xl font-bold">{{ shippingLines|length }}</p>
+                            <p class="text-xs text-primary font-medium">Registered</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
+            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+                <div class="card-body p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="avatar placeholder">
+                            <div class="w-10 sm:w-12 bg-success/10 text-success rounded-full">
+                                <span class="icon-[tabler--circle-check] size-5 sm:size-6"></span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Active Lines</p>
-                        <p class="text-3xl font-bold text-gray-900">{{ shippingLines|filter(line => line.isActive)|length }}</p>
-                        <p class="text-xs text-green-600 font-medium">Operational</p>
+                        <div>
+                            <p class="text-xs sm:text-sm text-base-content/70">Active Lines</p>
+                            <p class="text-2xl sm:text-3xl font-bold">{{ shippingLines|filter(line => line.isActive)|length }}</p>
+                            <p class="text-xs text-success font-medium">Operational</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                            </svg>
+            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+                <div class="card-body p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="avatar placeholder">
+                            <div class="w-10 sm:w-12 bg-secondary/10 text-secondary rounded-full">
+                                <span class="icon-[tabler--users] size-5 sm:size-6"></span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Total Admins</p>
-                        {% set totalAdmins = 0 %}
-                        {% for line in shippingLines %}
-                            {% set totalAdmins = totalAdmins + line.shippingLineAdmins|length %}
-                        {% endfor %}
-                        <p class="text-3xl font-bold text-gray-900">{{ totalAdmins }}</p>
-                        <p class="text-xs text-purple-600 font-medium">Assigned</p>
+                        <div>
+                            <p class="text-xs sm:text-sm text-base-content/70">Total Admins</p>
+                            {% set totalAdmins = 0 %}
+                            {% for line in shippingLines %}
+                                {% set totalAdmins = totalAdmins + line.shippingLineAdmins|length %}
+                            {% endfor %}
+                            <p class="text-2xl sm:text-3xl font-bold">{{ totalAdmins }}</p>
+                            <p class="text-xs text-secondary font-medium">Assigned</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                            <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
+            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+                <div class="card-body p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="avatar placeholder">
+                            <div class="w-10 sm:w-12 bg-warning/10 text-warning rounded-full">
+                                <span class="icon-[tabler--clock] size-5 sm:size-6"></span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Unassigned</p>
-                        <p class="text-3xl font-bold text-gray-900">{{ shippingLines|filter(line => line.shippingLineAdmins|length == 0)|length }}</p>
-                        <p class="text-xs text-orange-600 font-medium">Need admins</p>
+                        <div>
+                            <p class="text-xs sm:text-sm text-base-content/70">Unassigned</p>
+                            <p class="text-2xl sm:text-3xl font-bold">{{ shippingLines|filter(line => line.shippingLineAdmins|length == 0)|length }}</p>
+                            <p class="text-xs text-warning font-medium">Need admins</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Actions Bar -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900">Quick Actions</h3>
+        <div class="card bg-base-100 shadow-sm mb-6 sm:mb-8">
+            <div class="card-header">
+                <h3 class="card-title text-base sm:text-lg">Quick Actions</h3>
             </div>
-            <div class="p-6">
-                <div class="flex flex-wrap gap-4">
-                    <a href="{{ path('admin_shipping_lines_create') }}" 
-                       class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                        </svg>
+            <div class="card-body p-4 sm:p-6">
+                <div class="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
+                    <a href="{{ path('admin_shipping_lines_create') }}" class="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto">
+                        <span class="icon-[tabler--plus] size-4 sm:size-5"></span>
                         Create Shipping Line
                     </a>
                     {% if app.user.role.value == 'SYSTEM_ADMIN' %}
-                    <a href="{{ path('admin_shipping_lines_statistics') }}" 
-                       class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                        </svg>
+                    <a href="{{ path('admin_shipping_lines_statistics') }}" class="btn btn-outline btn-sm sm:btn-md w-full sm:w-auto">
+                        <span class="icon-[tabler--chart-bar] size-4 sm:size-5"></span>
                         View Statistics
                     </a>
                     {% endif %}
-                    <a href="{{ path('admin_shipping_lines_export') }}" 
-                       class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
+                    <a href="{{ path('admin_shipping_lines_export') }}" class="btn btn-outline btn-sm sm:btn-md w-full sm:w-auto">
+                        <span class="icon-[tabler--download] size-4 sm:size-5"></span>
                         Export Data
                     </a>
                 </div>
@@ -138,106 +131,91 @@
         </div>
 
         <!-- Shipping Lines List -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-lg font-medium text-gray-900">All Shipping Lines</h3>
-                <span class="text-sm text-gray-500">{{ shippingLines|length }} total</span>
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-header flex justify-between items-center">
+                <h3 class="card-title text-base sm:text-lg">All Shipping Lines</h3>
+                <span class="badge badge-ghost text-xs sm:text-sm">{{ shippingLines|length }} total</span>
             </div>
-            <div class="p-6">
+            <div class="card-body p-3 sm:p-6">
                 {% if shippingLines is empty %}
-                    <div class="text-center py-12">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                        </svg>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900">No shipping lines</h3>
-                        <p class="mt-1 text-sm text-gray-500">Get started by creating a new shipping line.</p>
-                        <div class="mt-6">
-                            <a href="{{ path('admin_shipping_lines_create') }}" 
-                               class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                </svg>
+                    <div class="text-center py-8 sm:py-12">
+                        <span class="icon-[tabler--building] size-10 sm:size-12 text-base-content/40 mx-auto"></span>
+                        <h3 class="mt-3 sm:mt-4 text-sm sm:text-base font-medium">No shipping lines</h3>
+                        <p class="mt-2 text-xs sm:text-sm text-base-content/70">Get started by creating a new shipping line.</p>
+                        <div class="mt-4 sm:mt-6">
+                            <a href="{{ path('admin_shipping_lines_create') }}" class="btn btn-primary btn-sm sm:btn-md">
+                                <span class="icon-[tabler--plus] size-4 sm:size-5"></span>
                                 Create Shipping Line
                             </a>
                         </div>
                     </div>
                 {% else %}
-                    <div class="space-y-3">
+                    <div class="space-y-2 sm:space-y-3">
                         {% for shippingLine in shippingLines %}
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                <div class="flex items-center space-x-4">
-                                    <div class="flex-shrink-0">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-base-200 rounded-lg hover:bg-base-300 transition-colors gap-3">
+                                <div class="flex items-center gap-3 flex-1 min-w-0">
+                                    <div class="avatar placeholder flex-shrink-0">
                                         {% if shippingLine.shippingLineAdmins|length > 0 %}
                                             {% set firstAdmin = shippingLine.shippingLineAdmins|first %}
-                                            <div class="w-12 h-12 {{ avatar_colors(firstAdmin) }} rounded-full flex items-center justify-center">
-                                                <span class="text-sm font-medium">
+                                            <div class="w-10 h-10 sm:w-12 sm:h-12 {{ avatar_colors(firstAdmin) }} rounded-full">
+                                                <span class="text-xs sm:text-sm font-medium">
                                                     {{ shippingLine.brandName|slice(0, 2)|upper }}
                                                 </span>
                                             </div>
                                         {% else %}
-                                            <div class="w-12 h-12 bg-gray-500 text-white rounded-full flex items-center justify-center">
-                                                <span class="text-sm font-medium">
+                                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-neutral text-neutral-content rounded-full">
+                                                <span class="text-xs sm:text-sm font-medium">
                                                     {{ shippingLine.brandName|slice(0, 2)|upper }}
                                                 </span>
                                             </div>
                                         {% endif %}
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <div class="flex items-center space-x-3">
-                                            <h4 class="text-lg font-medium text-gray-900">{{ shippingLine.brandName }}</h4>
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <h4 class="text-base sm:text-lg font-medium truncate">{{ shippingLine.brandName }}</h4>
                                             {% if shippingLine.isActive %}
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                    <div class="w-1.5 h-1.5 bg-green-400 rounded-full mr-1"></div>
+                                                <span class="badge badge-success badge-soft badge-xs sm:badge-sm gap-1">
+                                                    <span class="badge-dot"></span>
                                                     Active
                                                 </span>
                                             {% else %}
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                    <div class="w-1.5 h-1.5 bg-red-400 rounded-full mr-1"></div>
+                                                <span class="badge badge-error badge-soft badge-xs sm:badge-sm gap-1">
+                                                    <span class="badge-dot"></span>
                                                     Inactive
                                                 </span>
                                             {% endif %}
                                         </div>
-                                        <div class="mt-1 flex items-center space-x-4 text-sm text-gray-500">
-                                            <span class="flex items-center">
-                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                                                </svg>
+                                        <div class="mt-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-base-content/70">
+                                            <span class="flex items-center gap-1">
+                                                <span class="icon-[tabler--users] size-3 sm:size-4"></span>
                                                 {{ shippingLine.shippingLineAdmins|length }} admin(s)
                                             </span>
-                                            <span class="flex items-center">
-                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0V6a2 2 0 012-2h4a2 2 0 012 2v1m-6 0h6m-6 0l-.5 3.5A2 2 0 0013.5 15H16a2 2 0 002-2V9a2 2 0 00-2-2h-2.5m-6 0L7.5 15H4a2 2 0 01-2-2V9a2 2 0 012-2h2.5"/>
-                                                </svg>
+                                            <span class="hidden sm:flex items-center gap-1">
+                                                <span class="icon-[tabler--calendar] size-4"></span>
                                                 Created {{ shippingLine.createdAt|date('M d, Y') }}
                                             </span>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="flex items-center space-x-2">
+                                <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                                     <a href="{{ path('admin_shipping_lines_detail', {id: shippingLine.id}) }}" 
-                                       class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                        <svg class="-ml-0.5 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                        </svg>
-                                        View Details
+                                       class="btn btn-xs sm:btn-sm btn-outline flex-1 sm:flex-initial">
+                                        <span class="icon-[tabler--eye] size-3 sm:size-4"></span>
+                                        <span class="hidden sm:inline">View Details</span>
+                                        <span class="sm:hidden">View</span>
                                     </a>
                                     {% if app.user.role.value == 'SYSTEM_ADMIN' %}
                                         {% if shippingLine.isActive %}
                                             <button onclick="openDeactivateModal({{ shippingLine.id }}, '{{ shippingLine.brandName|e('js') }}')" 
-                                                    class="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                                                <svg class="-ml-0.5 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"/>
-                                                </svg>
-                                                Deactivate
+                                                    class="btn btn-xs sm:btn-sm btn-error btn-outline flex-1 sm:flex-initial">
+                                                <span class="icon-[tabler--ban] size-3 sm:size-4"></span>
+                                                <span class="hidden sm:inline">Deactivate</span>
                                             </button>
                                         {% else %}
                                             <button onclick="openActivateModal({{ shippingLine.id }}, '{{ shippingLine.brandName|e('js') }}')" 
-                                                    class="inline-flex items-center px-3 py-2 border border-green-300 shadow-sm text-sm leading-4 font-medium rounded-md text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                                                <svg class="-ml-0.5 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                                </svg>
-                                                Activate
+                                                    class="btn btn-xs sm:btn-sm btn-success btn-outline flex-1 sm:flex-initial">
+                                                <span class="icon-[tabler--circle-check] size-3 sm:size-4"></span>
+                                                <span class="hidden sm:inline">Activate</span>
                                             </button>
                                         {% endif %}
                                     {% endif %}
@@ -252,28 +230,31 @@
 </div>
 
 <!-- Activate Modal -->
-<div id="activateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[10000]">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+<div id="activateModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center" style="z-index: 9999;">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-green-100 rounded-full mb-4">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
             </div>
-            <h3 class="text-lg font-medium text-gray-900 mt-4" id="activateModalTitle">Activate Shipping Line</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500" id="activateModalMessage">
-                    Are you sure you want to activate this shipping line?
-                </p>
-            </div>
-            <div class="flex items-center justify-center px-4 py-3">
-                <button id="confirmActivateBtn" 
-                        class="px-4 py-2 bg-green-600 text-white text-base font-medium rounded-md w-24 mr-2 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-300">
-                    Activate
-                </button>
-                <button id="cancelActivateBtn" 
-                        class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-24 hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
+            <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Activate Shipping Line</h3>
+            <p class="text-sm text-gray-600 text-center mb-4" id="activateModalMessage">
+                Are you sure you want to activate this shipping line?
+            </p>
+            <p class="text-xs text-green-600 text-center mb-6">
+                This shipping line will become operational and accessible.
+            </p>
+            <div class="flex space-x-3">
+                <button type="button" 
+                        onclick="closeActivateModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
                     Cancel
+                </button>
+                <button type="button" 
+                        id="confirmActivateBtn"
+                        class="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700">
+                    Activate
                 </button>
             </div>
         </div>
@@ -281,28 +262,31 @@
 </div>
 
 <!-- Deactivate Modal -->
-<div id="deactivateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[10000]">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+<div id="deactivateModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center" style="z-index: 9999;">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                 </svg>
             </div>
-            <h3 class="text-lg font-medium text-gray-900 mt-4" id="deactivateModalTitle">Deactivate Shipping Line</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500" id="deactivateModalMessage">
-                    Are you sure you want to deactivate this shipping line?
-                </p>
-            </div>
-            <div class="flex items-center justify-center px-4 py-3">
-                <button id="confirmDeactivateBtn" 
-                        class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-24 mr-2 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
-                    Deactivate
-                </button>
-                <button id="cancelDeactivateBtn" 
-                        class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-24 hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
+            <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Deactivate Shipping Line</h3>
+            <p class="text-sm text-gray-600 text-center mb-4" id="deactivateModalMessage">
+                Are you sure you want to deactivate this shipping line?
+            </p>
+            <p class="text-xs text-red-600 text-center mb-6">
+                This shipping line will no longer be accessible.
+            </p>
+            <div class="flex space-x-3">
+                <button type="button" 
+                        onclick="closeDeactivateModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
                     Cancel
+                </button>
+                <button type="button" 
+                        id="confirmDeactivateBtn"
+                        class="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700">
+                    Deactivate
                 </button>
             </div>
         </div>
@@ -316,73 +300,87 @@ let currentShippingLineId = null;
 function openActivateModal(id, name) {
     currentShippingLineId = id;
     document.getElementById('activateModalMessage').textContent = `Are you sure you want to activate ${name}?`;
-    document.getElementById('activateModal').classList.remove('hidden');
+    const modal = document.getElementById('activateModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
 }
 
 function closeActivateModal() {
-    document.getElementById('activateModal').classList.add('hidden');
+    const modal = document.getElementById('activateModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
     currentShippingLineId = null;
 }
 
 function openDeactivateModal(id, name) {
     currentShippingLineId = id;
     document.getElementById('deactivateModalMessage').textContent = `Are you sure you want to deactivate ${name}?`;
-    document.getElementById('deactivateModal').classList.remove('hidden');
+    const modal = document.getElementById('deactivateModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
 }
 
 function closeDeactivateModal() {
-    document.getElementById('deactivateModal').classList.add('hidden');
+    const modal = document.getElementById('deactivateModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
     currentShippingLineId = null;
 }
 
 // Confirm button handlers
-document.getElementById('confirmActivateBtn').addEventListener('click', function() {
-    if (currentShippingLineId) {
-        activateShippingLine(currentShippingLineId);
-    }
-});
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('confirmActivateBtn').addEventListener('click', function() {
+        if (currentShippingLineId) {
+            activateShippingLine(currentShippingLineId);
+        }
+    });
 
-document.getElementById('confirmDeactivateBtn').addEventListener('click', function() {
-    if (currentShippingLineId) {
-        deactivateShippingLine(currentShippingLineId);
-    }
-});
+    document.getElementById('confirmDeactivateBtn').addEventListener('click', function() {
+        if (currentShippingLineId) {
+            deactivateShippingLine(currentShippingLineId);
+        }
+    });
 
-// Cancel button handlers
-document.getElementById('cancelActivateBtn').addEventListener('click', closeActivateModal);
-document.getElementById('cancelDeactivateBtn').addEventListener('click', closeDeactivateModal);
+    // Close modal when clicking outside
+    document.getElementById('activateModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeActivateModal();
+        }
+    });
 
-// Close modal when clicking outside
-document.getElementById('activateModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeActivateModal();
-    }
-});
+    document.getElementById('deactivateModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeDeactivateModal();
+        }
+    });
 
-document.getElementById('deactivateModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeDeactivateModal();
-    }
-});
-
-// ESC key to close modals
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeActivateModal();
-        closeDeactivateModal();
-    }
+    // Close modal on escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeActivateModal();
+            closeDeactivateModal();
+        }
+    });
 });
 
 function deactivateShippingLine(id) {
     const btn = document.getElementById('confirmDeactivateBtn');
     btn.disabled = true;
-    btn.textContent = 'Deactivating...';
+    btn.innerHTML = '<span class="spinner"></span>Deactivating...';
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     
     fetch(`/admin/shipping-lines/${id}/deactivate`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            ...(csrfToken && { 'X-CSRF-Token': csrfToken })
         }
     })
     .then(response => response.json())
@@ -409,13 +407,17 @@ function deactivateShippingLine(id) {
 function activateShippingLine(id) {
     const btn = document.getElementById('confirmActivateBtn');
     btn.disabled = true;
-    btn.textContent = 'Activating...';
+    btn.innerHTML = '<span class="spinner"></span>Activating...';
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     
     fetch(`/admin/shipping-lines/${id}/activate`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            ...(csrfToken && { 'X-CSRF-Token': csrfToken })
         }
     })
     .then(response => response.json())

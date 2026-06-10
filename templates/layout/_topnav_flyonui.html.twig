@@ -127,7 +127,7 @@
                     onclick="toggleUserMenu()">
                 <div class="size-8 rounded-full overflow-hidden {{ avatar_colors(app.user) }} flex items-center justify-center flex-shrink-0">
                     {% if app.user.profilePhoto %}
-                        <img src="{{ path('profile_photo', {userId: app.user.id, filename: app.user.profilePhoto}) }}" alt="Profile" class="size-full object-cover">
+                        <img src="{{ asset('uploads/' ~ app.user.role.value|lower ~ '/profile-picture/' ~ app.user.profilePhoto) }}" alt="Profile" class="size-full object-cover">
                     {% else %}
                         <span class="text-sm font-medium">{{ app.user.email|slice(0,1)|upper }}</span>
                     {% endif %}
@@ -145,7 +145,7 @@
                     <div class="flex items-center gap-3">
                         <div class="size-10 rounded-full overflow-hidden {{ avatar_colors(app.user) }} flex items-center justify-center flex-shrink-0">
                             {% if app.user.profilePhoto %}
-                                <img src="{{ path('profile_photo', {userId: app.user.id, filename: app.user.profilePhoto}) }}" alt="Profile" class="size-full object-cover">
+                                <img src="{{ asset('uploads/' ~ app.user.role.value|lower ~ '/profile-picture/' ~ app.user.profilePhoto) }}" alt="Profile" class="size-full object-cover">
                             {% else %}
                                 <span class="text-sm font-medium">{{ app.user.email|slice(0,1)|upper }}</span>
                             {% endif %}

@@ -234,25 +234,33 @@ class FileDownloadController extends AbstractController
             ->findOneBy(['edoNumber' => $edoNumber]);
 
         if (!$edo) {
+            error_log("EDO Download: EDO not found - $edoNumber");
             return $this->json(['error' => 'eDO not found'], Response::HTTP_NOT_FOUND);
         }
 
         $manifest = $edo->getManifest();
         $ipAddress = $request->getClientIp() ?? 'unknown';
 
+        error_log("EDO Download: EDO=$edoNumber, User={$user->getId()}, Role={$user->getRole()->value}, ManifestID={$manifest->getId()}, BrokerID=" . ($manifest->getBroker() ? $manifest->getBroker()->getId() : 'NULL'));
+
         // Authorization check
         if (!$this->authorizationService->canViewManifest($manifest, $user)) {
             // Log denied access attempt
             $this->edoAccessLogService->logAccessAttempt($edo, $user, $ipAddress, 'denied');
+            error_log("EDO Download: Authorization failed for user {$user->getId()}");
             return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
         }
 
+        error_log("EDO Download: Authorization passed");
+
         // Check eDO status
         $edoStatus = $edo->getStatus();
+        error_log("EDO Download: Status={$edoStatus->value}");
         
         if ($edoStatus === EDOStatus::PENDING_RELEASE) {
             // Log denied access attempt
             $this->edoAccessLogService->logAccessAttempt($edo, $user, $ipAddress, 'denied');
+            error_log("EDO Download: Status is PENDING_RELEASE");
             return $this->json([
                 'error' => 'eDO is pending administrative release. Please wait for approval.'
             ], Response::HTTP_FORBIDDEN);
@@ -261,6 +269,7 @@ class FileDownloadController extends AbstractController
         if ($edoStatus === EDOStatus::REJECTED) {
             // Log denied access attempt
             $this->edoAccessLogService->logAccessAttempt($edo, $user, $ipAddress, 'denied');
+            error_log("EDO Download: Status is REJECTED");
             return $this->json([
                 'error' => 'eDO has been rejected. Please contact support for assistance.'
             ], Response::HTTP_FORBIDDEN);
@@ -268,9 +277,15 @@ class FileDownloadController extends AbstractController
 
         // Only RELEASED status reaches here
         $filePath = $edo->getPdfPath();
-        if (!$filePath || !$this->fileStorage->fileExists($filePath)) {
+        error_log("EDO Download: File path=$filePath");
+        
+        $fileExists = $this->fileStorage->fileExists($filePath);
+        error_log("EDO Download: File exists check=" . ($fileExists ? 'YES' : 'NO'));
+        
+        if (!$filePath || !$fileExists) {
             // Log denied access attempt
             $this->edoAccessLogService->logAccessAttempt($edo, $user, $ipAddress, 'denied');
+            error_log("EDO Download: File not found - path=$filePath, exists=$fileExists");
             return $this->json(['error' => 'eDO file not found'], Response::HTTP_NOT_FOUND);
         }
 

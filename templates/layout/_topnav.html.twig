@@ -130,7 +130,7 @@
                         <div class="flex-shrink-0">
                             <div class="h-8 w-8 rounded-full overflow-hidden {{ avatar_colors(app.user) }} flex items-center justify-center">
                                 {% if app.user.profilePhoto %}
-                                    <img src="{{ path('profile_photo', {userId: app.user.id, filename: app.user.profilePhoto}) }}" 
+                                    <img src="{{ asset('uploads/' ~ app.user.role.value|lower ~ '/profile-picture/' ~ app.user.profilePhoto) }}" 
                                          alt="Profile Photo" 
                                          class="h-full w-full object-cover">
                                 {% else %}
@@ -163,7 +163,7 @@
                             <div class="flex items-center space-x-3">
                                 <div class="h-10 w-10 rounded-full overflow-hidden {{ avatar_colors(app.user) }} flex items-center justify-center">
                                     {% if app.user.profilePhoto %}
-                                        <img src="{{ path('profile_photo', {userId: app.user.id, filename: app.user.profilePhoto}) }}" 
+                                        <img src="{{ asset('uploads/' ~ app.user.role.value|lower ~ '/profile-picture/' ~ app.user.profilePhoto) }}" 
                                              alt="Profile Photo" 
                                              class="h-full w-full object-cover">
                                     {% else %}

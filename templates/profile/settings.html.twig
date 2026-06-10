@@ -10,7 +10,7 @@
     <div class="flex items-center gap-4">
         <div class="size-14 rounded-full overflow-hidden {{ avatar_colors(user) }} flex items-center justify-center flex-shrink-0">
             {% if user.profilePhoto %}
-                <img src="{{ path('profile_photo', {userId: user.id, filename: user.profilePhoto}) }}"
+                <img src="{{ asset('uploads/' ~ user.role.value|lower ~ '/profile-picture/' ~ user.profilePhoto) }}"
                      alt="Profile Photo" class="size-full object-cover">
             {% else %}
                 <span class="text-xl font-bold">{{ user.email|slice(0,1)|upper }}</span>
@@ -96,7 +96,7 @@
                     <div id="avatarPreview"
                          class="size-16 rounded-full overflow-hidden {{ avatar_colors(user) }} flex items-center justify-center flex-shrink-0">
                         {% if user.profilePhoto %}
-                            <img src="{{ path('profile_photo', {userId: user.id, filename: user.profilePhoto}) }}"
+                            <img src="{{ asset('uploads/' ~ user.role.value|lower ~ '/profile-picture/' ~ user.profilePhoto) }}"
                                  alt="Profile Photo" class="size-full object-cover">
                         {% else %}
                             <span class="text-xl font-bold">{{ user.email|slice(0,1)|upper }}</span>

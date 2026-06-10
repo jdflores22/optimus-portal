@@ -162,11 +162,14 @@ class EDOController extends BaseApiController
             // Serve the PDF file
             $pdfPath = $edo->getPdfPath();
             
-            if (!file_exists($pdfPath)) {
+            // Construct full path - pdfPath is relative to public/uploads
+            $fullPath = $this->getParameter('kernel.project_dir') . '/public/uploads/' . $pdfPath;
+            
+            if (!file_exists($fullPath)) {
                 return $this->errorResponse('EDO file not found', 404);
             }
 
-            $response = new BinaryFileResponse($pdfPath);
+            $response = new BinaryFileResponse($fullPath);
             $response->setContentDisposition(
                 ResponseHeaderBag::DISPOSITION_ATTACHMENT,
                 'EDO-' . $edoNumber . '.pdf'

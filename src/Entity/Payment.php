@@ -16,6 +16,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_payments_version', columns: ['version'])]
 #[ORM\Index(name: 'idx_payments_previous_payment', columns: ['previous_payment_id'])]
 #[ORM\Index(name: 'idx_payments_manifest_type_version', columns: ['manifest_id', 'payment_type', 'version'])]
+#[ORM\Index(name: 'idx_payments_currency', columns: ['currency'])]
 class Payment
 {
     #[ORM\Id]
@@ -36,6 +37,9 @@ class Payment
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
     private float $amount;
+
+    #[ORM\Column(type: 'string', length: 3, options: ['default' => 'PHP'])]
+    private string $currency = 'PHP';
 
     #[ORM\Column(type: 'string', length: 500)]
     private string $receiptFilePath;
@@ -76,12 +80,12 @@ class Payment
         $this->createdAt = new \DateTime();
     }
 
-    public function verify(User $validator): void
+    public function verify(User $validator, ?string $notes = null): void
     {
         $this->status = PaymentStatus::VERIFIED;
         $this->validatedBy = $validator;
         $this->validatedAt = new \DateTime();
-        $this->rejectionReason = null;
+        $this->rejectionReason = $notes; // Store approval notes/remarks in same field
     }
 
     public function reject(User $validator, string $reason): void
@@ -138,6 +142,24 @@ class Payment
     public function setAmount(float $amount): self
     {
         $this->amount = $amount;
+        return $this;
+    }
+
+    public function getCurrency(): string
+    {
+        return $this->currency;
+    }
+
+    public function setCurrency(string $currency): self
+    {
+        // Validate currency values
+        if (!in_array($currency, ['USD', 'PHP'], true)) {
+            throw new \InvalidArgumentException(
+                sprintf('Invalid currency "%s". Only "USD" and "PHP" are allowed.', $currency)
+            );
+        }
+        
+        $this->currency = $currency;
         return $this;
     }
 

@@ -79,6 +79,29 @@
                                        disabled
                                        class="input input-sm input-bordered pl-7 w-full bg-base-200 cursor-not-allowed">
                             </div>
+                            
+                            {# Currency Indicator Badge #}
+                            {% if billing.originalCurrency == 'USD' %}
+                                <div class="mt-2 p-2 bg-warning/20 border border-warning/40 rounded-lg">
+                                    <div class="flex items-center gap-2">
+                                        <span class="badge badge-warning badge-lg font-bold">Amount in USD</span>
+                                    </div>
+                                    <p class="text-xs text-base-content/70 mt-1">
+                                        <span class="icon-[tabler--alert-triangle] size-3 inline-block"></span>
+                                        You must pay this amount in <strong>US Dollars</strong>. Do not convert to another currency.
+                                    </p>
+                                </div>
+                            {% else %}
+                                <div class="mt-2 p-2 bg-info/20 border border-info/40 rounded-lg">
+                                    <div class="flex items-center gap-2">
+                                        <span class="badge badge-info badge-lg font-bold">Amount in PHP</span>
+                                    </div>
+                                    <p class="text-xs text-base-content/70 mt-1">
+                                        <span class="icon-[tabler--info-circle] size-3 inline-block"></span>
+                                        You must pay this amount in <strong>Philippine Pesos</strong>.
+                                    </p>
+                                </div>
+                            {% endif %}
                         </div>
 
                         {# Receipt Upload - Compact #}
@@ -133,13 +156,9 @@
                             <button type="submit" 
                                     id="submitBtn"
                                     class="btn btn-primary btn-sm btn-block">
-                                {% if rejectedPayment %}
-                                    <span class="icon-[tabler--upload] size-4"></span>
-                                    Resubmit
-                                {% else %}
-                                    <span class="icon-[tabler--send] size-4"></span>
-                                    Submit
-                                {% endif %}
+                                <span id="submitIcon" class="{% if rejectedPayment %}icon-[tabler--upload]{% else %}icon-[tabler--send]{% endif %} size-4"></span>
+                                <span id="loadingSpinner" class="loading loading-spinner loading-sm hidden"></span>
+                                <span id="btnText">{% if rejectedPayment %}Resubmit{% else %}Submit{% endif %}</span>
                             </button>
                             {% if rejectedPayment %}
                             <a href="{{ path('broker_payment_history', {id: manifest.id}) }}" 
@@ -281,6 +300,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectedFileSize = document.getElementById('selectedFileSize');
     const changeFileBtn = document.getElementById('changeFileBtn');
     const submitBtn = document.getElementById('submitBtn');
+    const submitIcon = document.getElementById('submitIcon');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const btnText = document.getElementById('btnText');
     const errorMessage = document.getElementById('errorMessage');
     const errorText = document.getElementById('errorText');
     const successMessage = document.getElementById('successMessage');
@@ -314,11 +336,26 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.files.length > 0) {
             const file = e.target.files[0];
             
+            // Get file extension
+            const fileName = file.name.toLowerCase();
+            const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
+            const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
+            
+            // Validate file extension
+            if (!allowedExtensions.includes(fileExtension)) {
+                errorText.textContent = 'Invalid file type. Only PDF, JPG, and PNG files are allowed.';
+                errorMessage.classList.remove('hidden');
+                receiptInput.value = '';
+                showUploadArea();
+                return;
+            }
+            
             // Validate file size (5MB max)
             if (file.size > 5 * 1024 * 1024) {
                 errorText.textContent = 'File size must be less than 5MB';
                 errorMessage.classList.remove('hidden');
                 receiptInput.value = '';
+                showUploadArea();
                 return;
             }
             
@@ -366,8 +403,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         errorMessage.classList.add('hidden');
         successMessage.classList.add('hidden');
+        
+        // Show loading state
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span>Submitting...';
+        submitIcon.classList.add('hidden');
+        loadingSpinner.classList.remove('hidden');
+        btnText.textContent = 'Submitting...';
 
         const formData = new FormData();
         formData.append('amount', document.getElementById('amount').value);
@@ -398,9 +439,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (response.ok) {
                 successMessage.classList.remove('hidden');
+                
+                // Change button to success state
+                loadingSpinner.classList.add('hidden');
+                submitIcon.classList.remove('hidden');
+                submitIcon.className = 'icon-[tabler--circle-check] size-4';
+                btnText.textContent = 'Success!';
+                submitBtn.classList.remove('btn-primary');
+                submitBtn.classList.add('btn-success');
+                
+                // Redirect after showing success message
                 setTimeout(() => {
                     window.location.href = '{{ path('broker_manifest_detail', {id: manifest.id}) }}';
-                }, 2000);
+                }, 1500);
             } else {
                 // Handle both error formats: {error: "message"} and {error: true, message: "message"}
                 let errorMsg = 'Failed to submit payment. Please try again.';
@@ -411,14 +462,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 errorText.textContent = errorMsg;
                 errorMessage.classList.remove('hidden');
+                
+                // Reset button state
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit Payment';
+                submitBtn.classList.remove('btn-success');
+                submitBtn.classList.add('btn-primary');
+                submitIcon.classList.remove('hidden');
+                submitIcon.className = '{% if rejectedPayment %}icon-[tabler--upload]{% else %}icon-[tabler--send]{% endif %} size-4';
+                loadingSpinner.classList.add('hidden');
+                btnText.textContent = '{% if rejectedPayment %}Resubmit{% else %}Submit{% endif %}';
             }
         } catch (error) {
-            errorText.textContent = 'An error occurred. Please try again.';
+            console.error('Payment submission error:', error);
+            errorText.textContent = 'An error occurred while submitting payment. Please try again.';
             errorMessage.classList.remove('hidden');
+            
+            // Reset button state
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Submit Payment';
+            submitBtn.classList.remove('btn-success');
+            submitBtn.classList.add('btn-primary');
+            submitIcon.classList.remove('hidden');
+            submitIcon.className = '{% if rejectedPayment %}icon-[tabler--upload]{% else %}icon-[tabler--send]{% endif %} size-4';
+            loadingSpinner.classList.add('hidden');
+            btnText.textContent = '{% if rejectedPayment %}Resubmit{% else %}Submit{% endif %}';
         }
     });
 });

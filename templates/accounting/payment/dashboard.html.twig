@@ -193,7 +193,7 @@
                             <tbody>
                                 {% for payment in recentActivity %}
                                     {% set billing = payment.manifest.billing %}
-                                    {% set discrepancy = billing ? (payment.amount - billing.totalAmount)|abs : 0 %}
+                                    {% set discrepancy = billing ? ((payment.currency == 'USD' and billing.originalCurrency == 'USD') ? (payment.amount - billing.totalAmountUsd)|abs : (payment.amount - billing.totalAmount)|abs) : 0 %}
                                     <tr>
                                         <td>
                                             <a href="{{ path('manifest_workflow_detail', {id: payment.manifest.id}) }}" 

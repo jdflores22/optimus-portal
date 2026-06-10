@@ -354,13 +354,13 @@
                                     <div class="flex flex-wrap gap-2 pt-3 border-t border-base-300/60">
                                         {% if paymentStatus.payment_status == 'verified' %}
                                             {# Paid - Show download button #}
-                                            <a href="{{ path('api_edo_download', {id: paymentStatus.edo_id}) }}" 
+                                            <a href="{{ path('api_edo_download', {edoNumber: paymentStatus.edo_number}) }}" 
                                                class="btn btn-sm btn-success gap-2 flex-1">
                                                 <span class="icon-[tabler--download] size-4"></span>
                                                 Download eDO
                                             </a>
-                                            {% if paymentStatus.official_receipt_path %}
-                                                <a href="{{ asset('uploads/receipts/' ~ paymentStatus.official_receipt_path) }}"
+                                            {% if paymentStatus.official_receipt_path and paymentStatus.edo_id %}
+                                                <a href="{{ path('broker_edo_official_receipt', {edoId: paymentStatus.edo_id}) }}"
                                                    target="_blank"
                                                    class="btn btn-sm btn-outline btn-success gap-2">
                                                     <span class="icon-[tabler--file-text] size-4"></span>
@@ -715,6 +715,15 @@
                                                 <a href="{{ path('manifest_workflow_generate_manifest_form', {id: manifest.noa.id}) }}" 
                                                    class="btn btn-success w-full text-sm sm:text-base">
                                                     Generate Manifest/BL
+                                                </a>
+                                            {% endif %}
+                                            
+                                            {# BL Upload Button - Show when NOA generated or BL generated (but not uploaded yet) #}
+                                            {% if manifest.workflowState.value in ['noa_generated', 'bl_generated'] and not manifest.blFilePath %}
+                                                <a href="{{ path('broker_manifest_upload_bl', {id: manifest.id}) }}" 
+                                                   class="btn btn-primary w-full text-sm sm:text-base gap-2">
+                                                    <span class="icon-[tabler--file-upload] size-4"></span>
+                                                    Upload BL Document
                                                 </a>
                                             {% endif %}
                                             

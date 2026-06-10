@@ -241,8 +241,18 @@ class PushNotificationService
                 ]
             ]);
             
-            // Send notification
-            $report = $webPush->sendOneNotification($pushSubscription, $payload);
+            // Send notification - wrap in try-catch to handle WebPush library errors
+            try {
+                $report = $webPush->sendOneNotification($pushSubscription, $payload);
+            } catch (\TypeError $e) {
+                // Handle encryption errors from WebPush library
+                throw new \InvalidArgumentException(
+                    'WebPush encryption failed: ' . $e->getMessage() . 
+                    '. This usually indicates corrupted subscription keys.',
+                    0,
+                    $e
+                );
+            }
             
             if ($report->isSuccess()) {
                 // Update last used timestamp

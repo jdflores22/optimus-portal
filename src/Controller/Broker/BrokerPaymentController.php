@@ -28,7 +28,8 @@ class BrokerPaymentController extends AbstractController
         $page = max(1, (int) $request->query->get('page', 1));
         $limit = 20;
 
-        // Get rejected payments for this broker
+        // Get rejected payments for this broker that are still pending resubmission
+        // (Only show latest version per manifest where status is rejected)
         $qb = $this->entityManager->getRepository(Payment::class)
             ->createQueryBuilder('p')
             ->leftJoin('p.manifest', 'm')
@@ -40,6 +41,13 @@ class BrokerPaymentController extends AbstractController
             ->where('p.paymentType = :type')
             ->andWhere('p.status = :status')
             ->andWhere('p.submittedBy = :broker')
+            // Only show payments where there is NO newer version (not resubmitted yet)
+            ->andWhere('NOT EXISTS (
+                SELECT 1 FROM App\Entity\Payment p2 
+                WHERE p2.manifest = p.manifest 
+                AND p2.paymentType = :type
+                AND p2.version > p.version
+            )')
             ->setParameter('type', PaymentType::FINAL_PAYMENT)
             ->setParameter('status', PaymentStatus::REJECTED)
             ->setParameter('broker', $user)

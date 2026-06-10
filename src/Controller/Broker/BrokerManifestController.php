@@ -40,13 +40,20 @@ class BrokerManifestController extends AbstractController
             return $this->redirectToRoute('broker_workspace_selector');
         }
         
-        // Get rejected payments count for alert banner
+        // Get rejected payments count for alert banner (only latest versions not resubmitted)
         $rejectedPaymentsCount = $this->entityManager->getRepository(\App\Entity\Payment::class)
             ->createQueryBuilder('p')
             ->select('COUNT(p.id)')
             ->where('p.submittedBy = :broker')
             ->andWhere('p.status = :status')
             ->andWhere('p.paymentType = :type')
+            // Only count payments where there is NO newer version (not resubmitted yet)
+            ->andWhere('NOT EXISTS (
+                SELECT 1 FROM App\Entity\Payment p2 
+                WHERE p2.manifest = p.manifest 
+                AND p2.paymentType = :type
+                AND p2.version > p.version
+            )')
             ->setParameter('broker', $user)
             ->setParameter('status', \App\Entity\Enum\PaymentStatus::REJECTED)
             ->setParameter('type', \App\Entity\Enum\PaymentType::FINAL_PAYMENT)

@@ -96,7 +96,13 @@ class LocalStorageAdapter implements StorageAdapterInterface
 
     public function exists(string $path): bool
     {
-        return file_exists($this->getFullPath($path));
+        $fullPath = $this->getFullPath($path);
+        $exists = file_exists($fullPath);
+        
+        // Debug logging
+        error_log("LocalStorageAdapter::exists() - Path: $path, Full: $fullPath, Exists: " . ($exists ? 'YES' : 'NO'));
+        
+        return $exists;
     }
 
     public function getFullPath(string $path): string

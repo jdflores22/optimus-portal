@@ -77,7 +77,7 @@
                                 <tbody>
                                     {% for payment in payments %}
                                         {% set billing = payment.manifest.billing %}
-                                        {% set discrepancy = billing ? (payment.amount - billing.totalAmount)|abs : 0 %}
+                                        {% set discrepancy = billing ? ((payment.currency == 'USD' and billing.originalCurrency == 'USD') ? (payment.amount - billing.totalAmountUsd)|abs : (payment.amount - billing.totalAmount)|abs) : 0 %}
                                         <tr>
                                             <td>#{{ payment.id }}</td>
                                             <td>

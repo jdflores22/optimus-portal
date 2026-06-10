@@ -143,8 +143,14 @@ class AccountingPaymentController extends AbstractController
             throw $this->createNotFoundException('Billing not found for this manifest');
         }
 
-        // Calculate amount discrepancy
-        $discrepancy = abs($payment->getAmount() - $billing->getTotalAmount());
+        // Calculate amount discrepancy (compare same currencies)
+        if ($payment->getCurrency() === 'USD' && $billing->getOriginalCurrency() === 'USD') {
+            // Both are USD, compare USD amounts
+            $discrepancy = abs($payment->getAmount() - $billing->getTotalAmountUsd());
+        } else {
+            // Compare PHP amounts (either both PHP or payment is PHP)
+            $discrepancy = abs($payment->getAmount() - $billing->getTotalAmount());
+        }
 
         // Get validation history for this manifest
         $validationHistory = $this->entityManager->getRepository(\App\Entity\Payment::class)

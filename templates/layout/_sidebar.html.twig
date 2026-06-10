@@ -232,7 +232,7 @@
             <a href="{{ path('profile_settings') }}" class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200 transition-colors">
                 <div class="size-8 rounded-full {{ avatar_colors(app.user) }} flex items-center justify-center flex-shrink-0">
                     {% if app.user.profilePhoto %}
-                        <img src="{{ path('profile_photo', {userId: app.user.id, filename: app.user.profilePhoto}) }}" alt="Profile" class="size-full object-cover rounded-full">
+                        <img src="{{ asset('uploads/' ~ app.user.role.value|lower ~ '/profile-picture/' ~ app.user.profilePhoto) }}" alt="Profile" class="size-full object-cover rounded-full">
                     {% else %}
                         <span class="text-xs font-semibold">{{ app.user.email|slice(0,1)|upper }}</span>
                     {% endif %}

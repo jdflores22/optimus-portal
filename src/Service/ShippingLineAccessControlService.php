@@ -238,6 +238,24 @@ class ShippingLineAccessControlService
     }
 
     /**
+     * Get all users affected by shipping line deactivation
+     * Returns all users who have this shipping line as their scope
+     */
+    public function getAffectedUsers(ShippingLine $shippingLine): array
+    {
+        return $this->entityManager->getRepository(User::class)
+            ->createQueryBuilder('u')
+            ->where('u.managedShippingLine = :shippingLine')
+            ->orWhere('u.shippingLineAdmin IN (
+                SELECT u2.id FROM App\Entity\User u2
+                WHERE u2.managedShippingLine = :shippingLine
+            )')
+            ->setParameter('shippingLine', $shippingLine)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Get shipping lines user has approved accreditation for
      */
     private function getApprovedShippingLines(User $user): array
