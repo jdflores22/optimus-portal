@@ -249,6 +249,19 @@
 </div>
 
 <script>
+const MONEY_PREFIX = {{ (0|format_money('PHP'))|slice(0, -4)|json_encode|raw }};
+
+function formatNumber(num) {
+    return parseFloat(num).toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function formatMoneyAmount(num) {
+    return MONEY_PREFIX + formatNumber(num);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     const requestId = window.location.pathname.split('/').slice(-2)[0];
@@ -296,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('requestedAt').textContent = formatDate(request.requestedAt);
         document.getElementById('overdueDays').textContent = `${request.overdueDays} days`;
         document.getElementById('detentionCharges').textContent = request.detentionChargeAmount > 0 
-            ? `₱${formatNumber(request.detentionChargeAmount)}` 
+            ? formatMoneyAmount(request.detentionChargeAmount)
             : 'No charges';
         
         // Payment status badge
@@ -325,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span class="icon-[tabler--alert-circle] size-5"></span>
                     <div>
                         <h3 class="font-bold">Payment Not Verified</h3>
-                        <div class="text-sm">Detention charges of ₱${formatNumber(request.detentionChargeAmount)} must be verified before generating eDO.</div>
+                        <div class="text-sm">Detention charges of ${formatMoneyAmount(request.detentionChargeAmount)} must be verified before generating eDO.</div>
                     </div>
                 </div>
             `;
@@ -448,14 +461,6 @@ document.addEventListener('DOMContentLoaded', function() {
             year: 'numeric',
             hour: 'numeric',
             minute: '2-digit'
-        });
-    }
-    
-    // Format number
-    function formatNumber(num) {
-        return parseFloat(num).toLocaleString('en-PH', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
         });
     }
     

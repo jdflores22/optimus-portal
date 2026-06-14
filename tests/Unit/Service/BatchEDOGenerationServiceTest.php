@@ -104,17 +104,17 @@ class BatchEDOGenerationServiceTest extends TestCase
         $payment->method('getStatus')->willReturn(PaymentStatus::VERIFIED);
         
         $noa = $this->createMock(NOA::class);
-        $noa->method('getCyLocation')->willReturn('CY-001');
-        
         $container1 = $this->createMock(Container::class);
         $container1->method('getId')->willReturn(1);
         $container1->method('getContainerNumber')->willReturn('CONT001');
         $container1->method('getNoa')->willReturn($noa);
+        $this->mockContainerCyAllocation($container1, 'CY-001');
         
         $container2 = $this->createMock(Container::class);
         $container2->method('getId')->willReturn(2);
         $container2->method('getContainerNumber')->willReturn('CONT002');
         $container2->method('getNoa')->willReturn($noa);
+        $this->mockContainerCyAllocation($container2, 'CY-001');
         
         $containers = new ArrayCollection([$container1, $container2]);
         
@@ -181,12 +181,11 @@ class BatchEDOGenerationServiceTest extends TestCase
         $payment->method('getStatus')->willReturn(PaymentStatus::VERIFIED);
         
         $noa = $this->createMock(NOA::class);
-        $noa->method('getCyLocation')->willReturn('CY-001');
-        
         $container = $this->createMock(Container::class);
         $container->method('getId')->willReturn(1);
         $container->method('getContainerNumber')->willReturn('CONT001');
         $container->method('getNoa')->willReturn($noa);
+        $this->mockContainerCyAllocation($container, 'CY-001');
         
         $containers = new ArrayCollection([$container]);
         
@@ -241,12 +240,11 @@ class BatchEDOGenerationServiceTest extends TestCase
         $payment->method('getStatus')->willReturn(PaymentStatus::VERIFIED);
         
         $noa = $this->createMock(NOA::class);
-        $noa->method('getCyLocation')->willReturn('CY-001');
-        
         $container = $this->createMock(Container::class);
         $container->method('getId')->willReturn(1);
         $container->method('getContainerNumber')->willReturn('CONT001');
         $container->method('getNoa')->willReturn($noa);
+        $this->mockContainerCyAllocation($container, 'CY-001');
         
         $containers = new ArrayCollection([$container]);
         
@@ -322,12 +320,11 @@ class BatchEDOGenerationServiceTest extends TestCase
         $payment->method('getStatus')->willReturn(PaymentStatus::VERIFIED);
         
         $noa = $this->createMock(NOA::class);
-        $noa->method('getCyLocation')->willReturn('CY-001');
-        
         $container = $this->createMock(Container::class);
         $container->method('getId')->willReturn(1);
         $container->method('getContainerNumber')->willReturn('CONT001');
         $container->method('getNoa')->willReturn($noa);
+        $this->mockContainerCyAllocation($container, 'CY-001');
         
         $containers = new ArrayCollection([$container]);
         
@@ -398,12 +395,11 @@ class BatchEDOGenerationServiceTest extends TestCase
         $payment->method('getStatus')->willReturn(PaymentStatus::VERIFIED);
         
         $noa = $this->createMock(NOA::class);
-        $noa->method('getCyLocation')->willReturn('CY-001');
-        
         $container = $this->createMock(Container::class);
         $container->method('getId')->willReturn(1);
         $container->method('getContainerNumber')->willReturn('CONT001');
         $container->method('getNoa')->willReturn($noa);
+        $this->mockContainerCyAllocation($container, 'CY-001');
         
         $containers = new ArrayCollection([$container]);
         
@@ -466,12 +462,13 @@ class BatchEDOGenerationServiceTest extends TestCase
         $payment->method('getStatus')->willReturn(PaymentStatus::VERIFIED);
         
         $noa = $this->createMock(NOA::class);
-        $noa->method('getCyLocation')->willReturn('CY-LOCATION-001');
         
         $container = $this->createMock(Container::class);
+        $this->mockContainerCyAllocation($container, 'CY-LOCATION-001');
         $container->method('getId')->willReturn(1);
         $container->method('getContainerNumber')->willReturn('CONT001');
         $container->method('getNoa')->willReturn($noa);
+        $this->mockContainerCyAllocation($container, 'CY-001');
         
         $containers = new ArrayCollection([$container]);
         
@@ -539,12 +536,11 @@ class BatchEDOGenerationServiceTest extends TestCase
         $payment->method('getStatus')->willReturn(PaymentStatus::VERIFIED);
         
         $noa = $this->createMock(NOA::class);
-        $noa->method('getCyLocation')->willReturn('CY-001');
-        
         $container = $this->createMock(Container::class);
         $container->method('getId')->willReturn(1);
         $container->method('getContainerNumber')->willReturn('CONT001');
         $container->method('getNoa')->willReturn($noa);
+        $this->mockContainerCyAllocation($container, 'CY-001');
         
         $containers = new ArrayCollection([$container]);
         
@@ -604,17 +600,17 @@ class BatchEDOGenerationServiceTest extends TestCase
         $payment->method('getStatus')->willReturn(PaymentStatus::VERIFIED);
         
         $noa = $this->createMock(\App\Entity\NOA::class);
-        $noa->method('getCyLocation')->willReturn('CY-001');
-        
         $container1 = $this->createMock(Container::class);
         $container1->method('getId')->willReturn(1);
         $container1->method('getContainerNumber')->willReturn('CONT001');
         $container1->method('getNoa')->willReturn($noa);
+        $this->mockContainerCyAllocation($container1, 'CY-001');
         
         $container2 = $this->createMock(Container::class);
         $container2->method('getId')->willReturn(2);
         $container2->method('getContainerNumber')->willReturn('CONT002');
         $container2->method('getNoa')->willReturn($noa);
+        $this->mockContainerCyAllocation($container2, 'CY-001');
         
         $containers = new ArrayCollection([$container1, $container2]);
         
@@ -681,12 +677,11 @@ class BatchEDOGenerationServiceTest extends TestCase
         $payment->method('getStatus')->willReturn(PaymentStatus::VERIFIED);
         
         $noa = $this->createMock(\App\Entity\NOA::class);
-        $noa->method('getCyLocation')->willReturn('CY-001');
-        
         $container = $this->createMock(Container::class);
         $container->method('getId')->willReturn(1);
         $container->method('getContainerNumber')->willReturn('CONT001');
         $container->method('getNoa')->willReturn($noa);
+        $this->mockContainerCyAllocation($container, 'CY-001');
         
         $containers = new ArrayCollection([$container]);
         
@@ -741,12 +736,11 @@ class BatchEDOGenerationServiceTest extends TestCase
         $payment->method('getStatus')->willReturn(PaymentStatus::VERIFIED);
         
         $noa = $this->createMock(\App\Entity\NOA::class);
-        $noa->method('getCyLocation')->willReturn('CY-001');
-        
         $container = $this->createMock(Container::class);
         $container->method('getId')->willReturn(1);
         $container->method('getContainerNumber')->willReturn('CONT001');
         $container->method('getNoa')->willReturn($noa);
+        $this->mockContainerCyAllocation($container, 'CY-001');
         
         $containers = new ArrayCollection([$container]);
         
@@ -822,12 +816,11 @@ class BatchEDOGenerationServiceTest extends TestCase
         $payment->method('getStatus')->willReturn(PaymentStatus::VERIFIED);
         
         $noa = $this->createMock(\App\Entity\NOA::class);
-        $noa->method('getCyLocation')->willReturn('CY-001');
-        
         $container = $this->createMock(Container::class);
         $container->method('getId')->willReturn(1);
         $container->method('getContainerNumber')->willReturn('CONT001');
         $container->method('getNoa')->willReturn($noa);
+        $this->mockContainerCyAllocation($container, 'CY-001');
         
         $containers = new ArrayCollection([$container]);
         
@@ -879,6 +872,13 @@ class BatchEDOGenerationServiceTest extends TestCase
         
         $this->service->generateEDOsForManifest($manifest, $expirationDate, $user);
     }
-}
 
+    private function mockContainerCyAllocation(Container $container, string $terminalName): void
+    {
+        $terminal = $this->createMock(\App\Entity\Terminal::class);
+        $terminal->method('getName')->willReturn($terminalName);
+        $allocation = $this->createMock(\App\Entity\ShippingLineTerminalAllocation::class);
+        $allocation->method('getTerminal')->willReturn($terminal);
+        $container->method('getCyAllocation')->willReturn($allocation);
+    }
 }

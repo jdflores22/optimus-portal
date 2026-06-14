@@ -16,7 +16,7 @@
             <p><strong>Manifest Number:</strong> {{ manifest.manifestNumber }}</p>
             <p><strong>BL Number:</strong> {{ manifest.blNumber ?? 'N/A' }}</p>
             <p><strong>Payment Type:</strong> {{ payment.type }}</p>
-            <p><strong>Amount:</strong> ₱{{ payment.amount|number_format(2) }}</p>
+            <p><strong>Amount:</strong> {{ payment|format_payment }}</p>
             <p><strong>Submitted By:</strong> {{ payment.submittedBy }}</p>
         </div>
         

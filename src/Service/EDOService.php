@@ -24,6 +24,9 @@ class EDOService implements EDOServiceInterface
     ) {
     }
 
+    /**
+     * @deprecated Use BatchEDOGenerationService after final payment approval instead.
+     */
     public function autoGenerateEDO(Payment $verifiedPayment): ElectronicDeliveryOrder
     {
         // Validate payment type and status

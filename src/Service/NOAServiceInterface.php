@@ -30,8 +30,7 @@ interface NOAServiceInterface
      * @param string $blNumber Bill of Lading number
      * @param string $vesselNumber Vessel identification
      * @param \DateTimeInterface $eta Estimated Time of Arrival
-     * @param string $cyLocation Container Yard location
-     * @param Consignee $consignee Associated consignee
+     * @param string $portLocation Port/terminal discharge location
      * @param array $containers Array of container data [['number' => '', 'type' => ContainerType, 'size' => ContainerSize], ...]
      * @param User $creator Terminal team member creating the NOA
      * @return NOA Created NOA entity
@@ -41,7 +40,7 @@ interface NOAServiceInterface
         string $blNumber,
         string $vesselNumber,
         \DateTimeInterface $eta,
-        string $cyLocation,
+        string $portLocation,
         Consignee $consignee,
         array $containers,
         User $creator

@@ -155,6 +155,12 @@ class FormConfiguration
         return $this;
     }
 
+    public function unpublish(): self
+    {
+        $this->status = FormStatus::DRAFT;
+        return $this;
+    }
+
     public function isDeletable(): bool
     {
         // Can delete DRAFT and INACTIVE forms (but still need to check for submissions)

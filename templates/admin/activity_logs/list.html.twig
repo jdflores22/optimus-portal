@@ -1,566 +1,589 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 
-{% block title %}Activity Logs{% endblock %}
+{% block title %}Activity Logs - OPTIMUS{% endblock %}
+{% set isSystemAdmin = currentUser.role.value == 'SYSTEM_ADMIN' %}
+{% set hasActiveFilters = filters.from_date|default('') or filters.to_date|default('') or filters.activity_type|default('') or filters.entity_type|default('') or filters.user_id|default('') or filters.search|default('') %}
+{% set businessCount = activityLogs|filter(log => log.isBusinessActivity)|length %}
+{% set securityCount = activityLogs|filter(log => log.isSecurityActivity)|length %}
+{% set todayCount = activityLogs|filter(log => log.createdAt|date('Y-m-d') == 'now'|date('Y-m-d'))|length %}
 
-{% block body %}
-<div class="min-h-screen bg-gray-50">
-    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <!-- Header -->
-        <div class="md:flex md:items-center md:justify-between mb-6">
-            <div class="flex-1 min-w-0">
-                <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-                    Activity Logs
-                    {% if targetUser %}
-                        - {% if targetUser.fullName is defined %}{{ targetUser.fullName }}{% elseif targetUser.firstName is defined %}{{ targetUser.firstName }} {{ targetUser.lastName }}{% else %}{{ targetUser.email }}{% endif %}
-                    {% elseif shippingLineScope %}
-                        - {{ shippingLineScope.brandName }}
-                    {% elseif currentUser.role.value == 'SYSTEM_ADMIN' %}
-                        - System Wide
-                    {% endif %}
-                </h2>
-                <p class="mt-1 text-sm text-gray-500">
-                    {% if targetUser %}
-                        Viewing activity logs for {% if targetUser.fullName is defined %}{{ targetUser.fullName }}{% elseif targetUser.firstName is defined %}{{ targetUser.firstName }} {{ targetUser.lastName }}{% else %}{{ targetUser.email }}{% endif %}
-                    {% else %}
-                        View and search system activity logs with filtering and export capabilities
-                    {% endif %}
-                </p>
-            </div>
-            <div class="mt-4 flex md:mt-0 md:ml-4 space-x-3">
-                {% if targetUser %}
-                    <a href="{{ path('admin_user_hierarchy_detail', {id: targetUser.id}) }}" 
-                       class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                        </svg>
-                        Back to User
-                    </a>
-                {% endif %}
-                <a href="{{ path('admin_activity_logs_reports') }}" 
-                   class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                    </svg>
-                    Reports
-                </a>
-                <a href="{{ path('admin_activity_logs_export', {format: 'csv'}) }}" 
-                   class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    Export
-                </a>
-            </div>
-        </div>
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+                                <li><a href="{{ path('app_admin_dashboard') }}">Admin</a></li>
+                                <li>Activity Logs</li>
+                            </ul>
+</div>
+{% endblock %}
 
-        <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-            <div class="bg-white overflow-hidden shadow rounded-lg">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
+{% block content %}
+<div class="space-y-5 sm:space-y-6">
+{# Header #}
+        <div class="bg-base-100 shadow-sm rounded-xl">
+            <div class="p-4 sm:p-6">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-4">
+                            <div class="size-12 rounded-xl bg-info/10 flex items-center justify-center shrink-0">
+                                <span class="icon-[tabler--activity] size-6 text-info"></span>
                             </div>
-                        </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="text-sm font-medium text-gray-500 truncate">Total Activities</dt>
-                                <dd class="text-2xl font-bold text-gray-900">{{ pagination.total|number_format }}</dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white overflow-hidden shadow rounded-lg">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="text-sm font-medium text-gray-500 truncate">Business Activities</dt>
-                                <dd class="text-2xl font-bold text-gray-900">{{ activityLogs|filter(log => log.isBusinessActivity)|length }}</dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white overflow-hidden shadow rounded-lg">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="text-sm font-medium text-gray-500 truncate">Security Activities</dt>
-                                <dd class="text-2xl font-bold text-gray-900">{{ activityLogs|filter(log => log.isSecurityActivity)|length }}</dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white overflow-hidden shadow rounded-lg">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="text-sm font-medium text-gray-500 truncate">Today's Activities</dt>
-                                <dd class="text-2xl font-bold text-gray-900">{{ activityLogs|filter(log => log.createdAt|date('Y-m-d') == 'now'|date('Y-m-d'))|length }}</dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Filters Card -->
-        <div class="bg-white shadow rounded-lg mb-6">
-            <div class="px-4 py-5 sm:p-6">
-                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Filters</h3>
-                <form method="GET" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
-                    <div>
-                        <label for="from_date" class="block text-sm font-medium text-gray-700">From Date</label>
-                        <input type="date" 
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
-                               id="from_date" 
-                               name="from_date" 
-                               value="{{ filters.from_date }}">
-                    </div>
-                    <div>
-                        <label for="to_date" class="block text-sm font-medium text-gray-700">To Date</label>
-                        <input type="date" 
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
-                               id="to_date" 
-                               name="to_date" 
-                               value="{{ filters.to_date }}">
-                    </div>
-                    <div>
-                        <label for="activity_type" class="block text-sm font-medium text-gray-700">Activity Type</label>
-                        <select class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
-                                id="activity_type" 
-                                name="activity_type">
-                            <option value="">All Types</option>
-                            {% for type in activityTypes %}
-                                <option value="{{ type }}" {% if filters.activity_type == type %}selected{% endif %}>
-                                    {{ type|replace({'_': ' '})|title }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div>
-                        <label for="entity_type" class="block text-sm font-medium text-gray-700">Entity Type</label>
-                        <select class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
-                                id="entity_type" 
-                                name="entity_type">
-                            <option value="">All Entities</option>
-                            {% for type in entityTypes %}
-                                <option value="{{ type }}" {% if filters.entity_type == type %}selected{% endif %}>
-                                    {{ type|replace({'_': ' '})|title }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div>
-                        <label for="user_id" class="block text-sm font-medium text-gray-700">User</label>
-                        <select class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
-                                id="user_id" 
-                                name="user_id">
-                            <option value="">All Users</option>
-                            {% for user in availableUsers %}
-                                <option value="{{ user.id }}" {% if filters.user_id == user.id %}selected{% endif %}>
-                                    {{ user.fullName }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="flex items-end space-x-2">
-                        <button type="submit" 
-                                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            Filter
-                        </button>
-                        <a href="{{ path('admin_activity_logs_list') }}" 
-                           class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            Clear
-                        </a>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Search Card -->
-        <div class="bg-white shadow rounded-lg mb-6">
-            <div class="px-4 py-5 sm:p-6">
-                <div class="flex items-center space-x-4">
-                    <div class="flex-1">
-                        <label for="search" class="block text-sm font-medium text-gray-700">Search Activity Logs</label>
-                        <div class="mt-1 relative rounded-md shadow-sm">
-                            <input type="text" 
-                                   class="block w-full pr-10 border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
-                                   id="search" 
-                                   placeholder="Search descriptions, users, entities..."
-                                   value="{{ filters.search }}">
-                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                <button type="button" 
-                                        id="searchBtn"
-                                        class="text-gray-400 hover:text-gray-500">
-                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Activity Logs Table -->
-        <div class="bg-white shadow overflow-hidden sm:rounded-md">
-            <div class="px-4 py-5 sm:p-6">
-                {% if activityLogs is empty %}
-                    <div class="text-center py-12">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900">No activity logs</h3>
-                        <p class="mt-1 text-sm text-gray-500">No activity logs found matching your criteria.</p>
-                    </div>
-                {% else %}
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Date/Time
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Activity
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        User
-                                    </th>
-                                    {% if currentUser.role.value == 'SYSTEM_ADMIN' %}
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Shipping Line
-                                        </th>
+                            <div class="min-w-0">
+                                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">
+                                    Activity Logs
+                                    {% if targetUser %}
+                                        <span class="text-base-content/60 font-semibold text-lg sm:text-xl">
+                                            — {% if targetUser.fullName is defined %}{{ targetUser.fullName }}{% elseif targetUser.firstName is defined %}{{ targetUser.firstName }} {{ targetUser.lastName }}{% else %}{{ targetUser.email }}{% endif %}
+                                        </span>
+                                    {% elseif shippingLineScope %}
+                                        <span class="text-base-content/60 font-semibold text-lg sm:text-xl">— {{ shippingLineScope.brandName }}</span>
+                                    {% elseif isSystemAdmin %}
+                                        <span class="text-base-content/60 font-semibold text-lg sm:text-xl">— System Wide</span>
                                     {% endif %}
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Entity
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        IP Address
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Type
-                                    </th>
-                                    <th scope="col" class="relative px-6 py-3">
-                                        <span class="sr-only">Actions</span>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody id="activityLogsTable" class="bg-white divide-y divide-gray-200">
-                                {% for log in activityLogs %}
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ log.createdAt|date('M d, Y') }}<br>
-                                            <span class="text-xs text-gray-400">{{ log.createdAt|date('H:i:s') }}</span>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <div class="text-sm font-medium text-gray-900">
-                                                {{ log.activityDescription }}
-                                            </div>
-                                            <div class="text-sm text-gray-500">
-                                                {{ log.activityType|replace({'_': ' '})|title }}
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm font-medium text-gray-900">
-                                                {{ log.user.email }}
-                                            </div>
-                                            <div class="text-sm text-gray-500">
-                                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                                                    {{ log.user.role.value|replace({'_': ' '})|title }}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        {% if currentUser.role.value == 'SYSTEM_ADMIN' %}
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {% if log.shippingLine %}
-                                                    {{ log.shippingLine.brandName }}
-                                                {% else %}
-                                                    <span class="text-gray-400 italic">System</span>
-                                                {% endif %}
-                                            </td>
-                                        {% endif %}
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {% if log.entityType %}
-                                                {{ log.entityType|replace({'_': ' '})|title }}
-                                                {% if log.entityId %}
-                                                    <span class="text-gray-500">#{{ log.entityId }}</span>
-                                                {% endif %}
-                                            {% else %}
-                                                <span class="text-gray-400">-</span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
-                                            {{ log.ipAddress }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            {% if log.isSecurityActivity %}
-                                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                                                    Security
-                                                </span>
-                                            {% elseif log.isBusinessActivity %}
-                                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                                    Business
-                                                </span>
-                                            {% else %}
-                                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                    System
-                                                </span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <a href="{{ path('admin_activity_logs_detail', {id: log.id}) }}" 
-                                               class="text-blue-600 hover:text-blue-900">
-                                                View Details
-                                            </a>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                </h1>
+                                <p class="text-sm text-base-content/60 mt-1">
+                                    {% if targetUser %}
+                                        Viewing activity logs for {% if targetUser.fullName is defined %}{{ targetUser.fullName }}{% elseif targetUser.firstName is defined %}{{ targetUser.firstName }} {{ targetUser.lastName }}{% else %}{{ targetUser.email }}{% endif %}
+                                    {% else %}
+                                        View and search system activity logs with filtering and export capabilities
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                {% endif %}
+                    <div class="flex flex-wrap gap-2 w-full lg:w-auto">
+                        {% if targetUser %}
+                            <a href="{{ path('admin_user_hierarchy_detail', {id: targetUser.id}) }}" class="btn btn-ghost btn-sm gap-2">
+                                <span class="icon-[tabler--arrow-left] size-4"></span>
+                                Back to User
+                            </a>
+                        {% endif %}
+                        <a href="{{ path('admin_activity_logs_reports') }}" class="btn btn-outline btn-sm gap-2">
+                            <span class="icon-[tabler--chart-bar] size-4"></span>
+                            Reports
+                        </a>
+                        <a href="{{ path('admin_activity_logs_export', {format: 'csv'}) }}" class="btn btn-primary btn-sm gap-2">
+                            <span class="icon-[tabler--download] size-4"></span>
+                            Export CSV
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Pagination -->
-        {% if pagination.pages > 1 %}
-            <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-6 rounded-lg shadow">
-                <div class="flex-1 flex justify-between sm:hidden">
-                    {% if pagination.page > 1 %}
-                        <a href="{{ path('admin_activity_logs_list', filters|merge({page: pagination.page - 1})) }}" 
-                           class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                            Previous
-                        </a>
-                    {% endif %}
-                    {% if pagination.page < pagination.pages %}
-                        <a href="{{ path('admin_activity_logs_list', filters|merge({page: pagination.page + 1})) }}" 
-                           class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                            Next
-                        </a>
-                    {% endif %}
-                </div>
-                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                    <div>
-                        <p class="text-sm text-gray-700">
-                            Showing
-                            <span class="font-medium">{{ ((pagination.page - 1) * pagination.limit) + 1 }}</span>
-                            to
-                            <span class="font-medium">{{ min(pagination.page * pagination.limit, pagination.total) }}</span>
-                            of
-                            <span class="font-medium">{{ pagination.total }}</span>
-                            results
-                        </p>
+        {# Stats #}
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="size-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--list-details] size-5"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs text-base-content/70">Total Activities</p>
+                            <p class="text-2xl font-bold text-base-content">{{ pagination.total|number_format }}</p>
+                            <p class="text-xs text-primary/80">All matching filters</p>
+                        </div>
                     </div>
-                    <div>
-                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                            {% if pagination.page > 1 %}
-                                <a href="{{ path('admin_activity_logs_list', filters|merge({page: pagination.page - 1})) }}" 
-                                   class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                                    <span class="sr-only">Previous</span>
-                                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                    </svg>
-                                </a>
-                            {% endif %}
+                </div>
+            </div>
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="size-10 bg-success/10 text-success rounded-xl flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--briefcase] size-5"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs text-base-content/70">Business</p>
+                            <p class="text-2xl font-bold text-base-content">{{ businessCount }}</p>
+                            <p class="text-xs text-success/80">On this page</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="size-10 bg-error/10 text-error rounded-xl flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--shield-lock] size-5"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs text-base-content/70">Security</p>
+                            <p class="text-2xl font-bold text-base-content">{{ securityCount }}</p>
+                            <p class="text-xs text-error/80">On this page</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="size-10 bg-accent/10 text-accent rounded-xl flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--clock] size-5"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs text-base-content/70">Today</p>
+                            <p class="text-2xl font-bold text-base-content">{{ todayCount }}</p>
+                            <p class="text-xs text-accent/80">On this page</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                            {% for page in 1..pagination.pages %}
-                                {% if page == pagination.page %}
-                                    <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
-                                        {{ page }}
-                                    </span>
-                                {% elseif page <= 3 or page >= pagination.pages - 2 or (page >= pagination.page - 1 and page <= pagination.page + 1) %}
-                                    <a href="{{ path('admin_activity_logs_list', filters|merge({page: page})) }}" 
-                                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                                        {{ page }}
+        {# Filters & Search #}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-4 sm:p-5">
+                <div class="flex items-center justify-between gap-3 mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--filter] size-5 text-base-content/70"></span>
+                        <h3 class="font-semibold text-base text-base-content">Filters & Search</h3>
+                        {% if hasActiveFilters %}
+                            <span class="badge badge-primary badge-sm">Active</span>
+                        {% endif %}
+                    </div>
+                    <button type="button" id="activityLogFilterToggle" class="btn btn-ghost btn-sm gap-1">
+                        <span id="activityLogFilterToggleText">{{ hasActiveFilters ? 'Hide Filters' : 'Show Filters' }}</span>
+                        <span id="activityLogFilterToggleIcon" class="icon-[tabler--chevron-down] size-4 transition-transform {{ hasActiveFilters ? 'rotate-180' : '' }}"></span>
+                    </button>
+                </div>
+
+                <div id="activityLogFilterPanel" class="{{ hasActiveFilters ? '' : 'hidden' }} space-y-4">
+                    <form method="GET" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="form-control">
+                                <label class="label py-1" for="from_date"><span class="label-text font-medium">From Date</span></label>
+                                <input type="date" name="from_date" id="from_date" value="{{ filters.from_date }}" class="input input-bordered w-full">
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-1" for="to_date"><span class="label-text font-medium">To Date</span></label>
+                                <input type="date" name="to_date" id="to_date" value="{{ filters.to_date }}" class="input input-bordered w-full">
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-1" for="activity_type"><span class="label-text font-medium">Activity Type</span></label>
+                                <select name="activity_type" id="activity_type" class="select select-bordered w-full">
+                                    <option value="">All Types</option>
+                                    {% for type in activityTypes %}
+                                        <option value="{{ type }}" {% if filters.activity_type == type %}selected{% endif %}>{{ type|replace({'_': ' '})|title }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-1" for="entity_type"><span class="label-text font-medium">Entity Type</span></label>
+                                <select name="entity_type" id="entity_type" class="select select-bordered w-full">
+                                    <option value="">All Entities</option>
+                                    {% for type in entityTypes %}
+                                        <option value="{{ type }}" {% if filters.entity_type == type %}selected{% endif %}>{{ type|replace({'_': ' '})|title }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-1" for="user_id"><span class="label-text font-medium">User</span></label>
+                                <select name="user_id" id="user_id" class="select select-bordered w-full">
+                                    <option value="">All Users</option>
+                                    {% for user in availableUsers %}
+                                        <option value="{{ user.id }}" {% if filters.user_id == user.id %}selected{% endif %}>{{ user.fullName }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-control">
+                                <label class="label py-1" for="search"><span class="label-text font-medium">Search</span></label>
+                                <label class="input input-bordered flex items-center gap-2 w-full">
+                                    <span class="icon-[tabler--search] size-4 text-base-content/50"></span>
+                                    <input type="text" name="search" id="search" value="{{ filters.search }}" placeholder="Descriptions, users, entities…" class="grow min-w-0">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-base-300">
+                            <div class="flex flex-wrap gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm gap-2">
+                                    <span class="icon-[tabler--search] size-4"></span>
+                                    Apply Filters
+                                </button>
+                                <a href="{{ path('admin_activity_logs_list') }}" class="btn btn-ghost btn-sm gap-2">
+                                    <span class="icon-[tabler--refresh] size-4"></span>
+                                    Clear All
+                                </a>
+                            </div>
+                            <span class="text-sm text-base-content/50">{{ pagination.total|number_format }} total results</span>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="activityLogSearchNotice" class="hidden alert alert-info alert-soft mt-4 py-2">
+                    <span class="icon-[tabler--info-circle] size-5"></span>
+                    <span id="activityLogSearchNoticeText"></span>
+                </div>
+            </div>
+        </div>
+
+        {# Results #}
+        <div class="card bg-base-100 shadow-sm overflow-hidden">
+            <div class="card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 pt-4 sm:pt-5">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="icon-[tabler--timeline] size-5 text-base-content/70"></span>
+                    <h3 class="card-title text-base sm:text-lg">Activity Log Entries</h3>
+                    <span class="badge badge-primary badge-soft">{{ activityLogs|length }} on page</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex items-center gap-2">
+                        <label for="activityLogLimit" class="text-sm text-base-content/70">Show</label>
+                        <select id="activityLogLimit" class="select select-bordered select-sm">
+                            {% for limitOption in [10, 20, 50, 100] %}
+                                <option value="{{ limitOption }}" {{ pagination.limit == limitOption ? 'selected' : '' }}>{{ limitOption }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="button" id="activityLogLiveSearchBtn" class="btn btn-outline btn-sm gap-1">
+                        <span class="icon-[tabler--search] size-4"></span>
+                        Live Search
+                    </button>
+                </div>
+            </div>
+
+            {% if activityLogs is empty %}
+                <div class="flex flex-col items-center justify-center py-16 text-center px-4">
+                    <span class="icon-[tabler--file-off] size-12 text-base-content/30"></span>
+                    <h3 class="mt-4 text-base font-medium text-base-content">No activity logs found</h3>
+                    <p class="mt-2 text-sm text-base-content/60 max-w-md">No activity logs match the current filter criteria. Try adjusting your search parameters.</p>
+                    <a href="{{ path('admin_activity_logs_list') }}" class="btn btn-primary btn-sm gap-2 mt-6">
+                        <span class="icon-[tabler--refresh] size-4"></span>
+                        Clear Filters
+                    </a>
+                </div>
+            {% else %}
+                {# Desktop table #}
+                <div class="hidden xl:block overflow-x-auto">
+                    <table class="table table-sm table-fixed">
+                        <thead>
+                            <tr>
+                                <th class="w-[8.5rem]">Date/Time</th>
+                                <th class="w-[14rem]">Activity</th>
+                                <th class="w-[11rem]">User</th>
+                                {% if isSystemAdmin %}
+                                    <th class="w-[9rem]">Shipping Line</th>
+                                {% endif %}
+                                <th class="w-[10rem]">Entity</th>
+                                <th class="w-[5.5rem]">IP</th>
+                                <th class="w-[6.5rem]">Type</th>
+                                <th class="w-[5rem]"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="activityLogsTable">
+                            {% for log in activityLogs %}
+                                <tr class="hover align-top">
+                                    <td class="whitespace-nowrap text-sm align-top">
+                                        <div>{{ log.createdAt|date('M j, Y') }}</div>
+                                        <div class="text-xs text-base-content/50">{{ log.createdAt|date('H:i:s') }}</div>
+                                    </td>
+                                    <td class="align-top overflow-hidden">
+                                        <div class="text-sm font-medium break-words">{{ log.activityDescription }}</div>
+                                        <div class="text-xs text-base-content/50 mt-0.5">{{ log.activityType|replace({'_': ' '})|title }}</div>
+                                    </td>
+                                    <td class="align-top overflow-hidden">
+                                        <div class="text-sm font-medium truncate" title="{{ log.user.email }}">{{ log.user.email }}</div>
+                                        <span class="badge badge-ghost badge-soft badge-xs mt-1">{{ log.user.role.value|replace({'_': ' '})|title }}</span>
+                                    </td>
+                                    {% if isSystemAdmin %}
+                                        <td class="align-top overflow-hidden text-sm">
+                                            {% if log.shippingLine %}
+                                                <span class="truncate block" title="{{ log.shippingLine.brandName }}">{{ log.shippingLine.brandName }}</span>
+                                            {% else %}
+                                                <span class="text-base-content/40 italic">System</span>
+                                            {% endif %}
+                                        </td>
+                                    {% endif %}
+                                    <td class="align-top overflow-hidden text-sm">
+                                        {% if log.entityType %}
+                                            <div class="truncate" title="{{ log.entityType }}">{{ log.entityType|replace({'_': ' '})|title }}</div>
+                                            {% if log.entityId %}
+                                                <div class="text-xs text-base-content/50">#{{ log.entityId }}</div>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-base-content/40">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-xs font-mono text-base-content/60 whitespace-nowrap align-top">{{ log.ipAddress }}</td>
+                                    <td class="align-top">
+                                        {% if log.isSecurityActivity %}
+                                            <span class="badge badge-error badge-soft badge-sm whitespace-normal">Security</span>
+                                        {% elseif log.isBusinessActivity %}
+                                            <span class="badge badge-success badge-soft badge-sm whitespace-normal">Business</span>
+                                        {% else %}
+                                            <span class="badge badge-info badge-soft badge-sm whitespace-normal">System</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="align-top text-right">
+                                        <a href="{{ path('admin_activity_logs_detail', {id: log.id}) }}" class="btn btn-ghost btn-xs gap-1">
+                                            <span class="icon-[tabler--eye] size-3.5"></span>
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {# Mobile / tablet cards #}
+                <div class="xl:hidden p-4 space-y-3" id="activityLogsCards">
+                    {% for log in activityLogs %}
+                        <div class="card bg-base-200 border border-base-300">
+                            <div class="card-body p-4 space-y-3">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium text-base-content break-words">{{ log.activityDescription }}</p>
+                                        <p class="text-xs text-base-content/50 mt-1">{{ log.createdAt|date('M j, Y H:i:s') }}</p>
+                                    </div>
+                                    {% if log.isSecurityActivity %}
+                                        <span class="badge badge-error badge-soft badge-sm shrink-0">Security</span>
+                                    {% elseif log.isBusinessActivity %}
+                                        <span class="badge badge-success badge-soft badge-sm shrink-0">Business</span>
+                                    {% else %}
+                                        <span class="badge badge-info badge-soft badge-sm shrink-0">System</span>
+                                    {% endif %}
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                                    <div>
+                                        <span class="text-base-content/60">User:</span>
+                                        <span class="font-medium">{{ log.user.email }}</span>
+                                    </div>
+                                    {% if isSystemAdmin %}
+                                        <div>
+                                            <span class="text-base-content/60">Line:</span>
+                                            <span class="font-medium">{{ log.shippingLine ? log.shippingLine.brandName : 'System' }}</span>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <span class="text-base-content/60">Entity:</span>
+                                        {% if log.entityType %}
+                                            <span class="font-medium">{{ log.entityType|replace({'_': ' '})|title }}{% if log.entityId %} #{{ log.entityId }}{% endif %}</span>
+                                        {% else %}
+                                            <span class="text-base-content/40">—</span>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <span class="text-base-content/60">IP:</span>
+                                        <span class="font-mono text-xs">{{ log.ipAddress }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-end">
+                                    <a href="{{ path('admin_activity_logs_detail', {id: log.id}) }}" class="btn btn-primary btn-sm btn-soft gap-1">
+                                        <span class="icon-[tabler--eye] size-4"></span>
+                                        View Details
                                     </a>
-                                {% elseif page == 4 or page == pagination.pages - 3 %}
-                                    <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                                        ...
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {# Pagination #}
+                {% if pagination.pages > 1 %}
+                    <div class="px-4 sm:px-6 py-4 border-t border-base-300">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <p class="text-sm text-base-content/60">
+                                Showing
+                                <span class="font-medium text-base-content">{{ ((pagination.page - 1) * pagination.limit) + 1 }}</span>
+                                to
+                                <span class="font-medium text-base-content">{{ min(pagination.page * pagination.limit, pagination.total) }}</span>
+                                of
+                                <span class="font-medium text-base-content">{{ pagination.total|number_format }}</span>
+                                results
+                            </p>
+                            <div class="join">
+                                {% if pagination.page > 1 %}
+                                    <a href="{{ path('admin_activity_logs_list', filters|merge({page: pagination.page - 1})) }}" class="join-item btn btn-sm btn-outline">
+                                        <span class="icon-[tabler--chevron-left] size-4"></span>
+                                    </a>
+                                {% else %}
+                                    <span class="join-item btn btn-sm btn-outline btn-disabled">
+                                        <span class="icon-[tabler--chevron-left] size-4"></span>
                                     </span>
                                 {% endif %}
-                            {% endfor %}
 
-                            {% if pagination.page < pagination.pages %}
-                                <a href="{{ path('admin_activity_logs_list', filters|merge({page: pagination.page + 1})) }}" 
-                                   class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                                    <span class="sr-only">Next</span>
-                                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-                                    </svg>
-                                </a>
-                            {% endif %}
-                        </nav>
+                                {% for page in 1..pagination.pages %}
+                                    {% if page == pagination.page %}
+                                        <span class="join-item btn btn-sm btn-primary">{{ page }}</span>
+                                    {% elseif page <= 3 or page >= pagination.pages - 2 or (page >= pagination.page - 1 and page <= pagination.page + 1) %}
+                                        <a href="{{ path('admin_activity_logs_list', filters|merge({page: page})) }}" class="join-item btn btn-sm btn-outline">{{ page }}</a>
+                                    {% elseif page == 4 or page == pagination.pages - 3 %}
+                                        <span class="join-item btn btn-sm btn-disabled">…</span>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if pagination.page < pagination.pages %}
+                                    <a href="{{ path('admin_activity_logs_list', filters|merge({page: pagination.page + 1})) }}" class="join-item btn btn-sm btn-outline">
+                                        <span class="icon-[tabler--chevron-right] size-4"></span>
+                                    </a>
+                                {% else %}
+                                    <span class="join-item btn btn-sm btn-outline btn-disabled">
+                                        <span class="icon-[tabler--chevron-right] size-4"></span>
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-        {% endif %}
-    </div>
+                {% endif %}
+            {% endif %}
+        </div>
 </div>
+{% endblock %}
 
+{% block page_scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Search functionality
-    const searchBtn = document.getElementById('searchBtn');
-    const searchInput = document.getElementById('search');
-    
-    searchBtn.addEventListener('click', function() {
-        performSearch();
-    });
-    
-    searchInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            performSearch();
-        }
-    });
-    
-    function performSearch() {
-        const term = searchInput.value.trim();
-        if (term === '') {
-            return;
-        }
-        
-        const formData = new FormData();
-        formData.append('search_term', term);
-        
-        // Add current filters to search
-        const activityType = document.getElementById('activity_type').value;
-        const entityType = document.getElementById('entity_type').value;
-        const userId = document.getElementById('user_id').value;
-        
-        if (activityType) formData.append('activity_type', activityType);
-        if (entityType) formData.append('entity_type', entityType);
-        if (userId) formData.append('user_id', userId);
-        
-        fetch('{{ path('admin_activity_logs_search') }}', {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                updateTable(data.data.results);
-                showSearchResults(data.data.searchTerm, data.data.totalFound);
-            } else {
-                alert('Search failed: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Search error:', error);
-            alert('Search failed');
-        });
+(function () {
+    const isSystemAdmin = {{ isSystemAdmin ? 'true' : 'false' }};
+    const detailUrlBase = '{{ path('admin_activity_logs_detail', {id: 0}) }}'.replace(/0$/, '');
+    const searchUrl = '{{ path('admin_activity_logs_search') }}';
+    const colspan = isSystemAdmin ? 8 : 7;
+
+    function toggleFilters() {
+        const panel = document.getElementById('activityLogFilterPanel');
+        const toggleText = document.getElementById('activityLogFilterToggleText');
+        const toggleIcon = document.getElementById('activityLogFilterToggleIcon');
+        const isHidden = panel.classList.contains('hidden');
+        panel.classList.toggle('hidden');
+        toggleText.textContent = isHidden ? 'Hide Filters' : 'Show Filters';
+        toggleIcon.classList.toggle('rotate-180', isHidden);
     }
-    
+
+    document.getElementById('activityLogFilterToggle')?.addEventListener('click', toggleFilters);
+
+    document.getElementById('activityLogLimit')?.addEventListener('change', function () {
+        const url = new URL(window.location);
+        url.searchParams.set('limit', this.value);
+        url.searchParams.set('page', '1');
+        window.location.href = url.toString();
+    });
+
+    function typeBadge(log) {
+        if (log.is_security_activity) {
+            return '<span class="badge badge-error badge-soft badge-sm whitespace-normal">Security</span>';
+        }
+        if (log.is_business_activity) {
+            return '<span class="badge badge-success badge-soft badge-sm whitespace-normal">Business</span>';
+        }
+        return '<span class="badge badge-info badge-soft badge-sm whitespace-normal">System</span>';
+    }
+
+    function formatActivityType(type) {
+        return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    function formatEntity(log) {
+        if (!log.entity_type) {
+            return '<span class="text-base-content/40">—</span>';
+        }
+        const label = formatActivityType(log.entity_type);
+        const id = log.entity_id ? `<div class="text-xs text-base-content/50">#${log.entity_id}</div>` : '';
+        return `<div class="truncate" title="${label}">${label}</div>${id}`;
+    }
+
     function updateTable(logs) {
         const tbody = document.getElementById('activityLogsTable');
+        if (!tbody) return;
+
         tbody.innerHTML = '';
-        
+
         if (logs.length === 0) {
-            const colspan = {{ currentUser.role.value == 'SYSTEM_ADMIN' ? '8' : '7' }};
-            tbody.innerHTML = `<tr><td colspan="${colspan}" class="px-6 py-4 text-center text-gray-500">No results found</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="${colspan}" class="text-center py-8 text-base-content/50">No results found</td></tr>`;
             return;
         }
-        
+
         logs.forEach(log => {
-            const row = document.createElement('tr');
-            row.className = 'hover:bg-gray-50';
-            
-            const activityTypeClass = log.is_security_activity ? 'bg-red-100 text-red-800' : 
-                                    (log.is_business_activity ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800');
-            const activityTypeText = log.is_security_activity ? 'Security' : 
-                                   (log.is_business_activity ? 'Business' : 'System');
-            
+            const created = new Date(log.created_at);
+            const dateStr = created.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+            const timeStr = created.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
             let shippingLineCell = '';
-            {% if currentUser.role.value == 'SYSTEM_ADMIN' %}
-            shippingLineCell = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${log.shipping_line ? log.shipping_line.brand_name : '<span class="text-gray-400 italic">System</span>'}
-                </td>
-            `;
-            {% endif %}
-            
+            if (isSystemAdmin) {
+                const line = log.shipping_line
+                    ? `<span class="truncate block" title="${log.shipping_line.brand_name}">${log.shipping_line.brand_name}</span>`
+                    : '<span class="text-base-content/40 italic">System</span>';
+                shippingLineCell = `<td class="align-top overflow-hidden text-sm">${line}</td>`;
+            }
+
+            const row = document.createElement('tr');
+            row.className = 'hover align-top';
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${new Date(log.created_at).toLocaleDateString()}<br>
-                    <span class="text-xs text-gray-400">${new Date(log.created_at).toLocaleTimeString()}</span>
+                <td class="whitespace-nowrap text-sm align-top">
+                    <div>${dateStr}</div>
+                    <div class="text-xs text-base-content/50">${timeStr}</div>
                 </td>
-                <td class="px-6 py-4">
-                    <div class="text-sm font-medium text-gray-900">${log.activity_description}</div>
-                    <div class="text-sm text-gray-500">${log.activity_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                <td class="align-top overflow-hidden">
+                    <div class="text-sm font-medium break-words">${log.activity_description}</div>
+                    <div class="text-xs text-base-content/50 mt-0.5">${formatActivityType(log.activity_type)}</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${log.user.email}</div>
-                    <div class="text-sm text-gray-500">
-                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                            ${log.user.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </span>
-                    </div>
+                <td class="align-top overflow-hidden">
+                    <div class="text-sm font-medium truncate" title="${log.user.email}">${log.user.email}</div>
+                    <span class="badge badge-ghost badge-soft badge-xs mt-1">${formatActivityType(log.user.role)}</span>
                 </td>
                 ${shippingLineCell}
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${log.entity_type ? log.entity_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + (log.entity_id ? ' #' + log.entity_id : '') : '<span class="text-gray-400">-</span>'}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
-                    ${log.ip_address}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${activityTypeClass}">
-                        ${activityTypeText}
-                    </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <a href="/admin/activity-logs/${log.id}" 
-                       class="text-blue-600 hover:text-blue-900">
-                        View Details
+                <td class="align-top overflow-hidden text-sm">${formatEntity(log)}</td>
+                <td class="text-xs font-mono text-base-content/60 whitespace-nowrap align-top">${log.ip_address || '—'}</td>
+                <td class="align-top">${typeBadge(log)}</td>
+                <td class="align-top text-right">
+                    <a href="${detailUrlBase}${log.id}" class="btn btn-ghost btn-xs gap-1">
+                        <span class="icon-[tabler--eye] size-3.5"></span>
+                        View
                     </a>
                 </td>
             `;
             tbody.appendChild(row);
         });
     }
-    
-    function showSearchResults(searchTerm, totalFound) {
-        // You could add a notification or update the UI to show search results info
-        console.log(`Search for "${searchTerm}" found ${totalFound} results`);
+
+    function showSearchNotice(term, totalFound) {
+        const notice = document.getElementById('activityLogSearchNotice');
+        const noticeText = document.getElementById('activityLogSearchNoticeText');
+        if (!notice || !noticeText) return;
+        noticeText.textContent = `Live search for "${term}" found ${totalFound} result${totalFound === 1 ? '' : 's'}.`;
+        notice.classList.remove('hidden');
     }
-});
+
+    function performSearch() {
+        const searchInput = document.getElementById('search');
+        const term = searchInput?.value.trim() ?? '';
+        if (term.length < 2) {
+            alert('Search term must be at least 2 characters.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('search_term', term);
+
+        const activityType = document.getElementById('activity_type')?.value;
+        const entityType = document.getElementById('entity_type')?.value;
+        const userId = document.getElementById('user_id')?.value;
+
+        if (activityType) formData.append('activity_type', activityType);
+        if (entityType) formData.append('entity_type', entityType);
+        if (userId) formData.append('user_id', userId);
+
+        fetch(searchUrl, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateTable(data.data.results);
+                    showSearchNotice(data.data.searchTerm, data.data.totalFound);
+                } else {
+                    alert('Search failed: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(() => alert('Search failed'));
+    }
+
+    document.getElementById('activityLogLiveSearchBtn')?.addEventListener('click', performSearch);
+    document.getElementById('search')?.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            performSearch();
+        }
+    });
+})();
 </script>
 {% endblock %}

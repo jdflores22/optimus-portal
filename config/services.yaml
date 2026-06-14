@@ -8,6 +8,10 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     app.file_encryption_key: '%env(FILE_ENCRYPTION_KEY)%'
+    migration_repair_rebuild_metadata_default: 'false'
+    migration_repair_mark_applied_default: 'true'
+    migration_repair_skip_rollback_default: 'true'
+    migration_repair_server_version_default: 'mariadb-10.4.32'
 
 services:
     # default configuration for services in *this* file
@@ -37,6 +41,28 @@ services:
     App\Service\Avatar\AccessibilityValidatorService:
         arguments:
             $logger: '@monolog.logger.avatar_colors'
+
+    doctrine.migrations.storage.table_storage:
+        class: Doctrine\Migrations\Metadata\Storage\TableMetadataStorageConfiguration
+
+    App\Migrations\Storage\MariaDbTolerantMetadataStorage:
+        arguments:
+            $configuration: '@doctrine.migrations.storage.table_storage'
+        public: true
+
+    App\Service\Migration\MigrationHistoryRepairService:
+        arguments:
+            $connection: '@doctrine.dbal.default_connection'
+            $migrationsDirectory: '%kernel.project_dir%/migrations'
+            $projectDir: '%kernel.project_dir%'
+            $metadataConfiguration: '@doctrine.migrations.storage.table_storage'
+
+    App\Command\RepairMigrationHistoryCommand:
+        arguments:
+            $defaultRebuildMetadata: '%env(bool:default:migration_repair_rebuild_metadata_default:MIGRATION_REPAIR_REBUILD_METADATA)%'
+            $defaultMarkApplied: '%env(bool:default:migration_repair_mark_applied_default:MIGRATION_REPAIR_MARK_APPLIED)%'
+            $defaultSkipRollback: '%env(bool:default:migration_repair_skip_rollback_default:MIGRATION_REPAIR_SKIP_ROLLBACK)%'
+            $configuredServerVersion: '%env(default:migration_repair_server_version_default:DATABASE_SERVER_VERSION)%'
 
     # Avatar Color Twig Extension with logger
     App\Twig\AvatarColorExtension:
@@ -240,16 +266,6 @@ services:
             $dashboardMetricsCache: '@dashboard_metrics.cache'
             $fileMetadataCache: '@file_metadata.cache'
             $logger: '@monolog.logger'
-
-    # Redis Session Handler for production
-    Symfony\Component\HttpFoundation\Session\Storage\Handler\RedisSessionHandler:
-        arguments:
-            - '@Predis\Client'
-
-    # Redis client for session handling
-    Predis\Client:
-        arguments:
-            - '%env(REDIS_URL)%'
 
     # Terminal Team Pre-Advice Services
     App\Service\ContainerSearchService:
@@ -539,15 +555,6 @@ services:
             $auditService: '@App\Service\AuditService'
             $notificationService: '@App\Service\ManifestNotificationService'
 
-    App\Service\PaymentVerificationTransactionService:
-        public: true
-        arguments:
-            $entityManager: '@doctrine.orm.entity_manager'
-            $transactionService: '@App\Service\DatabaseTransactionService'
-            $edoService: '@App\Service\EDOService'
-            $workflowOrchestrator: '@App\Service\WorkflowOrchestrator'
-            $authorizationService: '@App\Service\ManifestAuthorizationService'
-            $logger: '@logger'
 
     # eDO Release Workflow Services
     App\Service\EDOReleaseServiceInterface:
@@ -699,6 +706,16 @@ services:
         public: true
         arguments:
             $entityManager: '@doctrine.orm.entity_manager'
+            $params: '@parameter_bag'
+
+    App\Service\PortUtilizationReportServiceInterface:
+        alias: App\Service\PortUtilizationReportService
+
+    App\Service\PortUtilizationReportService:
+        public: true
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $terminalRepository: '@App\Repository\TerminalRepository'
             $params: '@parameter_bag'
 
     # Firebase Service

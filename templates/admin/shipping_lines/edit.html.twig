@@ -1,282 +1,337 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 
-{% block title %}Edit {{ shippingLine.brandName }} - Shipping Line{% endblock %}
+{% block title %}Edit {{ shippingLine.brandName }} - OPTIMUS{% endblock %}
 
-{% block body %}
-<div class="min-h-screen bg-gray-50">
-    <div class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
-        <!-- Header -->
-        <div class="mb-6">
-            <nav class="flex" aria-label="Breadcrumb">
-                <ol class="flex items-center space-x-4">
-                    <li>
-                        <a href="{{ path('admin_shipping_lines_list') }}" class="text-gray-400 hover:text-gray-500">
-                            <span class="sr-only">Shipping Lines</span>
-                            <svg class="flex-shrink-0 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
-                            </svg>
-                        </a>
-                    </li>
-                    <li>
-                        <div class="flex items-center">
-                            <svg class="flex-shrink-0 h-5 w-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            <a href="{{ path('admin_shipping_lines_detail', {id: shippingLine.id}) }}" class="ml-4 text-sm font-medium text-gray-500 hover:text-gray-700">{{ shippingLine.brandName }}</a>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="flex items-center">
-                            <svg class="flex-shrink-0 h-5 w-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            <span class="ml-4 text-sm font-medium text-gray-500">Edit</span>
-                        </div>
-                    </li>
-                </ol>
-            </nav>
-            <h2 class="mt-2 text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-                Edit {{ shippingLine.brandName }}
-            </h2>
-            <p class="mt-1 text-sm text-gray-500">
-                Update shipping line information and configuration
-            </p>
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+        <li><a href="{{ path('app_admin_dashboard') }}">Admin</a></li>
+        <li><a href="{{ path('admin_shipping_lines_list') }}">Shipping Lines</a></li>
+        <li><a href="{{ path('admin_shipping_lines_detail', {id: shippingLine.id}) }}">{{ shippingLine.brandName }}</a></li>
+        <li>Edit</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-base-200">
+    <!-- Header -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="min-w-0">
+                    <h1 class="text-xl sm:text-2xl font-bold text-base-content truncate">Edit {{ shippingLine.brandName }}</h1>
+                    <p class="text-sm text-base-content/60 mt-1">Update shipping line information and portal configuration</p>
+                </div>
+                <a href="{{ path('admin_shipping_lines_detail', {id: shippingLine.id}) }}" class="btn btn-ghost btn-sm gap-2 w-full sm:w-auto">
+                    <span class="icon-[tabler--arrow-left] size-4"></span>
+                    Back to Detail
+                </a>
+            </div>
         </div>
+    </div>
 
-        <!-- Flash Messages -->
-        {% for message in app.flashes('success') %}
-            <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg">
-                {{ message }}
-            </div>
-        {% endfor %}
-        {% for message in app.flashes('error') %}
-            <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg">
-                {{ message }}
-            </div>
-        {% endfor %}
+    <div class="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+        <div class="max-w-3xl mx-auto">
+            {% for message in app.flashes('success') %}
+                <div class="alert alert-success mb-6">
+                    <span class="icon-[tabler--check] size-5"></span>
+                    <span>{{ message }}</span>
+                </div>
+            {% endfor %}
+            {% for message in app.flashes('error') %}
+                <div class="alert alert-error mb-6">
+                    <span class="icon-[tabler--alert-circle] size-5"></span>
+                    <span>{{ message }}</span>
+                </div>
+            {% endfor %}
 
-        <!-- Edit Form -->
-        <div class="bg-white shadow rounded-lg">
-            <form method="POST" enctype="multipart/form-data" class="px-4 py-5 sm:p-6">
-                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <!-- Basic Information -->
-                    <div class="sm:col-span-2">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Basic Information</h3>
-                    </div>
+            <form id="shippingLineEditForm" method="POST" enctype="multipart/form-data">
+                <div class="card bg-base-100 shadow-sm mb-5">
+                    <div class="card-body p-6 sm:p-8">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="size-12 bg-primary text-primary-content rounded-xl flex items-center justify-center shrink-0 font-bold">
+                                {{ shippingLine.brandName|slice(0, 2)|upper }}
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-semibold text-base-content">Basic Information</h2>
+                                <p class="text-sm text-base-content/60">Brand name, status, and company details</p>
+                            </div>
+                        </div>
 
-                    <div>
-                        <label for="brandName" class="block text-sm font-medium text-gray-700">Brand Name *</label>
-                        <input type="text" 
-                               name="brandName" 
-                               id="brandName" 
-                               value="{{ shippingLine.brandName }}" 
-                               required
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                    </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div class="form-control sm:col-span-2 sm:grid-cols-1">
+                                <label class="label py-1" for="brandName">
+                                    <span class="label-text font-medium">Brand Name <span class="text-error">*</span></span>
+                                </label>
+                                <input type="text"
+                                       name="brandName"
+                                       id="brandName"
+                                       value="{{ shippingLine.brandName }}"
+                                       required
+                                       class="input input-bordered w-full">
+                            </div>
 
-                    <div>
-                        <label for="isActive" class="block text-sm font-medium text-gray-700">Status</label>
-                        <select name="isActive" 
-                                id="isActive" 
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                            <option value="1" {% if shippingLine.isActive %}selected{% endif %}>Active</option>
-                            <option value="0" {% if not shippingLine.isActive %}selected{% endif %}>Inactive</option>
-                        </select>
-                    </div>
+                            <div class="form-control">
+                                <label class="label py-1" for="isActive">
+                                    <span class="label-text font-medium">Status</span>
+                                </label>
+                                <select name="isActive" id="isActive" class="select select-bordered w-full">
+                                    <option value="1" {% if shippingLine.isActive %}selected{% endif %}>Active</option>
+                                    <option value="0" {% if not shippingLine.isActive %}selected{% endif %}>Inactive</option>
+                                </select>
+                            </div>
 
-                    <div class="sm:col-span-2">
-                        <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
-                        <textarea name="description" 
-                                  id="description" 
-                                  rows="3" 
-                                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">{{ shippingLine.description }}</textarea>
-                        <p class="mt-1 text-xs text-gray-500">Brief description of the shipping line</p>
-                    </div>
+                            <div class="form-control">
+                                <label class="label py-1" for="headquarters">
+                                    <span class="label-text font-medium">Headquarters</span>
+                                </label>
+                                <input type="text"
+                                       name="headquarters"
+                                       id="headquarters"
+                                       value="{{ shippingLine.headquarters }}"
+                                       class="input input-bordered w-full">
+                            </div>
 
-                    <div>
-                        <label for="website" class="block text-sm font-medium text-gray-700">Website</label>
-                        <input type="url" 
-                               name="website" 
-                               id="website" 
-                               value="{{ shippingLine.website }}"
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                    </div>
+                            <div class="form-control sm:col-span-2">
+                                <label class="label py-1" for="description">
+                                    <span class="label-text font-medium">Description</span>
+                                </label>
+                                <textarea name="description"
+                                          id="description"
+                                          rows="3"
+                                          class="textarea textarea-bordered w-full">{{ shippingLine.description }}</textarea>
+                                <label class="label py-1">
+                                    <span class="label-text-alt text-base-content/60">Brief description of the shipping line</span>
+                                </label>
+                            </div>
 
-                    <div>
-                        <label for="headquarters" class="block text-sm font-medium text-gray-700">Headquarters</label>
-                        <input type="text" 
-                               name="headquarters" 
-                               id="headquarters" 
-                               value="{{ shippingLine.headquarters }}"
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                    </div>
-
-                    <!-- Contact Information -->
-                    <div class="sm:col-span-2">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4 mt-6">Contact Information</h3>
-                    </div>
-
-                    <div>
-                        <label for="contactEmail" class="block text-sm font-medium text-gray-700">Contact Email</label>
-                        <input type="email" 
-                               name="contactEmail" 
-                               id="contactEmail" 
-                               value="{{ shippingLine.contactEmail }}"
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                    </div>
-
-                    <div>
-                        <label for="contactPhone" class="block text-sm font-medium text-gray-700">Contact Phone</label>
-                        <input type="tel" 
-                               name="contactPhone" 
-                               id="contactPhone" 
-                               value="{{ shippingLine.contactPhone }}"
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                    </div>
-
-                    <!-- Portal Configuration -->
-                    <div class="sm:col-span-2">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4 mt-6">Portal Configuration</h3>
-                    </div>
-
-                    <div>
-                        <label for="primaryColor" class="block text-sm font-medium text-gray-700">Primary Color</label>
-                        <div class="mt-1 flex items-center space-x-3">
-                            <input type="color" 
-                                   name="primaryColor" 
-                                   id="primaryColor" 
-                                   value="{{ shippingLine.primaryColor }}"
-                                   class="h-10 w-16 border border-gray-300 rounded-md">
-                            <input type="text" 
-                                   name="primaryColorText" 
-                                   value="{{ shippingLine.primaryColor }}"
-                                   class="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <div class="form-control">
+                                <label class="label py-1" for="website">
+                                    <span class="label-text font-medium">Website</span>
+                                </label>
+                                <label class="input input-bordered flex items-center gap-2 w-full">
+                                    <span class="icon-[tabler--world] size-4 text-base-content/50 shrink-0"></span>
+                                    <input type="url"
+                                           name="website"
+                                           id="website"
+                                           value="{{ shippingLine.website }}"
+                                           class="grow"
+                                           placeholder="https://">
+                                </label>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <div>
-                        <label for="logo" class="block text-sm font-medium text-gray-700">Logo</label>
-                        {% if shippingLine.logoUrl %}
-                            <div class="mt-1 mb-3">
-                                <img src="{{ shippingLine.logoUrl }}" alt="Current logo" class="h-16 w-auto border border-gray-300 rounded">
-                                <p class="text-xs text-gray-500 mt-1">Current logo</p>
+                <div class="card bg-base-100 shadow-sm mb-5">
+                    <div class="card-body p-6 sm:p-8 space-y-5">
+                        <div class="flex items-center gap-3 mb-1">
+                            <span class="icon-[tabler--address-book] size-5 text-primary"></span>
+                            <h2 class="text-lg font-semibold text-base-content">Contact Information</h2>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div class="form-control">
+                                <label class="label py-1" for="contactEmail">
+                                    <span class="label-text font-medium">Contact Email</span>
+                                </label>
+                                <label class="input input-bordered flex items-center gap-2 w-full">
+                                    <span class="icon-[tabler--mail] size-4 text-base-content/50 shrink-0"></span>
+                                    <input type="email"
+                                           name="contactEmail"
+                                           id="contactEmail"
+                                           value="{{ shippingLine.contactEmail }}"
+                                           class="grow">
+                                </label>
                             </div>
-                        {% endif %}
-                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md" id="logoDropzone">
-                            <div class="space-y-1 text-center" id="logoUploadArea">
-                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                </svg>
-                                <div class="flex text-sm text-gray-600">
-                                    <label for="logo" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                        <span>{% if shippingLine.logoUrl %}Upload new file{% else %}Upload a file{% endif %}</span>
-                                        <input id="logo" name="logo" type="file" accept="image/*" class="sr-only">
-                                    </label>
-                                    <p class="pl-1">or drag and drop</p>
+
+                            <div class="form-control">
+                                <label class="label py-1" for="contactPhone">
+                                    <span class="label-text font-medium">Contact Phone</span>
+                                </label>
+                                <label class="input input-bordered flex items-center gap-2 w-full">
+                                    <span class="icon-[tabler--phone] size-4 text-base-content/50 shrink-0"></span>
+                                    <input type="tel"
+                                           name="contactPhone"
+                                           id="contactPhone"
+                                           value="{{ shippingLine.contactPhone }}"
+                                           class="grow">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-sm mb-6">
+                    <div class="card-body p-6 sm:p-8 space-y-5">
+                        <div class="flex items-center gap-3 mb-1">
+                            <span class="icon-[tabler--palette] size-5 text-primary"></span>
+                            <h2 class="text-lg font-semibold text-base-content">Portal Configuration</h2>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label py-1" for="primaryColor">
+                                <span class="label-text font-medium">Primary Color</span>
+                            </label>
+                            <div class="flex items-center gap-3">
+                                <input type="color"
+                                       name="primaryColor"
+                                       id="primaryColor"
+                                       value="{{ shippingLine.primaryColor }}"
+                                       class="h-10 w-14 rounded-lg border border-base-300 cursor-pointer shrink-0">
+                                <input type="text"
+                                       name="primaryColorText"
+                                       value="{{ shippingLine.primaryColor }}"
+                                       class="input input-bordered flex-1 font-mono">
+                            </div>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label py-1" for="logo">
+                                <span class="label-text font-medium">Logo</span>
+                            </label>
+                            {% if shippingLine.logoUrl %}
+                                <div class="mb-3 flex items-center gap-3 rounded-xl bg-base-200/50 p-3">
+                                    <img src="{{ shippingLine.logoUrl }}" alt="Current logo" class="h-14 w-auto border border-base-300 rounded-lg">
+                                    <span class="text-xs text-base-content/60">Current logo — upload below to replace</span>
                                 </div>
-                                <p class="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                            </div>
-                            <div class="hidden" id="logoPreview">
-                                <div class="text-center">
-                                    <img id="logoPreviewImage" class="mx-auto h-32 w-auto rounded-lg border border-gray-300" src="" alt="Logo preview">
-                                    <div class="mt-2">
-                                        <p id="logoFileName" class="text-sm font-medium text-gray-900"></p>
-                                        <p id="logoFileSize" class="text-xs text-gray-500"></p>
-                                        <button type="button" onclick="clearLogo()" class="mt-2 text-xs text-red-600 hover:text-red-500">
-                                            Remove
-                                        </button>
+                            {% endif %}
+                            <div class="rounded-xl border-2 border-dashed border-base-300 p-6 transition-colors" id="logoDropzone">
+                                <div class="text-center" id="logoUploadArea">
+                                    <span class="icon-[tabler--photo-up] size-10 text-base-content/30 mx-auto block"></span>
+                                    <div class="mt-3 flex flex-wrap items-center justify-center gap-1 text-sm text-base-content/70">
+                                        <label for="logo" class="link link-primary cursor-pointer font-medium">
+                                            {% if shippingLine.logoUrl %}Upload new file{% else %}Upload a file{% endif %}
+                                        </label>
+                                        <span>or drag and drop</span>
                                     </div>
+                                    <input id="logo" name="logo" type="file" accept="image/*" class="hidden">
+                                    <p class="text-xs text-base-content/50 mt-2">PNG, JPG, GIF up to 10MB</p>
+                                </div>
+                                <div class="hidden text-center" id="logoPreview">
+                                    <img id="logoPreviewImage" class="mx-auto h-32 w-auto rounded-lg border border-base-300" src="" alt="Logo preview">
+                                    <p id="logoFileName" class="text-sm font-medium mt-2"></p>
+                                    <p id="logoFileSize" class="text-xs text-base-content/50"></p>
+                                    <button type="button" onclick="clearLogo()" class="btn btn-ghost btn-xs text-error mt-2 gap-1">
+                                        <span class="icon-[tabler--x] size-3"></span>
+                                        Remove
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Form Actions -->
-                <div class="mt-6 flex justify-end space-x-3">
-                    <a href="{{ path('admin_shipping_lines_detail', {id: shippingLine.id}) }}" 
-                       class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+                    <a href="{{ path('admin_shipping_lines_detail', {id: shippingLine.id}) }}" class="btn btn-ghost w-full sm:w-auto">
                         Cancel
                     </a>
-                    <button type="submit" 
-                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                        Save Changes
+                    <button type="submit" id="submitBtn" class="btn btn-primary gap-2 w-full sm:w-auto">
+                        <span id="btnSpinner" class="loading loading-spinner loading-sm hidden"></span>
+                        <span id="btnText">Save Changes</span>
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block page_scripts %}
 <script>
-// Sync color picker with text input
-document.getElementById('primaryColor').addEventListener('input', function() {
-    document.querySelector('input[name="primaryColorText"]').value = this.value;
-});
+(function () {
+    const colorPicker = document.getElementById('primaryColor');
+    const colorText = document.querySelector('input[name="primaryColorText"]');
+    const logoInput = document.getElementById('logo');
+    const dropzone = document.getElementById('logoDropzone');
 
-document.querySelector('input[name="primaryColorText"]').addEventListener('input', function() {
-    document.getElementById('primaryColor').value = this.value;
-});
+    if (colorPicker && colorText) {
+        colorPicker.addEventListener('input', function () {
+            colorText.value = colorPicker.value;
+        });
+        colorText.addEventListener('input', function () {
+            if (/^#[0-9A-Fa-f]{6}$/.test(colorText.value)) {
+                colorPicker.value = colorText.value;
+            }
+        });
+    }
 
-// File upload preview
-document.getElementById('logo').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        // Validate file type
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function handleLogoFile(file) {
+        if (!file) return;
         if (!file.type.startsWith('image/')) {
             alert('Please select an image file.');
-            this.value = '';
+            logoInput.value = '';
             return;
         }
-        
-        // Validate file size (10MB)
         if (file.size > 10 * 1024 * 1024) {
             alert('File size must be less than 10MB.');
-            this.value = '';
+            logoInput.value = '';
             return;
         }
-        
+
         const reader = new FileReader();
-        reader.onload = function(e) {
-            // Show preview
+        reader.onload = function (e) {
             document.getElementById('logoUploadArea').classList.add('hidden');
             document.getElementById('logoPreview').classList.remove('hidden');
-            
-            // Set preview image
             document.getElementById('logoPreviewImage').src = e.target.result;
             document.getElementById('logoFileName').textContent = file.name;
             document.getElementById('logoFileSize').textContent = formatFileSize(file.size);
-            
-            // Change dropzone appearance
-            document.getElementById('logoDropzone').classList.remove('border-dashed', 'border-gray-300');
-            document.getElementById('logoDropzone').classList.add('border-solid', 'border-green-300', 'bg-green-50');
+            dropzone.classList.add('border-success', 'bg-success/5');
+            dropzone.classList.remove('border-base-300');
         };
         reader.readAsDataURL(file);
     }
-});
 
-function clearLogo() {
-    // Clear file input
-    document.getElementById('logo').value = '';
-    
-    // Hide preview and show upload area
-    document.getElementById('logoPreview').classList.add('hidden');
-    document.getElementById('logoUploadArea').classList.remove('hidden');
-    
-    // Reset dropzone appearance
-    document.getElementById('logoDropzone').classList.remove('border-solid', 'border-green-300', 'bg-green-50');
-    document.getElementById('logoDropzone').classList.add('border-dashed', 'border-gray-300');
-}
+    window.clearLogo = function () {
+        logoInput.value = '';
+        document.getElementById('logoPreview').classList.add('hidden');
+        document.getElementById('logoUploadArea').classList.remove('hidden');
+        dropzone.classList.remove('border-success', 'bg-success/5');
+        dropzone.classList.add('border-base-300');
+    };
 
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
+    if (logoInput) {
+        logoInput.addEventListener('change', function (e) {
+            handleLogoFile(e.target.files[0]);
+        });
+    }
+
+    if (dropzone) {
+        dropzone.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            dropzone.classList.add('border-primary', 'bg-primary/5');
+        });
+        dropzone.addEventListener('dragleave', function () {
+            dropzone.classList.remove('border-primary', 'bg-primary/5');
+        });
+        dropzone.addEventListener('drop', function (e) {
+            e.preventDefault();
+            dropzone.classList.remove('border-primary', 'bg-primary/5');
+            const file = e.dataTransfer.files[0];
+            if (file && logoInput) {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                logoInput.files = dt.files;
+                handleLogoFile(file);
+            }
+        });
+    }
+
+    document.getElementById('shippingLineEditForm').addEventListener('submit', function () {
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        document.getElementById('btnText').textContent = 'Saving...';
+        document.getElementById('btnSpinner').classList.remove('hidden');
+    });
+})();
 </script>
 {% endblock %}

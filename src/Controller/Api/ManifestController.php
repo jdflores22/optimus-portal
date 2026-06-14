@@ -175,99 +175,14 @@ class ManifestController extends BaseApiController
     #[Route('/with-edo', name: 'create_with_edo', methods: ['POST'])]
     public function createManifestWithEDO(Request $request): JsonResponse
     {
-        $user = $this->requireAuthentication($request);
-        if ($user instanceof JsonResponse) {
-            return $user;
-        }
-
-        // Only BROKER can create manifests with eDO generation
-        $roleCheck = $this->requireRole($user, [UserRole::BROKER->value]);
-        if ($roleCheck) {
-            return $roleCheck;
-        }
-
-        // Requirement 12.2: Restrict Manifest creation to Broker role
-        $this->denyAccessUnlessGranted('create', 'Manifest');
-
-        // Check if this is a multipart/form-data request (file upload)
-        $isFileUpload = $request->files->count() > 0;
-        
-        if ($isFileUpload) {
-            // Handle file upload with form data
-            $noaId = $request->request->get('noaId');
-            $blNumber = $request->request->get('blNumber');
-            $blFile = $request->files->get('blFile');
-            $manifestNumber = $request->request->get('manifestNumber');
-            
-            // Validate required fields
-            if (!$noaId) {
-                return $this->errorResponse('NOA ID is required');
-            }
-            
-            if (!$blNumber) {
-                return $this->errorResponse('BL number is required');
-            }
-            
-            if (!$blFile) {
-                return $this->errorResponse('BL file is required');
-            }
-            
-            // Validate BL number format
-            if (!preg_match('/^[A-Z0-9\-]+$/', $blNumber)) {
-                return $this->errorResponse('BL number must contain only uppercase letters, numbers, and hyphens');
-            }
-            
-            // Validate file
-            $fileValidation = $this->validateFileUpload(
-                $blFile,
-                ['application/pdf', 'image/jpeg', 'image/png'],
-                10485760 // 10MB
-            );
-            if ($fileValidation) {
-                return $fileValidation;
-            }
-            
-            try {
-                // Upload BL file
-                $storedFile = $this->fileService->uploadFile($blFile, 'bl', $user);
-                $relativePath = $this->getRelativePath($storedFile->getEncryptedPath());
-                
-                $manifestData = [
-                    'noaId' => (int)$noaId,
-                    'blNumber' => $blNumber,
-                    'blFilePath' => $relativePath,
-                    'manifestNumber' => $manifestNumber
-                ];
-
-                // Create manifest with eDO generation
-                $manifest = $this->manifestService->createManifestWithEDO($manifestData, $user);
-
-                return $this->jsonResponse([
-                    'id' => $manifest->getId(),
-                    'manifestNumber' => $manifest->getManifestNumber(),
-                    'workflowState' => $manifest->getWorkflowState()->value,
-                    'blNumber' => $manifest->getBlNumber(),
-                    'consignee' => [
-                        'id' => $manifest->getConsignee()->getId(),
-                        'businessName' => $manifest->getConsignee()->getBusinessName()
-                    ],
-                    'noa' => [
-                        'id' => $manifest->getNoa()->getId(),
-                        'noaNumber' => $manifest->getNoa()->getNoaNumber()
-                    ],
-                    'createdAt' => $manifest->getCreatedAt()->format('Y-m-d H:i:s')
-                ], 201);
-
-            } catch (\InvalidArgumentException $e) {
-                return $this->errorResponse($e->getMessage(), 400);
-            } catch (\RuntimeException $e) {
-                return $this->errorResponse($e->getMessage(), 500);
-            } catch (\Exception $e) {
-                return $this->errorResponse('Failed to create manifest with eDO: ' . $e->getMessage(), 500);
-            }
-        } else {
-            return $this->errorResponse('BL file upload is required', 400);
-        }
+        return $this->json([
+            'success' => false,
+            'error' => 'Legacy manifest+eDO shortcut API is no longer supported.',
+            'migration' => [
+                'upload_manifest' => 'POST /api/manifests (multipart BL upload)',
+                'generate_edo' => 'Use batch eDO generation after final payment approval',
+            ],
+        ], 410);
     }
 
     #[Route('/{id}/declare-consignee', name: 'declare_consignee', methods: ['POST'])]

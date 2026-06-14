@@ -6,7 +6,7 @@
 <div class="max-w-5xl mx-auto">
     <!-- Header -->
     <div class="mb-6">
-        <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" 
+        <a href="{{ path(manifest_detail_route|default('broker_manifest_detail'), {id: manifest.id}) }}" 
            class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -152,7 +152,7 @@
                 </div>
                 <div class="space-y-2">
                     <p class="text-sm text-gray-600">Generated: {{ manifest.billing.createdAt|date('M j, Y g:i A') }}</p>
-                    <p class="text-sm text-gray-600">Total Amount: <span class="font-medium text-green-600">₱{{ manifest.billing.totalAmount|number_format(2) }}</span></p>
+                    <p class="text-sm text-gray-600">Total Amount: <span class="font-medium text-green-600">{{ manifest.billing|format_billing }}</span></p>
                 </div>
                 <div class="mt-4">
                     <a href="/api/billing/{{ manifest.billing.id }}/download" 

@@ -1,59 +1,80 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Preview Form - {{ form.name }} - OPTIMUS{% endblock %}
+{% block title %}Preview Form — {{ form.name }} - OPTIMUS{% endblock %}
 
 {% block body %}
-<div class="min-h-screen bg-gray-50">
-    <!-- Top Navigation Bar -->
-    <nav class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <span class="text-2xl font-bold text-meta-blue">OPTIMUS</span>
-                    <span class="ml-4 text-gray-600">Form Preview</span>
+<div class="min-h-screen bg-base-200">
+    <div class="bg-base-100 shadow-sm">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="min-w-0">
+                    <div class="breadcrumbs text-xs mb-1">
+                        <ul>
+                            <li><a href="{{ path('form_builder_list') }}">Form Builder</a></li>
+                            <li><a href="{{ path('form_builder_edit', {id: form.id}) }}">{{ form.name }}</a></li>
+                            <li>Preview</li>
+                        </ul>
+                    </div>
+                    <h1 class="text-2xl font-bold text-base-content truncate">{{ form.name }}</h1>
+                    <div class="flex flex-wrap items-center gap-2 mt-2">
+                        <span class="badge badge-primary badge-sm">{{ form.type.value }}</span>
+                        <span class="text-sm text-base-content/60">Version {{ form.version }}</span>
+                        <span class="badge badge-ghost badge-sm">{{ form.fields.fields|length }} fields</span>
+                    </div>
                 </div>
-                <div class="flex items-center">
-                    <a href="{{ path('form_builder_edit', {id: form.id}) }}" class="text-gray-600 hover:text-gray-800">
-                        ← Back to Edit
-                    </a>
-                </div>
+                <a href="{{ path('form_builder_edit', {id: form.id}) }}" class="btn btn-ghost gap-2 w-full sm:w-auto">
+                    <span class="icon-[tabler--arrow-left] size-4"></span>
+                    Back to Editor
+                </a>
             </div>
         </div>
-    </nav>
+    </div>
 
-    <!-- Main Content -->
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900">{{ form.name }}</h1>
-            <p class="text-gray-600 mt-1">
-                Type: {{ form.type.value }} | Version: {{ form.version }}
-            </p>
-        </div>
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        <div class="max-w-3xl mx-auto space-y-6">
+            <div class="alert alert-info">
+                <span class="icon-[tabler--info-circle] size-5"></span>
+                <span class="text-sm">This is a read-only preview. The submit button below is disabled for demonstration.</span>
+            </div>
 
-        <div class="bg-white rounded-lg shadow p-8">
-            <h2 class="text-xl font-bold text-gray-900 mb-6">Form Preview</h2>
-            
-            {% if form.fields.fields|length > 0 %}
-                {{ renderedForm|raw }}
-                
-                <div class="mt-8 pt-6 border-t border-gray-200">
-                    <button type="button" 
-                            class="bg-meta-blue text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition">
-                        Submit (Preview Only)
-                    </button>
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-6 sm:p-8">
+                    <h2 class="text-lg font-semibold text-base-content mb-6 flex items-center gap-2">
+                        <span class="icon-[tabler--eye] size-5 text-primary"></span>
+                        Form Preview
+                    </h2>
+
+                    {% if form.fields.fields|length > 0 %}
+                        <div class="dynamic-form-preview space-y-4">
+                            {{ renderedForm|raw }}
+                        </div>
+
+                        <div class="divider"></div>
+
+                        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+                            <a href="{{ path('form_builder_edit', {id: form.id}) }}" class="btn btn-ghost w-full sm:w-auto">
+                                Back to Editor
+                            </a>
+                            <button type="button" class="btn btn-primary gap-2 w-full sm:w-auto" disabled>
+                                <span class="icon-[tabler--send] size-4"></span>
+                                Submit (Preview Only)
+                            </button>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-16">
+                            <div class="size-20 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <span class="icon-[tabler--forms] size-10 text-base-content/40"></span>
+                            </div>
+                            <h3 class="text-lg font-bold text-base-content mb-2">No fields yet</h3>
+                            <p class="text-sm text-base-content/60 mb-6">Add fields in the editor to preview this form.</p>
+                            <a href="{{ path('form_builder_edit', {id: form.id}) }}" class="btn btn-primary gap-2">
+                                <span class="icon-[tabler--edit] size-4"></span>
+                                Open Editor
+                            </a>
+                        </div>
+                    {% endif %}
                 </div>
-            {% else %}
-                <p class="text-gray-500 text-center py-8">
-                    No fields have been added to this form yet.
-                </p>
-            {% endif %}
-        </div>
-
-        <div class="mt-6 text-center">
-            <a href="{{ path('form_builder_edit', {id: form.id}) }}" 
-               class="text-meta-blue hover:text-blue-700 font-medium">
-                ← Back to Edit Form
-            </a>
+            </div>
         </div>
     </div>
 </div>

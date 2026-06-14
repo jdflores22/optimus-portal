@@ -80,7 +80,7 @@
             <p><strong>Congratulations!</strong> Your accreditation application has been approved.</p>
             <p>You now have full access to the OPTIMUS shipping portal and can begin managing your shipments and operations.</p>
             <p>Status: <span class="status-badge">{{ status.value }}</span></p>
-            <a href="#" class="cta-button">Access Your Dashboard</a>
+            <a href="{{ loginUrl|default('#') }}" class="cta-button">Access Your Dashboard</a>
         </div>
         <div class="footer">
             <p><strong>OPTIMUS Shipping Portal</strong><br>

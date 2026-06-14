@@ -16,7 +16,7 @@
             <p><strong>eDO Number:</strong> {{ edo_number }}</p>
             <p><strong>Container Number:</strong> {{ container_number }}</p>
             <p><strong>Manifest Number:</strong> {{ manifest_number }}</p>
-            <p><strong>Submitted Amount:</strong> ₱{{ amount|number_format(2) }}</p>
+            <p><strong>Submitted Amount:</strong> {{ amount|format_money('PHP') }}</p>
             <p><strong>Rejection Reason:</strong> {{ rejection_reason }}</p>
         </div>
         

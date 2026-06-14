@@ -3,6 +3,7 @@
 namespace App\Security;
 
 use App\Entity\User;
+use App\Service\ActivityLogService;
 use App\Service\AuthenticationIntegrationService;
 use App\Service\UserService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -13,6 +14,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationException;
+use Symfony\Component\Security\Core\Exception\InvalidCsrfTokenException;
 use Symfony\Component\Security\Http\Authenticator\AbstractLoginFormAuthenticator;
 use Symfony\Component\Security\Http\Authenticator\Passport\Badge\CsrfTokenBadge;
 use Symfony\Component\Security\Http\Authenticator\Passport\Badge\RememberMeBadge;
@@ -27,12 +29,14 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
     use TargetPathTrait;
 
     public const LOGIN_ROUTE = 'app_login';
+    public const MAX_FAILED_LOGIN_ATTEMPTS = 3;
 
     public function __construct(
         private UrlGeneratorInterface $urlGenerator,
         private EntityManagerInterface $entityManager,
         private UserService $userService,
-        private AuthenticationIntegrationService $authIntegrationService
+        private AuthenticationIntegrationService $authIntegrationService,
+        private ActivityLogService $activityLogService
     ) {
     }
 
@@ -89,19 +93,29 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
 
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): Response
     {
-        $email = $request->request->get('email', '');
-        $user = $this->entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
+        $email = (string) $request->request->get('email', '');
+        $ipAddress = $request->getClientIp() ?? '127.0.0.1';
+        $user = $email !== ''
+            ? $this->entityManager->getRepository(User::class)->findOneBy(['email' => $email])
+            : null;
 
-        if ($user && !$user->isLocked()) {
-            $user->incrementFailedLoginAttempts();
-            
-            // Lock account after 3 failed attempts
-            if ($user->getFailedLoginAttempts() >= 3) {
-                $this->userService->lockAccount($user->getId(), 30); // Lock for 30 minutes
-            } else {
-                $this->entityManager->flush();
+        if (!$exception instanceof InvalidCsrfTokenException) {
+            if ($user && !$user->isLocked()) {
+                $user->incrementFailedLoginAttempts();
+
+                if ($user->getFailedLoginAttempts() >= self::MAX_FAILED_LOGIN_ATTEMPTS) {
+                    $this->userService->lockAccount($user->getId(), 30);
+                } else {
+                    $this->entityManager->flush();
+                }
             }
         }
+
+        $reason = $exception instanceof InvalidCsrfTokenException
+            ? 'Invalid CSRF token'
+            : $exception->getMessage();
+
+        $this->activityLogService->logFailedLogin($email, $ipAddress, $user, $reason);
 
         return parent::onAuthenticationFailure($request, $exception);
     }

@@ -2,11 +2,14 @@
 
 namespace App\Controller\Consignee;
 
-use App\Service\ManifestService;
-use App\Service\ManifestAuthorizationService;
-use App\Service\BrokerRelationshipService;
+use App\Entity\Consignee;
 use App\Entity\Enum\UserRole;
 use App\Entity\Enum\WorkflowState;
+use App\Service\BrokerRelationshipService;
+use App\Service\ConsigneeOnboardingGuideService;
+use App\Service\ManifestAuthorizationService;
+use App\Service\ManifestService;
+use App\Service\PaymentFeeConfigurationServiceInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,7 +26,9 @@ class ConsigneeManifestController extends AbstractController
         private ManifestAuthorizationService $authorizationService,
         private EntityManagerInterface $entityManager,
         private BrokerRelationshipService $brokerRelationshipService,
-        private \App\Service\BrokerTransferService $brokerTransferService
+        private \App\Service\BrokerTransferService $brokerTransferService,
+        private ConsigneeOnboardingGuideService $consigneeOnboardingGuideService,
+        private PaymentFeeConfigurationServiceInterface $paymentFeeConfigurationService
     ) {
     }
 
@@ -90,6 +95,9 @@ class ConsigneeManifestController extends AbstractController
             ->getQuery()
             ->getResult();
 
+        /** @var Consignee $user */
+        $pendingGuideSteps = $this->consigneeOnboardingGuideService->getManifestListSteps($user);
+
         return $this->render('consignee/manifest/list.html.twig', [
             'manifests' => $manifests,
             'currentPage' => $page,
@@ -102,6 +110,10 @@ class ConsigneeManifestController extends AbstractController
                 'search' => $search,
             ],
             'workflowStates' => WorkflowState::cases(),
+            'show_onboarding_guide' => count($pendingGuideSteps) > 0,
+            'onboarding_guide_steps' => $pendingGuideSteps,
+            'start_onboarding_guide' => count($pendingGuideSteps) > 0,
+            'start_guide_after_welcome' => false,
         ]);
     }
 
@@ -171,6 +183,27 @@ class ConsigneeManifestController extends AbstractController
         return $this->render('consignee/manifest/payment.html.twig', [
             'manifest' => $manifest,
             'existingPayment' => $accessPayment,
+            'manifestAccessFee' => $this->paymentFeeConfigurationService->getCurrentManifestAccessFee(),
+        ]);
+    }
+
+    #[Route('/{id}/documents', name: 'consignee_manifest_documents', methods: ['GET'])]
+    public function documents(int $id): Response
+    {
+        $manifest = $this->manifestService->getManifestById($id);
+
+        if (!$manifest) {
+            throw $this->createNotFoundException('Manifest not found');
+        }
+
+        $user = $this->getUser();
+        if (!$this->authorizationService->canViewManifest($manifest, $user)) {
+            throw $this->createAccessDeniedException('Access denied');
+        }
+
+        return $this->render('broker/manifest/documents.html.twig', [
+            'manifest' => $manifest,
+            'manifest_detail_route' => 'consignee_manifest_detail',
         ]);
     }
 }

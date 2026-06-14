@@ -116,6 +116,19 @@
 </div>
 
 <script>
+const MONEY_PREFIX = {{ (0|format_money('PHP'))|slice(0, -4)|json_encode|raw }};
+
+function formatNumber(num) {
+    return parseFloat(num).toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function formatMoneyAmount(num) {
+    return MONEY_PREFIX + formatNumber(num);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     let renewalRequests = [];
     
@@ -242,7 +255,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${paymentStatusBadge}</td>
                 <td>
                     ${request.detentionChargeAmount > 0 
-                        ? `<span class="font-semibold text-error">₱${formatNumber(request.detentionChargeAmount)}</span>
+                        ? `<span class="font-semibold text-error">${formatMoneyAmount(request.detentionChargeAmount)}</span>
                            <div class="text-xs text-base-content/60">${request.overdueDays} days overdue</div>`
                         : '<span class="text-base-content/60">No charges</span>'}
                 </td>
@@ -281,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="flex flex-wrap items-center gap-2">
                         ${paymentStatusBadge}
                         ${request.detentionChargeAmount > 0 
-                            ? `<span class="text-sm font-semibold text-error">₱${formatNumber(request.detentionChargeAmount)}</span>
+                            ? `<span class="text-sm font-semibold text-error">${formatMoneyAmount(request.detentionChargeAmount)}</span>
                                <span class="text-xs text-base-content/60">(${request.overdueDays} days)</span>`
                             : '<span class="text-sm text-base-content/60">No charges</span>'}
                     </div>
@@ -352,14 +365,6 @@ document.addEventListener('DOMContentLoaded', function() {
             year: 'numeric',
             hour: 'numeric',
             minute: '2-digit'
-        });
-    }
-    
-    // Format number
-    function formatNumber(num) {
-        return parseFloat(num).toLocaleString('en-PH', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
         });
     }
     

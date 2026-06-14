@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Util\DecimalString;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -34,34 +35,34 @@ class Billing
     private ?int $detentionDays = null;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
-    private ?float $detentionRate = null;
+    private ?string $detentionRate = null;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
-    private float $freightCharges;
+    private string $freightCharges = '0.00';
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
-    private float $thcCharges;
+    private string $thcCharges = '0.00';
 
     #[ORM\Column(type: 'json', nullable: true)]
     private ?array $additionalCharges = null;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
-    private float $totalAmount;
+    private string $totalAmount = '0.00';
 
     #[ORM\Column(type: 'string', length: 3, options: ['default' => 'PHP'])]
     private string $originalCurrency = 'PHP';
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 4, nullable: true)]
-    private ?float $exchangeRate = null;
+    private ?string $exchangeRate = null;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
-    private ?float $freightChargesUsd = null;
+    private ?string $freightChargesUsd = null;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
-    private ?float $thcChargesUsd = null;
+    private ?string $thcChargesUsd = null;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
-    private ?float $totalAmountUsd = null;
+    private ?string $totalAmountUsd = null;
 
     #[ORM\Column(type: 'string', length: 500, nullable: true)]
     private ?string $pdfPath = null;
@@ -103,7 +104,11 @@ class Billing
                 $additional += $charge['amount'] ?? 0;
             }
         }
-        $this->totalAmount = $this->freightCharges + $this->thcCharges + $additional;
+        $this->totalAmount = DecimalString::fromFloat(
+            DecimalString::toFloatOrZero($this->freightCharges)
+            + DecimalString::toFloatOrZero($this->thcCharges)
+            + $additional
+        ) ?? '0.00';
     }
 
     public function getId(): ?int
@@ -157,34 +162,34 @@ class Billing
 
     public function getDetentionRate(): ?float
     {
-        return $this->detentionRate;
+        return DecimalString::toFloat($this->detentionRate);
     }
 
     public function setDetentionRate(?float $detentionRate): self
     {
-        $this->detentionRate = $detentionRate;
+        $this->detentionRate = DecimalString::fromFloat($detentionRate);
         return $this;
     }
 
     public function getFreightCharges(): float
     {
-        return $this->freightCharges;
+        return DecimalString::toFloatOrZero($this->freightCharges);
     }
 
     public function setFreightCharges(float $freightCharges): self
     {
-        $this->freightCharges = $freightCharges;
+        $this->freightCharges = DecimalString::fromFloat($freightCharges) ?? '0.00';
         return $this;
     }
 
     public function getThcCharges(): float
     {
-        return $this->thcCharges;
+        return DecimalString::toFloatOrZero($this->thcCharges);
     }
 
     public function setThcCharges(float $thcCharges): self
     {
-        $this->thcCharges = $thcCharges;
+        $this->thcCharges = DecimalString::fromFloat($thcCharges) ?? '0.00';
         return $this;
     }
 
@@ -201,12 +206,12 @@ class Billing
 
     public function getTotalAmount(): float
     {
-        return $this->totalAmount;
+        return DecimalString::toFloatOrZero($this->totalAmount);
     }
 
     public function setTotalAmount(float $totalAmount): self
     {
-        $this->totalAmount = $totalAmount;
+        $this->totalAmount = DecimalString::fromFloat($totalAmount) ?? '0.00';
         return $this;
     }
 
@@ -283,45 +288,45 @@ class Billing
 
     public function getExchangeRate(): ?float
     {
-        return $this->exchangeRate;
+        return DecimalString::toFloat($this->exchangeRate);
     }
 
     public function setExchangeRate(?float $exchangeRate): self
     {
-        $this->exchangeRate = $exchangeRate;
+        $this->exchangeRate = DecimalString::fromFloat($exchangeRate, 4);
         return $this;
     }
 
     public function getFreightChargesUsd(): ?float
     {
-        return $this->freightChargesUsd;
+        return DecimalString::toFloat($this->freightChargesUsd);
     }
 
     public function setFreightChargesUsd(?float $freightChargesUsd): self
     {
-        $this->freightChargesUsd = $freightChargesUsd;
+        $this->freightChargesUsd = DecimalString::fromFloat($freightChargesUsd);
         return $this;
     }
 
     public function getThcChargesUsd(): ?float
     {
-        return $this->thcChargesUsd;
+        return DecimalString::toFloat($this->thcChargesUsd);
     }
 
     public function setThcChargesUsd(?float $thcChargesUsd): self
     {
-        $this->thcChargesUsd = $thcChargesUsd;
+        $this->thcChargesUsd = DecimalString::fromFloat($thcChargesUsd);
         return $this;
     }
 
     public function getTotalAmountUsd(): ?float
     {
-        return $this->totalAmountUsd;
+        return DecimalString::toFloat($this->totalAmountUsd);
     }
 
     public function setTotalAmountUsd(?float $totalAmountUsd): self
     {
-        $this->totalAmountUsd = $totalAmountUsd;
+        $this->totalAmountUsd = DecimalString::fromFloat($totalAmountUsd);
         return $this;
     }
 

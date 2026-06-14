@@ -258,8 +258,8 @@ class ManifestBLDocumentGenerator
                 <div class="info-value">' . $noa->getEta()->format('F j, Y H:i') . '</div>
             </div>
             <div class="info-row">
-                <div class="info-label">CY Location:</div>
-                <div class="info-value">' . htmlspecialchars($noa->getCyLocation()) . '</div>
+                <div class="info-label">Port Location:</div>
+                <div class="info-value">' . htmlspecialchars($noa->getDischargeLocation()) . '</div>
             </div>
         </div>
     </div>
@@ -305,7 +305,7 @@ class ManifestBLDocumentGenerator
                     <td>' . htmlspecialchars($container->getContainerType()->getName()) . '</td>
                     <td>' . htmlspecialchars($container->getContainerSize()->getName()) . '</td>
                     <td style="text-align: center;">' . number_format($teu, 1) . '</td>
-                    <td>' . htmlspecialchars($noa->getCyLocation()) . '</td>
+                    <td>' . htmlspecialchars($noa->getDischargeLocation()) . '</td>
                 </tr>';
         }
 

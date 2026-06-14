@@ -1,0 +1,46 @@
+{# Status action buttons — pass btnSize: 'xs' or 'sm' #}
+{% set size = btnSize|default('xs') %}
+
+{% if form.status.value == 'DRAFT' %}
+    <a href="{{ path('form_builder_publish_confirm', {id: form.id}) }}"
+       class="btn btn-{{ size }} btn-success gap-1"
+       title="Publish">
+        <span class="icon-[tabler--cloud-upload] size-3"></span>
+        {% if showLabels|default(false) %}Publish{% endif %}
+    </a>
+{% elseif form.status.value == 'PUBLISHED' %}
+    <button type="button"
+            class="unpublish-form-btn btn btn-{{ size }} btn-warning gap-1"
+            data-form-id="{{ form.id }}"
+            data-form-name="{{ form.name }}"
+            title="Unpublish">
+        <span class="icon-[tabler--cloud-off] size-3"></span>
+        {% if showLabels|default(false) %}Unpublish{% endif %}
+    </button>
+    <button type="button"
+            class="activate-form-btn btn btn-{{ size }} btn-info gap-1"
+            data-form-id="{{ form.id }}"
+            data-form-name="{{ form.name }}"
+            title="Activate">
+        <span class="icon-[tabler--circle-check] size-3"></span>
+        {% if showLabels|default(false) %}Activate{% endif %}
+    </button>
+{% elseif form.status.value == 'INACTIVE' %}
+    <button type="button"
+            class="activate-form-btn btn btn-{{ size }} btn-info gap-1"
+            data-form-id="{{ form.id }}"
+            data-form-name="{{ form.name }}"
+            title="Activate">
+        <span class="icon-[tabler--circle-check] size-3"></span>
+        {% if showLabels|default(false) %}Activate{% endif %}
+    </button>
+{% elseif form.status.value == 'ACTIVE' %}
+    <button type="button"
+            class="deactivate-form-btn btn btn-{{ size }} btn-warning gap-1"
+            data-form-id="{{ form.id }}"
+            data-form-name="{{ form.name }}"
+            title="Deactivate">
+        <span class="icon-[tabler--circle-x] size-3"></span>
+        {% if showLabels|default(false) %}Deactivate{% endif %}
+    </button>
+{% endif %}

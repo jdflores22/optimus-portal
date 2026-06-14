@@ -10,6 +10,9 @@ interface EDOServiceInterface
     /**
      * Auto-generate EDO after payment verification
      */
+    /**
+     * @deprecated Use BatchEDOGenerationService after final payment approval instead.
+     */
     public function autoGenerateEDO(Payment $verifiedPayment): ElectronicDeliveryOrder;
 
     /**

@@ -17,7 +17,7 @@
             <p><strong>Container Number:</strong> {{ container_number }}</p>
             <p><strong>Manifest Number:</strong> {{ manifest_number }}</p>
             <p><strong>Broker Name:</strong> {{ broker_name }}</p>
-            <p><strong>Payment Amount:</strong> ₱{{ amount|number_format(2) }}</p>
+            <p><strong>Payment Amount:</strong> {{ amount|format_money('PHP') }}</p>
             <p><strong>Submitted At:</strong> {{ submitted_at|date('F d, Y H:i:s') }}</p>
         </div>
         

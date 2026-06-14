@@ -26,6 +26,7 @@ class EDOPaymentService implements EDOPaymentServiceInterface
         private PaymentFeeConfigurationServiceInterface $paymentFeeConfigService,
         private FileUploadServiceInterface $fileUploadService,
         private OfficialReceiptGeneratorServiceInterface $officialReceiptGenerator,
+        private WorkflowOrchestrator $workflowOrchestrator,
         private string $projectDir
     ) {
     }
@@ -265,6 +266,7 @@ class EDOPaymentService implements EDOPaymentServiceInterface
                 [
                     'edo_id' => $edo->getId(),
                     'edo_number' => $edo->getEdoNumber(),
+                    'manifest_id' => $payment->getManifest()->getId(),
                     'amount' => $payment->getAmount(),
                     'version' => 1
                 ]
@@ -317,10 +319,26 @@ class EDOPaymentService implements EDOPaymentServiceInterface
 
             // Flush changes
             $this->entityManager->flush();
+
+            $manifest = $payment->getManifest();
+            $this->workflowOrchestrator->transitionToEdoReleasedWhenComplete(
+                $manifest,
+                $systemAdmin,
+                sprintf('eDO payment approved for container %s', $edo->getContainer()?->getContainerNumber() ?? 'N/A')
+            );
+
+            $this->entityManager->flush();
             $this->entityManager->commit();
 
             // Call NotificationService to notify broker with download link
             $this->notificationService->notifyEDOPaymentValidated($payment, true);
+
+            $this->activityLogService->logEDOPaymentValidation(
+                $systemAdmin,
+                $payment,
+                $payment->getManifest(),
+                true
+            );
 
             // Call AuditService to log "edo_payment_approved" action
             $this->auditService->logAction(
@@ -332,6 +350,7 @@ class EDOPaymentService implements EDOPaymentServiceInterface
                     'edo_id' => $edo->getId(),
                     'edo_number' => $edo->getEdoNumber(),
                     'container_number' => $edo->getContainer()?->getContainerNumber(),
+                    'manifest_id' => $payment->getManifest()->getId(),
                     'amount' => $payment->getAmount(),
                     'broker_id' => $payment->getSubmittedBy()->getId(),
                     'official_receipt_path' => $officialReceiptPath
@@ -391,6 +410,13 @@ class EDOPaymentService implements EDOPaymentServiceInterface
             // Call NotificationService to notify broker with rejection reason
             $this->notificationService->notifyEDOPaymentValidated($payment, false, $rejectionReason);
 
+            $this->activityLogService->logEDOPaymentValidation(
+                $systemAdmin,
+                $payment,
+                $payment->getManifest(),
+                false
+            );
+
             // Call AuditService to log "edo_payment_rejected" action
             $this->auditService->logAction(
                 $systemAdmin,
@@ -401,6 +427,7 @@ class EDOPaymentService implements EDOPaymentServiceInterface
                     'edo_id' => $edo->getId(),
                     'edo_number' => $edo->getEdoNumber(),
                     'container_number' => $edo->getContainer()?->getContainerNumber(),
+                    'manifest_id' => $payment->getManifest()->getId(),
                     'amount' => $payment->getAmount(),
                     'broker_id' => $payment->getSubmittedBy()->getId(),
                     'rejection_reason' => $rejectionReason

@@ -2,6 +2,8 @@
 
 namespace App\Controller\Admin;
 
+use App\Repository\ShippingLineRepository;
+use App\Repository\TerminalRepository;
 use App\Service\CYUtilizationReportServiceInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -17,7 +19,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Requirements: 12.1, 12.2, 12.3, 12.4, 12.5
  */
 #[Route('/admin/reports/cy-utilization')]
-#[IsGranted('ROLE_SHIPPING_LINE_MANAGER')]
+#[IsGranted('ROLE_SYSTEM_ADMIN')]
 class CYUtilizationReportController extends AbstractController
 {
     public function __construct(
@@ -32,9 +34,16 @@ class CYUtilizationReportController extends AbstractController
      * Requirements: 12.1, 12.2, 12.3
      */
     #[Route('', name: 'admin_cy_utilization_report', methods: ['GET'])]
-    public function index(): Response
-    {
-        return $this->render('admin/cy_utilization/report.html.twig');
+    public function index(
+        ShippingLineRepository $shippingLineRepository,
+        TerminalRepository $terminalRepository,
+    ): Response {
+        return $this->render('admin/cy_utilization/report.html.twig', [
+            'shippingLines' => $shippingLineRepository->findActive(),
+            'terminals' => $terminalRepository->findActive(),
+            'defaultStartDate' => (new \DateTime('-30 days'))->format('Y-m-d'),
+            'defaultEndDate' => (new \DateTime())->format('Y-m-d'),
+        ]);
     }
 
     /**
@@ -47,20 +56,8 @@ class CYUtilizationReportController extends AbstractController
     public function getData(Request $request): Response
     {
         try {
-            // Get date range from request, default to last 30 days
-            $endDate = $request->query->get('end_date')
-                ? new \DateTime($request->query->get('end_date'))
-                : new \DateTime();
-            
-            $startDate = $request->query->get('start_date')
-                ? new \DateTime($request->query->get('start_date'))
-                : (clone $endDate)->modify('-30 days');
+            [$startDate, $endDate, $shippingLineId, $terminalId] = $this->parseReportFilters($request);
 
-            // Get optional filters
-            $shippingLineId = $request->query->get('shipping_line_id');
-            $terminalId = $request->query->get('terminal_id');
-
-            // Generate report data
             $reportData = $this->reportService->generateReport(
                 $startDate,
                 $endDate,
@@ -72,7 +69,7 @@ class CYUtilizationReportController extends AbstractController
                 'success' => true,
                 'data' => $reportData
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return $this->json([
                 'success' => false,
                 'message' => 'An error occurred while generating the report: ' . $e->getMessage()
@@ -90,20 +87,8 @@ class CYUtilizationReportController extends AbstractController
     public function exportCsv(Request $request): Response
     {
         try {
-            // Get date range from request
-            $endDate = $request->query->get('end_date')
-                ? new \DateTime($request->query->get('end_date'))
-                : new \DateTime();
-            
-            $startDate = $request->query->get('start_date')
-                ? new \DateTime($request->query->get('start_date'))
-                : (clone $endDate)->modify('-30 days');
+            [$startDate, $endDate, $shippingLineId, $terminalId] = $this->parseReportFilters($request);
 
-            // Get optional filters
-            $shippingLineId = $request->query->get('shipping_line_id');
-            $terminalId = $request->query->get('terminal_id');
-
-            // Generate report data
             $reportData = $this->reportService->generateReport(
                 $startDate,
                 $endDate,
@@ -144,20 +129,8 @@ class CYUtilizationReportController extends AbstractController
     public function exportPdf(Request $request): Response
     {
         try {
-            // Get date range from request
-            $endDate = $request->query->get('end_date')
-                ? new \DateTime($request->query->get('end_date'))
-                : new \DateTime();
-            
-            $startDate = $request->query->get('start_date')
-                ? new \DateTime($request->query->get('start_date'))
-                : (clone $endDate)->modify('-30 days');
+            [$startDate, $endDate, $shippingLineId, $terminalId] = $this->parseReportFilters($request);
 
-            // Get optional filters
-            $shippingLineId = $request->query->get('shipping_line_id');
-            $terminalId = $request->query->get('terminal_id');
-
-            // Generate report data
             $reportData = $this->reportService->generateReport(
                 $startDate,
                 $endDate,
@@ -186,5 +159,31 @@ class CYUtilizationReportController extends AbstractController
                 'message' => 'An error occurred while exporting to PDF: ' . $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * @return array{0: \DateTime, 1: \DateTime, 2: ?int, 3: ?int}
+     */
+    private function parseReportFilters(Request $request): array
+    {
+        $endDate = $request->query->get('end_date')
+            ? new \DateTime($request->query->get('end_date'))
+            : new \DateTime();
+        $endDate->setTime(23, 59, 59);
+
+        $startDate = $request->query->get('start_date')
+            ? new \DateTime($request->query->get('start_date'))
+            : (clone $endDate)->modify('-30 days');
+        $startDate->setTime(0, 0, 0);
+
+        $shippingLineId = $request->query->get('shipping_line_id');
+        $terminalId = $request->query->get('terminal_id');
+
+        return [
+            $startDate,
+            $endDate,
+            ($shippingLineId !== null && $shippingLineId !== '') ? (int) $shippingLineId : null,
+            ($terminalId !== null && $terminalId !== '') ? (int) $terminalId : null,
+        ];
     }
 }

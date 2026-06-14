@@ -12,6 +12,7 @@ use App\Exception\InsufficientCapacityException;
 use App\Exception\InvalidAllocationException;
 use App\Exception\UnauthorizedAllocationException;
 use App\Service\NOAServiceInterface;
+use App\Service\ManifestService;
 use App\Service\CYAllocationService;
 use App\Service\ContainerAllocationAuditServiceInterface;
 use App\Service\NOADocumentGenerator;
@@ -28,6 +29,7 @@ class NOAController extends AbstractController
 {
     public function __construct(
         private NOAServiceInterface $noaService,
+        private ManifestService $manifestService,
         private CYAllocationService $cyAllocationService,
         private NOADocumentGenerator $noaDocumentGenerator,
         private ContainerAllocationAuditServiceInterface $auditService,
@@ -80,8 +82,8 @@ class NOAController extends AbstractController
 
             // Process containers
             $containers = [];
-            $containerAllocations = []; // Track allocations for each container
-            $cyLocationName = null; // Will be set from first container's allocation
+            $containerAllocations = [];
+            $portLocation = trim((string) ($data['portLocation'] ?? ''));
             
             foreach ($data['containers'] as $containerData) {
                 if (empty($containerData['number'])) {
@@ -128,9 +130,9 @@ class NOAController extends AbstractController
                     ], Response::HTTP_FORBIDDEN);
                 }
                 
-                // Set cyLocationName from first container's allocation (for NOA record)
-                if ($cyLocationName === null) {
-                    $cyLocationName = $cyAllocation->getTerminal()->getName();
+                // Derive port location from first container allocation if not supplied
+                if ($portLocation === '') {
+                    $portLocation = $cyAllocation->getTerminal()->getName();
                 }
 
                 $containers[] = [
@@ -148,9 +150,13 @@ class NOAController extends AbstractController
             // Each shipping line has specific terminal allocations
             $cyAllocationData = [
                 'isValid' => true,
-                'cyLocation' => $cyLocationName,
+                'cyLocation' => $containerAllocations[0]->getTerminal()->getName() ?? null,
                 'allocationId' => $containerAllocations[0]->getId() ?? null
             ];
+
+            if ($portLocation === '') {
+                return $this->json(['error' => 'Port location is required'], Response::HTTP_BAD_REQUEST);
+            }
 
             // Create NOA (wrapped in transaction)
             $this->entityManager->beginTransaction();
@@ -160,7 +166,7 @@ class NOAController extends AbstractController
                     $data['blNumber'],
                     $data['vesselNumber'],
                     $eta,
-                    $cyLocationName, // Use derived CY location name from first container
+                    $portLocation,
                     $consignee,
                     $containers,
                     $this->getUser()
@@ -245,7 +251,7 @@ class NOAController extends AbstractController
                         sprintf('BL Number: %s', $noa->getBlNumber()),
                         sprintf('Vessel: %s', $noa->getVesselNumber()),
                         sprintf('ETA: %s', $noa->getEta()->format('M j, Y g:i A')),
-                        sprintf('CY Location: %s', $noa->getCyLocation()),
+                        sprintf('Port Location: %s', $noa->getPortLocation()),
                         sprintf('Consignee: %s', $noa->getConsignee()->getBusinessName()),
                         sprintf('Total Containers: %d', count($containers))
                     ]
@@ -287,10 +293,18 @@ class NOAController extends AbstractController
                         $manifest->setNoa($noa);
                         $manifest->setConsignee($consignee);
                         $manifest->setBroker($broker);
-                        $manifest->setWorkflowState(\App\Entity\Enum\WorkflowState::NOA_GENERATED);
                         $manifest->setCreatedAt(new \DateTime());
                         
                         $this->entityManager->persist($manifest);
+                        $this->entityManager->flush();
+
+                        /** @var \App\Entity\User $actor */
+                        $actor = $this->getUser();
+                        $this->manifestService->recordNoaGeneratedWorkflow(
+                            $manifest,
+                            $actor,
+                            'NOA created — manifest auto-linked'
+                        );
                         
                         // Auto-link all containers to the manifest
                         foreach ($noa->getContainers() as $container) {
@@ -321,7 +335,7 @@ class NOAController extends AbstractController
                         'blNumber' => $noa->getBlNumber(),
                         'vesselNumber' => $noa->getVesselNumber(),
                         'eta' => $noa->getEta()->format('Y-m-d H:i:s'),
-                        'cyLocation' => $noa->getCyLocation(),
+                        'portLocation' => $noa->getPortLocation(),
                         'containerCount' => $noa->getContainers()->count(),
                         'pdfPath' => $pdfPath,
                     ],
@@ -394,7 +408,7 @@ class NOAController extends AbstractController
             'blNumber' => $noa->getBlNumber(),
             'vesselNumber' => $noa->getVesselNumber(),
             'eta' => $noa->getEta()->format('Y-m-d H:i:s'),
-            'cyLocation' => $noa->getCyLocation(),
+            'portLocation' => $noa->getPortLocation(),
             'consignee' => [
                 'id' => $noa->getConsignee()->getId(),
                 'email' => $noa->getConsignee()->getEmail(),

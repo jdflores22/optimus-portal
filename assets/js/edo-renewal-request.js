@@ -320,8 +320,12 @@ class EDORenewalRequestForm {
      * Format currency value
      */
     formatCurrency(amount) {
+        const prefix = window.MONEY_PREFIX || '₱';
         const numAmount = parseFloat(amount);
-        return '₱' + numAmount.toLocaleString('en-PH', {
+        if (Number.isNaN(numAmount)) {
+            return prefix + '0.00';
+        }
+        return prefix + numAmount.toLocaleString('en-PH', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });

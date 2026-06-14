@@ -701,4 +701,28 @@ class ActivityLogServiceTest extends TestCase
         // Assert - no exception thrown
         $this->assertTrue(true);
     }
+
+    public function testLogFailedLoginPersistsForKnownUser(): void
+    {
+        $user = new StaffUser();
+        $user->setRole(UserRole::BROKER);
+        $user->setEmail('broker@test.com');
+        $user->setStatus(AccountStatus::APPROVED);
+
+        $this->requestStack->expects($this->once())
+            ->method('getCurrentRequest')
+            ->willReturn(null);
+
+        $this->entityManager->expects($this->once())
+            ->method('persist')
+            ->with($this->callback(function (ActivityLog $log) {
+                return $log->getActivityType() === ActivityLog::TYPE_FAILED_LOGIN
+                    && $log->getEntityType() === 'User'
+                    && ($log->getAdditionalContext()['reason'] ?? '') === 'Invalid password';
+            }));
+
+        $this->entityManager->expects($this->once())->method('flush');
+
+        $this->service->logFailedLogin('broker@test.com', '10.0.0.1', $user, 'Invalid password');
+    }
 }

@@ -16,7 +16,7 @@
             <p><strong>Manifest Number:</strong> {{ manifest.manifestNumber }}</p>
             <p><strong>Vessel Name:</strong> {{ manifest.vesselName ?? 'N/A' }}</p>
             <p><strong>Voyage Number:</strong> {{ manifest.voyageNumber ?? 'N/A' }}</p>
-            <p><strong>Required Payment:</strong> ₱{{ amount|number_format(2) }}</p>
+            <p><strong>Required Payment:</strong> {{ amount|format_money('PHP') }}</p>
         </div>
         
         <p>Please submit your payment receipt through the OPTIMUS portal to access the manifest details.</p>

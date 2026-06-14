@@ -12,11 +12,12 @@
 # GET    /api/manifests/{id}/download            - Download manifest PDF
 
 # Payment Management
-# POST   /api/manifests/{id}/payments/manifest-access  - Submit manifest access payment (Broker/Consignee)
+# POST   /api/manifests/{id}/payments/edo-access       - Submit eDO access payment (Broker/Consignee)
+# POST   /api/manifests/{id}/payments/manifest-access  - Deprecated alias for edo-access
 # POST   /api/manifests/{id}/payments/final            - Submit final payment (Broker)
-# GET    /api/payments/manifest-access/pending         - Get pending manifest access payments (SYSTEM_ADMIN)
+# GET    /api/payments/edo-access/pending              - Get pending eDO access payments (SYSTEM_ADMIN)
 # GET    /api/payments/final/pending                   - Get pending final payments (ACCOUNTING)
-# POST   /api/payments/{id}/validate                   - Validate manifest access payment (SYSTEM_ADMIN)
+# POST   /api/payments/{id}/validate-edo-access        - Validate eDO access payment (SYSTEM_ADMIN)
 # POST   /api/payments/{id}/validate-final             - Validate final payment (ACCOUNTING)
 
 # NOA Management
@@ -55,9 +56,10 @@
 
 # Payment Validation (SYSTEM_ADMIN)
 # GET    /admin/payment-validation               - Payment validation dashboard
-# GET    /admin/payment-validation/manifest-access - Manifest access payments list
-# GET    /admin/payment-validation/manifest-access/{id} - Manifest access payment detail
-# POST   /admin/payment-validation/manifest-access/{id}/validate - Validate payment
+# Admin Routes (prefix: /admin)
+# GET    /admin/payment-validation/edo-access       - eDO access payments (redirects to /admin/edo-payments)
+# GET    /admin/payment-validation/edo-access/{id}  - eDO access payment detail (redirects to /admin/edo-payments)
+# GET    /admin/payment-validation/manifest-access  - Deprecated alias for edo-access
 
 # Broker Manifest Management
 # GET    /broker/manifests                       - List broker manifests

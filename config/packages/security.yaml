@@ -12,7 +12,7 @@ security:
 
     # Role hierarchy
     role_hierarchy:
-        ROLE_SYSTEM_ADMIN: [ROLE_SHIPPING_LINES_ADMIN, ROLE_EVALUATOR, ROLE_SL_STAFF, ROLE_TERMINAL_TEAM]
+        ROLE_SYSTEM_ADMIN: [ROLE_SHIPPING_LINES_ADMIN, ROLE_EVALUATOR, ROLE_SL_STAFF, ROLE_TERMINAL_TEAM, ROLE_ACCOUNTING]
         ROLE_SHIPPING_LINES_ADMIN: [ROLE_EVALUATOR, ROLE_SL_STAFF]
         ROLE_EVALUATOR: [ROLE_USER]
         ROLE_SL_STAFF: [ROLE_USER]
@@ -37,9 +37,9 @@ security:
             pattern: ^/api/exchange-rate/
             security: false
         
-        # API firewall for mobile applications (exclude /api/locations, /api/container-types, /api/container-sizes, /api/consignees, /api/cy-allocations, /api/containers, /api/manifests, /api/push, /api/account, /api/session)
+        # API firewall for mobile applications (exclude /api/locations, /api/container-types, /api/container-sizes, /api/consignees, /api/cy-allocations, /api/containers, /api/manifests, /api/push, /api/account, /api/session, /api/audit-logs)
         api:
-            pattern: ^/api/(?!locations|container-types|container-sizes|consignees|cy-allocations|containers|manifests|payments|noa|billing|edos|files|bl|push|account|session)
+            pattern: ^/api/(?!locations|container-types|container-sizes|consignees|cy-allocations|containers|manifests|payments|noa|billing|edos|files|bl|push|account|session|audit-logs)
             stateless: true
             provider: app_user_provider
             custom_authenticator: App\Security\ApiTokenAuthenticator
@@ -50,6 +50,11 @@ security:
             
             # Custom form login authenticator
             custom_authenticator: App\Security\LoginFormAuthenticator
+
+            # IP-based login throttling (complements per-account lockout)
+            login_throttling:
+                max_attempts: 5
+                interval: '15 minutes'
             
             # Logout configuration
             logout:
@@ -60,7 +65,7 @@ security:
             # Session management with 30-minute idle timeout
             remember_me:
                 secret: '%kernel.secret%'
-                lifetime: 1800 # 30 minutes in seconds
+                lifetime: 1209600 # 14 days
                 path: /
                 always_remember_me: false
                 secure: auto
@@ -102,6 +107,7 @@ security:
         - { path: ^/api/manifests/\d+/billing$, roles: [ROLE_ACCOUNTING, ROLE_BROKER], methods: [GET] }
         # eDO Release Workflow API endpoints
         - { path: ^/admin/edo-release/queue$, roles: ROLE_SYSTEM_ADMIN, methods: [GET] }
+        - { path: ^/admin/edo-release/revenue$, roles: ROLE_SYSTEM_ADMIN, methods: [GET] }
         - { path: ^/admin/edo-release/\d+/release$, roles: ROLE_SYSTEM_ADMIN, methods: [POST] }
         - { path: ^/admin/edo-release/\d+/reject$, roles: ROLE_SYSTEM_ADMIN, methods: [POST] }
         - { path: ^/admin/edo-release/\d+/history$, roles: ROLE_SYSTEM_ADMIN, methods: [GET] }
@@ -112,17 +118,20 @@ security:
         - { path: ^/api/manifests/\d+/payments/edo-access$, roles: ROLE_BROKER, methods: [POST] }
         - { path: ^/api/payments/edo-access/pending$, roles: ROLE_SYSTEM_ADMIN, methods: [GET] }
         - { path: ^/api/payments/\d+/validate-edo-access$, roles: ROLE_SYSTEM_ADMIN, methods: [POST] }
+        - { path: ^/api/audit-logs/, roles: ROLE_SYSTEM_ADMIN, methods: [GET] }
+        - { path: ^/audit/edo$, roles: ROLE_SYSTEM_ADMIN, methods: [GET] }
         # Payment Fee Configuration
         - { path: ^/admin/payment-fee-config$, roles: ROLE_SYSTEM_ADMIN, methods: [GET] }
         - { path: ^/admin/payment-fee-config/update$, roles: ROLE_SYSTEM_ADMIN, methods: [POST] }
         - { path: ^/api/, roles: ROLE_USER }
         - { path: ^/admin/user-hierarchy, roles: [ROLE_SYSTEM_ADMIN, ROLE_SHIPPING_LINES_ADMIN] }
         - { path: ^/admin/activity-logs, roles: [ROLE_SYSTEM_ADMIN, ROLE_SHIPPING_LINES_ADMIN] }
+        - { path: ^/admin/payment-validation, roles: ROLE_ACCOUNTING }
         - { path: ^/notifications, roles: ROLE_USER }
         - { path: ^/admin, roles: ROLE_SYSTEM_ADMIN }
         - { path: ^/evaluator, roles: ROLE_EVALUATOR }
         - { path: ^/shipping-admin, roles: ROLE_SHIPPING_LINES_ADMIN }
-        - { path: ^/staff, roles: ROLE_SL_STAFF }
+        - { path: ^/sl-staff, roles: ROLE_SL_STAFF }
         - { path: ^/accounting, roles: ROLE_ACCOUNTING }
         - { path: ^/terminal-team, roles: ROLE_TERMINAL_TEAM }
         - { path: ^/trucker, roles: ROLE_TRUCKER }

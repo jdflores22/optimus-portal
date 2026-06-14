@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Entity\Enum\PaymentType;
 use App\Entity\Enum\PaymentStatus;
+use App\Util\DecimalString;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -36,7 +37,7 @@ class Payment
     private PaymentType $paymentType;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
-    private float $amount;
+    private string $amount = '0.00';
 
     #[ORM\Column(type: 'string', length: 3, options: ['default' => 'PHP'])]
     private string $currency = 'PHP';
@@ -136,12 +137,12 @@ class Payment
 
     public function getAmount(): float
     {
-        return $this->amount;
+        return DecimalString::toFloatOrZero($this->amount);
     }
 
     public function setAmount(float $amount): self
     {
-        $this->amount = $amount;
+        $this->amount = DecimalString::fromFloat($amount) ?? '0.00';
         return $this;
     }
 

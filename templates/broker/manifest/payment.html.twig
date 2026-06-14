@@ -72,7 +72,7 @@
                 </div>
                 <div>
                     <p class="text-gray-600">Amount:</p>
-                    <p class="font-medium">₱{{ rejectedPayment.amount|number_format(2) }}</p>
+                    <p class="font-medium">{{ rejectedPayment.amount|format_money('PHP') }}</p>
                 </div>
                 <div>
                     <p class="text-gray-600">Submitted:</p>
@@ -123,7 +123,7 @@
             <div class="ml-3">
                 <h3 class="text-sm font-medium text-yellow-800">Payment Required</h3>
                 <div class="mt-2 text-sm text-yellow-700">
-                    <p>A manifest access payment of <span class="font-bold">₱500.00</span> is required to view and manage this manifest.</p>
+                    <p>A manifest access payment of <span class="font-bold">{{ 500|format_money('PHP') }}</span> is required to view and manage this manifest.</p>
                     <p class="mt-1">Please submit your payment receipt below for verification.</p>
                 </div>
             </div>
@@ -136,7 +136,7 @@
             <h3 class="text-lg font-medium text-gray-900 mb-4">Payment Status</h3>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-600">Amount: <span class="font-medium text-gray-900">₱{{ existingPayment.amount|number_format(2) }}</span></p>
+                    <p class="text-sm text-gray-600">Amount: <span class="font-medium text-gray-900">{{ existingPayment.amount|format_money('PHP') }}</span></p>
                     <p class="text-sm text-gray-600 mt-1">Submitted: {{ existingPayment.createdAt|date('M j, Y g:i A') }}</p>
                 </div>
                 <div>
@@ -167,7 +167,7 @@
                 </label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <span class="text-gray-500 sm:text-sm">₱</span>
+                        <span class="text-gray-500 sm:text-sm">{{ (0|format_money('PHP'))|slice(0, -4) }}</span>
                     </div>
                     <input type="number" 
                            id="amount" 
@@ -179,7 +179,7 @@
                            required
                            class="pl-7 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                <p class="mt-1 text-sm text-gray-500">Fixed amount: ₱500.00</p>
+                <p class="mt-1 text-sm text-gray-500">Fixed amount: {{ 500|format_money('PHP') }}</p>
             </div>
 
             <!-- Receipt Upload -->
@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Use resubmit endpoint if this is a resubmission
             const endpoint = isResubmission 
                 ? `/api/edo-payments/${rejectedPaymentId}/resubmit`
-                : '/api/manifests/{{ manifest.id }}/payments/manifest-access';
+                : '/api/manifests/{{ manifest.id }}/payments/edo-access';
             
             const response = await fetch(endpoint, {
                 method: 'POST',

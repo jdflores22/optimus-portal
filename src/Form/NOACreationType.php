@@ -62,16 +62,16 @@ class NOACreationType extends AbstractType
                     ])
                 ]
             ])
-            ->add('cyLocation', TextType::class, [
-                'label' => 'CY Empty Return Location',
+            ->add('portLocation', TextType::class, [
+                'label' => 'Port / Terminal Location',
                 'required' => true,
                 'attr' => [
                     'class' => 'form-input',
-                    'placeholder' => 'Enter Container Yard location',
+                    'placeholder' => 'Enter discharge port or terminal',
                     'maxlength' => 100
                 ],
                 'constraints' => [
-                    new Assert\NotBlank(['message' => 'CY location is required']),
+                    new Assert\NotBlank(['message' => 'Port location is required']),
                     new Assert\Length(['max' => 100])
                 ]
             ])

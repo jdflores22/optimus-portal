@@ -25,65 +25,17 @@ class AccountingPaymentController extends AbstractController
     #[Route('/dashboard', name: 'accounting_payment_dashboard', methods: ['GET'])]
     public function dashboard(Request $request): Response
     {
-        // Get filter parameters
-        $dateFrom = $request->query->get('date_from');
-        $dateTo = $request->query->get('date_to');
-        $status = $request->query->get('status');
-        $submitter = $request->query->get('submitter');
-
-        // Get statistics
-        $stats = $this->getPaymentStatistics();
-
-        // Get recent validation activity
-        $qb = $this->entityManager->getRepository(\App\Entity\Payment::class)
-            ->createQueryBuilder('p')
-            ->where('p.paymentType = :type')
-            ->setParameter('type', PaymentType::FINAL_PAYMENT)
-            ->orderBy('p.createdAt', 'DESC')
-            ->setMaxResults(10);
-
-        // Apply filters
-        if ($dateFrom) {
-            $qb->andWhere('p.createdAt >= :dateFrom')
-               ->setParameter('dateFrom', new \DateTime($dateFrom));
-        }
-
-        if ($dateTo) {
-            $qb->andWhere('p.createdAt <= :dateTo')
-               ->setParameter('dateTo', new \DateTime($dateTo . ' 23:59:59'));
-        }
-
-        if ($status) {
-            $qb->andWhere('p.status = :status')
-               ->setParameter('status', $status);
-        }
-
-        if ($submitter) {
-            $qb->leftJoin('p.submittedBy', 'u')
-               ->andWhere('u.fullName LIKE :submitter OR u.email LIKE :submitter')
-               ->setParameter('submitter', '%' . $submitter . '%');
-        }
-
-        $recentActivity = $qb->getQuery()->getResult();
-
-        return $this->render('accounting/payment/dashboard.html.twig', [
-            'stats' => $stats,
-            'recentActivity' => $recentActivity,
-            'filters' => [
-                'date_from' => $dateFrom,
-                'date_to' => $dateTo,
-                'status' => $status,
-                'submitter' => $submitter,
-            ],
-            'paymentStatuses' => PaymentStatus::cases(),
-        ]);
+        return $this->redirectToRoute('accounting_payment_final_list', [], Response::HTTP_MOVED_PERMANENTLY);
     }
 
     #[Route('/final', name: 'accounting_payment_final_list', methods: ['GET'])]
     public function finalPaymentList(Request $request): Response
     {
-        $page = max(1, (int) $request->query->get('page', 1));
-        $limit = 20;
+        $allowedLimits = [10, 20, 50];
+        $limit = (int) $request->query->get('limit', 20);
+        if (!in_array($limit, $allowedLimits, true)) {
+            $limit = 20;
+        }
 
         // Get final payments
         $qb = $this->entityManager->getRepository(\App\Entity\Payment::class)
@@ -98,15 +50,19 @@ class AccountingPaymentController extends AbstractController
 
         // Filter by status (default to pending)
         $statusFilter = $request->query->get('status', 'pending_validation');
-        if ($statusFilter) {
+        if ($statusFilter && $statusFilter !== 'all') {
             $qb->andWhere('p.status = :status')
                ->setParameter('status', $statusFilter);
         }
 
-        // Pagination
-        $totalQuery = clone $qb;
-        $total = count($totalQuery->getQuery()->getResult());
-        $totalPages = ceil($total / $limit);
+        $total = (int) (clone $qb)
+            ->select('COUNT(p.id)')
+            ->resetDQLPart('orderBy')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $totalPages = max(1, (int) ceil($total / $limit));
+        $page = max(1, min((int) $request->query->get('page', 1), $totalPages));
 
         $payments = $qb
             ->setFirstResult(($page - 1) * $limit)
@@ -114,13 +70,23 @@ class AccountingPaymentController extends AbstractController
             ->getQuery()
             ->getResult();
 
+        $startItem = $total > 0 ? (($page - 1) * $limit) + 1 : 0;
+        $endItem = min($page * $limit, $total);
+
         return $this->render('accounting/payment/final_payment_list.html.twig', [
             'payments' => $payments,
-            'currentPage' => $page,
-            'totalPages' => $totalPages,
-            'total' => $total,
             'statusFilter' => $statusFilter,
             'paymentStatuses' => PaymentStatus::cases(),
+            'stats' => $this->getPaymentStatistics(),
+            'allowedLimits' => $allowedLimits,
+            'pagination' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'pages' => $totalPages,
+                'start' => $startItem,
+                'end' => $endItem,
+            ],
         ]);
     }
 

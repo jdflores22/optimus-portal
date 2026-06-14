@@ -708,7 +708,7 @@ class BrokerManifestController extends AbstractController
         $qrCodePath = $edoFeeConfig?->getQrCodePath();
         $configuredFeeAmount = $edoFeeConfig?->getAmount() ?? 500.00; // Default to 500 if not configured
         
-        // If EDO QR code is not set, fall back to manifest_access QR code
+        // If EDO QR code is not set, fall back to legacy manifest_access fee config
         if (!$qrCodePath) {
             $manifestFeeConfig = $paymentFeeConfigRepo->getCurrentFeeByType('manifest_access');
             $qrCodePath = $manifestFeeConfig?->getQrCodePath();

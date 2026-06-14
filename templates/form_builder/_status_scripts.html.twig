@@ -1,0 +1,256 @@
+<script>
+let currentFormId = null;
+
+function openModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+}
+
+function showNotification(message, type) {
+    const container = document.getElementById('formBuilderToastContainer');
+    if (!container) return;
+
+    const typeClass = type === 'success' ? 'alert-success' : (type === 'error' ? 'alert-error' : 'alert-info');
+    const icon = type === 'success' ? 'icon-[tabler--check]' : (type === 'error' ? 'icon-[tabler--alert-circle]' : 'icon-[tabler--info-circle]');
+    const toast = document.createElement('div');
+    toast.className = 'alert ' + typeClass + ' shadow-lg pointer-events-auto';
+    toast.innerHTML = '<span class="' + icon + ' size-5"></span><span>' + message + '</span>';
+    container.appendChild(toast);
+
+    window.setTimeout(function () {
+        toast.remove();
+    }, 3000);
+}
+
+function postFormAction(url, onSuccess) {
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(function (response) { return response.json(); })
+    .then(function (result) {
+        if (result.success) {
+            onSuccess(result);
+        } else {
+            showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+        }
+    })
+    .catch(function () {
+        showNotification('Request failed', 'error');
+    });
+}
+
+function openActivateModal(formId, formName) {
+    currentFormId = formId;
+    document.getElementById('activateFormName').textContent = formName;
+    openModal('activateModal');
+}
+
+function closeActivateModal() {
+    closeModal('activateModal');
+    resetActivateButton();
+    currentFormId = null;
+}
+
+function resetActivateButton() {
+    document.getElementById('activateSpinner').classList.add('hidden');
+    document.getElementById('activateText').textContent = 'Activate Form';
+    document.getElementById('confirmActivateBtn').disabled = false;
+}
+
+function confirmActivate() {
+    if (!currentFormId) return;
+
+    const btn = document.getElementById('confirmActivateBtn');
+    const spinner = document.getElementById('activateSpinner');
+    const text = document.getElementById('activateText');
+
+    spinner.classList.remove('hidden');
+    text.textContent = 'Activating...';
+    btn.disabled = true;
+
+    postFormAction('/admin/form-builder/' + currentFormId + '/activate', function () {
+        closeActivateModal();
+        showNotification('Form activated successfully!', 'success');
+        window.setTimeout(function () { location.reload(); }, 1000);
+    });
+}
+
+function openDeactivateModal(formId, formName) {
+    currentFormId = formId;
+    document.getElementById('deactivateFormName').textContent = formName;
+    openModal('deactivateModal');
+}
+
+function closeDeactivateModal() {
+    closeModal('deactivateModal');
+    resetDeactivateButton();
+    currentFormId = null;
+}
+
+function resetDeactivateButton() {
+    document.getElementById('deactivateSpinner').classList.add('hidden');
+    document.getElementById('deactivateText').textContent = 'Deactivate Form';
+    document.getElementById('confirmDeactivateBtn').disabled = false;
+}
+
+function confirmDeactivate() {
+    if (!currentFormId) return;
+
+    const btn = document.getElementById('confirmDeactivateBtn');
+    const spinner = document.getElementById('deactivateSpinner');
+    const text = document.getElementById('deactivateText');
+
+    spinner.classList.remove('hidden');
+    text.textContent = 'Deactivating...';
+    btn.disabled = true;
+
+    postFormAction('/admin/form-builder/' + currentFormId + '/deactivate', function () {
+        closeDeactivateModal();
+        showNotification('Form deactivated successfully!', 'success');
+        window.setTimeout(function () { location.reload(); }, 1000);
+    });
+}
+
+function openUnpublishModal(formId, formName) {
+    currentFormId = formId;
+    document.getElementById('unpublishFormName').textContent = formName;
+    openModal('unpublishModal');
+}
+
+function closeUnpublishModal() {
+    closeModal('unpublishModal');
+    resetUnpublishButton();
+    currentFormId = null;
+}
+
+function resetUnpublishButton() {
+    document.getElementById('unpublishSpinner').classList.add('hidden');
+    document.getElementById('unpublishText').textContent = 'Unpublish Form';
+    document.getElementById('confirmUnpublishBtn').disabled = false;
+}
+
+function confirmUnpublish() {
+    if (!currentFormId) return;
+
+    const btn = document.getElementById('confirmUnpublishBtn');
+    const spinner = document.getElementById('unpublishSpinner');
+    const text = document.getElementById('unpublishText');
+
+    spinner.classList.remove('hidden');
+    text.textContent = 'Unpublishing...';
+    btn.disabled = true;
+
+    postFormAction('/admin/form-builder/' + currentFormId + '/unpublish', function () {
+        closeUnpublishModal();
+        showNotification('Form unpublished successfully!', 'success');
+        window.setTimeout(function () { location.reload(); }, 1000);
+    });
+}
+
+function openDeleteModal(formId, formName) {
+    currentFormId = formId;
+    document.getElementById('deleteFormName').textContent = formName;
+    openModal('deleteModal');
+}
+
+function closeDeleteModal() {
+    closeModal('deleteModal');
+    resetDeleteButton();
+    currentFormId = null;
+}
+
+function resetDeleteButton() {
+    document.getElementById('deleteSpinner').classList.add('hidden');
+    document.getElementById('deleteText').textContent = 'Delete Form';
+    document.getElementById('confirmDeleteBtn').disabled = false;
+}
+
+function confirmDelete() {
+    if (!currentFormId) return;
+
+    const btn = document.getElementById('confirmDeleteBtn');
+    const spinner = document.getElementById('deleteSpinner');
+    const text = document.getElementById('deleteText');
+
+    spinner.classList.remove('hidden');
+    text.textContent = 'Deleting...';
+    btn.disabled = true;
+
+    fetch('/admin/form-builder/' + currentFormId + '/delete', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(function (response) { return response.json(); })
+    .then(function (result) {
+        closeDeleteModal();
+        if (result.success) {
+            showNotification('Form deleted successfully!', 'success');
+            window.setTimeout(function () { location.reload(); }, 1000);
+        } else {
+            showNotification('Error: ' + (result.message || 'Unknown error'), 'error');
+        }
+    })
+    .catch(function () {
+        closeDeleteModal();
+        showNotification('Error deleting form', 'error');
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.activate-form-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            openActivateModal(this.getAttribute('data-form-id'), this.getAttribute('data-form-name'));
+        });
+    });
+
+    document.querySelectorAll('.deactivate-form-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            openDeactivateModal(this.getAttribute('data-form-id'), this.getAttribute('data-form-name'));
+        });
+    });
+
+    document.querySelectorAll('.unpublish-form-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            openUnpublishModal(this.getAttribute('data-form-id'), this.getAttribute('data-form-name'));
+        });
+    });
+
+    document.querySelectorAll('.delete-form-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            openDeleteModal(this.getAttribute('data-form-id'), this.getAttribute('data-form-name'));
+        });
+    });
+
+    document.getElementById('confirmActivateBtn')?.addEventListener('click', confirmActivate);
+    document.getElementById('confirmDeactivateBtn')?.addEventListener('click', confirmDeactivate);
+    document.getElementById('confirmUnpublishBtn')?.addEventListener('click', confirmUnpublish);
+    document.getElementById('confirmDeleteBtn')?.addEventListener('click', confirmDelete);
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeActivateModal();
+            closeDeactivateModal();
+            closeUnpublishModal();
+            closeDeleteModal();
+        }
+    });
+});
+</script>

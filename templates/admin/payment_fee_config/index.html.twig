@@ -1,9 +1,18 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 
 {% block title %}Payment Fee Configuration - OPTIMUS{% endblock %}
 
-{% block body %}
-<div class="max-w-7xl mx-auto">
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+        <li><a href="{{ path('app_admin_dashboard') }}">Admin</a></li>
+        <li><a href="{{ path('admin_edo_release_queue') }}">eDO Release</a></li>
+        <li>Payment Fee Configuration</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
     <!-- Header -->
     <div class="card bg-base-100 shadow-sm mb-6">
         <div class="card-body">
@@ -38,7 +47,7 @@
                     <h3 class="card-title text-lg">Current Fee</h3>
                     <div class="text-center py-6">
                         <p class="text-sm text-base-content/60 mb-2">eDO Release Fee</p>
-                        <p class="text-5xl font-bold text-primary">₱{{ currentFee|number_format(2) }}</p>
+                        <p class="text-5xl font-bold text-primary">{{ currentFee|format_money('PHP') }}</p>
                         {% if history|length > 0 %}
                             <div class="mt-4 text-xs text-base-content/60">
                                 <p>Configured by: {{ history[0].configuredBy.email }}</p>
@@ -112,13 +121,13 @@
                                             </td>
                                             <td>
                                                 {% if config.previousAmount %}
-                                                    <div class="text-sm text-base-content/70">₱{{ config.previousAmount|number_format(2) }}</div>
+                                                    <div class="text-sm text-base-content/70">{{ config.previousAmount|format_money('PHP') }}</div>
                                                 {% else %}
                                                     <div class="badge badge-soft badge-ghost badge-sm">Initial</div>
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <div class="text-sm font-medium">₱{{ config.amount|number_format(2) }}</div>
+                                                <div class="text-sm font-medium">{{ config.amount|format_money('PHP') }}</div>
                                             </td>
                                             <td>
                                                 <div class="text-sm">{{ config.configuredBy.email }}</div>
@@ -151,12 +160,12 @@
                                             <span class="icon-[tabler--arrow-right] size-4 text-base-content/60"></span>
                                             <span class="text-sm">
                                                 {% if config.previousAmount %}
-                                                    <span class="text-base-content/70">₱{{ config.previousAmount|number_format(2) }}</span>
+                                                    <span class="text-base-content/70">{{ config.previousAmount|format_money('PHP') }}</span>
                                                 {% else %}
                                                     <span class="badge badge-soft badge-ghost badge-sm">Initial</span>
                                                 {% endif %}
                                                 <span class="mx-1">→</span>
-                                                <span class="font-medium">₱{{ config.amount|number_format(2) }}</span>
+                                                <span class="font-medium">{{ config.amount|format_money('PHP') }}</span>
                                             </span>
                                         </div>
                                         <div class="flex items-center gap-2">
@@ -177,83 +186,84 @@
             </div>
         </div>
     </div>
-</div>
+{% endblock %}
 
-<!-- Update Fee Modal -->
-<dialog id="updateFeeModal" class="modal">
-    <div class="modal-box">
+{% block page_modals %}
+<!-- Update Fee Modal (body-level so backdrop covers sidebar + top nav) -->
+<div id="updateFeeModal"
+     class="hidden fixed inset-0 z-[10002] items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="updateFeeModalTitle">
+    <div class="absolute inset-0 bg-black/60" data-fee-modal-dismiss></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6" onclick="event.stopPropagation()">
         <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-bold">Update Payment Fee</h3>
-            <button onclick="closeUpdateModal()" class="btn btn-text btn-circle btn-sm">
+            <h3 id="updateFeeModalTitle" class="text-lg font-bold">Update Payment Fee</h3>
+            <button type="button" data-fee-modal-dismiss class="btn btn-ghost btn-sm btn-circle">
                 <span class="icon-[tabler--x] size-5"></span>
             </button>
         </div>
         <form id="updateFeeForm" onsubmit="submitFeeUpdate(event)">
-            <div class="mb-4">
-                <label for="feeAmount" class="label">
-                    <span class="label-text">New Fee Amount (₱) <span class="text-error">*</span></span>
+            <div class="form-control mb-4">
+                <label for="feeAmount" class="label py-1">
+                    <span class="label-text font-medium">New Fee Amount (PHP) <span class="text-error">*</span></span>
                 </label>
                 <label class="input input-bordered flex items-center gap-2">
-                    <span class="text-base-content/60">₱</span>
-                    <input type="number" 
-                           id="feeAmount" 
-                           name="amount" 
-                           step="0.01" 
-                           min="0.01" 
+                    <span class="text-base-content/60">{{ 0|format_money('PHP')|replace({'0.00': ''}) }}</span>
+                    <input type="number"
+                           id="feeAmount"
+                           name="amount"
+                           step="0.01"
+                           min="0.01"
                            required
                            value="{{ currentFee }}"
                            class="grow"
                            placeholder="500.00">
                 </label>
-                <div class="label">
+                <label class="label py-1">
                     <span class="label-text-alt">Enter a positive decimal value</span>
-                </div>
+                </label>
             </div>
             <div class="alert alert-warning mb-4">
                 <span class="icon-[tabler--alert-triangle] size-5"></span>
                 <span class="text-xs">This change will not affect existing pending or completed payment transactions.</span>
             </div>
-            <div class="modal-action">
-                <button type="button" 
-                        onclick="closeUpdateModal()" 
-                        class="btn btn-ghost">
-                    Cancel
-                </button>
-                <button type="submit" 
-                        class="btn btn-primary">
+            <div class="flex justify-end gap-3">
+                <button type="button" data-fee-modal-dismiss class="btn btn-ghost">Cancel</button>
+                <button type="submit" class="btn btn-primary gap-2">
                     <span class="icon-[tabler--check] size-5"></span>
                     Update Fee
                 </button>
             </div>
         </form>
     </div>
-    <form method="dialog" class="modal-backdrop">
-        <button onclick="closeUpdateModal()">close</button>
-    </form>
-</dialog>
+</div>
 
 <!-- QR Code Upload Modal -->
-<dialog id="qrUploadModal" class="modal">
-    <div class="modal-box max-w-md">
+<div id="qrUploadModal"
+     class="hidden fixed inset-0 z-[10002] items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="qrUploadModalTitle">
+    <div class="absolute inset-0 bg-black/60" data-qr-modal-dismiss></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
         <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-bold">Upload Payment QR Code</h3>
-            <button onclick="closeQrUploadModal()" class="btn btn-text btn-circle btn-sm">
+            <h3 id="qrUploadModalTitle" class="text-lg font-bold">Upload Payment QR Code</h3>
+            <button type="button" data-qr-modal-dismiss class="btn btn-ghost btn-sm btn-circle">
                 <span class="icon-[tabler--x] size-5"></span>
             </button>
         </div>
         <form id="qrUploadForm" onsubmit="submitQrUpload(event)">
             <div class="mb-4">
-                <!-- Upload Area -->
                 <div id="qrUploadArea" class="border-2 border-dashed border-base-300 rounded-lg p-8 text-center hover:border-secondary transition-colors cursor-pointer">
-                    <input type="file" id="qrCodeFile" name="qr_code" accept="image/jpeg,image/jpg,image/png" class="hidden" required>
-                    <span class="icon-[tabler--photo] size-12 mx-auto text-base-content/40"></span>
+                    <input type="file" id="qrCodeFile" name="qr_code" accept="image/jpeg,image/jpg,image/png" class="hidden">
+                    <span class="icon-[tabler--photo] size-12 mx-auto text-base-content/40 block"></span>
                     <p class="mt-2 text-sm">
                         <span class="font-medium text-secondary">Click to upload</span> or drag and drop
                     </p>
                     <p class="mt-1 text-xs text-base-content/60">JPG or PNG (max 2MB)</p>
                 </div>
 
-                <!-- File Selected Area -->
                 <div id="qrFileSelectedArea" class="hidden border-2 border-success rounded-lg p-6 bg-success/10">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
@@ -263,61 +273,95 @@
                                 <p class="text-xs text-base-content/60" id="qrFileSize"></p>
                             </div>
                         </div>
-                        <button type="button" id="changeQrFileBtn" class="btn btn-text btn-sm text-secondary">
+                        <button type="button" id="changeQrFileBtn" class="btn btn-ghost btn-sm text-secondary">
                             Change
                         </button>
                     </div>
-                    <!-- Image Preview -->
                     <div class="mt-4">
                         <img id="qrPreview" src="" alt="QR Code Preview" class="mx-auto max-w-full h-auto rounded-lg border border-base-300" style="max-height: 200px;">
                     </div>
                 </div>
             </div>
-            
+
             <div class="alert alert-info mb-4">
                 <span class="icon-[tabler--info-circle] size-5"></span>
                 <span class="text-xs">This QR code will be displayed to brokers when they make eDO release payments.</span>
             </div>
-            
-            <div class="modal-action">
-                <button type="button" 
-                        onclick="closeQrUploadModal()" 
-                        class="btn btn-ghost">
-                    Cancel
-                </button>
-                <button type="submit" 
-                        class="btn btn-secondary">
+
+            <div class="flex justify-end gap-3">
+                <button type="button" data-qr-modal-dismiss class="btn btn-ghost">Cancel</button>
+                <button type="submit" class="btn btn-secondary gap-2">
                     <span class="icon-[tabler--upload] size-5"></span>
                     Upload QR Code
                 </button>
             </div>
         </form>
     </div>
-    <form method="dialog" class="modal-backdrop">
-        <button onclick="closeQrUploadModal()">close</button>
-    </form>
-</dialog>
+</div>
+{% endblock %}
 
+{% block page_scripts %}
 <script>
+const FEE_MONEY_PREFIX = {{ (0|format_money('PHP'))|slice(0, -4)|json_encode|raw }};
+
+function formatFeeMoney(amount) {
+    return FEE_MONEY_PREFIX + parseFloat(amount).toFixed(2);
+}
+
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    if (document.getElementById('updateFeeModal').classList.contains('hidden')
+        && document.getElementById('qrUploadModal').classList.contains('hidden')) {
+        document.body.style.overflow = '';
+    }
+}
+
 function showUpdateModal() {
-    document.getElementById('updateFeeModal').showModal();
+    openModal('updateFeeModal');
 }
 
 function closeUpdateModal() {
-    document.getElementById('updateFeeModal').close();
+    closeModal('updateFeeModal');
 }
 
 function showQrUploadModal() {
-    document.getElementById('qrUploadModal').showModal();
+    openModal('qrUploadModal');
 }
 
 function closeQrUploadModal() {
-    document.getElementById('qrUploadModal').close();
-    // Reset form
+    closeModal('qrUploadModal');
     document.getElementById('qrUploadForm').reset();
     document.getElementById('qrUploadArea').classList.remove('hidden');
     document.getElementById('qrFileSelectedArea').classList.add('hidden');
 }
+
+document.querySelectorAll('[data-fee-modal-dismiss]').forEach(function (el) {
+    el.addEventListener('click', closeUpdateModal);
+});
+
+document.querySelectorAll('[data-qr-modal-dismiss]').forEach(function (el) {
+    el.addEventListener('click', closeQrUploadModal);
+});
+
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        if (!document.getElementById('updateFeeModal').classList.contains('hidden')) {
+            closeUpdateModal();
+        }
+        if (!document.getElementById('qrUploadModal').classList.contains('hidden')) {
+            closeQrUploadModal();
+        }
+    }
+});
 
 // QR Code upload handling
 document.addEventListener('DOMContentLoaded', function() {
@@ -402,7 +446,7 @@ function submitFeeUpdate(event) {
         return;
     }
     
-    if (!confirm(`Are you sure you want to update the payment fee to ₱${parseFloat(amount).toFixed(2)}?`)) {
+    if (!confirm(`Are you sure you want to update the payment fee to ${formatFeeMoney(parseFloat(amount))}?`)) {
         return;
     }
     

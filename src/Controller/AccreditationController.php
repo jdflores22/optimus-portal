@@ -9,6 +9,7 @@ use App\Entity\Enum\AccountStatus;
 use App\Entity\Enum\FormType;
 use App\Entity\Enum\UserRole;
 use App\Service\AccreditationWorkflowService;
+use App\Service\BrokerRelationshipService;
 use App\Service\DynamicFormRenderer;
 use App\Service\FileService;
 use App\Service\FormBuilderService;
@@ -31,7 +32,8 @@ class AccreditationController extends AbstractController
         private DynamicFormRenderer $formRenderer,
         private EntityManagerInterface $entityManager,
         private FileService $fileService,
-        private CsrfTokenManagerInterface $csrfTokenManager
+        private CsrfTokenManagerInterface $csrfTokenManager,
+        private BrokerRelationshipService $brokerRelationshipService
     ) {
     }
 
@@ -39,6 +41,13 @@ class AccreditationController extends AbstractController
     public function index(): Response
     {
         $user = $this->getUser();
+
+        $hasActiveBroker = true;
+        if ($user instanceof Consignee) {
+            $this->brokerRelationshipService->syncLegacyLinkedBrokerFromRelationships($user);
+            $hasActiveBroker = $this->brokerRelationshipService->consigneeHasActiveBroker($user)
+                || $user->getLinkedBroker() !== null;
+        }
         
         // Get all active shipping lines
         $shippingLineRepository = $this->entityManager->getRepository(\App\Entity\ShippingLine::class);
@@ -69,7 +78,8 @@ class AccreditationController extends AbstractController
 
         return $this->render('accreditation/index.html.twig', [
             'shippingLines' => $shippingLineData,
-            'user' => $user
+            'user' => $user,
+            'hasActiveBroker' => $hasActiveBroker,
         ]);
     }
 
@@ -160,6 +170,7 @@ class AccreditationController extends AbstractController
                         $this->addFlash('error', 'File upload failed: ' . $e->getMessage());
                         return $this->render('accreditation/submit.html.twig', [
                             'formConfig' => $formConfig,
+                            'shippingLine' => $shippingLine,
                             'errors' => ['file_upload' => $e->getMessage()],
                             'submittedData' => $formData
                         ]);
@@ -199,6 +210,15 @@ class AccreditationController extends AbstractController
                 }
             }
 
+            if (count($errors) > 0) {
+                return $this->render('accreditation/submit.html.twig', [
+                    'formConfig' => $formConfig,
+                    'shippingLine' => $shippingLine,
+                    'errors' => $errors,
+                    'submittedData' => $formData,
+                ]);
+            }
+
             try {
                 // Submit the accreditation with files and shipping line
                 $submission = $this->accreditationService->submitAccreditation($user, $formData, $processedFiles, $shippingLine);
@@ -207,6 +227,12 @@ class AccreditationController extends AbstractController
                 return $this->redirectToRoute('accreditation_index');
             } catch (\Exception $e) {
                 $this->addFlash('error', 'Failed to submit accreditation: ' . $e->getMessage());
+                return $this->render('accreditation/submit.html.twig', [
+                    'formConfig' => $formConfig,
+                    'shippingLine' => $shippingLine,
+                    'errors' => [],
+                    'submittedData' => $formData,
+                ]);
             }
         }
 

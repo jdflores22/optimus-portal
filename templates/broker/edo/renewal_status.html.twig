@@ -128,7 +128,7 @@
                             
                             <div class="flex justify-between items-center text-lg">
                                 <span class="font-bold">Total Detention Charge</span>
-                                <span class="font-bold text-error">₱{{ renewalRequest.detentionChargeAmount|number_format(2, '.', ',') }}</span>
+                                <span class="font-bold text-error">{{ renewalRequest.detentionChargeAmount|format_money('PHP') }}</span>
                             </div>
                         </div>
 
@@ -140,7 +140,7 @@
                                     <div class="font-semibold">{{ renewalRequest.detentionBilling.billingNumber }}</div>
                                 </div>
                                 {% if not renewalRequest.paymentVerified %}
-                                <a href="{{ path('broker_payment_submit', {billingId: renewalRequest.detentionBilling.id}) }}" class="btn btn-primary btn-sm">
+                                <a href="{{ path('broker_edo_renewal_status', {id: renewalRequest.id}) }}" class="btn btn-primary btn-sm">
                                     <span class="icon-[tabler--credit-card] size-4"></span>
                                     Pay Now
                                 </a>

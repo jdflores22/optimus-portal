@@ -15,15 +15,8 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Integration Test: Payment Verification EDO Email Flow
- * 
- * This test verifies the complete end-to-end flow:
- * 1. Accounting staff can access payment verification page
- * 2. Clicking "Verify Payment" generates EDO and sends emails
- * 3. Success message is displayed
- * 4. User is redirected to dashboard
- * 
- * **Validates: Requirements 7.3, 7.4, 13.1, 13.2**
+ * @group legacy
+ * Legacy shipment PaymentVerification web UI removed — final payments use /accounting/payments/*.
  */
 class PaymentVerificationEDOEmailIntegrationTest extends WebTestCase
 {
@@ -44,48 +37,7 @@ class PaymentVerificationEDOEmailIntegrationTest extends WebTestCase
      */
     public function testPaymentVerificationWebFlow(): void
     {
-        $client = static::createClient();
-        $entityManager = $this->getEntityManager();
-
-        // Create test entities
-        $broker = $this->createBroker('Integration Test Broker', $entityManager);
-        $consignee = $this->createConsignee('Integration Test Consignee', $broker, $entityManager);
-        $accountingStaff = $this->createAccountingStaff($entityManager);
-        $shipment = $this->createShipment('INTEGRATION_TEST_001', 'Integration test billing', $broker, $entityManager);
-        $payment = $this->createPaymentVerification($shipment, $broker, $entityManager);
-
-        // Login as accounting staff
-        $client->loginUser($accountingStaff);
-
-        // Access payment verification page
-        $crawler = $client->request('GET', '/payment/verify/' . $payment->getId());
-        $this->assertResponseIsSuccessful();
-        $this->assertSelectorTextContains('h1', 'Payment Verification');
-        $this->assertSelectorExists('button:contains("Verify Payment")');
-
-        // Submit payment verification
-        $form = $crawler->selectButton('Verify Payment')->form();
-        $client->submit($form);
-
-        // Should redirect to accounting dashboard
-        $this->assertResponseRedirects('/payment/dashboard');
-        $client->followRedirect();
-
-        // Should show success message
-        $this->assertSelectorExists('.bg-green-50:contains("Payment verified successfully")');
-        $this->assertSelectorExists('.bg-green-50:contains("EDO has been generated and sent via email")');
-
-        // Verify payment status in database
-        $entityManager->refresh($payment);
-        $this->assertEquals(PaymentStatus::VERIFIED, $payment->getStatus());
-        $this->assertNotNull($payment->getVerifiedBy());
-        $this->assertNotNull($payment->getVerifiedAt());
-
-        // Verify EDO was generated
-        $edo = $payment->getEdo();
-        $this->assertNotNull($edo, 'EDO should be generated');
-        $this->assertStringStartsWith('EDO', $edo->getEdoNumber());
-        $this->assertNotEmpty($edo->getPdfPath());
+        $this->markTestSkipped('Legacy /payment/verify UI removed; use accounting final payment validation.');
     }
 
     /**
@@ -93,31 +45,7 @@ class PaymentVerificationEDOEmailIntegrationTest extends WebTestCase
      */
     public function testPaymentVerificationPageContent(): void
     {
-        $client = static::createClient();
-        $entityManager = $this->getEntityManager();
-
-        // Create test entities
-        $broker = $this->createBroker('Content Test Broker', $entityManager);
-        $accountingStaff = $this->createAccountingStaff($entityManager);
-        $shipment = $this->createShipment('CONTENT_TEST_001', 'Content test billing', $broker, $entityManager);
-        $payment = $this->createPaymentVerification($shipment, $broker, $entityManager);
-
-        // Login as accounting staff
-        $client->loginUser($accountingStaff);
-
-        // Access payment verification page
-        $crawler = $client->request('GET', '/payment/verify/' . $payment->getId());
-        $this->assertResponseIsSuccessful();
-
-        // Check that all required information is displayed
-        $this->assertSelectorTextContains('body', $shipment->getManifestNumber());
-        $this->assertSelectorTextContains('body', $broker->getBusinessName());
-        $this->assertSelectorTextContains('body', $broker->getEmail());
-        $this->assertSelectorTextContains('body', 'Pending Review');
-        
-        // Check that verification actions are available
-        $this->assertSelectorExists('button:contains("Verify Payment")');
-        $this->assertSelectorExists('button:contains("Reject Payment")');
+        $this->markTestSkipped('Legacy /payment/verify UI removed; use accounting final payment validation.');
     }
 
     /**
@@ -141,6 +69,12 @@ class PaymentVerificationEDOEmailIntegrationTest extends WebTestCase
         $client->loginUser($broker);
         $client->request('GET', '/payment/verify/' . $payment->getId());
         $this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+
+        // Accounting staff are redirected to the final payment dashboard
+        $accountingStaff = $this->createAccountingStaff($entityManager);
+        $client->loginUser($accountingStaff);
+        $client->request('GET', '/payment/verify/' . $payment->getId());
+        $this->assertResponseRedirects('/accounting/payments/dashboard');
     }
 
     private function createBroker(string $businessName, EntityManagerInterface $entityManager): Broker

@@ -86,7 +86,7 @@
         </div>
 
         <!-- Manifest List -->
-        <div class="card bg-base-100 shadow-sm">
+        <div id="guide-manifest-list" class="card bg-base-100 shadow-sm">
             {% if manifests|length > 0 %}
                 <div class="card-body p-4 border-b border-base-300">
                     <h3 class="text-sm font-semibold text-base-content">{{ total }} Manifest{{ total != 1 ? 's' : '' }}</h3>
@@ -355,4 +355,15 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block app_main_overlays %}
+    {% if show_onboarding_guide|default(false) %}
+        {% include 'consignee/_onboarding_guide_overlay.html.twig' %}
+    {% endif %}
+{% endblock %}
+
+{% block page_scripts %}
+    {{ parent() }}
+    {% include 'consignee/_onboarding_guide_scripts.html.twig' %}
 {% endblock %}

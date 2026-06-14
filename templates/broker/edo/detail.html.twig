@@ -296,6 +296,12 @@
 </div>
 
 <script>
+const MONEY_PREFIX = {{ (0|format_money('PHP'))|slice(0, -4)|json_encode|raw }};
+
+function formatMoney(amount) {
+    return MONEY_PREFIX + parseFloat(amount).toFixed(2);
+}
+
 // Get eDO ID from URL
 const urlParts = window.location.pathname.split('/');
 const edoId = urlParts[urlParts.length - 2]; // Get ID before '/page'
@@ -334,7 +340,7 @@ function displayEdoDetails(edo) {
     document.getElementById('edoNumber').textContent = edo.edoNumber;
     document.getElementById('containerNumber').textContent = edo.containerNumber;
     document.getElementById('manifestNumber').textContent = edo.manifestNumber;
-    document.getElementById('feeAmount').textContent = `₱${parseFloat(edo.feeAmount).toFixed(2)}`;
+    document.getElementById('feeAmount').textContent = formatMoney(edo.feeAmount);
     document.getElementById('generatedAt').textContent = formatDateTime(edo.generatedAt);
 
     // Expiration date display
@@ -487,7 +493,7 @@ function displayEdoDetails(edo) {
                             <div>
                                 <h3 class="font-semibold">Detention Billing Generated</h3>
                                 <div class="text-sm opacity-90 mt-1">
-                                    Detention charges: ₱${parseFloat(edoData.renewalRequest.detentionChargeAmount).toFixed(2)} 
+                                    Detention charges: ${formatMoney(edoData.renewalRequest.detentionChargeAmount)} 
                                     (${edoData.renewalRequest.overdueDays} days overdue)
                                 </div>
                                 <div class="text-sm opacity-90 mt-1">Please upload your payment receipt to proceed.</div>
@@ -611,7 +617,7 @@ function createPaymentTimelineItem(payment, isLast) {
         <p class="text-sm opacity-60 mt-1">
             Submitted by ${payment.submittedBy} on ${formatDateTime(payment.submittedAt)}
         </p>
-        <p class="text-sm font-medium mt-1">Amount: ₱${parseFloat(payment.amount).toFixed(2)}</p>
+        <p class="text-sm font-medium mt-1">Amount: ${formatMoney(payment.amount)}</p>
     `;
     
     // Add detention details if this is a detention payment
@@ -620,7 +626,7 @@ function createPaymentTimelineItem(payment, isLast) {
             <div class="mt-2 p-3 bg-info/10 border border-info/20 rounded-lg">
                 <p class="text-xs font-semibold text-info mb-1">${payment.description}</p>
                 <p class="text-xs opacity-60">Detention Days: ${payment.detentionDays} days</p>
-                <p class="text-xs opacity-60">Rate: ₱${parseFloat(payment.detentionRate).toFixed(2)}/day</p>
+                <p class="text-xs opacity-60">Rate: ${formatMoney(payment.detentionRate)}/day</p>
             </div>
         `;
     }
@@ -837,7 +843,7 @@ function createActivityTimelineItem(log, isLast) {
     let metadataHtml = '';
     if (log.metadata && Object.keys(log.metadata).length > 0) {
         const metadataItems = [];
-        if (log.metadata.amount) metadataItems.push(`₱${parseFloat(log.metadata.amount).toFixed(2)}`);
+        if (log.metadata.amount) metadataItems.push(formatMoney(log.metadata.amount));
         if (log.metadata.status) metadataItems.push(log.metadata.status);
         if (log.metadata.overdue_days) metadataItems.push(`${log.metadata.overdue_days} days overdue`);
         

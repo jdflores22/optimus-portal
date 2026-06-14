@@ -1,205 +1,229 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 
 {% block title %}Container Size Management - OPTIMUS{% endblock %}
 
-{% block body %}
-<div class="container mx-auto px-4 py-6">
-    <!-- Header -->
-    <div class="mb-6 flex justify-between items-center">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900">Container Size Management</h1>
-            <p class="mt-1 text-sm text-gray-600">Manage container size classifications</p>
-        </div>
-        <a href="{{ path('admin_container_sizes_new') }}" 
-           class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-            Add Container Size
-        </a>
-    </div>
-
-    <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
-                        </svg>
+{% block content %}
+<div class="space-y-6">
+<!-- Header -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+            <div class="py-4 sm:py-6">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                    <div>
+                        <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">Container Size Management</h1>
+                        <p class="mt-1 text-xs sm:text-sm text-base-content/70">Manage container size classifications</p>
                     </div>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-600">Total Sizes</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ containerSizes|length }}</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </div>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-600">Active</p>
-                    <p class="text-2xl font-bold text-green-900">{{ containerSizes|filter(s => s.isActive)|length }}</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </div>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-600">Inactive</p>
-                    <p class="text-2xl font-bold text-red-900">{{ containerSizes|filter(s => not s.isActive)|length }}</p>
+                    <a href="{{ path('admin_container_sizes_new') }}"
+                       class="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto gap-2">
+                        <span class="icon-[tabler--plus] size-4 sm:size-5"></span>
+                        Add Container Size
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Search and Filter -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
-                <input type="text" 
-                       id="searchInput" 
-                       placeholder="Search by name or code..."
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+    <div class="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success mb-4">
+                <span class="icon-[tabler--check] size-5"></span>
+                <span>{{ message }}</span>
             </div>
-            <div>
-                <label for="statusFilter" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select id="statusFilter" 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                </select>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-error mb-4">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+
+        <!-- Statistics -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="size-10 sm:size-12 bg-primary/10 text-primary rounded-full flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--resize] size-5 sm:size-6"></span>
+                        </div>
+                        <div>
+                            <p class="text-xs sm:text-sm text-base-content/70">Total Sizes</p>
+                            <p class="text-2xl sm:text-3xl font-bold text-base-content">{{ containerSizes|length }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="size-10 sm:size-12 bg-success/10 text-success rounded-full flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--circle-check] size-5 sm:size-6"></span>
+                        </div>
+                        <div>
+                            <p class="text-xs sm:text-sm text-base-content/70">Active</p>
+                            <p class="text-2xl sm:text-3xl font-bold text-success">{{ containerSizes|filter(s => s.isActive)|length }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="size-10 sm:size-12 bg-error/10 text-error rounded-full flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--circle-x] size-5 sm:size-6"></span>
+                        </div>
+                        <div>
+                            <p class="text-xs sm:text-sm text-base-content/70">Inactive</p>
+                            <p class="text-2xl sm:text-3xl font-bold text-error">{{ containerSizes|filter(s => not s.isActive)|length }}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Container Sizes Table -->
-    <div class="bg-white shadow-md rounded-lg overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name
-                    </th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Code
-                    </th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Description
-                    </th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                    </th>
-                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                    </th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200" id="containerSizesTableBody">
-                {% for containerSize in containerSizes %}
-                <tr id="container-size-row-{{ containerSize.id }}" 
-                    data-name="{{ containerSize.name|lower }}" 
-                    data-code="{{ containerSize.code|lower }}" 
-                    data-status="{{ containerSize.isActive ? 'active' : 'inactive' }}">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm font-medium text-gray-900">{{ containerSize.name }}</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                            {{ containerSize.code }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="text-sm text-gray-900">{{ containerSize.description ?: '-' }}</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ containerSize.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}" id="status-badge-{{ containerSize.id }}">
-                            {{ containerSize.isActive ? 'Active' : 'Inactive' }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a href="{{ path('admin_container_sizes_edit', {id: containerSize.id}) }}" 
-                           class="text-blue-600 hover:text-blue-900 mr-3">
-                            Edit
+        <!-- Search and Filter -->
+        <div class="card bg-base-100 shadow-sm mb-6">
+            <div class="card-body p-4 sm:p-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label py-1" for="searchInput">
+                            <span class="label-text font-medium">Search</span>
+                        </label>
+                        <label class="input input-bordered flex items-center gap-2">
+                            <span class="icon-[tabler--search] size-4 text-base-content/50"></span>
+                            <input type="text"
+                                   id="searchInput"
+                                   class="grow"
+                                   placeholder="Search by name or code...">
+                        </label>
+                    </div>
+                    <div class="form-control">
+                        <label class="label py-1" for="statusFilter">
+                            <span class="label-text font-medium">Status</span>
+                        </label>
+                        <select id="statusFilter" class="select select-bordered w-full">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Container Sizes Table -->
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 sm:px-6 pt-4 sm:pt-5">
+                <h3 class="card-title text-base sm:text-lg">All Container Sizes</h3>
+                <span class="badge badge-ghost">{{ containerSizes|length }} total</span>
+            </div>
+
+            {% if containerSizes|length > 0 %}
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Code</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="containerSizesTableBody">
+                            {% for containerSize in containerSizes %}
+                                <tr id="container-size-row-{{ containerSize.id }}"
+                                    class="hover"
+                                    data-name="{{ containerSize.name|lower }}"
+                                    data-code="{{ containerSize.code|lower }}"
+                                    data-status="{{ containerSize.isActive ? 'active' : 'inactive' }}">
+                                    <td class="font-medium whitespace-nowrap">{{ containerSize.name }}</td>
+                                    <td>
+                                        <span class="badge badge-primary badge-sm font-mono">{{ containerSize.code }}</span>
+                                    </td>
+                                    <td class="text-sm text-base-content/80 max-w-xs truncate">
+                                        {{ containerSize.description ?: '—' }}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-sm {{ containerSize.isActive ? 'badge-success' : 'badge-error' }}"
+                                              id="status-badge-{{ containerSize.id }}">
+                                            {{ containerSize.isActive ? 'Active' : 'Inactive' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="flex items-center justify-end gap-1">
+                                            <a href="{{ path('admin_container_sizes_edit', {id: containerSize.id}) }}"
+                                               class="btn btn-xs btn-primary"
+                                               title="Edit">
+                                                <span class="icon-[tabler--edit] size-3"></span>
+                                            </a>
+                                            <button type="button"
+                                                    onclick="toggleContainerSizeStatus({{ containerSize.id }})"
+                                                    class="btn btn-xs btn-warning"
+                                                    title="{{ containerSize.isActive ? 'Deactivate' : 'Activate' }}"
+                                                    id="toggle-btn-{{ containerSize.id }}">
+                                                <span class="icon-[tabler--{{ containerSize.isActive ? 'ban' : 'circle-check' }}] size-3"></span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="card-body text-center py-12">
+                    <span class="icon-[tabler--resize] size-12 text-base-content/30 mx-auto"></span>
+                    <h3 class="mt-4 text-base font-medium">No container sizes found</h3>
+                    <p class="mt-2 text-sm text-base-content/60">Get started by adding your first container size.</p>
+                    <div class="mt-6">
+                        <a href="{{ path('admin_container_sizes_new') }}" class="btn btn-primary gap-2">
+                            <span class="icon-[tabler--plus] size-4"></span>
+                            Add Container Size
                         </a>
-                        <button onclick="toggleContainerSizeStatus({{ containerSize.id }})" 
-                                class="text-yellow-600 hover:text-yellow-900" 
-                                id="toggle-btn-{{ containerSize.id }}">
-                            {{ containerSize.isActive ? 'Deactivate' : 'Activate' }}
-                        </button>
-                    </td>
-                </tr>
-                {% else %}
-                <tr id="no-results-row">
-                    <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
-                        No container sizes found. Click "Add Container Size" to create one.
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- Confirmation Modal -->
-<div id="confirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[9999]" style="display: none;">
-    <div class="flex items-center justify-center min-h-screen px-4">
-        <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3">
-                <div class="flex items-center mb-4">
-                    <div class="flex-shrink-0" id="confirmIcon">
-                        <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                        </svg>
                     </div>
-                    <h3 class="ml-3 text-lg font-medium leading-6 text-gray-900" id="confirmTitle">Confirm Action</h3>
                 </div>
-                <p class="text-sm text-gray-500 mb-6" id="confirmMessage">Are you sure you want to proceed?</p>
-                <div class="flex justify-end space-x-3">
-                    <button type="button" 
-                            onclick="closeConfirmModal()" 
-                            class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
-                        Cancel
-                    </button>
-                    <button type="button" 
-                            id="confirmButton"
-                            onclick="confirmAction()" 
-                            class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                        Confirm
-                    </button>
-                </div>
+            {% endif %}
+        </div>
+{% endblock %}
+
+{% block page_modals %}
+<!-- Confirmation Modal (body-level so backdrop covers sidebar + top nav) -->
+<div id="confirmModal"
+     class="hidden fixed inset-0 z-[10002] flex items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="confirmTitle">
+    <div class="absolute inset-0 bg-black/60" onclick="closeConfirmModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6">
+        <div class="text-center">
+            <div class="size-14 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="icon-[tabler--alert-triangle] size-7 text-warning"></span>
+            </div>
+            <h3 id="confirmTitle" class="text-lg font-bold mb-2">Confirm Action</h3>
+            <p id="confirmMessage" class="text-sm text-base-content/70 mb-6">Are you sure you want to proceed?</p>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeConfirmModal()" class="btn btn-ghost flex-1">Cancel</button>
+                <button type="button" id="confirmButton" onclick="confirmAction()" class="btn btn-warning flex-1">Confirm</button>
             </div>
         </div>
     </div>
 </div>
 
+<div id="containerSizeToastContainer" class="fixed top-20 right-4 z-[10003] flex flex-col gap-2 w-full max-w-sm pointer-events-none"></div>
+{% endblock %}
+
+{% block page_scripts %}
 <script>
 let pendingAction = null;
 let pendingContainerSizeId = null;
 
-// Search and filter functionality
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.getElementById('searchInput');
     const statusFilter = document.getElementById('statusFilter');
+
+    if (!searchInput) return;
 
     searchInput.addEventListener('input', applyFilters);
     statusFilter.addEventListener('change', applyFilters);
@@ -212,7 +236,7 @@ function applyFilters() {
     const rows = document.querySelectorAll('#containerSizesTableBody tr[data-name]');
     let visibleCount = 0;
 
-    rows.forEach(row => {
+    rows.forEach(function (row) {
         const name = row.getAttribute('data-name');
         const code = row.getAttribute('data-code');
         const status = row.getAttribute('data-status');
@@ -228,41 +252,37 @@ function applyFilters() {
         }
     });
 
-    // Handle no results
-    const noResultsRow = document.getElementById('no-results-row');
+    let noResultsRow = document.getElementById('no-results-row');
     if (visibleCount === 0 && rows.length > 0) {
         if (!noResultsRow) {
             const tbody = document.getElementById('containerSizesTableBody');
-            tbody.insertAdjacentHTML('beforeend', `
-                <tr id="no-results-row">
-                    <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
-                        No container sizes match your search criteria.
-                    </td>
-                </tr>
-            `);
+            tbody.insertAdjacentHTML('beforeend',
+                '<tr id="no-results-row"><td colspan="5" class="text-center py-8 text-sm text-base-content/60">No container sizes match your search criteria.</td></tr>'
+            );
         }
     } else if (noResultsRow && visibleCount > 0) {
         noResultsRow.remove();
     }
 }
 
-// Modal functions
 function openConfirmModal(title, message, action, containerSizeId) {
     document.getElementById('confirmTitle').textContent = title;
     document.getElementById('confirmMessage').textContent = message;
-    
+
     pendingAction = action;
     pendingContainerSizeId = containerSizeId;
-    
+
     const modal = document.getElementById('confirmModal');
-    modal.style.display = 'block';
     modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
 }
 
 function closeConfirmModal() {
     const modal = document.getElementById('confirmModal');
-    modal.style.display = 'none';
     modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
     pendingAction = null;
     pendingContainerSizeId = null;
 }
@@ -274,118 +294,67 @@ function confirmAction() {
     closeConfirmModal();
 }
 
-// Container size actions
 function toggleContainerSizeStatus(containerSizeId) {
-    const badge = document.getElementById(`status-badge-${containerSizeId}`);
+    const badge = document.getElementById('status-badge-' + containerSizeId);
     const isActive = badge.textContent.trim() === 'Active';
-    
-    const title = isActive ? 'Deactivate Container Size' : 'Activate Container Size';
-    const message = isActive 
-        ? 'Are you sure you want to deactivate this container size? It will no longer be available for selection in shipment forms.' 
-        : 'Are you sure you want to activate this container size?';
-    
-    openConfirmModal(title, message, 'toggle', containerSizeId);
+
+    openConfirmModal(
+        isActive ? 'Deactivate Container Size' : 'Activate Container Size',
+        isActive
+            ? 'Are you sure you want to deactivate this container size? It will no longer be available for selection in shipment forms.'
+            : 'Are you sure you want to activate this container size?',
+        'toggle',
+        containerSizeId
+    );
 }
 
 function executeToggleStatus(containerSizeId) {
-    fetch(`/admin/container-sizes/${containerSizeId}/toggle-status`, {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification(data.message, 'success');
-            // Update status badge
-            const badge = document.getElementById(`status-badge-${containerSizeId}`);
-            const toggleBtn = document.getElementById(`toggle-btn-${containerSizeId}`);
-            const row = document.getElementById(`container-size-row-${containerSizeId}`);
-            
-            if (data.isActive) {
-                badge.className = 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800';
-                badge.textContent = 'Active';
-                toggleBtn.textContent = 'Deactivate';
-                row.setAttribute('data-status', 'active');
+    fetch('/admin/container-sizes/' + containerSizeId + '/toggle-status', { method: 'POST' })
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+            if (data.success) {
+                showNotification(data.message, 'success');
+
+                const badge = document.getElementById('status-badge-' + containerSizeId);
+                const toggleBtn = document.getElementById('toggle-btn-' + containerSizeId);
+                const row = document.getElementById('container-size-row-' + containerSizeId);
+
+                if (data.isActive) {
+                    badge.className = 'badge badge-sm badge-success';
+                    badge.textContent = 'Active';
+                    toggleBtn.title = 'Deactivate';
+                    toggleBtn.innerHTML = '<span class="icon-[tabler--ban] size-3"></span>';
+                    row.setAttribute('data-status', 'active');
+                } else {
+                    badge.className = 'badge badge-sm badge-error';
+                    badge.textContent = 'Inactive';
+                    toggleBtn.title = 'Activate';
+                    toggleBtn.innerHTML = '<span class="icon-[tabler--circle-check] size-3"></span>';
+                    row.setAttribute('data-status', 'inactive');
+                }
             } else {
-                badge.className = 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800';
-                badge.textContent = 'Inactive';
-                toggleBtn.textContent = 'Activate';
-                row.setAttribute('data-status', 'inactive');
+                showNotification(data.message, 'error');
             }
-        } else {
-            showNotification(data.message, 'error');
-        }
-    })
-    .catch(error => {
-        showNotification('Failed to update container size status', 'error');
-    });
+        })
+        .catch(function () {
+            showNotification('Failed to update container size status', 'error');
+        });
 }
 
-// Notification system
-function showNotification(message, type = 'success') {
-    const notificationId = 'notification-' + Date.now();
-    
-    const config = {
-        success: {
-            bgColor: 'bg-white',
-            iconBg: 'bg-green-100',
-            iconColor: 'text-green-600',
-            textColor: 'text-gray-900',
-            iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
-        },
-        error: {
-            bgColor: 'bg-white',
-            iconBg: 'bg-red-100',
-            iconColor: 'text-red-600',
-            textColor: 'text-gray-900',
-            iconPath: 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'
-        }
-    };
-    
-    const style = config[type] || config.success;
-    
-    const notificationHtml = `
-        <div id="${notificationId}" class="fixed top-20 right-4 z-[9999] w-full max-w-sm pointer-events-auto transform transition-all duration-500 ease-out translate-x-0 opacity-100">
-            <div class="${style.bgColor} rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden">
-                <div class="p-4">
-                    <div class="flex items-start">
-                        <div class="flex-shrink-0">
-                            <div class="${style.iconBg} rounded-full p-2">
-                                <svg class="h-5 w-5 ${style.iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${style.iconPath}"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="ml-3 w-0 flex-1 pt-0.5">
-                            <p class="text-sm font-medium ${style.textColor}">${message}</p>
-                        </div>
-                        <div class="ml-4 flex-shrink-0 flex">
-                            <button onclick="closeNotification('${notificationId}')" class="inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-md">
-                                <span class="sr-only">Close</span>
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.insertAdjacentHTML('beforeend', notificationHtml);
-    
-    setTimeout(() => {
-        closeNotification(notificationId);
-    }, 5000);
-}
+function showNotification(message, type) {
+    const container = document.getElementById('containerSizeToastContainer');
+    if (!container) return;
 
-function closeNotification(notificationId) {
-    const notification = document.getElementById(notificationId);
-    if (notification) {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateX(100%)';
-        setTimeout(() => notification.remove(), 300);
-    }
+    const typeClass = type === 'success' ? 'alert-success' : 'alert-error';
+    const icon = type === 'success' ? 'icon-[tabler--check]' : 'icon-[tabler--alert-circle]';
+    const toast = document.createElement('div');
+    toast.className = 'alert ' + typeClass + ' shadow-lg pointer-events-auto';
+    toast.innerHTML = '<span class="' + icon + ' size-5"></span><span>' + message + '</span>';
+    container.appendChild(toast);
+
+    window.setTimeout(function () {
+        toast.remove();
+    }, 4000);
 }
 </script>
 {% endblock %}

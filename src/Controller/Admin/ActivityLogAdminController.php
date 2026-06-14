@@ -17,7 +17,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[Route('/admin/activity-logs', name: 'admin_activity_logs_')]
+#[Route('/admin/api/activity-logs', name: 'admin_api_activity_logs_')]
 class ActivityLogAdminController extends AbstractController
 {
     public function __construct(

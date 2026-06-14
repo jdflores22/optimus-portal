@@ -2,146 +2,248 @@
 
 {% block title %}Configuration - {{ shipping_line.brandName }}{% endblock %}
 
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+        <li><a href="{{ path('app_admin_dashboard') }}">Admin</a></li>
+        <li><a href="{{ path('admin_shipping_lines_list') }}">Shipping Lines</a></li>
+        <li>{{ shipping_line.brandName }}</li>
+        <li>Configuration</li>
+    </ul>
+</div>
+<div class="alert alert-info shadow-sm mb-4">
+    <span class="icon-[tabler--info-circle] size-5"></span>
+    <span class="text-sm">Manage per-line settings, branding, and role permissions for this shipping line.</span>
+</div>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title">
-                        <i class="fas fa-cog"></i>
-                        Configuration - {{ shipping_line.brandName }}
-                    </h3>
-                    <div class="btn-group">
-                        <a href="{{ path('admin_shipping_line_configuration_create', {id: shipping_line.id}) }}" 
-                           class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Add Configuration
-                        </a>
-                        <a href="{{ path('admin_shipping_line_branding', {id: shipping_line.id}) }}" 
-                           class="btn btn-info">
-                            <i class="fas fa-palette"></i> Branding
-                        </a>
-                        <a href="{{ path('admin_shipping_line_configuration_history', {id: shipping_line.id}) }}" 
-                           class="btn btn-secondary">
-                            <i class="fas fa-history"></i> History
-                        </a>
-                    </div>
-                </div>
-                <div class="card-body">
-                    {% if configurations is empty %}
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i>
-                            No configurations found. <a href="{{ path('admin_shipping_line_configuration_create', {id: shipping_line.id}) }}">Create your first configuration</a>.
-                        </div>
-                    {% else %}
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Configuration Key</th>
-                                        <th>Description</th>
-                                        <th>Status</th>
-                                        <th>Last Updated</th>
-                                        <th>Updated By</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for config in configurations %}
-                                        <tr>
-                                            <td>
-                                                <strong>{{ config.configKey }}</strong>
-                                            </td>
-                                            <td>{{ config.description ?? 'No description' }}</td>
-                                            <td>
-                                                {% if config.isActive %}
-                                                    <span class="badge badge-success">Active</span>
-                                                {% else %}
-                                                    <span class="badge badge-secondary">Inactive</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>{{ config.updatedAt|date('Y-m-d H:i:s') }}</td>
-                                            <td>{{ config.updatedBy ? config.updatedBy.email : config.createdBy.email }}</td>
-                                            <td>
-                                                <div class="btn-group btn-group-sm">
-                                                    <button type="button" class="btn btn-info" 
-                                                            onclick="viewConfiguration('{{ config.configKey }}', {{ config.configValue|json_encode|e('html_attr') }})">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-                                                    <a href="{{ path('admin_shipping_line_configuration_edit', {id: shipping_line.id, configKey: config.configKey}) }}" 
-                                                       class="btn btn-warning">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                    <button type="button" class="btn btn-danger" 
-                                                            onclick="deleteConfiguration('{{ config.configKey }}')">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% endif %}
-                </div>
+<div class="card bg-base-100 shadow-sm">
+    <div class="card-body">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+                <h1 class="card-title text-xl sm:text-2xl">
+                    <span class="icon-[tabler--settings] size-6"></span>
+                    Configuration — {{ shipping_line.brandName }}
+                </h1>
+                <p class="text-sm text-base-content/70 mt-1">Key-value settings stored as JSON for this shipping line.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ path('admin_shipping_line_configuration_create', {id: shipping_line.id}) }}"
+                   class="btn btn-primary btn-sm">
+                    <span class="icon-[tabler--plus] size-4"></span>
+                    Add Configuration
+                </a>
+                <a href="{{ path('admin_shipping_line_branding', {id: shipping_line.id}) }}"
+                   class="btn btn-info btn-soft btn-sm">
+                    <span class="icon-[tabler--palette] size-4"></span>
+                    Branding
+                </a>
+                <a href="{{ path('admin_role_permissions_index', {id: shipping_line.id}) }}"
+                   class="btn btn-secondary btn-soft btn-sm">
+                    <span class="icon-[tabler--user-shield] size-4"></span>
+                    Role Permissions
+                </a>
+                <a href="{{ path('admin_shipping_line_configuration_history', {id: shipping_line.id}) }}"
+                   class="btn btn-ghost btn-sm">
+                    <span class="icon-[tabler--history] size-4"></span>
+                    History
+                </a>
             </div>
         </div>
+
+        {% if configurations is empty %}
+            <div class="text-center py-12 bg-base-200/50 rounded-xl border border-dashed border-base-300">
+                <span class="icon-[tabler--settings-off] size-12 mx-auto text-base-content/40"></span>
+                <p class="mt-3 text-base-content/70">No configurations found.</p>
+                <a href="{{ path('admin_shipping_line_configuration_create', {id: shipping_line.id}) }}"
+                   class="btn btn-primary btn-sm mt-4">
+                    Create your first configuration
+                </a>
+            </div>
+        {% else %}
+            <div class="hidden md:block overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Configuration Key</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Last Updated</th>
+                            <th>Updated By</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for config in configurations %}
+                            <tr>
+                                <td class="font-medium">{{ config.configKey }}</td>
+                                <td class="text-base-content/70">{{ config.description ?? 'No description' }}</td>
+                                <td>
+                                    {% if config.isActive %}
+                                        <span class="badge badge-success badge-soft badge-sm">Active</span>
+                                    {% else %}
+                                        <span class="badge badge-ghost badge-sm">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="text-sm">{{ config.updatedAt|date('M j, Y') }}</div>
+                                    <div class="text-xs text-base-content/60">{{ config.updatedAt|date('g:i A') }}</div>
+                                </td>
+                                <td class="text-sm">{{ config.updatedBy ? config.updatedBy.email : config.createdBy.email }}</td>
+                                <td>
+                                    <div class="flex justify-end gap-1">
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs btn-square"
+                                                title="View"
+                                                onclick="viewConfiguration('{{ config.configKey|e('js') }}', {{ config.configValue|json_encode|raw }})">
+                                            <span class="icon-[tabler--eye] size-4"></span>
+                                        </button>
+                                        <a href="{{ path('admin_shipping_line_configuration_edit', {id: shipping_line.id, configKey: config.configKey}) }}"
+                                           class="btn btn-ghost btn-xs btn-square"
+                                           title="Edit">
+                                            <span class="icon-[tabler--edit] size-4"></span>
+                                        </a>
+                                        <button type="button"
+                                                class="btn btn-ghost btn-xs btn-square text-error"
+                                                title="Delete"
+                                                onclick="deleteConfiguration('{{ config.configKey|e('js') }}')">
+                                            <span class="icon-[tabler--trash] size-4"></span>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="md:hidden space-y-3">
+                {% for config in configurations %}
+                    <div class="card bg-base-200">
+                        <div class="card-body p-4 space-y-3">
+                            <div class="flex items-start justify-between gap-2">
+                                <div>
+                                    <p class="font-medium">{{ config.configKey }}</p>
+                                    <p class="text-sm text-base-content/70">{{ config.description ?? 'No description' }}</p>
+                                </div>
+                                {% if config.isActive %}
+                                    <span class="badge badge-success badge-soft badge-sm shrink-0">Active</span>
+                                {% else %}
+                                    <span class="badge badge-ghost badge-sm shrink-0">Inactive</span>
+                                {% endif %}
+                            </div>
+                            <p class="text-xs text-base-content/60">
+                                Updated {{ config.updatedAt|date('M j, Y g:i A') }}
+                                by {{ config.updatedBy ? config.updatedBy.email : config.createdBy.email }}
+                            </p>
+                            <div class="flex gap-2">
+                                <button type="button"
+                                        class="btn btn-sm btn-soft flex-1"
+                                        onclick="viewConfiguration('{{ config.configKey|e('js') }}', {{ config.configValue|json_encode|raw }})">
+                                    <span class="icon-[tabler--eye] size-4"></span>
+                                    View
+                                </button>
+                                <a href="{{ path('admin_shipping_line_configuration_edit', {id: shipping_line.id, configKey: config.configKey}) }}"
+                                   class="btn btn-sm btn-primary flex-1">
+                                    <span class="icon-[tabler--edit] size-4"></span>
+                                    Edit
+                                </a>
+                                <button type="button"
+                                        class="btn btn-sm btn-error btn-soft"
+                                        onclick="deleteConfiguration('{{ config.configKey|e('js') }}')">
+                                    <span class="icon-[tabler--trash] size-4"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
     </div>
 </div>
+{% endblock %}
 
-<!-- Configuration View Modal -->
-<div class="modal fade" id="configViewModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Configuration Details</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
+{% block page_modals %}
+<div id="configViewModal"
+     class="hidden fixed inset-0 z-[10002] items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="configViewModalTitle">
+    <div class="absolute inset-0 bg-black/60" data-config-modal-dismiss></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-2xl z-10 p-6" onclick="event.stopPropagation()">
+        <div class="flex justify-between items-center mb-4">
+            <h3 id="configViewModalTitle" class="text-lg font-bold">Configuration Details</h3>
+            <button type="button" data-config-modal-dismiss class="btn btn-ghost btn-sm btn-circle">
+                <span class="icon-[tabler--x] size-5"></span>
+            </button>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <p class="text-sm font-medium text-base-content/70 mb-1">Configuration Key</p>
+                <p id="configKey" class="font-mono text-sm bg-base-200 rounded-lg px-3 py-2"></p>
             </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label><strong>Configuration Key:</strong></label>
-                    <p id="configKey"></p>
-                </div>
-                <div class="form-group">
-                    <label><strong>Configuration Value:</strong></label>
-                    <pre id="configValue" class="bg-light p-3 rounded"></pre>
-                </div>
+            <div>
+                <p class="text-sm font-medium text-base-content/70 mb-1">Configuration Value</p>
+                <pre id="configValue" class="bg-base-200 rounded-lg p-4 text-xs overflow-x-auto max-h-96"></pre>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            </div>
+        </div>
+        <div class="mt-6 flex justify-end">
+            <button type="button" data-config-modal-dismiss class="btn btn-ghost">Close</button>
         </div>
     </div>
 </div>
 {% endblock %}
 
-{% block javascripts %}
-{{ parent() }}
+{% block page_scripts %}
 <script>
+const deleteConfigUrlTemplate = {{ path('admin_shipping_line_configuration_delete', {id: shipping_line.id, configKey: '__KEY__'})|json_encode|raw }};
+
+function openConfigViewModal() {
+    const modal = document.getElementById('configViewModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeConfigViewModal() {
+    const modal = document.getElementById('configViewModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
 function viewConfiguration(key, value) {
     document.getElementById('configKey').textContent = key;
     document.getElementById('configValue').textContent = JSON.stringify(value, null, 2);
-    $('#configViewModal').modal('show');
+    openConfigViewModal();
 }
 
 function deleteConfiguration(configKey) {
-    if (confirm('Are you sure you want to delete this configuration?')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/admin/shipping-line-configuration/${shipping_line.id}/delete/${configKey}`;
-        
-        const tokenInput = document.createElement('input');
-        tokenInput.type = 'hidden';
-        tokenInput.name = '_token';
-        tokenInput.value = '{{ csrf_token('delete_configuration') }}';
-        form.appendChild(tokenInput);
-        
-        document.body.appendChild(form);
-        form.submit();
+    if (!confirm('Are you sure you want to delete this configuration?')) {
+        return;
     }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = deleteConfigUrlTemplate.replace('__KEY__', encodeURIComponent(configKey));
+
+    const tokenInput = document.createElement('input');
+    tokenInput.type = 'hidden';
+    tokenInput.name = '_token';
+    tokenInput.value = {{ csrf_token('delete_configuration')|json_encode|raw }};
+    form.appendChild(tokenInput);
+
+    document.body.appendChild(form);
+    form.submit();
 }
+
+document.querySelectorAll('[data-config-modal-dismiss]').forEach(el => {
+    el.addEventListener('click', closeConfigViewModal);
+});
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        closeConfigViewModal();
+    }
+});
 </script>
 {% endblock %}

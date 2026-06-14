@@ -342,7 +342,7 @@
                                             {% endif %}
                                         </div>
                                         <div class="text-sm text-base-content/70">
-                                            Amount: ₱{{ payment.amount|number_format(2) }}
+                                            Amount: {{ payment|format_payment }}
                                         </div>
                                         <div class="text-xs text-base-content/60 mt-1">
                                             Submitted: {{ payment.createdAt|date('M j, Y g:i A') }}
@@ -370,7 +370,7 @@
                                         {% endif %}
                                     </div>
                                     <div class="text-sm text-base-content/70">
-                                        Amount: ₱{{ manifest.edo.edoPayment.amount|number_format(2) }}
+                                        Amount: {{ manifest.edo.edoPayment.amount|format_money('PHP') }}
                                     </div>
                                     <div class="text-xs text-base-content/60 mt-1">
                                         Submitted: {{ manifest.edo.edoPayment.createdAt|date('M j, Y g:i A') }}
@@ -402,7 +402,13 @@
             <!-- Documents -->
             <div class="card bg-base-100 shadow-sm">
                 <div class="card-body p-6">
-                    <h3 class="text-lg font-semibold text-base-content mb-4">Available Documents</h3>
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <h3 class="text-lg font-semibold text-base-content">Available Documents</h3>
+                        <a href="{{ path('consignee_manifest_documents', {id: manifest.id}) }}" class="btn btn-ghost btn-sm gap-1">
+                            <span class="icon-[tabler--folder] size-4"></span>
+                            View all
+                        </a>
+                    </div>
                     <div class="space-y-3">
                         {# Notice of Arrival (NOA) #}
                         {% if manifest.noa %}
@@ -485,7 +491,7 @@
                                             <div class="text-sm font-medium text-base-content truncate">Billing Document</div>
                                             <span class="icon-[tabler--check] size-4 text-success"></span>
                                         </div>
-                                        <div class="text-xs text-base-content/60 truncate">Total: ₱{{ manifest.billing.totalAmount|number_format(2) }}</div>
+                                        <div class="text-xs text-base-content/60 truncate">Total: {{ manifest.billing|format_billing }}</div>
                                     </div>
                                 </div>
                                 <a href="/api/billing/{{ manifest.billing.id }}/download" 

@@ -32,18 +32,12 @@ class CYUtilizationReportService implements CYUtilizationReportServiceInterface
     ): array {
         // Query container allocations within date range
         $qb = $this->entityManager->createQueryBuilder();
-        $qb->select('
-                audit,
-                container,
-                newAllocation,
-                terminal,
-                shippingLine
-            ')
+        $qb->select('audit')
             ->from(ContainerAllocationAudit::class, 'audit')
-            ->join('audit.container', 'container')
-            ->join('audit.newAllocation', 'newAllocation')
-            ->join('newAllocation.terminal', 'terminal')
-            ->join('newAllocation.shippingLine', 'shippingLine')
+            ->innerJoin('audit.container', 'container')->addSelect('container')
+            ->innerJoin('audit.newAllocation', 'newAllocation')->addSelect('newAllocation')
+            ->innerJoin('newAllocation.terminal', 'terminal')->addSelect('terminal')
+            ->innerJoin('newAllocation.shippingLine', 'shippingLine')->addSelect('shippingLine')
             ->where('audit.changedAt >= :startDate')
             ->andWhere('audit.changedAt <= :endDate')
             ->setParameter('startDate', $startDate)

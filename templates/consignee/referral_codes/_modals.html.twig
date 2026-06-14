@@ -1,0 +1,134 @@
+<div id="generateModal"
+     class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="generateModalTitle">
+    <div id="generateModalBackdrop" class="absolute inset-0 bg-black/60" onclick="closeGenerateModal()"></div>
+    <div id="guide-generate-referral-modal" class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10">
+        <form method="POST" action="{{ path('consignee_generate_code') }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('generate_referral_code') }}">
+
+            <div class="flex justify-between items-center p-6 pb-0">
+                <h3 id="generateModalTitle" class="text-lg font-bold">Generate Referral Code</h3>
+                <button type="button" onclick="closeGenerateModal()" class="btn btn-text btn-circle btn-sm" aria-label="Close">
+                    <span class="icon-[tabler--x] size-5"></span>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <div class="alert alert-info">
+                    <span class="icon-[tabler--info-circle] size-5"></span>
+                    <span class="text-sm">Each referral code can only be used once by a single broker. Generate a new code for each broker you want to link with.</span>
+                </div>
+
+                <div class="form-control">
+                    <label for="expires_at" class="label">
+                        <span class="label-text">Expiry Date (Optional)</span>
+                    </label>
+                    <input type="date"
+                           name="expires_at"
+                           id="expires_at"
+                           min="{{ 'now'|date('Y-m-d') }}"
+                           class="input input-bordered w-full">
+                    <label class="label">
+                        <span class="label-text-alt">Leave empty for no expiration</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 p-6 pt-0">
+                <button type="button" onclick="closeGenerateModal()" class="btn btn-ghost">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-primary gap-2">
+                    <span class="icon-[tabler--ticket] size-4"></span>
+                    Generate Code
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="deactivateModal"
+     class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true">
+    <div class="absolute inset-0 bg-black/60" onclick="closeDeactivateModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6">
+        <div class="text-center">
+            <div class="size-14 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="icon-[tabler--alert-triangle] size-7 text-error"></span>
+            </div>
+            <h3 class="text-lg font-bold mb-2">Deactivate Referral Code</h3>
+            <p class="text-sm text-base-content/70 mb-4">
+                Are you sure you want to deactivate this code?
+            </p>
+            <div class="bg-base-200 rounded-lg p-3 mb-4 text-left">
+                <p class="text-xs text-base-content/60 mb-1">Code</p>
+                <p id="deactivateCodeDisplay" class="text-lg font-mono font-bold"></p>
+            </div>
+            <p class="text-xs text-error mb-6">
+                This code will no longer be usable by brokers.
+            </p>
+            <div class="flex gap-3">
+                <button type="button"
+                        onclick="closeDeactivateModal()"
+                        class="btn btn-ghost flex-1">
+                    Cancel
+                </button>
+                <button type="button"
+                        onclick="confirmDeactivate()"
+                        class="btn btn-error flex-1">
+                    Deactivate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="reactivateModal"
+     class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true">
+    <div class="absolute inset-0 bg-black/60" onclick="closeReactivateModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6">
+        <div class="text-center">
+            <div class="size-14 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="icon-[tabler--circle-check] size-7 text-success"></span>
+            </div>
+            <h3 class="text-lg font-bold mb-2">Reactivate Referral Code</h3>
+            <p class="text-sm text-base-content/70 mb-4">
+                Are you sure you want to reactivate this code?
+            </p>
+            <div class="bg-base-200 rounded-lg p-3 mb-4 text-left">
+                <p class="text-xs text-base-content/60 mb-1">Code</p>
+                <p id="reactivateCodeDisplay" class="text-lg font-mono font-bold"></p>
+            </div>
+            <p class="text-xs text-success mb-6">
+                This code will become usable again by brokers.
+            </p>
+            <div class="flex gap-3">
+                <button type="button"
+                        onclick="closeReactivateModal()"
+                        class="btn btn-ghost flex-1">
+                    Cancel
+                </button>
+                <button type="button"
+                        onclick="confirmReactivate()"
+                        class="btn btn-success flex-1">
+                    Reactivate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="POST" id="deactivateForm" class="hidden">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token('deactivate_referral_code') }}">
+    <input type="hidden" name="code_id" id="deactivateCodeId">
+</form>
+
+<form method="POST" id="reactivateForm" class="hidden">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token('reactivate_referral_code') }}">
+    <input type="hidden" name="code_id" id="reactivateCodeId">
+</form>

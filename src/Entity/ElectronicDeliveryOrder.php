@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Entity\Enum\EDOStatus;
 use App\Entity\Enum\PaymentStatus;
 use App\Repository\ElectronicDeliveryOrderRepository;
+use App\Util\DecimalString;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -46,7 +47,7 @@ class ElectronicDeliveryOrder
     private Collection $payments;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
-    private ?float $feeAmount = null;
+    private ?string $feeAmount = null;
 
     #[ORM\Column(type: 'string', length: 500)]
     private string $pdfPath;
@@ -96,12 +97,20 @@ class ElectronicDeliveryOrder
     #[ORM\OneToMany(targetEntity: EDOReleaseHistory::class, mappedBy: 'edo', cascade: ['persist', 'remove'])]
     private Collection $releaseHistory;
 
+    #[ORM\OneToMany(targetEntity: EDOAccessLog::class, mappedBy: 'edo', cascade: ['persist', 'remove'])]
+    private Collection $accessLogs;
+
+    #[ORM\OneToMany(targetEntity: AuditLog::class, mappedBy: 'relatedEdo', cascade: ['persist', 'remove'])]
+    private Collection $relatedAuditLogs;
+
     public function __construct()
     {
         $this->generatedAt = new \DateTime();
         $this->status = EDOStatus::PENDING_RELEASE;
         $this->releaseHistory = new ArrayCollection();
         $this->payments = new ArrayCollection();
+        $this->accessLogs = new ArrayCollection();
+        $this->relatedAuditLogs = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -341,12 +350,12 @@ class ElectronicDeliveryOrder
 
     public function getFeeAmount(): ?float
     {
-        return $this->feeAmount;
+        return DecimalString::toFloat($this->feeAmount);
     }
 
     public function setFeeAmount(?float $feeAmount): self
     {
-        $this->feeAmount = $feeAmount;
+        $this->feeAmount = DecimalString::fromFloat($feeAmount);
         return $this;
     }
 
@@ -356,6 +365,22 @@ class ElectronicDeliveryOrder
     public function getPayments(): Collection
     {
         return $this->payments;
+    }
+
+    /**
+     * @return Collection<int, EDOAccessLog>
+     */
+    public function getAccessLogs(): Collection
+    {
+        return $this->accessLogs;
+    }
+
+    /**
+     * @return Collection<int, AuditLog>
+     */
+    public function getRelatedAuditLogs(): Collection
+    {
+        return $this->relatedAuditLogs;
     }
 
     /**

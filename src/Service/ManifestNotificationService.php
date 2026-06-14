@@ -9,6 +9,7 @@ use App\Entity\ElectronicDeliveryOrder;
 use App\Entity\User;
 use App\Entity\Enum\AccountStatus;
 use App\Entity\Enum\UserRole;
+use App\Utility\PaymentAmountFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -92,9 +93,9 @@ class ManifestNotificationService implements NotificationServiceInterface
         
         $subject = 'Billing Document Generated';
         $message = sprintf(
-            'Billing document has been generated for manifest %s. Total amount: ₱%s',
+            'Billing document has been generated for manifest %s. Total amount: %s',
             $manifest->getManifestNumber(),
-            number_format($billing->getTotalAmount(), 2)
+            PaymentAmountFormatter::formatBilling($billing)
         );
 
         $this->notificationGateway->sendNotification(
@@ -334,11 +335,13 @@ class ManifestNotificationService implements NotificationServiceInterface
         
         // Notify validators (ACCOUNTING for final payment, SYSTEM_ADMIN for manifest access)
         $validatorSubject = sprintf('%s Payment Submitted for Validation', $paymentType);
+        $amountFormatted = PaymentAmountFormatter::formatPayment($payment);
+
         $validatorMessage = sprintf(
-            '%s has submitted a %s payment of ₱%s for manifest %s. Please review and validate the payment.',
+            '%s has submitted a %s payment of %s for manifest %s. Please review and validate the payment.',
             $this->getRecipientName($submitter),
             strtolower($paymentType),
-            number_format($payment->getAmount(), 2),
+            $amountFormatted,
             $manifest->getManifestNumber()
         );
 
@@ -366,10 +369,10 @@ class ManifestNotificationService implements NotificationServiceInterface
         // Notify SL_STAFF users
         $slStaffSubject = sprintf('%s Payment Submitted', $paymentType);
         $slStaffMessage = sprintf(
-            '%s has submitted a %s payment of ₱%s for manifest %s.',
+            '%s has submitted a %s payment of %s for manifest %s.',
             $this->getRecipientName($submitter),
             strtolower($paymentType),
-            number_format($payment->getAmount(), 2),
+            $amountFormatted,
             $manifest->getManifestNumber()
         );
 
@@ -398,9 +401,9 @@ class ManifestNotificationService implements NotificationServiceInterface
         $recipients = $this->getManifestRecipients($manifest);
         $recipientSubject = sprintf('%s Payment Submitted', $paymentType);
         $recipientMessage = sprintf(
-            'A %s payment of ₱%s has been submitted for manifest %s and is pending validation.',
+            'A %s payment of %s has been submitted for manifest %s and is pending validation.',
             strtolower($paymentType),
-            number_format($payment->getAmount(), 2),
+            $amountFormatted,
             $manifest->getManifestNumber()
         );
 
@@ -442,21 +445,23 @@ class ManifestNotificationService implements NotificationServiceInterface
             ->getQuery()
             ->getResult();
         
+        $amountFormatted = PaymentAmountFormatter::formatPayment($payment);
+
         if ($approved) {
             $subject = sprintf('%s Payment Approved', $paymentType);
             $message = sprintf(
-                'Your %s payment of ₱%s for manifest %s has been approved.',
+                'Your %s payment of %s for manifest %s has been approved.',
                 strtolower($paymentType),
-                number_format($payment->getAmount(), 2),
+                $amountFormatted,
                 $manifest->getManifestNumber()
             );
             $notificationType = 'payment_approved';
         } else {
             $subject = sprintf('%s Payment Rejected', $paymentType);
             $message = sprintf(
-                'Your %s payment of ₱%s for manifest %s has been rejected. Reason: %s',
+                'Your %s payment of %s for manifest %s has been rejected. Reason: %s',
                 strtolower($paymentType),
-                number_format($payment->getAmount(), 2),
+                $amountFormatted,
                 $manifest->getManifestNumber(),
                 $reason ?? 'No reason provided'
             );
@@ -617,10 +622,12 @@ class ManifestNotificationService implements NotificationServiceInterface
         $this->logger->info('DEBUG: SYSTEM_ADMIN users count for eDO payment notification: ' . count($systemAdmins));
         
         $subject = 'eDO Payment Submitted for Validation';
+        $edoAmountFormatted = PaymentAmountFormatter::formatEdoPaymentAmount($edoPayment->getAmount());
+
         $message = sprintf(
-            '%s has submitted an eDO payment of ₱%s for manifest %s. Please review and validate the payment.',
+            '%s has submitted an eDO payment of %s for manifest %s. Please review and validate the payment.',
             $this->getRecipientName($submitter),
-            number_format($edoPayment->getAmount(), 2),
+            $edoAmountFormatted,
             $manifest->getManifestNumber()
         );
 
@@ -662,11 +669,13 @@ class ManifestNotificationService implements NotificationServiceInterface
         
         $this->logger->info('DEBUG: Recipients count for eDO payment validation notification: ' . count($recipients));
         
+        $edoAmountFormatted = PaymentAmountFormatter::formatEdoPaymentAmount($edoPayment->getAmount());
+
         if ($approved) {
             $subject = 'eDO Payment Approved';
             $message = sprintf(
-                'Your eDO payment of ₱%s for manifest %s has been approved. The eDO will be released shortly.',
-                number_format($edoPayment->getAmount(), 2),
+                'Your eDO payment of %s for manifest %s has been approved. The eDO will be released shortly.',
+                $edoAmountFormatted,
                 $manifest->getManifestNumber()
             );
             $notificationType = 'edo_payment_approved';
@@ -687,8 +696,8 @@ class ManifestNotificationService implements NotificationServiceInterface
         } else {
             $subject = 'eDO Payment Rejected';
             $message = sprintf(
-                'Your eDO payment of ₱%s for manifest %s has been rejected. Reason: %s',
-                number_format($edoPayment->getAmount(), 2),
+                'Your eDO payment of %s for manifest %s has been rejected. Reason: %s',
+                $edoAmountFormatted,
                 $manifest->getManifestNumber(),
                 $reason ?? 'No reason provided'
             );

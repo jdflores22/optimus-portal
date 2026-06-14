@@ -2,7 +2,9 @@
 
 namespace App\Service;
 
+use App\Entity\Consignee;
 use App\Entity\ConsigneeBrokerRelationship;
+use App\Entity\Broker;
 use App\Entity\ReferralCode;
 use App\Entity\User;
 use App\Repository\ConsigneeBrokerRelationshipRepository;
@@ -36,6 +38,7 @@ class BrokerRelationshipService
             // Reactivate if it was terminated
             if ($existing->isTerminated()) {
                 $existing->activate();
+                $this->syncLegacyLinkedBroker($consignee, $broker);
                 $this->em->flush();
                 
                 $this->logger->info('Broker relationship reactivated', [
@@ -56,6 +59,7 @@ class BrokerRelationshipService
         $relationship->setStatus(ConsigneeBrokerRelationship::STATUS_ACTIVE);
         
         $this->em->persist($relationship);
+        $this->syncLegacyLinkedBroker($consignee, $broker);
         $this->em->flush();
         
         $this->logger->info('Broker relationship created', [
@@ -195,5 +199,50 @@ class BrokerRelationshipService
     public function countActiveConsignees(User $broker): int
     {
         return count($this->getActiveConsigneesForBroker($broker));
+    }
+
+    public function consigneeHasActiveBroker(User $consignee): bool
+    {
+        return $this->countActiveBrokers($consignee) > 0;
+    }
+
+    /**
+     * Backfill legacy consignee.linkedBroker from referral-code relationships.
+     */
+    public function syncLegacyLinkedBrokerFromRelationships(Consignee $consignee): void
+    {
+        if ($consignee->getLinkedBroker() !== null) {
+            return;
+        }
+
+        $relationships = $this->getActiveBrokersForConsignee($consignee);
+        if ($relationships === []) {
+            return;
+        }
+
+        $broker = $relationships[0]->getBroker();
+        if (!$broker instanceof Broker) {
+            return;
+        }
+
+        $this->syncLegacyLinkedBroker($consignee, $broker);
+        $this->em->flush();
+    }
+
+    private function syncLegacyLinkedBroker(User $consignee, User $broker): void
+    {
+        if (!$consignee instanceof Consignee || !$broker instanceof Broker) {
+            return;
+        }
+
+        if ($consignee->getLinkedBroker() !== null) {
+            return;
+        }
+
+        $consignee->setLinkedBroker($broker);
+
+        if (!$broker->getLinkedConsignees()->contains($consignee)) {
+            $broker->addLinkedConsignee($consignee);
+        }
     }
 }

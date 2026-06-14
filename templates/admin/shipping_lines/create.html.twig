@@ -1,255 +1,168 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 
-{% block title %}Create Shipping Line{% endblock %}
+{% block title %}Create Shipping Line - OPTIMUS{% endblock %}
 
-{% block body %}
-<div class="min-h-screen bg-gray-50">
-    <div class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
-        <!-- Header -->
-        <div class="mb-6">
-            <nav class="flex" aria-label="Breadcrumb">
-                <ol class="flex items-center space-x-4">
-                    <li>
-                        <a href="{{ path('admin_shipping_lines_list') }}" class="text-gray-400 hover:text-gray-500">
-                            <span class="sr-only">Shipping Lines</span>
-                            <svg class="flex-shrink-0 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
-                            </svg>
-                        </a>
-                    </li>
-                    <li>
-                        <div class="flex items-center">
-                            <svg class="flex-shrink-0 h-5 w-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            <span class="ml-4 text-sm font-medium text-gray-500">Create</span>
-                        </div>
-                    </li>
-                </ol>
-            </nav>
-            <h2 class="mt-2 text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+        <li><a href="{{ path('admin_shipping_lines_list') }}">Shipping Lines</a></li>
+        <li>Create</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-4xl">
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h1 class="card-title text-xl sm:text-2xl">
+                <span class="icon-[tabler--ship] size-6"></span>
                 Create New Shipping Line
-            </h2>
-            <p class="mt-1 text-sm text-gray-500">
-                Set up a new shipping line with branded portal configuration
-            </p>
+            </h1>
+            <p class="text-sm text-base-content/70">Set up a new shipping line with branded portal configuration</p>
         </div>
+    </div>
 
-        <!-- Flash Messages -->
-        {% for message in app.flashes('success') %}
-            <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg">
-                {{ message }}
-            </div>
-        {% endfor %}
-        {% for message in app.flashes('error') %}
-            <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg">
-                {{ message }}
-            </div>
-        {% endfor %}
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success"><span>{{ message }}</span></div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error"><span>{{ message }}</span></div>
+    {% endfor %}
 
-        <!-- Create Form -->
-        <div class="bg-white shadow rounded-lg">
-            <form method="POST" enctype="multipart/form-data" class="px-4 py-5 sm:p-6">
-                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <!-- Basic Information -->
-                    <div class="sm:col-span-2">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Basic Information</h3>
+    <div class="card bg-base-100 shadow-sm">
+        <form method="POST" enctype="multipart/form-data" class="card-body space-y-6">
+            <div>
+                <h2 class="text-lg font-semibold mb-4">Basic Information</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="form-control sm:col-span-2 sm:col-auto">
+                        <label class="label" for="brandName"><span class="label-text">Brand Name *</span></label>
+                        <input type="text" name="brandName" id="brandName" required class="input input-bordered w-full">
                     </div>
-
-                    <div>
-                        <label for="brandName" class="block text-sm font-medium text-gray-700">Brand Name *</label>
-                        <input type="text" 
-                               name="brandName" 
-                               id="brandName" 
-                               required
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                    </div>
-
-                    <div>
-                        <label for="isActive" class="block text-sm font-medium text-gray-700">Status</label>
-                        <select name="isActive" 
-                                id="isActive" 
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <div class="form-control">
+                        <label class="label" for="isActive"><span class="label-text">Status</span></label>
+                        <select name="isActive" id="isActive" class="select select-bordered w-full">
                             <option value="1" selected>Active</option>
                             <option value="0">Inactive</option>
                         </select>
                     </div>
-
-                    <div class="sm:col-span-2">
-                        <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
-                        <textarea name="description" 
-                                  id="description" 
-                                  rows="3" 
-                                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
-                        <p class="mt-1 text-xs text-gray-500">Brief description of the shipping line</p>
+                    <div class="form-control sm:col-span-2">
+                        <label class="label" for="description"><span class="label-text">Description</span></label>
+                        <textarea name="description" id="description" rows="3" class="textarea textarea-bordered w-full"></textarea>
+                        <label class="label"><span class="label-text-alt">Brief description of the shipping line</span></label>
                     </div>
-
-                    <div>
-                        <label for="website" class="block text-sm font-medium text-gray-700">Website</label>
-                        <input type="url" 
-                               name="website" 
-                               id="website"
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <div class="form-control">
+                        <label class="label" for="website"><span class="label-text">Website</span></label>
+                        <input type="url" name="website" id="website" class="input input-bordered w-full">
                     </div>
-
-                    <div>
-                        <label for="headquarters" class="block text-sm font-medium text-gray-700">Headquarters</label>
-                        <input type="text" 
-                               name="headquarters" 
-                               id="headquarters"
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <div class="form-control">
+                        <label class="label" for="headquarters"><span class="label-text">Headquarters</span></label>
+                        <input type="text" name="headquarters" id="headquarters" class="input input-bordered w-full">
                     </div>
+                </div>
+            </div>
 
-                    <!-- Contact Information -->
-                    <div class="sm:col-span-2">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4 mt-6">Contact Information</h3>
+            <div class="divider"></div>
+
+            <div>
+                <h2 class="text-lg font-semibold mb-4">Contact Information</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label" for="contactEmail"><span class="label-text">Contact Email</span></label>
+                        <input type="email" name="contactEmail" id="contactEmail" class="input input-bordered w-full">
                     </div>
-
-                    <div>
-                        <label for="contactEmail" class="block text-sm font-medium text-gray-700">Contact Email</label>
-                        <input type="email" 
-                               name="contactEmail" 
-                               id="contactEmail"
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <div class="form-control">
+                        <label class="label" for="contactPhone"><span class="label-text">Contact Phone</span></label>
+                        <input type="tel" name="contactPhone" id="contactPhone" class="input input-bordered w-full">
                     </div>
+                </div>
+            </div>
 
-                    <div>
-                        <label for="contactPhone" class="block text-sm font-medium text-gray-700">Contact Phone</label>
-                        <input type="tel" 
-                               name="contactPhone" 
-                               id="contactPhone"
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                    </div>
+            <div class="divider"></div>
 
-                    <!-- Portal Configuration -->
-                    <div class="sm:col-span-2">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4 mt-6">Portal Configuration</h3>
-                    </div>
-
-                    <div>
-                        <label for="primaryColor" class="block text-sm font-medium text-gray-700">Primary Color</label>
-                        <div class="mt-1 flex items-center space-x-3">
-                            <input type="color" 
-                                   name="primaryColor" 
-                                   id="primaryColor" 
-                                   value="#3B82F6"
-                                   class="h-10 w-16 border border-gray-300 rounded-md">
-                            <input type="text" 
-                                   name="primaryColorText" 
-                                   value="#3B82F6"
-                                   class="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            <div>
+                <h2 class="text-lg font-semibold mb-4">Portal Configuration</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label" for="primaryColor"><span class="label-text">Primary Color</span></label>
+                        <div class="flex items-center gap-3">
+                            <input type="color" name="primaryColor" id="primaryColor" value="#3B82F6" class="h-10 w-16 rounded-lg border border-base-300 cursor-pointer">
+                            <input type="text" name="primaryColorText" value="#3B82F6" class="input input-bordered flex-1">
                         </div>
                     </div>
-
-                    <div>
-                        <label for="logo" class="block text-sm font-medium text-gray-700">Logo</label>
-                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md" id="logoDropzone">
-                            <div class="space-y-1 text-center" id="logoUploadArea">
-                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                </svg>
-                                <div class="flex text-sm text-gray-600">
-                                    <label for="logo" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                        <span>Upload a file</span>
-                                        <input id="logo" name="logo" type="file" accept="image/*" class="sr-only">
-                                    </label>
-                                    <p class="pl-1">or drag and drop</p>
-                                </div>
-                                <p class="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                    <div class="form-control sm:col-span-2">
+                        <label class="label" for="logo"><span class="label-text">Logo</span></label>
+                        <div class="border-2 border-dashed border-base-300 rounded-xl p-6" id="logoDropzone">
+                            <div class="text-center" id="logoUploadArea">
+                                <span class="icon-[tabler--photo-up] size-10 text-base-content/40 block mx-auto mb-2"></span>
+                                <label for="logo" class="btn btn-ghost btn-sm">Upload a file</label>
+                                <input id="logo" name="logo" type="file" accept="image/*" class="hidden">
+                                <p class="text-xs text-base-content/60 mt-2">PNG, JPG, GIF up to 10MB</p>
                             </div>
-                            <div class="hidden" id="logoPreview">
-                                <div class="text-center">
-                                    <img id="logoPreviewImage" class="mx-auto h-32 w-auto rounded-lg border border-gray-300" src="" alt="Logo preview">
-                                    <div class="mt-2">
-                                        <p id="logoFileName" class="text-sm font-medium text-gray-900"></p>
-                                        <p id="logoFileSize" class="text-xs text-gray-500"></p>
-                                        <button type="button" onclick="clearLogo()" class="mt-2 text-xs text-red-600 hover:text-red-500">
-                                            Remove
-                                        </button>
-                                    </div>
-                                </div>
+                            <div class="hidden text-center" id="logoPreview">
+                                <img id="logoPreviewImage" class="mx-auto h-32 w-auto rounded-lg border border-base-300" src="" alt="Logo preview">
+                                <p id="logoFileName" class="text-sm font-medium mt-2"></p>
+                                <p id="logoFileSize" class="text-xs text-base-content/60"></p>
+                                <button type="button" onclick="clearLogo()" class="btn btn-ghost btn-xs text-error mt-2">Remove</button>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Form Actions -->
-                <div class="mt-6 flex justify-end space-x-3">
-                    <a href="{{ path('admin_shipping_lines_list') }}" 
-                       class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        Cancel
-                    </a>
-                    <button type="submit" 
-                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                        </svg>
-                        Create Shipping Line
-                    </button>
-                </div>
-            </form>
-        </div>
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+                <a href="{{ path('admin_shipping_lines_list') }}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-primary gap-2">
+                    <span class="icon-[tabler--plus] size-4"></span>
+                    Create Shipping Line
+                </button>
+            </div>
+        </form>
     </div>
 </div>
+{% endblock %}
 
+{% block page_scripts %}
 <script>
-// Sync color picker with text input
 document.getElementById('primaryColor').addEventListener('input', function() {
     document.querySelector('input[name="primaryColorText"]').value = this.value;
 });
-
 document.querySelector('input[name="primaryColorText"]').addEventListener('input', function() {
     document.getElementById('primaryColor').value = this.value;
 });
 
-// File upload preview
 document.getElementById('logo').addEventListener('change', function(e) {
     const file = e.target.files[0];
-    if (file) {
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-            alert('Please select an image file.');
-            this.value = '';
-            return;
-        }
-        
-        // Validate file size (10MB)
-        if (file.size > 10 * 1024 * 1024) {
-            alert('File size must be less than 10MB.');
-            this.value = '';
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            // Show preview
-            document.getElementById('logoUploadArea').classList.add('hidden');
-            document.getElementById('logoPreview').classList.remove('hidden');
-            
-            // Set preview image
-            document.getElementById('logoPreviewImage').src = e.target.result;
-            document.getElementById('logoFileName').textContent = file.name;
-            document.getElementById('logoFileSize').textContent = formatFileSize(file.size);
-            
-            // Change dropzone appearance
-            document.getElementById('logoDropzone').classList.remove('border-dashed', 'border-gray-300');
-            document.getElementById('logoDropzone').classList.add('border-solid', 'border-green-300', 'bg-green-50');
-        };
-        reader.readAsDataURL(file);
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+        alert('Please select an image file.');
+        this.value = '';
+        return;
     }
+    if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB.');
+        this.value = '';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        document.getElementById('logoUploadArea').classList.add('hidden');
+        document.getElementById('logoPreview').classList.remove('hidden');
+        document.getElementById('logoPreviewImage').src = ev.target.result;
+        document.getElementById('logoFileName').textContent = file.name;
+        document.getElementById('logoFileSize').textContent = formatFileSize(file.size);
+        document.getElementById('logoDropzone').classList.add('border-success', 'bg-success/5');
+        document.getElementById('logoDropzone').classList.remove('border-dashed');
+    };
+    reader.readAsDataURL(file);
 });
 
 function clearLogo() {
-    // Clear file input
     document.getElementById('logo').value = '';
-    
-    // Hide preview and show upload area
     document.getElementById('logoPreview').classList.add('hidden');
     document.getElementById('logoUploadArea').classList.remove('hidden');
-    
-    // Reset dropzone appearance
-    document.getElementById('logoDropzone').classList.remove('border-solid', 'border-green-300', 'bg-green-50');
-    document.getElementById('logoDropzone').classList.add('border-dashed', 'border-gray-300');
+    document.getElementById('logoDropzone').classList.remove('border-success', 'bg-success/5');
+    document.getElementById('logoDropzone').classList.add('border-dashed');
 }
 
 function formatFileSize(bytes) {

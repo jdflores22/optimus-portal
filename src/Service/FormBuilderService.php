@@ -163,9 +163,47 @@ class FormBuilderService
     }
 
     /**
+     * Revert a published form back to draft (unpublish).
+     *
+     * @throws \InvalidArgumentException If form not found, wrong status, or has submissions
+     */
+    public function unpublishForm(int $formId): void
+    {
+        $form = $this->entityManager->getRepository(FormConfiguration::class)->find($formId);
+
+        if (!$form) {
+            throw new \InvalidArgumentException('Form configuration not found');
+        }
+
+        if ($form->getStatus() !== FormStatus::PUBLISHED) {
+            throw new \InvalidArgumentException('Only published forms can be unpublished. Deactivate active forms first.');
+        }
+
+        if ($this->countSubmissions($form) > 0) {
+            throw new \InvalidArgumentException('Cannot unpublish a form that has accreditation submissions');
+        }
+
+        $form->unpublish();
+        $this->entityManager->flush();
+
+        $this->cacheService->invalidateFormConfiguration($form->getType());
+    }
+
+    private function countSubmissions(FormConfiguration $form): int
+    {
+        return (int) $this->entityManager->createQueryBuilder()
+            ->select('COUNT(s.id)')
+            ->from('App\Entity\AccreditationSubmission', 's')
+            ->where('s.formConfig = :form')
+            ->setParameter('form', $form)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
      * Get the currently active form for a specific type
      * Returns the active form of the specified type
-     * 
+     *
      * @param FormType $type The form type to retrieve
      * @return FormConfiguration|null The active form or null if none active
      */

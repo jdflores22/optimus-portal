@@ -366,7 +366,7 @@ class BatchEDOSequentialProcessingPropertyTest extends KernelTestCase
         $idProperty->setAccessible(true);
         $idProperty->setValue($noa, $seed);
         
-        $noa->setCyLocation("CY Location {$seed}");
+        $noa->setPortLocation("CY Location {$seed}");
         
         return $noa;
     }

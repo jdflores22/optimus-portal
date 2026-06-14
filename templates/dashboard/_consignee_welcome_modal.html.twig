@@ -1,0 +1,58 @@
+{% if show_welcome_modal %}
+<div id="consigneeWelcomeModal"
+     class="hidden fixed inset-0 z-[10004] flex items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="consigneeWelcomeTitle">
+    <div id="consigneeWelcomeBackdrop" class="absolute inset-0 bg-black/60"></div>
+
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10">
+        <div class="bg-primary px-6 py-8 text-primary-content text-center relative">
+            <button type="button"
+                    id="consigneeWelcomeCloseBtn"
+                    class="btn btn-text btn-circle btn-sm absolute end-3 top-3 text-primary-content"
+                    aria-label="Close welcome message">
+                <span class="icon-[tabler--x] size-4"></span>
+            </button>
+            <div class="mx-auto mb-4 size-24 sm:size-28 rounded-full overflow-hidden bg-white">
+                <img src="{{ asset('images/optimus.jpg') }}"
+                     alt="OPTIMUS Shipping System"
+                     class="size-full object-cover"
+                     loading="eager"
+                     decoding="async">
+            </div>
+            <h2 id="consigneeWelcomeTitle" class="text-2xl font-bold">Welcome to OPTIMUS</h2>
+            <p class="mt-2 text-sm opacity-90">Your consignee portal is ready, {{ user.businessName }}</p>
+        </div>
+
+        <div class="px-6 py-6 space-y-4">
+            <p class="text-sm text-base-content/80">
+                Thank you for registering. OPTIMUS helps you manage shipments, connect with accredited brokers,
+                and track manifests from one place.
+            </p>
+
+            <ul class="space-y-3 text-sm">
+                <li class="flex items-start gap-3">
+                    <span class="icon-[tabler--certificate] size-5 text-primary shrink-0 mt-0.5"></span>
+                    <span><strong>Complete accreditation</strong> with your shipping lines to unlock full access.</span>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="icon-[tabler--users] size-5 text-primary shrink-0 mt-0.5"></span>
+                    <span><strong>Connect with brokers</strong> who can manage manifests and documentation on your behalf.</span>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="icon-[tabler--package] size-5 text-primary shrink-0 mt-0.5"></span>
+                    <span><strong>Track manifests &amp; payments</strong> from your dashboard as shipments progress.</span>
+                </li>
+            </ul>
+
+            <button type="button"
+                    id="consigneeWelcomeDismissBtn"
+                    class="btn btn-primary w-full">
+                Get started
+                <span class="icon-[tabler--arrow-right] size-4"></span>
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}

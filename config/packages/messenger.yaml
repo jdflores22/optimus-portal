@@ -17,10 +17,9 @@ framework:
             failed: 'doctrine://default?queue_name=failed'
 
         routing:
-            # Route Symfony Mailer messages to async transport
-            # DISABLED: Send emails synchronously for immediate delivery
-            # 'Symfony\Component\Mailer\Messenger\SendEmailMessage': async
-            
+            # Route Symfony Mailer messages to async transport (processed by messenger:consume)
+            'Symfony\Component\Mailer\Messenger\SendEmailMessage': async
+
             # Route notification messages to async transport
             'App\Message\SendEmailNotificationMessage': async
             'App\Message\SendInAppNotificationMessage': async

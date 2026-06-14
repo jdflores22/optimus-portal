@@ -268,6 +268,22 @@ class DwellTimeService implements DwellTimeServiceInterface
             }
         }
 
+        // Start dwell clock on first discharge at port/terminal (CAO 8-2019)
+        if ($newStatus === ContainerStatus::AT_TERMINAL && $container->getTerminalArrivalDate() === null) {
+            $arrivalDate = new \DateTime();
+            $container->setTerminalArrivalDate($arrivalDate);
+            $this->updateContainerDwellTime($container);
+
+            $arrivalEvent = new DwellTimeEvent();
+            $arrivalEvent->setContainer($container)
+                ->setEventType(DwellTimeEventType::ARRIVAL)
+                ->setEventDate($arrivalDate)
+                ->setDwellTimeAtEvent(0)
+                ->setReason('Container discharged at port/terminal — dwell time started')
+                ->setTriggeredBy($triggeredBy);
+            $this->entityManager->persist($arrivalEvent);
+        }
+
         // Create status change event
         $event = new DwellTimeEvent();
         $event->setContainer($container)

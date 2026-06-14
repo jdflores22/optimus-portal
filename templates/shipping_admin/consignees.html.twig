@@ -10,7 +10,14 @@
             <span class="icon-[tabler--building] size-8 text-primary"></span>
             <h1 class="text-2xl sm:text-3xl font-bold text-base-content">Consignee Management</h1>
         </div>
-        <p class="text-base-content/60">View and manage consignees and their broker relationships</p>
+        <p class="text-base-content/60">
+            Accredited consignees registered to
+            {% if shippingLine is defined and shippingLine %}
+                <span class="font-medium text-base-content">{{ shippingLine.brandName }}</span>
+            {% else %}
+                your shipping line
+            {% endif %}
+        </p>
     </div>
 
             <!-- Stats Cards -->
@@ -33,7 +40,13 @@
                             <div>
                                 <p class="text-sm text-base-content/60">With Brokers</p>
                                 <p class="text-2xl font-bold text-base-content">
-                                    {{ consignees|filter(c => c.linkedBroker)|length }}
+                                    {% set withBrokers = 0 %}
+                                    {% for consignee in consignees %}
+                                        {% if consigneeStats[consignee.id].broker_count > 0 %}
+                                            {% set withBrokers = withBrokers + 1 %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ withBrokers }}
                                 </p>
                             </div>
                             <span class="icon-[tabler--link] size-10 text-success opacity-20"></span>
@@ -47,7 +60,13 @@
                             <div>
                                 <p class="text-sm text-base-content/60">Without Brokers</p>
                                 <p class="text-2xl font-bold text-base-content">
-                                    {{ consignees|filter(c => not c.linkedBroker)|length }}
+                                    {% set withoutBrokers = 0 %}
+                                    {% for consignee in consignees %}
+                                        {% if consigneeStats[consignee.id].broker_count == 0 %}
+                                            {% set withoutBrokers = withoutBrokers + 1 %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ withoutBrokers }}
                                 </p>
                             </div>
                             <span class="icon-[tabler--unlink] size-10 text-warning opacity-20"></span>
@@ -82,7 +101,7 @@
                             <thead>
                                 <tr>
                                     <th class="bg-base-200">Consignee</th>
-                                    <th class="bg-base-200">Linked Broker</th>
+                                    <th class="bg-base-200">Linked Brokers</th>
                                     <th class="bg-base-200 text-center">NOAs</th>
                                     <th class="bg-base-200 text-center">Manifests</th>
                                     <th class="bg-base-200 text-center">Containers</th>
@@ -106,13 +125,17 @@
                                         </a>
                                     </td>
                                     <td>
-                                        {% if consignee.linkedBroker %}
-                                            <div class="flex items-center gap-2">
-                                                <span class="icon-[tabler--link] size-4 text-success"></span>
-                                                <div>
-                                                    <div class="font-medium text-sm">{{ consignee.linkedBroker.fullName }}</div>
-                                                    <div class="text-xs text-base-content/60">{{ consignee.linkedBroker.email }}</div>
-                                                </div>
+                                        {% if consigneeStats[consignee.id].broker_count > 0 %}
+                                            <div class="flex flex-col gap-1 max-h-40 overflow-y-auto">
+                                                {% for broker in consigneeStats[consignee.id].linked_brokers %}
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="icon-[tabler--link] size-3 text-success shrink-0"></span>
+                                                        <div>
+                                                            <div class="font-medium text-sm">{{ broker.fullName }}</div>
+                                                            <div class="text-xs text-base-content/60">{{ broker.email }}</div>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
                                             </div>
                                         {% else %}
                                             <span class="badge badge-ghost badge-sm gap-1">

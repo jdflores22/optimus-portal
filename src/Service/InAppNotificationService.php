@@ -81,6 +81,9 @@ class InAppNotificationService
             'manifest_payment_required', 'billing_generated' => 'warning',
             'manifest_access_granted', 'noa_generated', 'edo_generated', 'payment_approved', 'bl_uploaded', 'manifest_broker_assigned' => 'success',
             'payment_rejected' => 'error',
+            'accreditation_status' => 'info',
+            'broker_linked' => 'success',
+            'consignee_linked' => 'success',
             'success' => 'success',
             'error' => 'error',
             'warning' => 'warning',
@@ -141,11 +144,13 @@ class InAppNotificationService
                             $text = 'Review Payment';
                         }
                     }
-                    // For SYSTEM_ADMIN, link to manifest access payment validation page
+                    // For SYSTEM_ADMIN, link to eDO payment validation
                     elseif ($userRole === 'SYSTEM_ADMIN' && isset($metadata['payment_id'])) {
-                        $paymentId = $metadata['payment_id'];
-                        $url = "/admin/payment-validation/manifest-access/{$paymentId}";
-                        $text = 'Review Payment';
+                        $paymentType = $metadata['payment_type'] ?? null;
+                        if ($paymentType === 'edo_access' || $paymentType === 'edo_payment') {
+                            $url = '/admin/edo-payments';
+                            $text = 'Review Payment';
+                        }
                     }
                     break;
                 case 'manifest_access_granted':
@@ -224,6 +229,12 @@ class InAppNotificationService
                     $text = 'View Manifest';
                     break;
             }
+        } elseif ($eventType === 'accreditation_status') {
+            $url = '/accreditation';
+            $text = 'View Accreditation';
+        } elseif ($eventType === 'broker_linked' || $eventType === 'consignee_linked') {
+            $url = $user->getRole()->value === 'BROKER' ? '/broker/manifests' : '/consignee/manifests';
+            $text = 'View Manifests';
         }
 
         return ['url' => $url, 'text' => $text];

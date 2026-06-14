@@ -89,10 +89,10 @@
                             <!-- Detention Charge -->
                             <div class="bg-error/10 rounded-lg p-3 mb-4">
                                 <div class="text-xs opacity-60 mb-1">Detention Charge (Current)</div>
-                                <div class="text-2xl font-bold text-error">₱{{ currentDetentionCharge|number_format(2, '.', ',') }}</div>
+                                <div class="text-2xl font-bold text-error">{{ currentDetentionCharge|format_money('PHP') }}</div>
                                 {% if currentDetentionCharge != request.detentionChargeAmount %}
                                     <div class="text-xs opacity-60 mt-1">
-                                        Original: ₱{{ request.detentionChargeAmount|number_format(2, '.', ',') }}
+                                        Original: {{ request.detentionChargeAmount|format_money('PHP') }}
                                     </div>
                                 {% endif %}
                             </div>
@@ -145,7 +145,7 @@
                                                 </div>
                                                 <div>
                                                     <div class="text-xs opacity-60 mb-1">Detention Charge</div>
-                                                    <div class="text-2xl font-bold text-error">₱{{ currentDetentionCharge|number_format(2, '.', ',') }}</div>
+                                                    <div class="text-2xl font-bold text-error">{{ currentDetentionCharge|format_money('PHP') }}</div>
                                                 </div>
                                             </div>
 

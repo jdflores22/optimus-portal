@@ -180,7 +180,7 @@
                                             {% endif %}
                                         </div>
                                         <div class="text-sm text-base-content/70">
-                                            Amount: ₱{{ payment.amount|number_format(2) }}
+                                            Amount: {{ payment|format_payment }}
                                         </div>
                                         <div class="text-xs text-base-content/50 mt-1">
                                             Submitted: {{ payment.createdAt|date('M j, Y g:i A') }}
@@ -265,7 +265,7 @@
                                         <span class="icon-[tabler--receipt] size-8 text-success"></span>
                                         <div>
                                             <div class="text-sm font-medium text-base-content">Billing Document</div>
-                                            <div class="text-xs text-base-content/60">Total: ₱{{ manifest.billing.totalAmount|number_format(2) }}</div>
+                                            <div class="text-xs text-base-content/60">Total: {{ manifest.billing|format_billing }}</div>
                                         </div>
                                     </div>
                                     <a href="/api/billing/{{ manifest.billing.id }}/download" 

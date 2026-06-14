@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Entity\Enum\RenewalRequestStatus;
 use App\Repository\EDORenewalRequestRepository;
+use App\Util\DecimalString;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: EDORenewalRequestRepository::class)]
@@ -40,7 +41,7 @@ class EDORenewalRequest
     private int $overdueDays;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
-    private float $detentionChargeAmount;
+    private string $detentionChargeAmount = '0.00';
 
     #[ORM\Column(type: 'string', enumType: RenewalRequestStatus::class)]
     private RenewalRequestStatus $status;
@@ -70,7 +71,7 @@ class EDORenewalRequest
         $this->requestedAt = new \DateTime();
         $this->status = RenewalRequestStatus::PENDING_REVIEW;
         $this->overdueDays = 0;
-        $this->detentionChargeAmount = 0.0;
+        $this->detentionChargeAmount = '0.00';
         $this->paymentVerified = false;
     }
 
@@ -147,12 +148,12 @@ class EDORenewalRequest
 
     public function getDetentionChargeAmount(): float
     {
-        return $this->detentionChargeAmount;
+        return DecimalString::toFloatOrZero($this->detentionChargeAmount);
     }
 
     public function setDetentionChargeAmount(float $detentionChargeAmount): self
     {
-        $this->detentionChargeAmount = $detentionChargeAmount;
+        $this->detentionChargeAmount = DecimalString::fromFloat($detentionChargeAmount) ?? '0.00';
         return $this;
     }
 

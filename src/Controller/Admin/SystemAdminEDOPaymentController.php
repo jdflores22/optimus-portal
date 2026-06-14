@@ -23,7 +23,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * 
  * Requirements: 15.2
  */
-#[Route('/admin/edo-payments')]
+#[Route('/admin/api/edo-payments')]
 #[IsGranted('ROLE_SYSTEM_ADMIN')]
 class SystemAdminEDOPaymentController extends AbstractController
 {
@@ -279,7 +279,7 @@ class SystemAdminEDOPaymentController extends AbstractController
                 ],
                 'receipt' => [
                     'path' => $receiptPath,
-                    'url' => '/admin/edo-payments/' . $id . '/receipt/download',
+                    'url' => '/admin/api/edo-payments/' . $id . '/receipt/download',
                     'type' => $fileType,
                     'size' => $fileSize,
                 ],

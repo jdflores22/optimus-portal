@@ -19,7 +19,8 @@ class EDOReleaseService implements EDOReleaseServiceInterface
         private readonly EDOReleaseHistoryRepository $historyRepository,
         private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger,
-        private readonly AuditService $auditService
+        private readonly AuditService $auditService,
+        private readonly WorkflowOrchestrator $workflowOrchestrator
     ) {
     }
 
@@ -84,6 +85,15 @@ class EDOReleaseService implements EDOReleaseServiceInterface
 
             // Create history entry
             $this->createHistoryEntry($edo, $previousStatus, EDOStatus::RELEASED, $admin, null);
+
+            $this->entityManager->flush();
+
+            $manifest = $edo->getManifest();
+            $this->workflowOrchestrator->transitionToEdoReleasedWhenComplete(
+                $manifest,
+                $admin,
+                sprintf('eDO %s released', $edo->getEdoNumber())
+            );
 
             $this->entityManager->flush();
             $this->entityManager->commit();

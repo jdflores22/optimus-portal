@@ -223,8 +223,8 @@
                         Linked Consignees ({{ linkedConsignees|length }})
                     </h3>
                     {% if linkedConsignees|length > 0 %}
-                        <div class="space-y-2">
-                            {% for consignee in linkedConsignees|slice(0, 5) %}
+                        <div class="space-y-2 max-h-96 overflow-y-auto">
+                            {% for consignee in linkedConsignees %}
                                 <a href="{{ path('app_shipping_admin_consignee_detail', {id: consignee.id}) }}" class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200 transition-colors">
                                     <div class="avatar avatar-placeholder">
                                         <div class="bg-primary text-primary-content size-10 rounded-full">
@@ -237,11 +237,6 @@
                                     </div>
                                 </a>
                             {% endfor %}
-                            {% if linkedConsignees|length > 5 %}
-                                <p class="text-xs text-center text-base-content/60 pt-2">
-                                    +{{ linkedConsignees|length - 5 }} more consignees
-                                </p>
-                            {% endif %}
                         </div>
                     {% else %}
                         <div class="text-center py-4 text-base-content/60">

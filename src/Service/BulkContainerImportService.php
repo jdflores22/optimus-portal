@@ -31,7 +31,7 @@ class BulkContainerImportService implements BulkContainerImportServiceInterface
     private const COLUMN_CONTAINER_NUMBER = 'container_number';
     private const COLUMN_CONTAINER_TYPE = 'container_type';
     private const COLUMN_CONTAINER_SIZE = 'container_size';
-    private const COLUMN_CY_LOCATION = 'cy_location';
+    private const COLUMN_PORT_LOCATION = 'port_location';
     private const COLUMN_EXPECTED_RETURN_DATE = 'expected_return_date';
 
     public function __construct(
@@ -90,7 +90,7 @@ class BulkContainerImportService implements BulkContainerImportServiceInterface
             $teuValue = $containerSize->getTeuValue();
 
             // Get CY allocation
-            $cyLocationName = $row[self::COLUMN_CY_LOCATION] ?? null;
+            $cyLocationName = $row[self::COLUMN_PORT_LOCATION] ?? null;
             
             if (!$cyLocationName) {
                 // Will use default allocation - skip for now
@@ -515,7 +515,7 @@ class BulkContainerImportService implements BulkContainerImportServiceInterface
 
         // Determine CY allocation
         $cyAllocation = null;
-        $cyLocationName = $row[self::COLUMN_CY_LOCATION] ?? null;
+        $cyLocationName = $row[self::COLUMN_PORT_LOCATION] ?? null;
 
         if ($cyLocationName && isset($allocationMap[$cyLocationName])) {
             $cyAllocation = $allocationMap[$cyLocationName];

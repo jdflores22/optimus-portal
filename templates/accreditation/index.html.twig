@@ -29,7 +29,7 @@
     <!-- Main Content -->
     <div class="px-4 sm:px-6 lg:px-8 py-8">
         <!-- Broker Linkage Warning for Consignees -->
-        {% if app.user.role.value == 'CONSIGNEE' and not app.user.linkedBroker %}
+        {% if app.user.role.value == 'CONSIGNEE' and not hasActiveBroker|default(false) %}
             <div class="alert alert-warning mb-6">
                 <span class="icon-[tabler--alert-triangle] size-5"></span>
                 <div class="flex-1">
@@ -144,7 +144,7 @@
                             <p class="text-sm text-base-content/70 mb-4">
                                 Apply for SAS accreditation to access services and manage shipments with this shipping line.
                             </p>
-                            {% if app.user.role.value == 'CONSIGNEE' and app.user.linkedBroker %}
+                            {% if app.user.role.value == 'CONSIGNEE' and hasActiveBroker|default(false) %}
                                 <a href="{{ path('accreditation_submit', {shippingLineId: shippingLine.id}) }}" 
                                    class="btn btn-primary w-full gap-2">
                                     <span class="icon-[tabler--send] size-4"></span>

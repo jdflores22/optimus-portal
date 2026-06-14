@@ -40,6 +40,18 @@ class EDOGenerationManager {
         });
     }
 
+    formatMoney(amount) {
+        const prefix = window.MONEY_PREFIX || '₱';
+        const value = parseFloat(amount);
+        if (Number.isNaN(value)) {
+            return prefix + '0.00';
+        }
+        return prefix + value.toLocaleString('en-PH', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+    }
+
     /**
      * Open eDO generation modal for a specific manifest
      * @param {number} manifestId - The manifest ID
@@ -135,12 +147,12 @@ class EDOGenerationManager {
         // Update fee information
         const edoFeeElement = document.getElementById('edoFeePerContainer');
         if (edoFeeElement) {
-            edoFeeElement.textContent = `₱${this.manifestData.edoFeePerContainer.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
+            edoFeeElement.textContent = this.formatMoney(this.manifestData.edoFeePerContainer);
         }
 
         const totalFeesElement = document.getElementById('totalEdoFees');
         if (totalFeesElement) {
-            totalFeesElement.textContent = `₱${this.manifestData.totalEdoFees.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
+            totalFeesElement.textContent = this.formatMoney(this.manifestData.totalEdoFees);
         }
 
         // Reset form

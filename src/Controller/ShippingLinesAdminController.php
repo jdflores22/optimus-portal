@@ -23,157 +23,10 @@ class ShippingLinesAdminController extends AbstractController
     ) {
     }
 
-    #[Route('/dashboard', name: 'app_admin_dashboard')]
+    #[Route('/dashboard', name: 'app_admin_legacy_dashboard_redirect')]
     public function dashboard(): Response
     {
-        // Get comprehensive system statistics for SYSTEM_ADMIN
-        $stats = [
-            // User Statistics
-            'total_users' => $this->entityManager->getRepository(\App\Entity\User::class)
-                ->createQueryBuilder('u')
-                ->select('COUNT(u.id)')
-                ->getQuery()
-                ->getSingleScalarResult(),
-            'active_users' => $this->entityManager->getRepository(\App\Entity\User::class)
-                ->createQueryBuilder('u')
-                ->select('COUNT(u.id)')
-                ->where('u.status = :status')
-                ->setParameter('status', \App\Entity\Enum\AccountStatus::APPROVED)
-                ->getQuery()
-                ->getSingleScalarResult(),
-            'locked_users' => $this->entityManager->getRepository(\App\Entity\User::class)
-                ->createQueryBuilder('u')
-                ->select('COUNT(u.id)')
-                ->where('u.status = :status')
-                ->setParameter('status', \App\Entity\Enum\AccountStatus::LOCKED)
-                ->getQuery()
-                ->getSingleScalarResult(),
-            'pending_users' => $this->entityManager->getRepository(\App\Entity\User::class)
-                ->createQueryBuilder('u')
-                ->select('COUNT(u.id)')
-                ->where('u.status = :status')
-                ->setParameter('status', \App\Entity\Enum\AccountStatus::PENDING)
-                ->getQuery()
-                ->getSingleScalarResult(),
-            
-            // Accreditation Statistics
-            'total_accreditations' => $this->entityManager->getRepository(AccreditationSubmission::class)
-                ->createQueryBuilder('a')
-                ->select('COUNT(a.id)')
-                ->getQuery()
-                ->getSingleScalarResult(),
-            'pending_accreditations' => $this->entityManager->getRepository(AccreditationSubmission::class)
-                ->createQueryBuilder('a')
-                ->select('COUNT(a.id)')
-                ->where('a.status = :status')
-                ->setParameter('status', AccreditationStatus::PENDING)
-                ->getQuery()
-                ->getSingleScalarResult(),
-            'approved_accreditations' => $this->entityManager->getRepository(AccreditationSubmission::class)
-                ->createQueryBuilder('a')
-                ->select('COUNT(a.id)')
-                ->where('a.status = :status')
-                ->setParameter('status', AccreditationStatus::APPROVED)
-                ->getQuery()
-                ->getSingleScalarResult(),
-            'denied_accreditations' => $this->entityManager->getRepository(AccreditationSubmission::class)
-                ->createQueryBuilder('a')
-                ->select('COUNT(a.id)')
-                ->where('a.status = :status')
-                ->setParameter('status', AccreditationStatus::DENIED)
-                ->getQuery()
-                ->getSingleScalarResult(),
-            
-            // Shipment Statistics
-            'total_shipments' => $this->entityManager->getRepository(\App\Entity\ShipmentRecord::class)
-                ->createQueryBuilder('s')
-                ->select('COUNT(s.id)')
-                ->getQuery()
-                ->getSingleScalarResult(),
-            'shipments_today' => $this->entityManager->getRepository(\App\Entity\ShipmentRecord::class)
-                ->createQueryBuilder('s')
-                ->select('COUNT(s.id)')
-                ->where('s.createdAt >= :today')
-                ->setParameter('today', new \DateTime('today'))
-                ->getQuery()
-                ->getSingleScalarResult(),
-            'shipments_this_week' => $this->entityManager->getRepository(\App\Entity\ShipmentRecord::class)
-                ->createQueryBuilder('s')
-                ->select('COUNT(s.id)')
-                ->where('s.createdAt >= :thisWeek')
-                ->setParameter('thisWeek', new \DateTime('-7 days'))
-                ->getQuery()
-                ->getSingleScalarResult(),
-            
-            // Payment Statistics
-            'total_payments' => $this->entityManager->getRepository(\App\Entity\PaymentVerification::class)
-                ->createQueryBuilder('p')
-                ->select('COUNT(p.id)')
-                ->getQuery()
-                ->getSingleScalarResult(),
-            'pending_payments' => $this->entityManager->getRepository(\App\Entity\PaymentVerification::class)
-                ->createQueryBuilder('p')
-                ->select('COUNT(p.id)')
-                ->where('p.status = :status')
-                ->setParameter('status', \App\Entity\Enum\PaymentStatus::PENDING_VALIDATION)
-                ->getQuery()
-                ->getSingleScalarResult(),
-            'verified_payments' => $this->entityManager->getRepository(\App\Entity\PaymentVerification::class)
-                ->createQueryBuilder('p')
-                ->select('COUNT(p.id)')
-                ->where('p.status = :status')
-                ->setParameter('status', \App\Entity\Enum\PaymentStatus::VERIFIED)
-                ->getQuery()
-                ->getSingleScalarResult(),
-        ];
-
-        // Get user distribution by role
-        $usersByRole = $this->entityManager->getRepository(\App\Entity\User::class)
-            ->createQueryBuilder('u')
-            ->select('u.role, COUNT(u.id) as count')
-            ->groupBy('u.role')
-            ->getQuery()
-            ->getResult();
-
-        // Get recent system activity (last 5 users registered)
-        $recentUsers = $this->entityManager->getRepository(\App\Entity\User::class)
-            ->createQueryBuilder('u')
-            ->orderBy('u.createdAt', 'DESC')
-            ->setMaxResults(5)
-            ->getQuery()
-            ->getResult();
-
-        // Get recent accreditation submissions
-        $recentAccreditations = $this->entityManager->getRepository(AccreditationSubmission::class)
-            ->createQueryBuilder('a')
-            ->orderBy('a.submittedAt', 'DESC')
-            ->setMaxResults(10)
-            ->getQuery()
-            ->getResult();
-
-        // Get system health indicators
-        $systemHealth = [
-            'database_connection' => true, // We're already connected if we got here
-            'total_files' => $this->entityManager->getRepository(StoredFile::class)
-                ->createQueryBuilder('f')
-                ->select('COUNT(f.id)')
-                ->getQuery()
-                ->getSingleScalarResult(),
-        ];
-
-        // Get applications that need admin attention (for the original functionality)
-        $pendingApplications = $this->accreditationService->getPendingSubmissions();
-        $applicationsForApproval = $this->accreditationService->getSubmissionsForFinalApproval();
-        $allApplications = array_merge($pendingApplications, $applicationsForApproval);
-
-        return $this->render('admin/dashboard.html.twig', [
-            'stats' => $stats,
-            'usersByRole' => $usersByRole,
-            'recentUsers' => $recentUsers,
-            'recentAccreditations' => $recentAccreditations,
-            'systemHealth' => $systemHealth,
-            'applications' => $allApplications, // Keep for backward compatibility
-        ]);
+        return $this->redirectToRoute('app_admin_dashboard');
     }
 
     #[Route('/approved-accreditations', name: 'app_admin_approved_accreditations')]
@@ -342,37 +195,10 @@ class ShippingLinesAdminController extends AbstractController
         }
     }
 
-    #[Route('/dashboard/users', name: 'app_admin_users')]
+    #[Route('/dashboard/users', name: 'app_admin_legacy_users_redirect')]
     public function userManagement(Request $request): Response
     {
-        $roleFilter = $request->query->get('role', 'all');
-        
-        $userRepository = $this->entityManager->getRepository(\App\Entity\User::class);
-        
-        if ($roleFilter === 'all') {
-            $users = $userRepository->findAll();
-        } else {
-            $users = $userRepository->findBy(['role' => $roleFilter]);
-        }
-        
-        // Group users by role
-        $usersByRole = [];
-        foreach ($users as $user) {
-            $role = $user->getRole()->value;
-            if (!isset($usersByRole[$role])) {
-                $usersByRole[$role] = [];
-            }
-            $usersByRole[$role][] = $user;
-        }
-        
-        // Get all available roles
-        $allRoles = \App\Entity\Enum\UserRole::cases();
-        
-        return $this->render('admin/user_management.html.twig', [
-            'usersByRole' => $usersByRole,
-            'allRoles' => $allRoles,
-            'currentFilter' => $roleFilter,
-        ]);
+        return $this->redirectToRoute('app_admin_users', $request->query->all());
     }
 
     #[Route('/users/{id}/unlock', name: 'app_admin_unlock_user', methods: ['POST'])]

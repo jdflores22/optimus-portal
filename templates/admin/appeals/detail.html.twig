@@ -1,385 +1,435 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 
-{% block title %}Appeal Detail - OPTIMUS{% endblock %}
+{% block title %}Appeal #{{ appeal.id }} - OPTIMUS{% endblock %}
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+                                <li><a href="{{ path('app_admin_dashboard') }}">Admin</a></li>
+                                <li><a href="{{ path('admin_appeals_list') }}">Suspension Appeals</a></li>
+                                <li>Appeal #{{ appeal.id }}</li>
+                            </ul>
+</div>
+{% endblock %}
 
-{% block body %}
-<div class="bg-gradient-to-br from-gray-50 via-blue-50 to-gray-50 min-h-screen">
-    <!-- Header -->
-    <div class="bg-white border-b border-gray-200 shadow-sm mb-6">
-        <div class="px-6 py-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900">Appeal #{{ appeal.id }}</h1>
-                    <p class="text-sm text-gray-600 mt-1">Submitted by {{ appeal.user.email }}</p>
-                </div>
-                <a href="{{ path('admin_appeals_list') }}" 
-                   class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    Back to List
-                </a>
-            </div>
-        </div>
-    </div>
+{% block content %}
+<div class="space-y-6">
+<div class="space-y-5 sm:space-y-6 max-w-6xl mx-auto">
 
-    <div class="px-6 max-w-5xl mx-auto">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Main Content -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- Appeal Status -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Appeal Status</h3>
-                    <div class="flex items-center space-x-4">
-                        {% if appeal.status == 'pending' %}
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                Pending Review
-                            </span>
-                        {% elseif appeal.status == 'approved' %}
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                Approved
-                            </span>
-                        {% else %}
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                Rejected
-                            </span>
-                        {% endif %}
-                        <span class="text-sm text-gray-500">Submitted {{ appeal.submittedAt|date('M j, Y g:i A') }}</span>
-                    </div>
-                </div>
-
-                <!-- Original Suspension Reason -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Original Suspension Reason</h3>
-                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ originalSuspensionReason ?? 'No reason provided' }}</p>
-                    </div>
-                    {% if appeal.user.suspensionAttachments and appeal.user.suspensionAttachments|length > 0 %}
-                        <div class="mt-4">
-                            <p class="text-sm font-medium text-gray-700 mb-2">Suspension Attachments:</p>
-                            <div class="space-y-2">
-                                {% for attachment in appeal.user.suspensionAttachments %}
-                                    <a href="{{ attachment }}" target="_blank" class="flex items-center text-sm text-blue-600 hover:text-blue-800">
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                                        </svg>
-                                        {{ attachment|split('/')|last }}
-                                    </a>
-                                {% endfor %}
+        {# Header #}
+        <div class="bg-base-100 shadow-sm rounded-xl">
+            <div class="p-4 sm:p-6">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="min-w-0">
+                        <div class="flex items-start gap-4">
+                            <div class="size-12 rounded-xl bg-warning/10 flex items-center justify-center shrink-0">
+                                <span class="icon-[tabler--scale] size-6 text-warning"></span>
+                            </div>
+                            <div class="min-w-0">
+                                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">Appeal #{{ appeal.id }}</h1>
+                                <p class="text-sm text-base-content/60 mt-1">Submitted by {{ appeal.user.email }}</p>
                             </div>
                         </div>
-                    {% endif %}
+                    </div>
+                    <a href="{{ path('admin_appeals_list') }}" class="btn btn-ghost btn-sm gap-2 w-full sm:w-auto">
+                        <span class="icon-[tabler--arrow-left] size-4"></span>
+                        Back to List
+                    </a>
                 </div>
+            </div>
+        </div>
 
-                <!-- Appeal Letter -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Appeal Letter</h3>
-                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                        <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ appeal.appealLetter }}</p>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
+            {# Main content #}
+            <div class="lg:col-span-2 space-y-5 sm:space-y-6">
+
+                {# Appeal status #}
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                        <div class="flex items-center gap-2">
+                            <span class="icon-[tabler--info-circle] size-5 text-base-content/70"></span>
+                            <h2 class="card-title text-base sm:text-lg">Appeal Status</h2>
+                        </div>
+                    </div>
+                    <div class="card-body p-4 sm:p-6 pt-3 sm:pt-4">
+                        <div class="flex flex-wrap items-center gap-3">
+                            {% if appeal.status == 'pending' %}
+                                <span class="badge badge-warning badge-lg badge-soft gap-1">
+                                    <span class="icon-[tabler--clock] size-4"></span>
+                                    Pending Review
+                                </span>
+                            {% elseif appeal.status == 'approved' %}
+                                <span class="badge badge-success badge-lg badge-soft gap-1">
+                                    <span class="icon-[tabler--circle-check] size-4"></span>
+                                    Approved
+                                </span>
+                            {% else %}
+                                <span class="badge badge-error badge-lg badge-soft gap-1">
+                                    <span class="icon-[tabler--circle-x] size-4"></span>
+                                    Rejected
+                                </span>
+                            {% endif %}
+                            <span class="text-sm text-base-content/60 inline-flex items-center gap-1.5">
+                                <span class="icon-[tabler--calendar] size-4"></span>
+                                Submitted {{ appeal.submittedAt|date('M j, Y g:i A') }}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Appeal Attachments -->
-                {% if appeal.appealAttachments and appeal.appealAttachments|length > 0 %}
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Supporting Documents</h3>
-                    <div class="space-y-2">
-                        {% for attachment in appeal.appealAttachments %}
-                            <a href="{{ attachment }}" target="_blank" download
-                               class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
-                                <div class="flex items-center">
-                                    <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                                    </svg>
-                                    <span class="text-sm text-gray-700">{{ attachment|split('/')|last }}</span>
+                {# Original suspension reason #}
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                        <div class="flex items-center gap-2">
+                            <span class="icon-[tabler--ban] size-5 text-error/70"></span>
+                            <h2 class="card-title text-base sm:text-lg">Original Suspension Reason</h2>
+                        </div>
+                    </div>
+                    <div class="card-body p-4 sm:p-6 pt-3 sm:pt-4 space-y-4">
+                        <div class="alert alert-error">
+                            <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+                            <p class="text-sm whitespace-pre-wrap">{{ originalSuspensionReason ?? 'No reason provided' }}</p>
+                        </div>
+                        {% if appeal.user.suspensionAttachments and appeal.user.suspensionAttachments|length > 0 %}
+                            <div>
+                                <p class="text-sm font-medium text-base-content mb-2">Suspension Attachments</p>
+                                <div class="space-y-2">
+                                    {% for attachment in appeal.user.suspensionAttachments %}
+                                        <a href="{{ attachment }}" target="_blank" rel="noopener"
+                                           class="flex items-center gap-2 p-3 bg-base-200 rounded-lg border border-base-300 hover:bg-base-300/50 transition-colors text-sm text-primary">
+                                            <span class="icon-[tabler--file] size-4 shrink-0"></span>
+                                            <span class="truncate">{{ attachment|split('/')|last }}</span>
+                                            <span class="icon-[tabler--external-link] size-3.5 ml-auto shrink-0"></span>
+                                        </a>
+                                    {% endfor %}
                                 </div>
-                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                                </svg>
-                            </a>
-                        {% endfor %}
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
+
+                {# Appeal letter #}
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                        <div class="flex items-center gap-2">
+                            <span class="icon-[tabler--mail] size-5 text-base-content/70"></span>
+                            <h2 class="card-title text-base sm:text-lg">Appeal Letter</h2>
+                        </div>
+                    </div>
+                    <div class="card-body p-4 sm:p-6 pt-3 sm:pt-4">
+                        <div class="bg-base-200 rounded-lg p-4 border border-base-300">
+                            <p class="text-sm text-base-content whitespace-pre-wrap leading-relaxed">{{ appeal.appealLetter }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {# Appeal attachments #}
+                {% if appeal.appealAttachments and appeal.appealAttachments|length > 0 %}
+                    <div class="card bg-base-100 shadow-sm">
+                        <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                            <div class="flex items-center gap-2">
+                                <span class="icon-[tabler--files] size-5 text-base-content/70"></span>
+                                <h2 class="card-title text-base sm:text-lg">Supporting Documents</h2>
+                            </div>
+                        </div>
+                        <div class="card-body p-4 sm:p-6 pt-3 sm:pt-4 space-y-2">
+                            {% for attachment in appeal.appealAttachments %}
+                                <a href="{{ attachment }}" target="_blank" rel="noopener" download
+                                   class="flex items-center justify-between gap-3 p-3 bg-base-200 rounded-lg border border-base-300 hover:bg-base-300/50 transition-colors">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="icon-[tabler--file-text] size-5 text-base-content/50 shrink-0"></span>
+                                        <span class="text-sm text-base-content truncate">{{ attachment|split('/')|last }}</span>
+                                    </div>
+                                    <span class="icon-[tabler--download] size-4 text-base-content/50 shrink-0"></span>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
                 {% endif %}
 
-                <!-- Review Section (if already reviewed) -->
+                {# Review decision (if already reviewed) #}
                 {% if appeal.status != 'pending' %}
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Review Decision</h3>
-                    <div class="space-y-3">
-                        <div>
-                            <p class="text-sm font-medium text-gray-700">Reviewed By:</p>
-                            <p class="text-sm text-gray-900">{{ appeal.reviewedBy.email }}</p>
+                    <div class="card bg-base-100 shadow-sm">
+                        <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                            <div class="flex items-center gap-2">
+                                <span class="icon-[tabler--gavel] size-5 text-base-content/70"></span>
+                                <h2 class="card-title text-base sm:text-lg">Review Decision</h2>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-700">Reviewed At:</p>
-                            <p class="text-sm text-gray-900">{{ appeal.reviewedAt|date('M j, Y g:i A') }}</p>
+                        <div class="card-body p-4 sm:p-6 pt-3 sm:pt-4 space-y-4">
+                            {% if appeal.status == 'approved' %}
+                                <div class="alert alert-success">
+                                    <span class="icon-[tabler--circle-check] size-5"></span>
+                                    <span class="text-sm">This appeal was approved and the broker account was reactivated.</span>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-error">
+                                    <span class="icon-[tabler--circle-x] size-5"></span>
+                                    <span class="text-sm">This appeal was rejected. The broker remains suspended.</span>
+                                </div>
+                            {% endif %}
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="form-control">
+                                    <label class="label py-1"><span class="label-text font-medium text-base-content/70">Reviewed By</span></label>
+                                    <p class="text-sm text-base-content">{{ appeal.reviewedBy.email }}</p>
+                                </div>
+                                <div class="form-control">
+                                    <label class="label py-1"><span class="label-text font-medium text-base-content/70">Reviewed At</span></label>
+                                    <p class="text-sm text-base-content">{{ appeal.reviewedAt|date('M j, Y g:i A') }}</p>
+                                </div>
+                            </div>
+
+                            <div class="form-control">
+                                <label class="label py-1"><span class="label-text font-medium text-base-content/70">Review Notes</span></label>
+                                <div class="bg-base-200 rounded-lg p-4 border border-base-300">
+                                    <p class="text-sm text-base-content whitespace-pre-wrap">{{ appeal.reviewNotes }}</p>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-700">Review Notes:</p>
-                            <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 mt-1">
-                                <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ appeal.reviewNotes }}</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            {# Sidebar #}
+            <div class="space-y-5 sm:space-y-6">
+                {# Broker info #}
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                        <div class="flex items-center gap-2">
+                            <span class="icon-[tabler--user] size-5 text-base-content/70"></span>
+                            <h2 class="card-title text-base sm:text-lg">Broker Information</h2>
+                        </div>
+                    </div>
+                    <div class="card-body p-4 sm:p-6 pt-3 sm:pt-4">
+                        <div class="flex items-center gap-3 mb-4 pb-4 border-b border-base-300">
+                            <div class="size-12 rounded-full {{ avatar_colors(appeal.user) }} flex items-center justify-center shrink-0">
+                                <span class="text-sm font-semibold">{{ appeal.user.email|slice(0, 2)|upper }}</span>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-base-content truncate">{{ appeal.user.email }}</p>
+                                <p class="text-xs text-base-content/50">User ID: {{ appeal.user.id }}</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="form-control">
+                                <label class="label py-0"><span class="label-text text-xs font-medium text-base-content/60 uppercase">Current Status</span></label>
+                                {% set acctBadge = appeal.user.status.value == 'APPROVED' ? 'badge-success' : (appeal.user.status.value == 'PENDING' ? 'badge-warning' : 'badge-error') %}
+                                <span class="badge {{ acctBadge }} badge-soft w-fit mt-1">{{ appeal.user.status.value|title }}</span>
                             </div>
                         </div>
                     </div>
                 </div>
-                {% endif %}
-            </div>
 
-            <!-- Sidebar -->
-            <div class="space-y-6">
-                <!-- Broker Info -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Broker Information</h3>
-                    <div class="space-y-3">
-                        <div>
-                            <p class="text-xs font-medium text-gray-500 uppercase">Email</p>
-                            <p class="text-sm text-gray-900 mt-1">{{ appeal.user.email }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs font-medium text-gray-500 uppercase">User ID</p>
-                            <p class="text-sm text-gray-900 mt-1">{{ appeal.user.id }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs font-medium text-gray-500 uppercase">Current Status</p>
-                            <p class="text-sm text-gray-900 mt-1">{{ appeal.user.status.value }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Review Actions (if pending) -->
+                {# Review actions (if pending) #}
                 {% if appeal.status == 'pending' %}
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Review Appeal</h3>
-                    <form id="reviewForm">
-                        <div class="mb-4">
-                            <label for="review_notes" class="block text-sm font-medium text-gray-700 mb-2">
-                                Review Notes <span class="text-red-500">*</span>
-                            </label>
-                            <textarea id="review_notes" name="review_notes" rows="4" required
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                      placeholder="Explain your decision..."></textarea>
+                    <div class="card bg-base-100 shadow-sm border border-warning/30">
+                        <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                            <div class="flex items-center gap-2">
+                                <span class="icon-[tabler--gavel] size-5 text-warning"></span>
+                                <h2 class="card-title text-base sm:text-lg">Review Appeal</h2>
+                            </div>
                         </div>
+                        <div class="card-body p-4 sm:p-6 pt-3 sm:pt-4">
+                            <form id="appealReviewForm" class="space-y-4">
+                                <div class="form-control">
+                                    <label class="label py-1" for="review_notes">
+                                        <span class="label-text font-medium">Review Notes <span class="text-error">*</span></span>
+                                    </label>
+                                    <textarea id="review_notes" name="review_notes" rows="4" required
+                                              class="textarea textarea-bordered w-full"
+                                              placeholder="Explain your decision..."></textarea>
+                                </div>
 
-                        <div class="space-y-2">
-                            <button type="button" onclick="reviewAppeal('approve')"
-                                    class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                Approve & Reactivate
-                            </button>
-                            <button type="button" onclick="reviewAppeal('reject')"
-                                    class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                Reject Appeal
-                            </button>
+                                <div class="space-y-2">
+                                    <button type="button" id="appealApproveBtn"
+                                            class="btn btn-success w-full gap-2">
+                                        <span class="icon-[tabler--circle-check] size-4"></span>
+                                        Approve & Reactivate
+                                    </button>
+                                    <button type="button" id="appealRejectBtn"
+                                            class="btn btn-outline btn-error w-full gap-2">
+                                        <span class="icon-[tabler--circle-x] size-4"></span>
+                                        Reject Appeal
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                    </form>
-                </div>
+                    </div>
                 {% endif %}
             </div>
         </div>
-    </div>
-</div>
+{% endblock %}
 
-<!-- Confirmation Modal -->
-<div id="confirmModal" class="hidden fixed inset-0 z-[9999] overflow-y-auto">
-    <div class="flex items-center justify-center min-h-screen px-4">
-        <div class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75" onclick="closeConfirmModal()"></div>
-        
-        <div class="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all max-w-lg w-full">
-            <div class="bg-white px-6 pt-5 pb-4">
-                <div class="sm:flex sm:items-start">
-                    <div id="modalIcon" class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full sm:mx-0 sm:h-10 sm:w-10">
-                    </div>
-                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
-                        <h3 id="modalTitle" class="text-lg leading-6 font-medium text-gray-900"></h3>
-                        <div class="mt-2">
-                            <p id="modalMessage" class="text-sm text-gray-500"></p>
-                            <div class="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-3">
-                                <p class="text-xs font-medium text-gray-700 mb-1">Your Review Notes:</p>
-                                <p id="modalReviewNotes" class="text-sm text-gray-600 whitespace-pre-wrap"></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+{% block page_modals %}
+<div id="appealToastContainer" class="fixed top-20 right-4 z-[10003] space-y-2 pointer-events-none max-w-sm w-full sm:w-auto"></div>
+
+<div id="appealConfirmModal"
+     class="hidden fixed inset-0 z-[999999] items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="appealConfirmTitle">
+    <div class="absolute inset-0 bg-black/60" data-appeal-modal-dismiss></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg z-10" onclick="event.stopPropagation()">
+        <div class="flex items-start gap-4 px-5 py-5 border-b border-base-300">
+            <div id="appealModalIconWrap" class="size-12 rounded-xl bg-success/10 flex items-center justify-center shrink-0">
+                <span id="appealModalIcon" class="icon-[tabler--circle-check] size-6 text-success"></span>
             </div>
-            <div class="bg-gray-50 px-6 py-3 sm:flex sm:flex-row-reverse gap-2">
-                <button type="button" id="confirmBtn"
-                        class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm">
-                </button>
-                <button type="button" onclick="closeConfirmModal()"
-                        class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:mt-0 sm:w-auto sm:text-sm">
-                    Cancel
-                </button>
+            <div class="flex-1 min-w-0">
+                <h3 id="appealConfirmTitle" class="text-lg font-bold text-base-content"></h3>
+                <p id="appealConfirmMessage" class="text-sm text-base-content/70 mt-2"></p>
             </div>
+            <button type="button" data-appeal-modal-dismiss class="btn btn-ghost btn-sm btn-circle shrink-0">
+                <span class="icon-[tabler--x] size-4"></span>
+            </button>
+        </div>
+        <div class="px-5 py-4">
+            <div class="bg-base-200 rounded-lg p-4 border border-base-300">
+                <p class="text-xs font-medium text-base-content/70 mb-1">Your Review Notes</p>
+                <p id="appealModalReviewNotes" class="text-sm text-base-content whitespace-pre-wrap"></p>
+            </div>
+        </div>
+        <div class="flex justify-end gap-2 px-5 py-4 border-t border-base-300">
+            <button type="button" data-appeal-modal-dismiss class="btn btn-ghost btn-sm">Cancel</button>
+            <button type="button" id="appealConfirmBtn" class="btn btn-sm">Confirm</button>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block page_scripts %}
 <script>
-let currentAction = '';
-let currentReviewNotes = '';
+(function () {
+    let currentAction = '';
+    let currentReviewNotes = '';
 
-function reviewAppeal(action) {
-    const reviewNotes = document.getElementById('review_notes').value;
-    
-    if (!reviewNotes.trim()) {
-        showToast('Please provide review notes', 'error');
-        return;
+    const modal = document.getElementById('appealConfirmModal');
+    const modalTitle = document.getElementById('appealConfirmTitle');
+    const modalMessage = document.getElementById('appealConfirmMessage');
+    const modalReviewNotes = document.getElementById('appealModalReviewNotes');
+    const modalIconWrap = document.getElementById('appealModalIconWrap');
+    const modalIcon = document.getElementById('appealModalIcon');
+    const confirmBtn = document.getElementById('appealConfirmBtn');
+    const approveBtn = document.getElementById('appealApproveBtn');
+    const rejectBtn = document.getElementById('appealRejectBtn');
+
+    function showToast(message, type) {
+        type = type || 'info';
+        const container = document.getElementById('appealToastContainer');
+        const map = {
+            success: ['alert-success', 'icon-[tabler--circle-check]'],
+            error: ['alert-error', 'icon-[tabler--alert-circle]'],
+            info: ['alert-info', 'icon-[tabler--info-circle]']
+        };
+        const pair = map[type] || map.info;
+        const el = document.createElement('div');
+        el.className = 'alert ' + pair[0] + ' shadow-lg pointer-events-auto text-sm';
+        el.innerHTML = '<span class="' + pair[1] + ' size-5 shrink-0"></span><span>' + message + '</span>';
+        container.appendChild(el);
+        setTimeout(function () { el.remove(); }, 5000);
     }
 
-    // Show confirmation modal
-    showConfirmModal(action, reviewNotes);
-}
-
-function showConfirmModal(action, reviewNotes) {
-    currentAction = action;
-    currentReviewNotes = reviewNotes;
-    
-    const isApprove = action === 'approve';
-    const modal = document.getElementById('confirmModal');
-    const modalIcon = document.getElementById('modalIcon');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalMessage = document.getElementById('modalMessage');
-    const modalReviewNotes = document.getElementById('modalReviewNotes');
-    const confirmBtn = document.getElementById('confirmBtn');
-    
-    // Set icon
-    modalIcon.className = `mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full ${isApprove ? 'bg-green-100' : 'bg-red-100'} sm:mx-0 sm:h-10 sm:w-10`;
-    modalIcon.innerHTML = isApprove 
-        ? `<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-           </svg>`
-        : `<svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1-1.964-1-2.732 0L3.732 16c-.77 1.333.192 3 1.732 3z"></path>
-           </svg>`;
-    
-    // Set title and message
-    modalTitle.textContent = isApprove ? 'Approve Appeal' : 'Reject Appeal';
-    modalMessage.textContent = isApprove 
-        ? 'Are you sure you want to approve this appeal and reactivate the broker account? This action will restore full access to the broker.'
-        : 'Are you sure you want to reject this appeal? The broker will remain suspended and will be notified of your decision.';
-    
-    // Set review notes
-    modalReviewNotes.textContent = reviewNotes;
-    
-    // Set confirm button
-    confirmBtn.className = `w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm ${isApprove ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500' : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'}`;
-    confirmBtn.textContent = isApprove ? 'Approve & Reactivate' : 'Reject Appeal';
-    confirmBtn.onclick = confirmReview;
-    
-    // Show modal
-    modal.classList.remove('hidden');
-}
-
-function closeConfirmModal() {
-    const modal = document.getElementById('confirmModal');
-    modal.classList.add('hidden');
-    currentAction = '';
-    currentReviewNotes = '';
-}
-
-function confirmReview() {
-    // Store values before closing modal
-    const action = currentAction;
-    const reviewNotes = currentReviewNotes;
-    
-    closeConfirmModal();
-    
-    const formData = new FormData();
-    formData.append('action', action);
-    formData.append('review_notes', reviewNotes);
-
-    // Show loading state
-    const buttons = document.querySelectorAll('button[onclick^="reviewAppeal"]');
-    buttons.forEach(btn => {
-        btn.disabled = true;
-        btn.innerHTML = '<svg class="animate-spin h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
-    });
-
-    fetch('{{ path('admin_appeals_review', {id: appeal.id}) }}', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast(data.message, 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            showToast('Error: ' + data.message, 'error');
-            buttons.forEach(btn => {
-                btn.disabled = false;
-            });
-        }
-    })
-    .catch(error => {
-        showToast('An error occurred. Please try again.', 'error');
-        console.error('Error:', error);
-        buttons.forEach(btn => {
-            btn.disabled = false;
-        });
-    });
-}
-
-function showToast(message, type = 'success') {
-    // Create toast container if it doesn't exist
-    let toastContainer = document.getElementById('toastContainer');
-    if (!toastContainer) {
-        toastContainer = document.createElement('div');
-        toastContainer.id = 'toastContainer';
-        toastContainer.className = 'fixed top-20 right-4 z-[10000] space-y-2';
-        document.body.appendChild(toastContainer);
+    function openModal() {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
     }
-    
-    const toast = document.createElement('div');
-    toast.className = `rounded-lg p-4 shadow-lg transform transition-all duration-300 ${
-        type === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-    }`;
-    
-    const iconColor = type === 'success' ? 'text-green-600' : 'text-red-600';
-    const textColor = type === 'success' ? 'text-green-800' : 'text-red-800';
-    const iconPath = type === 'success' 
-        ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
-        : 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z';
-    
-    toast.innerHTML = `
-        <div class="flex items-center">
-            <svg class="w-5 h-5 ${iconColor} mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"></path>
-            </svg>
-            <span class="text-sm font-medium ${textColor}">${message}</span>
-        </div>
-    `;
-    
-    toastContainer.appendChild(toast);
-    
-    // Auto dismiss after 5 seconds
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => {
-            toast.remove();
-            // Remove container if empty
-            if (toastContainer.children.length === 0) {
-                toastContainer.remove();
+
+    function closeModal() {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+        currentAction = '';
+        currentReviewNotes = '';
+    }
+
+    function setActionButtonsLoading(loading) {
+        [approveBtn, rejectBtn].forEach(function (btn) {
+            if (!btn) return;
+            btn.disabled = loading;
+            if (loading) {
+                btn.dataset.originalHtml = btn.innerHTML;
+                btn.innerHTML = '<span class="loading loading-spinner loading-sm"></span>';
+            } else if (btn.dataset.originalHtml) {
+                btn.innerHTML = btn.dataset.originalHtml;
             }
-        }, 300);
-    }, 5000);
-}
+        });
+    }
+
+    function reviewAppeal(action) {
+        const reviewNotesEl = document.getElementById('review_notes');
+        const reviewNotes = reviewNotesEl ? reviewNotesEl.value : '';
+
+        if (!reviewNotes.trim()) {
+            showToast('Please provide review notes', 'error');
+            return;
+        }
+
+        currentAction = action;
+        currentReviewNotes = reviewNotes;
+
+        const isApprove = action === 'approve';
+        modalTitle.textContent = isApprove ? 'Approve Appeal' : 'Reject Appeal';
+        modalMessage.textContent = isApprove
+            ? 'Are you sure you want to approve this appeal and reactivate the broker account? This will restore full access.'
+            : 'Are you sure you want to reject this appeal? The broker will remain suspended and be notified.';
+        modalReviewNotes.textContent = reviewNotes;
+
+        modalIconWrap.className = 'size-12 rounded-xl flex items-center justify-center shrink-0 ' + (isApprove ? 'bg-success/10' : 'bg-error/10');
+        modalIcon.className = (isApprove ? 'icon-[tabler--circle-check] text-success' : 'icon-[tabler--alert-triangle] text-error') + ' size-6';
+
+        confirmBtn.className = 'btn btn-sm ' + (isApprove ? 'btn-success' : 'btn-error');
+        confirmBtn.textContent = isApprove ? 'Approve & Reactivate' : 'Reject Appeal';
+
+        openModal();
+    }
+
+    function confirmReview() {
+        const action = currentAction;
+        const reviewNotes = currentReviewNotes;
+        closeModal();
+        setActionButtonsLoading(true);
+
+        const formData = new FormData();
+        formData.append('action', action);
+        formData.append('review_notes', reviewNotes);
+
+        fetch('{{ path('admin_appeals_review', {id: appeal.id}) }}', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin'
+        })
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+            if (data.success) {
+                showToast(data.message, 'success');
+                setTimeout(function () { window.location.reload(); }, 1500);
+            } else {
+                showToast('Error: ' + data.message, 'error');
+                setActionButtonsLoading(false);
+            }
+        })
+        .catch(function (error) {
+            console.error('Error:', error);
+            showToast('An error occurred. Please try again.', 'error');
+            setActionButtonsLoading(false);
+        });
+    }
+
+    document.querySelectorAll('[data-appeal-modal-dismiss]').forEach(function (el) {
+        el.addEventListener('click', closeModal);
+    });
+
+    if (confirmBtn) confirmBtn.addEventListener('click', confirmReview);
+
+    if (approveBtn) approveBtn.addEventListener('click', function () { reviewAppeal('approve'); });
+    if (rejectBtn) rejectBtn.addEventListener('click', function () { reviewAppeal('reject'); });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+})();
 </script>
 {% endblock %}

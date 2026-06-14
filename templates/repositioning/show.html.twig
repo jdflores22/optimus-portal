@@ -1,0 +1,131 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ request.requestNumber }} - Repositioning Request{% endblock %}
+
+{% block body %}
+<div class="space-y-6 max-w-5xl mx-auto">
+    <div>
+        <a href="{{ path(indexRoute) }}" class="text-sm text-base-content/60 hover:text-primary inline-flex items-center gap-1 mb-2">
+            <span class="icon-[tabler--arrow-left] size-4"></span> All requests
+        </a>
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold font-mono">{{ request.requestNumber }}</h1>
+                <p class="text-sm text-base-content/60 mt-1">{{ request.requestType.label }} · {{ request.containerCount }} container(s)</p>
+            </div>
+            <span class="badge badge-lg {{ request.status.badgeClass }}">{{ request.status.label }}</span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h3 class="font-semibold mb-3">Route</h3>
+                <dl class="space-y-2 text-sm">
+                    <div class="flex justify-between"><dt class="text-base-content/60">From CY</dt><dd class="font-medium">{{ request.sourceTerminal.name }}</dd></div>
+                    <div class="flex justify-between"><dt class="text-base-content/60">To Port</dt><dd class="font-medium">{{ request.destinationTerminal.name }} ({{ request.destinationTerminal.code }})</dd></div>
+                    <div class="flex justify-between"><dt class="text-base-content/60">Requested</dt><dd>{{ request.requestedAt|date('M j, Y H:i') }}</dd></div>
+                    <div class="flex justify-between"><dt class="text-base-content/60">By</dt><dd>{{ request.requestedBy.email }}</dd></div>
+                    {% if request.reviewedAt %}
+                    <div class="flex justify-between"><dt class="text-base-content/60">Reviewed</dt><dd>{{ request.reviewedAt|date('M j, Y H:i') }}</dd></div>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h3 class="font-semibold mb-3">Purpose</h3>
+                <p class="text-sm whitespace-pre-wrap">{{ request.purpose }}</p>
+                {% if request.requestLetter %}
+                <a href="{{ request.requestLetter }}" target="_blank" class="btn btn-outline btn-sm mt-3 gap-1">
+                    <span class="icon-[tabler--file] size-4"></span> View Request Letter
+                </a>
+                {% endif %}
+                {% if request.reviewNotes %}
+                <div class="mt-4 p-3 bg-error/10 rounded-lg text-sm">
+                    <strong>Review notes:</strong> {{ request.reviewNotes }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body p-0">
+            <div class="px-5 py-4 border-b border-base-300">
+                <h3 class="font-semibold">Containers (by dwell time at request)</h3>
+                <p class="text-xs text-base-content/60">CAO 8-2019 — dwell counted from vessel discharge at port until reload for export/repositioning</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table table-zebra">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Container</th>
+                            <th>Dwell at Request</th>
+                            <th>Discharge Date</th>
+                            <th>Current Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in request.items|sort((a, b) => b.dwellTimeDays <=> a.dwellTimeDays) %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td class="font-mono font-semibold">{{ item.container.containerNumber }}</td>
+                            <td>
+                                <span class="badge {{ item.dwellTimeDays >= 90 ? 'badge-error' : (item.dwellTimeDays >= 60 ? 'badge-warning' : 'badge-neutral') }}">
+                                    {{ item.dwellTimeDays }} days
+                                </span>
+                            </td>
+                            <td>{{ item.dischargeDate ? item.dischargeDate|date('M j, Y') : '—' }}</td>
+                            <td><span class="badge badge-outline">{{ item.container.status.value|replace({'_': ' '})|title }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if canReview and request.status.value == 'pending' %}
+    <div class="card bg-base-100 shadow-sm border border-warning/30">
+        <div class="card-body">
+            <h3 class="font-semibold mb-4">Review Request</h3>
+            <div class="flex flex-wrap gap-3">
+                <form method="post" action="{{ path(approveRoute, {id: request.id}) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('review_repositioning') }}">
+                    <button type="submit" class="btn btn-success gap-1" onclick="return confirm('Approve and release containers to port?')">
+                        <span class="icon-[tabler--check] size-4"></span> Approve — Release to Port
+                    </button>
+                </form>
+                <form method="post" action="{{ path(rejectRoute, {id: request.id}) }}" class="flex gap-2 flex-1 min-w-0">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('review_repositioning') }}">
+                    <input type="text" name="review_notes" class="input input-bordered input-sm flex-1" placeholder="Rejection reason..." required>
+                    <button type="submit" class="btn btn-error btn-sm">Reject</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if canReview and request.status.value == 'in_transit' %}
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <form method="post" action="{{ path(completeRoute, {id: request.id}) }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('review_repositioning') }}">
+                <button type="submit" class="btn btn-primary gap-1" onclick="return confirm('Mark containers as arrived at destination port?')">
+                    <span class="icon-[tabler--anchor] size-4"></span> Mark Arrived at Port
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if cancelRoute and request.status.value == 'pending' %}
+    <form method="post" action="{{ path(cancelRoute, {id: request.id}) }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('cancel_repositioning') }}">
+        <button type="submit" class="btn btn-ghost btn-sm text-error" onclick="return confirm('Cancel this request?')">Cancel Request</button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

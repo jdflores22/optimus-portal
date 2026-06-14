@@ -209,7 +209,6 @@ class ManifestRepository extends ServiceEntityRepository
             ->setParameter('consigneeId', $consigneeId)
             ->setParameter('completedStates', [
                 WorkflowState::EDO_RELEASED->value,
-                WorkflowState::CANCELLED->value
             ])
             ->orderBy('m.createdAt', 'DESC')
             ->getQuery()
@@ -251,7 +250,6 @@ class ManifestRepository extends ServiceEntityRepository
             ->setParameter('consigneeId', $consigneeId)
             ->setParameter('completedStates', [
                 WorkflowState::EDO_RELEASED->value,
-                WorkflowState::CANCELLED->value
             ])
             ->orderBy('m.brokerInactiveSince', 'DESC')
             ->getQuery()
@@ -271,7 +269,6 @@ class ManifestRepository extends ServiceEntityRepository
             ->setParameter('brokerId', $brokerId)
             ->setParameter('completedStates', [
                 WorkflowState::EDO_RELEASED->value,
-                WorkflowState::CANCELLED->value
             ])
             ->orderBy('m.createdAt', 'DESC')
             ->getQuery()

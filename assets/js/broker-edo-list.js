@@ -9,6 +9,15 @@ let currentPage = 1;
 let itemsPerPage = 20;
 let currentFilter = '';
 
+function formatMoneyAmount(amount) {
+    const prefix = window.MONEY_PREFIX || '₱';
+    const value = parseFloat(amount);
+    if (Number.isNaN(value)) {
+        return prefix + '0.00';
+    }
+    return prefix + value.toFixed(2);
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     initializeEventListeners();
@@ -153,7 +162,7 @@ function renderEdoRow(edo) {
             <td>${escapeHtml(edo.containerNumber)}</td>
             <td>${escapeHtml(edo.manifestNumber)}</td>
             <td>${statusBadge}</td>
-            <td>₱${parseFloat(edo.feeAmount || 0).toFixed(2)}</td>
+            <td>${formatMoneyAmount(edo.feeAmount || 0)}</td>
             <td>${submittedAt}</td>
             <td onclick="event.stopPropagation()">${actionButton}</td>
         </tr>
@@ -181,7 +190,7 @@ function renderEdoCard(edo) {
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     ${statusBadge}
-                    <span class="text-sm font-semibold">₱${parseFloat(edo.feeAmount || 0).toFixed(2)}</span>
+                    <span class="text-sm font-semibold">${formatMoneyAmount(edo.feeAmount || 0)}</span>
                 </div>
                 <div class="text-sm opacity-60">Submitted: ${submittedAt}</div>
             </div>

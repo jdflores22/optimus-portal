@@ -5,7 +5,6 @@ namespace App\Controller\Consignee;
 use App\Entity\ReferralCode;
 use App\Repository\ReferralCodeRepository;
 use App\Service\ReferralCodeService;
-use App\Service\BrokerRelationshipService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,7 +20,6 @@ class ReferralCodeController extends AbstractController
 {
     public function __construct(
         private ReferralCodeService $referralCodeService,
-        private BrokerRelationshipService $brokerRelationshipService,
         private ReferralCodeRepository $referralCodeRepo,
         private CsrfTokenManagerInterface $csrfTokenManager,
         private RateLimiterFactory $referralCodeGenerationLimiter
@@ -31,28 +29,7 @@ class ReferralCodeController extends AbstractController
     #[Route('', name: 'consignee_referral_codes', methods: ['GET'])]
     public function index(): Response
     {
-        $user = $this->getUser();
-        
-        // Get all codes with usage statistics
-        $codesWithStats = $this->referralCodeService->getCodesWithStats($user);
-        
-        // Get broker count for each code
-        $codeStats = [];
-        foreach ($codesWithStats as $result) {
-            // The query returns an array with [0] = ReferralCode entity, ['usageCount'] = count
-            $code = is_array($result) ? $result[0] : $result;
-            
-            $relationships = $this->brokerRelationshipService->getRelationshipsByReferralCode($code->getId());
-            $codeStats[] = [
-                'code' => $code,
-                'broker_count' => count($relationships),
-                'relationships' => $relationships
-            ];
-        }
-        
-        return $this->render('consignee/referral_codes/index.html.twig', [
-            'codeStats' => $codeStats
-        ]);
+        return $this->redirectToRoute('consignee_brokers');
     }
 
     #[Route('/generate', name: 'consignee_generate_code', methods: ['POST'])]
@@ -62,14 +39,14 @@ class ReferralCodeController extends AbstractController
         $limiter = $this->referralCodeGenerationLimiter->create($this->getUser()->getId());
         if (!$limiter->consume(1)->isAccepted()) {
             $this->addFlash('error', 'Too many code generation attempts. Please try again later.');
-            return $this->redirectToRoute('consignee_referral_codes');
+            return $this->redirectToRoute('consignee_brokers');
         }
 
         // Validate CSRF token
         $csrfToken = new CsrfToken('generate_referral_code', $request->request->get('_csrf_token'));
         if (!$this->csrfTokenManager->isTokenValid($csrfToken)) {
             $this->addFlash('error', 'Invalid security token. Please try again.');
-            return $this->redirectToRoute('consignee_referral_codes');
+            return $this->redirectToRoute('consignee_brokers');
         }
 
         $user = $this->getUser();
@@ -85,13 +62,13 @@ class ReferralCodeController extends AbstractController
         // Validate max uses
         if ($maxUses < 1) {
             $this->addFlash('error', 'Maximum uses must be at least 1.');
-            return $this->redirectToRoute('consignee_referral_codes');
+            return $this->redirectToRoute('consignee_brokers');
         }
         
         // Validate expiry date
         if ($expiresAt && $expiresAt < new \DateTime()) {
             $this->addFlash('error', 'Expiry date must be in the future.');
-            return $this->redirectToRoute('consignee_referral_codes');
+            return $this->redirectToRoute('consignee_brokers');
         }
         
         try {
@@ -102,7 +79,7 @@ class ReferralCodeController extends AbstractController
             $this->addFlash('error', 'Failed to generate referral code: ' . $e->getMessage());
         }
         
-        return $this->redirectToRoute('consignee_referral_codes');
+        return $this->redirectToRoute('consignee_brokers');
     }
 
     #[Route('/{id}/deactivate', name: 'consignee_deactivate_code', methods: ['POST'])]
@@ -112,7 +89,7 @@ class ReferralCodeController extends AbstractController
         $csrfToken = new CsrfToken('deactivate_referral_code', $request->request->get('_csrf_token'));
         if (!$this->csrfTokenManager->isTokenValid($csrfToken)) {
             $this->addFlash('error', 'Invalid security token. Please try again.');
-            return $this->redirectToRoute('consignee_referral_codes');
+            return $this->redirectToRoute('consignee_brokers');
         }
 
         $code = $this->referralCodeRepo->find($id);
@@ -133,7 +110,7 @@ class ReferralCodeController extends AbstractController
             $this->addFlash('error', 'Failed to deactivate code: ' . $e->getMessage());
         }
         
-        return $this->redirectToRoute('consignee_referral_codes');
+        return $this->redirectToRoute('consignee_brokers');
     }
 
     #[Route('/{id}/reactivate', name: 'consignee_reactivate_code', methods: ['POST'])]
@@ -143,7 +120,7 @@ class ReferralCodeController extends AbstractController
         $csrfToken = new CsrfToken('reactivate_referral_code', $request->request->get('_csrf_token'));
         if (!$this->csrfTokenManager->isTokenValid($csrfToken)) {
             $this->addFlash('error', 'Invalid security token. Please try again.');
-            return $this->redirectToRoute('consignee_referral_codes');
+            return $this->redirectToRoute('consignee_brokers');
         }
 
         $code = $this->referralCodeRepo->find($id);
@@ -164,6 +141,6 @@ class ReferralCodeController extends AbstractController
             $this->addFlash('error', 'Failed to reactivate code: ' . $e->getMessage());
         }
         
-        return $this->redirectToRoute('consignee_referral_codes');
+        return $this->redirectToRoute('consignee_brokers');
     }
 }

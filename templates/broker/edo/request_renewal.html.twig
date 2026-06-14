@@ -4,6 +4,7 @@
 
 {% block javascripts %}
     {{ parent() }}
+    <script>window.MONEY_PREFIX = {{ (0|format_money('PHP'))|slice(0, -4)|json_encode|raw }};</script>
     <script src="{{ asset('assets/js/edo-renewal-request.js') }}"></script>
 {% endblock %}
 
@@ -113,7 +114,7 @@
                                                     <div class="divider my-2"></div>
                                                     <div class="flex justify-between text-base">
                                                         <span class="font-bold">Total Detention Charge:</span>
-                                                        <span class="font-bold text-error" id="totalChargeDisplay">₱0.00</span>
+                                                        <span class="font-bold text-error" id="totalChargeDisplay">{{ 0|format_money('PHP') }}</span>
                                                     </div>
                                                 </div>
                                                 <div class="alert alert-info mt-3 text-xs">

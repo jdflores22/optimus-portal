@@ -61,13 +61,13 @@ class AccountingBillingController extends AbstractController
 
         if (!$billing) {
             $this->addFlash('error', 'Billing record not found');
-            return $this->redirectToRoute('accounting_dashboard');
+            return $this->redirectToRoute('app_accounting_dashboard_new');
         }
 
         // Validate billing is for detention charges
         if ($billing->getBillingType() !== 'detention') {
             $this->addFlash('error', 'This billing is not for detention charges');
-            return $this->redirectToRoute('accounting_dashboard');
+            return $this->redirectToRoute('app_accounting_dashboard_new');
         }
 
         // Get associated renewal request
@@ -75,7 +75,7 @@ class AccountingBillingController extends AbstractController
 
         if (!$renewalRequest) {
             $this->addFlash('error', 'No renewal request associated with this billing');
-            return $this->redirectToRoute('accounting_dashboard');
+            return $this->redirectToRoute('app_accounting_dashboard_new');
         }
 
         // Check if payment is already verified
@@ -139,7 +139,7 @@ class AccountingBillingController extends AbstractController
                     ], Response::HTTP_NOT_FOUND);
                 }
                 $this->addFlash('error', 'Billing record not found');
-                return $this->redirectToRoute('accounting_dashboard');
+                return $this->redirectToRoute('app_accounting_dashboard_new');
             }
 
             // Validate billing is for detention charges
@@ -151,7 +151,7 @@ class AccountingBillingController extends AbstractController
                     ], Response::HTTP_BAD_REQUEST);
                 }
                 $this->addFlash('error', 'This billing is not for detention charges');
-                return $this->redirectToRoute('accounting_dashboard');
+                return $this->redirectToRoute('app_accounting_dashboard_new');
             }
 
             // Get associated renewal request
@@ -165,7 +165,7 @@ class AccountingBillingController extends AbstractController
                     ], Response::HTTP_BAD_REQUEST);
                 }
                 $this->addFlash('error', 'No renewal request associated with this billing');
-                return $this->redirectToRoute('accounting_dashboard');
+                return $this->redirectToRoute('app_accounting_dashboard_new');
             }
 
             // Check if payment is already verified

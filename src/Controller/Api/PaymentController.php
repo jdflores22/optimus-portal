@@ -391,53 +391,25 @@ class PaymentController extends BaseApiController
         }
     }
 
+    /**
+     * @deprecated Use POST /api/manifests/{id}/payments/edo-access instead.
+     */
     #[Route('/manifests/{id}/payments/manifest-access', name: 'submit_manifest_access', methods: ['POST'])]
     public function submitManifestAccessPayment(int $id, Request $request): JsonResponse
     {
-        $user = $this->requireAuthentication($request);
-        if ($user instanceof JsonResponse) {
-            return $user;
+        $response = $this->submitEDOAccessPayment($id, $request);
+
+        if ($response->getStatusCode() === 201) {
+            $payload = json_decode($response->getContent(), true) ?? [];
+            $payload['deprecated'] = true;
+            $payload['use_instead'] = sprintf('/api/manifests/%d/payments/edo-access', $id);
+
+            return $this->json($payload, 201, [
+                'Deprecation' => 'true',
+            ]);
         }
 
-        // Apply rate limiting
-        $limiter = $this->paymentSubmissionLimiter->create($user->getId());
-        if (false === $limiter->consume(1)->isAccepted()) {
-            return $this->errorResponse('Too many payment submission requests. Please try again later.', 429);
-        }
-
-        // Only Broker can submit manifest access payment
-        $roleCheck = $this->requireRole($user, [UserRole::BROKER->value]);
-        if ($roleCheck) {
-            return $roleCheck;
-        }
-
-        try {
-            $receipt = $request->files->get('receipt');
-
-            // Validate file upload
-            $fileValidation = $this->validateFileUpload(
-                $receipt,
-                ['application/pdf', 'image/jpeg', 'image/png'],
-                5242880 // 5MB
-            );
-            if ($fileValidation) {
-                return $fileValidation;
-            }
-
-            $edoPayment = $this->edoPaymentService->submitEDOAccessPayment($id, $receipt, $user);
-
-            return $this->jsonResponse([
-                'paymentId' => $edoPayment->getId(),
-                'manifestId' => $edoPayment->getManifest()->getId(),
-                'amount' => $edoPayment->getAmount(),
-                'status' => $edoPayment->getStatus()->value
-            ], 201);
-
-        } catch (\InvalidArgumentException $e) {
-            return $this->errorResponse($e->getMessage(), 400);
-        } catch (\Exception $e) {
-            return $this->errorResponse('Failed to submit payment: ' . $e->getMessage(), 500);
-        }
+        return $response;
     }
 
     #[Route('/edo-payments/{id}/resubmit', name: 'resubmit_rejected_edo_payment', methods: ['POST'])]

@@ -9,7 +9,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/admin/activity-logs')]
@@ -216,50 +215,27 @@ class ActivityLogController extends AbstractController
     }
 
     #[Route('/search', name: 'admin_activity_logs_search', methods: ['POST'])]
-    public function search(Request $request): JsonResponse
+    public function search(Request $request): Response
     {
-        /** @var User $currentUser */
-        $currentUser = $this->getUser();
-        
-        // Get search parameters
-        $userId = $request->request->get('user_id');
-        
-        // Access control: Check if current user can search activity logs for the requested user
-        if ($userId) {
-            $targetUser = $this->entityManager->getRepository(User::class)->find($userId);
-            
-            if ($targetUser && $currentUser->getRole() === UserRole::SHIPPING_LINES_ADMIN) {
-                // Shipping line admins can only search activity logs for users in their hierarchy
-                $canAccess = ($targetUser->getId() === $currentUser->getId()) || 
-                            ($targetUser->getShippingLineAdmin() && $targetUser->getShippingLineAdmin()->getId() === $currentUser->getId());
-                
-                if (!$canAccess) {
-                    return new JsonResponse(['success' => false, 'error' => 'Access denied'], 403);
-                }
-            }
-        }
-
-        // Sample search results (in a real implementation, this would query the database with proper access control)
-        return new JsonResponse([
-            'success' => true,
-            'data' => [
-                'results' => [],
-                'searchTerm' => $request->request->get('search_term', ''),
-                'totalFound' => 0
-            ]
+        return $this->forward('App\Controller\Admin\ActivityLogAdminController::search', [
+            'request' => $request,
         ]);
     }
 
     #[Route('/reports', name: 'admin_activity_logs_reports', methods: ['GET'])]
-    public function reports(): Response
+    public function reports(Request $request): Response
     {
-        return new Response('<h1>Activity Logs Reports</h1><p>Reports functionality - to be implemented</p>');
+        return $this->forward('App\Controller\Admin\ActivityLogAdminController::reports', [
+            'request' => $request,
+        ]);
     }
 
     #[Route('/export', name: 'admin_activity_logs_export', methods: ['GET'])]
-    public function export(): Response
+    public function export(Request $request): Response
     {
-        return new Response('<h1>Export Activity Logs</h1><p>Export functionality - to be implemented</p>');
+        return $this->forward('App\Controller\Admin\ActivityLogAdminController::export', [
+            'request' => $request,
+        ]);
     }
 
     /**

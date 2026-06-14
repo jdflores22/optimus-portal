@@ -3,81 +3,96 @@
 {% block title %}Create Form - OPTIMUS{% endblock %}
 
 {% block body %}
-<div class="min-h-screen bg-gray-50">
-    <!-- Top Navigation Bar -->
-    <nav class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <span class="text-2xl font-bold text-meta-blue">OPTIMUS</span>
-                    <span class="ml-4 text-gray-600">Form Builder</span>
+<div class="min-h-screen bg-base-200">
+    <div class="bg-base-100 shadow-sm">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <div class="breadcrumbs text-xs mb-1">
+                        <ul>
+                            <li><a href="{{ path('form_builder_list') }}">Form Builder</a></li>
+                            <li>Create</li>
+                        </ul>
+                    </div>
+                    <h1 class="text-2xl font-bold text-base-content">Create New Form</h1>
+                    <p class="text-sm text-base-content/60 mt-1">Set up a new accreditation form configuration</p>
                 </div>
-                <div class="flex items-center">
-                    <a href="{{ path('form_builder_list') }}" class="text-gray-600 hover:text-gray-800">
-                        ← Back to List
-                    </a>
-                </div>
+                <a href="{{ path('form_builder_list') }}" class="btn btn-ghost gap-2 w-full sm:w-auto">
+                    <span class="icon-[tabler--arrow-left] size-4"></span>
+                    Back to List
+                </a>
             </div>
         </div>
-    </nav>
+    </div>
 
-    <!-- Main Content -->
-    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-6">Create New Form</h1>
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        <div class="max-w-2xl mx-auto">
+            {% for message in app.flashes('error') %}
+                <div class="alert alert-error mb-6">
+                    <span class="icon-[tabler--alert-circle] size-5"></span>
+                    <span>{{ message }}</span>
+                </div>
+            {% endfor %}
 
-        <!-- Flash Messages -->
-        {% for message in app.flashes('error') %}
-            <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-4">
-                {{ message }}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-6 sm:p-8">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="size-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--forms] size-6 text-primary"></span>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-semibold text-base-content">Form Details</h2>
+                            <p class="text-sm text-base-content/60">Name your form and choose who it applies to</p>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ path('form_builder_store') }}" class="space-y-5">
+                        <div class="form-control">
+                            <label class="label py-1" for="name">
+                                <span class="label-text font-medium">Form Name <span class="text-error">*</span></span>
+                            </label>
+                            <input type="text"
+                                   id="name"
+                                   name="name"
+                                   required
+                                   class="input input-bordered w-full"
+                                   placeholder="e.g., Consignee Accreditation Form">
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label py-1" for="type">
+                                <span class="label-text font-medium">Form Type <span class="text-error">*</span></span>
+                            </label>
+                            <select id="type"
+                                    name="type"
+                                    required
+                                    class="select select-bordered w-full">
+                                <option value="">-- Select Form Type --</option>
+                                {% for formType in formTypes %}
+                                    <option value="{{ formType.value }}">{{ formType.value }}</option>
+                                {% endfor %}
+                            </select>
+                            <label class="label py-1">
+                                <span class="label-text-alt text-base-content/60">
+                                    Select whether this form is for Consignee or Broker registration
+                                </span>
+                            </label>
+                        </div>
+
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('form_builder_create') }}">
+
+                        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
+                            <a href="{{ path('form_builder_list') }}" class="btn btn-ghost w-full sm:w-auto">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary gap-2 w-full sm:w-auto">
+                                <span class="icon-[tabler--plus] size-4"></span>
+                                Create Form
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        {% endfor %}
-
-        <!-- Create Form -->
-        <div class="bg-white rounded-lg shadow p-6">
-            <form method="POST" action="{{ path('form_builder_store') }}">
-                <div class="mb-6">
-                    <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
-                        Form Name <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" 
-                           id="name" 
-                           name="name" 
-                           required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                           placeholder="e.g., Consignee Accreditation Form">
-                </div>
-
-                <div class="mb-6">
-                    <label for="type" class="block text-sm font-medium text-gray-700 mb-2">
-                        Form Type <span class="text-red-500">*</span>
-                    </label>
-                    <select id="type" 
-                            name="type" 
-                            required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">-- Select Form Type --</option>
-                        {% for formType in formTypes %}
-                            <option value="{{ formType.value }}">{{ formType.value }}</option>
-                        {% endfor %}
-                    </select>
-                    <p class="mt-2 text-sm text-gray-500">
-                        Select whether this form is for Consignee or Broker registration
-                    </p>
-                </div>
-
-                <input type="hidden" name="_csrf_token" value="{{ csrf_token('form_builder_create') }}">
-
-                <div class="flex justify-end space-x-3">
-                    <a href="{{ path('form_builder_list') }}" 
-                       class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
-                        Cancel
-                    </a>
-                    <button type="submit" 
-                            class="bg-meta-blue text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition">
-                        Create Form
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 </div>

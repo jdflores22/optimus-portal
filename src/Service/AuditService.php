@@ -3,6 +3,8 @@
 namespace App\Service;
 
 use App\Entity\AuditLog;
+use App\Entity\EDOPayment;
+use App\Entity\Payment;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -280,14 +282,77 @@ class AuditService
             ->orderBy('a.timestamp', 'DESC')
             ->getQuery()
             ->getResult();
+
+        $paymentLogs = $this->getPaymentAuditLogsForManifest($manifestId);
+        $edoPaymentLogs = $this->getEdoPaymentAuditLogsForManifest($manifestId);
         
         // Combine and sort by timestamp
-        $allLogs = array_merge($manifestLogs, $edoLogs);
+        $allLogs = array_merge($manifestLogs, $edoLogs, $paymentLogs, $edoPaymentLogs);
+        $allLogs = $this->dedupeAuditLogs($allLogs);
         usort($allLogs, function($a, $b) {
             return $b->getTimestamp() <=> $a->getTimestamp();
         });
         
         return $allLogs;
+    }
+
+    /**
+     * Final payment audit entries linked to a manifest (by changes JSON or Payment relation).
+     *
+     * @return AuditLog[]
+     */
+    private function getPaymentAuditLogsForManifest(int $manifestId): array
+    {
+        $repo = $this->entityManager->getRepository(AuditLog::class);
+
+        $byManifestIdInChanges = $repo->createQueryBuilder('a')
+            ->where('a.entityType = :entityType')
+            ->andWhere('a.changes LIKE :manifestId')
+            ->setParameter('entityType', 'Payment')
+            ->setParameter('manifestId', '%"manifest_id":' . $manifestId . '%')
+            ->getQuery()
+            ->getResult();
+
+        $byPaymentRelation = $repo->createQueryBuilder('a')
+            ->innerJoin(Payment::class, 'p', 'WITH', 'a.entityType = :entityType AND a.entityId = p.id')
+            ->where('p.manifest = :manifestId')
+            ->setParameter('entityType', 'Payment')
+            ->setParameter('manifestId', $manifestId)
+            ->getQuery()
+            ->getResult();
+
+        return $this->dedupeAuditLogs(array_merge($byManifestIdInChanges, $byPaymentRelation));
+    }
+
+    /**
+     * eDO access payment audit entries for a manifest.
+     *
+     * @return AuditLog[]
+     */
+    private function getEdoPaymentAuditLogsForManifest(int $manifestId): array
+    {
+        return $this->entityManager->getRepository(AuditLog::class)
+            ->createQueryBuilder('a')
+            ->innerJoin(EDOPayment::class, 'ep', 'WITH', 'a.entityType = :entityType AND a.entityId = ep.id')
+            ->where('ep.manifest = :manifestId')
+            ->setParameter('entityType', 'EDOPayment')
+            ->setParameter('manifestId', $manifestId)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @param AuditLog[] $logs
+     * @return AuditLog[]
+     */
+    private function dedupeAuditLogs(array $logs): array
+    {
+        $unique = [];
+        foreach ($logs as $log) {
+            $unique[$log->getId()] = $log;
+        }
+
+        return array_values($unique);
     }
 
     /**

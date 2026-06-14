@@ -1,0 +1,125 @@
+<!-- Activate Form Modal -->
+<div id="activateModal"
+     class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="activateModalTitle">
+    <div class="absolute inset-0 bg-black/60" onclick="closeActivateModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6">
+        <div class="text-center">
+            <div class="size-14 bg-info/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="icon-[tabler--circle-check] size-7 text-info"></span>
+            </div>
+            <h3 id="activateModalTitle" class="text-lg font-bold mb-2">Activate Form</h3>
+            <p class="text-sm text-base-content/70 mb-4">
+                Are you sure you want to activate "<span id="activateFormName" class="font-semibold text-base-content"></span>"?
+            </p>
+            <div class="alert alert-warning text-start mb-6">
+                <span class="icon-[tabler--alert-triangle] size-5"></span>
+                <span class="text-sm">This will deactivate any other active form of the same type and make this form the primary one.</span>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeActivateModal()" class="btn btn-ghost flex-1">Cancel</button>
+                <button type="button" id="confirmActivateBtn" class="btn btn-info flex-1 gap-2">
+                    <span id="activateSpinner" class="loading loading-spinner loading-sm hidden"></span>
+                    <span id="activateText">Activate Form</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deactivate Form Modal -->
+<div id="deactivateModal"
+     class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="deactivateModalTitle">
+    <div class="absolute inset-0 bg-black/60" onclick="closeDeactivateModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6">
+        <div class="text-center">
+            <div class="size-14 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="icon-[tabler--circle-x] size-7 text-warning"></span>
+            </div>
+            <h3 id="deactivateModalTitle" class="text-lg font-bold mb-2">Deactivate Form</h3>
+            <p class="text-sm text-base-content/70 mb-4">
+                Are you sure you want to deactivate "<span id="deactivateFormName" class="font-semibold text-base-content"></span>"?
+            </p>
+            <div class="alert alert-error text-start mb-6">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <span class="text-sm">Users will no longer be able to use this form for accreditation submissions.</span>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeDeactivateModal()" class="btn btn-ghost flex-1">Cancel</button>
+                <button type="button" id="confirmDeactivateBtn" class="btn btn-warning flex-1 gap-2">
+                    <span id="deactivateSpinner" class="loading loading-spinner loading-sm hidden"></span>
+                    <span id="deactivateText">Deactivate Form</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Unpublish Form Modal -->
+<div id="unpublishModal"
+     class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="unpublishModalTitle">
+    <div class="absolute inset-0 bg-black/60" onclick="closeUnpublishModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6">
+        <div class="text-center">
+            <div class="size-14 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="icon-[tabler--cloud-off] size-7 text-warning"></span>
+            </div>
+            <h3 id="unpublishModalTitle" class="text-lg font-bold mb-2">Unpublish Form</h3>
+            <p class="text-sm text-base-content/70 mb-4">
+                Revert "<span id="unpublishFormName" class="font-semibold text-base-content"></span>" back to draft?
+            </p>
+            <div class="alert alert-warning text-start mb-6">
+                <span class="icon-[tabler--alert-triangle] size-5"></span>
+                <span class="text-sm">The form will return to draft status and can be edited again before republishing. This is only available if no submissions exist.</span>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeUnpublishModal()" class="btn btn-ghost flex-1">Cancel</button>
+                <button type="button" id="confirmUnpublishBtn" class="btn btn-warning flex-1 gap-2">
+                    <span id="unpublishSpinner" class="loading loading-spinner loading-sm hidden"></span>
+                    <span id="unpublishText">Unpublish Form</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Form Modal -->
+<div id="deleteModal"
+     class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="deleteModalTitle">
+    <div class="absolute inset-0 bg-black/60" onclick="closeDeleteModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6">
+        <div class="text-center">
+            <div class="size-14 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="icon-[tabler--trash] size-7 text-error"></span>
+            </div>
+            <h3 id="deleteModalTitle" class="text-lg font-bold mb-2">Delete Form</h3>
+            <p class="text-sm text-base-content/70 mb-4">
+                Are you sure you want to permanently delete "<span id="deleteFormName" class="font-semibold text-base-content"></span>"?
+            </p>
+            <div class="alert alert-error text-start mb-6">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <span class="text-sm">This action cannot be undone. All form data will be permanently removed.</span>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeDeleteModal()" class="btn btn-ghost flex-1">Cancel</button>
+                <button type="button" id="confirmDeleteBtn" class="btn btn-error flex-1 gap-2">
+                    <span id="deleteSpinner" class="loading loading-spinner loading-sm hidden"></span>
+                    <span id="deleteText">Delete Form</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="formBuilderToastContainer" class="fixed top-20 end-4 z-[10020] space-y-2 pointer-events-none"></div>

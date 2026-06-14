@@ -1,14 +1,12 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 
 {% block title %}User Details - {{ user.firstName }} {{ user.lastName }} - OPTIMUS{% endblock %}
-{% block page_title %}User Details{% endblock %}
-
 {% block javascripts %}
     {{ parent() }}
     <script src="{{ asset('assets/js/user-hierarchy-detail.js') }}?v={{ random() }}"></script>
 {% endblock %}
 
-{% block body %}
+{% block content %}
 <div class="space-y-5">
 
     {# Breadcrumb #}

@@ -1,0 +1,169 @@
+{% extends 'layout/admin_base.html.twig' %}
+
+{% block title %}Configure {{ role.value|replace({'_': ' '})|title }} - {{ shipping_line.brandName }}{% endblock %}
+
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+        <li><a href="{{ path('app_admin_dashboard') }}">Admin</a></li>
+        <li><a href="{{ path('admin_shipping_lines_list') }}">Shipping Lines</a></li>
+        <li><a href="{{ path('admin_shipping_line_configuration_index', {id: shipping_line.id}) }}">{{ shipping_line.brandName }}</a></li>
+        <li><a href="{{ path('admin_role_permissions_index', {id: shipping_line.id}) }}">Role Permissions</a></li>
+        <li>{{ role.value|replace({'_': ' '})|title }}</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+{% set selectedPermissions = current_config ? current_config.permissions : default_permissions %}
+{% set restrictions = current_config ? current_config.restrictions : {} %}
+{% set timeRestrictions = restrictions.time_restrictions ?? {} %}
+{% set ipRestrictions = restrictions.ip_restrictions ?? {} %}
+
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                <span class="icon-[tabler--settings] size-6"></span>
+                Configure {{ role.value|replace({'_': ' '})|title }}
+            </h1>
+            <p class="text-sm text-base-content/70 mt-1">{{ shipping_line.brandName }}</p>
+        </div>
+        <a href="{{ path('admin_role_permissions_index', {id: shipping_line.id}) }}"
+           class="btn btn-ghost btn-sm self-start">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back
+        </a>
+    </div>
+
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success"><span>{{ message }}</span></div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error"><span>{{ message }}</span></div>
+    {% endfor %}
+
+    <form method="POST" class="space-y-6">
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body space-y-4">
+                <h2 class="font-semibold text-lg">Permissions</h2>
+                <label class="label cursor-pointer justify-start gap-3 py-1">
+                    <input type="checkbox"
+                           name="inherit_from_parent"
+                           value="1"
+                           class="checkbox checkbox-primary checkbox-sm"
+                           {% if current_config and current_config.inheritFromParent %}checked{% endif %}>
+                    <span class="label-text">Inherit permissions from parent role in hierarchy</span>
+                </label>
+
+                {% set permissionGroups = {} %}
+                {% for permission in available_permissions %}
+                    {% set category = permission|split('.')|first %}
+                    {% if permissionGroups[category] is not defined %}
+                        {% set permissionGroups = permissionGroups|merge({(category): []}) %}
+                    {% endif %}
+                    {% set permissionGroups = permissionGroups|merge({(category): permissionGroups[category]|merge([permission])}) %}
+                {% endfor %}
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% for category, permissions in permissionGroups %}
+                        <div class="card bg-base-200">
+                            <div class="card-body p-4">
+                                <h3 class="text-sm font-semibold uppercase text-base-content/60 mb-3">{{ category|title }}</h3>
+                                <div class="space-y-2">
+                                    {% for permission in permissions %}
+                                        <label class="label cursor-pointer justify-start gap-3 py-1">
+                                            <input type="checkbox"
+                                                   name="permissions[]"
+                                                   value="{{ permission }}"
+                                                   class="checkbox checkbox-sm"
+                                                   {% if permission in selectedPermissions %}checked{% endif %}>
+                                            <span class="label-text font-mono text-xs">{{ permission }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body space-y-4">
+                <h2 class="font-semibold text-lg">Optional Restrictions</h2>
+
+                <div class="space-y-3">
+                    <label class="label cursor-pointer justify-start gap-3 py-1">
+                        <input type="checkbox"
+                               name="time_restrictions_enabled"
+                               value="1"
+                               class="checkbox checkbox-sm"
+                               {% if timeRestrictions %}checked{% endif %}>
+                        <span class="label-text font-medium">Time restrictions</span>
+                    </label>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pl-8">
+                        <div class="form-control">
+                            <label class="label py-1"><span class="label-text-alt">Start hour</span></label>
+                            <input type="time"
+                                   name="allowed_hours_start"
+                                   class="input input-bordered input-sm"
+                                   value="{{ timeRestrictions.allowed_hours.start ?? '08:00' }}">
+                        </div>
+                        <div class="form-control">
+                            <label class="label py-1"><span class="label-text-alt">End hour</span></label>
+                            <input type="time"
+                                   name="allowed_hours_end"
+                                   class="input input-bordered input-sm"
+                                   value="{{ timeRestrictions.allowed_hours.end ?? '18:00' }}">
+                        </div>
+                        <div class="form-control">
+                            <label class="label py-1"><span class="label-text-alt">Allowed days</span></label>
+                            {% set allowedDays = timeRestrictions.allowed_days ?? [] %}
+                            <div class="flex flex-wrap gap-2">
+                                {% for day in ['mon','tue','wed','thu','fri','sat','sun'] %}
+                                    <label class="label cursor-pointer gap-1 py-0">
+                                        <input type="checkbox"
+                                               name="allowed_days[]"
+                                               value="{{ day }}"
+                                               class="checkbox checkbox-xs"
+                                               {% if day in allowedDays %}checked{% endif %}>
+                                        <span class="label-text text-xs uppercase">{{ day }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <label class="label cursor-pointer justify-start gap-3 py-1">
+                        <input type="checkbox"
+                               name="ip_restrictions_enabled"
+                               value="1"
+                               class="checkbox checkbox-sm"
+                               {% if ipRestrictions %}checked{% endif %}>
+                        <span class="label-text font-medium">IP restrictions</span>
+                    </label>
+                    <div class="form-control pl-8">
+                        <label class="label py-1"><span class="label-text-alt">Allowed IPs (comma-separated)</span></label>
+                        <input type="text"
+                               name="allowed_ips"
+                               class="input input-bordered input-sm"
+                               placeholder="192.168.1.0/24, 10.0.0.1"
+                               value="{{ ipRestrictions.allowed_ips ? ipRestrictions.allowed_ips|join(', ') : '' }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-primary">
+                <span class="icon-[tabler--device-floppy] size-4"></span>
+                Save Permissions
+            </button>
+            <a href="{{ path('admin_role_permissions_index', {id: shipping_line.id}) }}" class="btn btn-ghost">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

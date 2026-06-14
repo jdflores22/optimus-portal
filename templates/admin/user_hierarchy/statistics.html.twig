@@ -1,153 +1,157 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 
-{% block title %}User Hierarchy Statistics{% endblock %}
+{% block title %}User Hierarchy Statistics - OPTIMUS{% endblock %}
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+                                <li><a href="{{ path('admin_user_hierarchy_list') }}">User Hierarchy</a></li>
+                                <li>Statistics</li>
+                            </ul>
+</div>
+{% endblock %}
 
-{% block body %}
-<div class="min-h-screen bg-gray-50">
-    <div class="w-full py-6 px-4 sm:px-6 lg:px-8">
-        <!-- Header -->
-        <div class="mb-6">
-            <nav class="flex" aria-label="Breadcrumb">
-                <ol class="flex items-center space-x-4">
-                    <li>
-                        <div>
-                            <a href="{{ path('admin_user_hierarchy_list') }}" class="text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
-                                <svg class="flex-shrink-0 h-5 w-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
-                                </svg>
-                                <span class="sr-only">Back to User Hierarchy</span>
-                            </a>
+{% block content %}
+<div class="space-y-5 sm:space-y-6">
+{# Header #}
+        <div class="bg-base-100 shadow-sm rounded-xl">
+            <div class="p-4 sm:p-6">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-4">
+                            <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                <span class="icon-[tabler--chart-bar] size-6 text-primary"></span>
+                            </div>
+                            <div class="min-w-0">
+                                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">User Hierarchy Statistics</h1>
+                                <p class="text-sm text-base-content/60 mt-1">Overview of user distribution and hierarchy metrics</p>
+                            </div>
                         </div>
-                    </li>
-                    <li>
-                        <div class="flex items-center">
-                            <svg class="flex-shrink-0 h-5 w-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            <a href="{{ path('admin_user_hierarchy_list') }}" class="ml-4 text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
-                                User Hierarchy
-                            </a>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="flex items-center">
-                            <svg class="flex-shrink-0 h-5 w-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            <span class="ml-4 text-sm font-medium text-gray-500">Statistics</span>
-                        </div>
-                    </li>
-                </ol>
-            </nav>
-            <h2 class="mt-2 text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-                User Hierarchy Statistics
-            </h2>
-            <p class="mt-1 text-sm text-gray-500">
-                Overview of user distribution and hierarchy metrics
-            </p>
+                    </div>
+                    <a href="{{ path('admin_user_hierarchy_list') }}" class="btn btn-ghost btn-sm gap-2 w-full sm:w-auto">
+                        <span class="icon-[tabler--arrow-left] size-4"></span>
+                        Back to List
+                    </a>
+                </div>
+            </div>
         </div>
 
-        <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <!-- Total Users -->
-            <div class="bg-white overflow-hidden shadow rounded-lg">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-                            </svg>
+        {# Flash messages #}
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success">
+                <span class="icon-[tabler--circle-check] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-error">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+
+        {# Statistics cards #}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-center gap-3 sm:gap-4">
+                        <div class="size-10 sm:size-12 bg-primary/10 text-primary rounded-full flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--users] size-5 sm:size-6"></span>
                         </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="text-sm font-medium text-gray-500 truncate">Total Users</dt>
-                                <dd class="text-lg font-medium text-gray-900">{{ statistics.totalUsers }}</dd>
-                            </dl>
+                        <div class="min-w-0">
+                            <p class="text-xs sm:text-sm text-base-content/70">Total Users</p>
+                            <p class="text-2xl sm:text-3xl font-bold text-base-content">{{ statistics.totalUsers }}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Admin Users -->
-            <div class="bg-white overflow-hidden shadow rounded-lg">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <svg class="h-6 w-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                            </svg>
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-center gap-3 sm:gap-4">
+                        <div class="size-10 sm:size-12 bg-secondary/10 text-secondary rounded-full flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--shield-check] size-5 sm:size-6"></span>
                         </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="text-sm font-medium text-gray-500 truncate">Shipping Line Admins</dt>
-                                <dd class="text-lg font-medium text-gray-900">{{ statistics.adminUsers }}</dd>
-                            </dl>
+                        <div class="min-w-0">
+                            <p class="text-xs sm:text-sm text-base-content/70">Shipping Line Admins</p>
+                            <p class="text-2xl sm:text-3xl font-bold text-secondary">{{ statistics.adminUsers }}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Subordinate Users -->
-            <div class="bg-white overflow-hidden shadow rounded-lg">
-                <div class="p-5">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <svg class="h-6 w-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                            </svg>
+            <div class="card bg-base-100 shadow-sm sm:col-span-2 lg:col-span-1">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-center gap-3 sm:gap-4">
+                        <div class="size-10 sm:size-12 bg-success/10 text-success rounded-full flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--users-group] size-5 sm:size-6"></span>
                         </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="text-sm font-medium text-gray-500 truncate">Subordinate Users</dt>
-                                <dd class="text-lg font-medium text-gray-900">{{ statistics.subordinateUsers }}</dd>
-                            </dl>
+                        <div class="min-w-0">
+                            <p class="text-xs sm:text-sm text-base-content/70">Subordinate Users</p>
+                            <p class="text-2xl sm:text-3xl font-bold text-success">{{ statistics.subordinateUsers }}</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Actions -->
-        <div class="mt-8">
-            <div class="bg-white shadow rounded-lg">
-                <div class="px-4 py-5 sm:p-6">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Quick Actions</h3>
-                    <div class="flex flex-wrap gap-3">
-                        <a href="{{ path('admin_user_hierarchy_list') }}" 
-                           class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            <svg class="-ml-1 mr-2 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-                            </svg>
-                            View All Users
-                        </a>
-                        
-                        <a href="{{ path('admin_user_hierarchy_create') }}" 
-                           class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                            </svg>
-                            Create New User
-                        </a>
-                        
-                        <a href="{{ path('admin_user_hierarchy_validate_integrity') }}" 
-                           class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            <svg class="-ml-1 mr-2 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            Validate Integrity
-                        </a>
-                        
-                        <a href="{{ path('admin_user_hierarchy_export') }}" 
-                           class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            <svg class="-ml-1 mr-2 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                            </svg>
-                            Export Data
-                        </a>
+        {# Distribution summary #}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-4 sm:p-6">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="icon-[tabler--chart-pie] size-5 text-base-content/70"></span>
+                    <h3 class="font-semibold text-base text-base-content">Distribution</h3>
+                </div>
+                {% set adminPct = statistics.totalUsers > 0 ? (statistics.adminUsers / statistics.totalUsers * 100)|round(1) : 0 %}
+                {% set subPct = statistics.totalUsers > 0 ? (statistics.subordinateUsers / statistics.totalUsers * 100)|round(1) : 0 %}
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex items-center justify-between text-sm mb-1">
+                            <span class="text-base-content/70">Shipping Line Admins</span>
+                            <span class="font-medium text-base-content">{{ statistics.adminUsers }} <span class="text-base-content/50">({{ adminPct }}%)</span></span>
+                        </div>
+                        <progress class="progress progress-secondary w-full" value="{{ adminPct }}" max="100"></progress>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between text-sm mb-1">
+                            <span class="text-base-content/70">Subordinate Users</span>
+                            <span class="font-medium text-base-content">{{ statistics.subordinateUsers }} <span class="text-base-content/50">({{ subPct }}%)</span></span>
+                        </div>
+                        <progress class="progress progress-success w-full" value="{{ subPct }}" max="100"></progress>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+
+        {# Quick actions #}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-4 sm:p-6">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="icon-[tabler--bolt] size-5 text-base-content/70"></span>
+                    <h3 class="font-semibold text-base text-base-content">Quick Actions</h3>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ path('admin_user_hierarchy_list') }}" class="btn btn-ghost btn-sm gap-2">
+                        <span class="icon-[tabler--list] size-4"></span>
+                        View All Users
+                    </a>
+                    <a href="{{ path('admin_user_hierarchy_create') }}" class="btn btn-primary btn-sm gap-2">
+                        <span class="icon-[tabler--plus] size-4"></span>
+                        Create New User
+                    </a>
+                    <a href="{{ path('admin_user_hierarchy_validate_integrity') }}" class="btn btn-outline btn-sm gap-2">
+                        <span class="icon-[tabler--shield-check] size-4"></span>
+                        Validate Integrity
+                    </a>
+                    <a href="{{ path('admin_user_hierarchy_export', {format: 'csv'}) }}" class="btn btn-outline btn-sm gap-2">
+                        <span class="icon-[tabler--download] size-4"></span>
+                        Export Data
+                    </a>
+                    <a href="{{ path('admin_user_hierarchy_pending_invitations') }}" class="btn btn-ghost btn-sm gap-2">
+                        <span class="icon-[tabler--inbox] size-4"></span>
+                        Pending Invitations
+                    </a>
+                </div>
+            </div>
+        </div>
 </div>
 {% endblock %}

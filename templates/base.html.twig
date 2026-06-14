@@ -30,7 +30,7 @@
         {# Theme Color #}
         <meta name="theme-color" content="#1e40af">
         
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
+        <link rel="icon" href="{{ asset('images/optimus.jpg') }}">
         
         {# Inter font - FlyonUI default #}
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -167,13 +167,14 @@
                     {% include 'layout/_topnav_flyonui.html.twig' %}
                     
                     <!-- Main Content -->
-                    <main class="py-8 px-4 sm:px-6 lg:px-8">
+                    <main id="app-main" class="relative isolate py-8 px-4 sm:px-6 lg:px-8">
         {% else %}
             <!-- Simple layout for login/public pages -->
             <div class="min-h-screen flex items-center justify-center">
         {% endif %}
         
         {% block body %}{% endblock %}
+        {% block app_main_overlays %}{% endblock %}
         
         {% if is_authenticated %}
                     </main>
@@ -185,6 +186,9 @@
         {% else %}
             </div>
         {% endif %}
+
+        {% block page_modals %}{% endblock %}
+        {% block page_scripts %}{% endblock %}
         
         {# Service Worker Registration #}
         <script>

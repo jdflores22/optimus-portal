@@ -1,331 +1,363 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 
 {% block title %}Approved Accreditations - OPTIMUS{% endblock %}
-
 {% block stylesheets %}
     {{ parent() }}
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 {% endblock %}
 
-{% block body %}
-<div class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <div class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="py-6">
-                <h1 class="text-3xl font-bold text-gray-900">Approved Accreditations</h1>
-                <p class="mt-2 text-gray-600">Complete overview of all approved broker and consignee applications</p>
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+                                <li><a href="{{ path('app_admin_dashboard') }}">Admin</a></li>
+                                <li>Approved Accreditations</li>
+                            </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-5 sm:space-y-6">
+{# Header #}
+        <div class="bg-base-100 shadow-sm rounded-xl">
+            <div class="p-4 sm:p-6">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-4">
+                            <div class="size-12 rounded-xl bg-success/10 flex items-center justify-center shrink-0">
+                                <span class="icon-[tabler--circle-check] size-6 text-success"></span>
+                            </div>
+                            <div class="min-w-0">
+                                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">Approved Accreditations</h1>
+                                <p class="text-sm text-base-content/60 mt-1">Complete overview of all approved broker and consignee applications</p>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ path('app_admin_dashboard') }}" class="btn btn-ghost btn-sm gap-2 w-full sm:w-auto">
+                        <span class="icon-[tabler--arrow-left] size-4"></span>
+                        Back to Dashboard
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Flash Messages -->
+        {# Flash messages #}
         {% for message in app.flashes('success') %}
-            <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg">
-                {{ message }}
+            <div class="alert alert-success">
+                <span class="icon-[tabler--circle-check] size-5"></span>
+                <span>{{ message }}</span>
             </div>
         {% endfor %}
         {% for message in app.flashes('error') %}
-            <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg">
-                {{ message }}
+            <div class="alert alert-error">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <span>{{ message }}</span>
             </div>
         {% endfor %}
 
-        <!-- Summary Statistics -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <!-- Total Approved -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
+        {# Summary statistics #}
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-center gap-3 sm:gap-4">
+                        <div class="size-10 sm:size-12 bg-success/10 text-success rounded-xl flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--circle-check] size-5 sm:size-6"></span>
                         </div>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Total Approved</p>
-                        <p class="text-3xl font-bold text-gray-900">{{ totalApproved }}</p>
-                        <p class="text-xs text-green-600 font-medium">All accreditations</p>
+                        <div class="min-w-0">
+                            <p class="text-xs sm:text-sm text-base-content/70">Total Approved</p>
+                            <p class="text-2xl sm:text-3xl font-bold text-base-content">{{ totalApproved }}</p>
+                            <p class="text-xs text-success font-medium mt-0.5">All accreditations</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Approved Brokers -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6M8 8v10l4-2 4 2V8"></path>
-                            </svg>
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-center gap-3 sm:gap-4">
+                        <div class="size-10 sm:size-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--briefcase] size-5 sm:size-6"></span>
                         </div>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Approved Brokers</p>
-                        <p class="text-3xl font-bold text-gray-900">{{ brokers|length }}</p>
-                        <p class="text-xs text-blue-600 font-medium">Active brokers</p>
+                        <div class="min-w-0">
+                            <p class="text-xs sm:text-sm text-base-content/70">Approved Brokers</p>
+                            <p class="text-2xl sm:text-3xl font-bold text-primary">{{ brokers|length }}</p>
+                            <p class="text-xs text-primary/80 font-medium mt-0.5">Active brokers</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Approved Consignees -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                            </svg>
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-center gap-3 sm:gap-4">
+                        <div class="size-10 sm:size-12 bg-secondary/10 text-secondary rounded-xl flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--building] size-5 sm:size-6"></span>
                         </div>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Approved Consignees</p>
-                        <p class="text-3xl font-bold text-gray-900">{{ consignees|length }}</p>
-                        <p class="text-xs text-purple-600 font-medium">Active consignees</p>
+                        <div class="min-w-0">
+                            <p class="text-xs sm:text-sm text-base-content/70">Approved Consignees</p>
+                            <p class="text-2xl sm:text-3xl font-bold text-secondary">{{ consignees|length }}</p>
+                            <p class="text-xs text-secondary/80 font-medium mt-0.5">Active consignees</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Distribution Chart -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900">Accreditation Distribution</h3>
-                <p class="text-sm text-gray-500">Breakdown of approved applications by type</p>
+        {# Distribution chart #}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                <div class="flex items-center gap-2">
+                    <span class="icon-[tabler--chart-pie] size-5 text-base-content/70"></span>
+                    <div>
+                        <h3 class="card-title text-base sm:text-lg">Accreditation Distribution</h3>
+                        <p class="text-sm text-base-content/60 mt-1">Breakdown of approved applications by type</p>
+                    </div>
+                </div>
             </div>
-            <div class="p-6">
-                <div id="accreditationChart" style="height: 300px;"></div>
+            <div class="card-body p-4 sm:p-6">
+                <div id="accreditationChart" class="min-h-[300px]"></div>
             </div>
         </div>
 
-        <!-- Approved Brokers Section -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-lg font-medium text-gray-900">Approved Brokers</h3>
-                <span class="text-sm text-gray-500">{{ brokers|length }} broker{{ brokers|length != 1 ? 's' : '' }}</span>
+        {# Approved brokers #}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 sm:px-6 pt-4 sm:pt-5">
+                <div class="flex items-center gap-2">
+                    <span class="icon-[tabler--briefcase] size-5 text-primary"></span>
+                    <div>
+                        <h3 class="card-title text-base sm:text-lg">Approved Brokers</h3>
+                        <p class="text-sm text-base-content/60 mt-1">Broker applications with final approval</p>
+                    </div>
+                </div>
+                <span class="badge badge-primary badge-soft">{{ brokers|length }} broker{{ brokers|length != 1 ? 's' : '' }}</span>
             </div>
-            <div class="p-6">
+            <div class="card-body p-4 sm:p-6 pt-2 sm:pt-3">
                 {% if brokers|length > 0 %}
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         {% for broker in brokers %}
-                            <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
-                                <div class="flex items-center justify-between mb-3">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        <div class="w-2 h-2 bg-green-400 rounded-full mr-1"></div>
-                                        Approved Broker
-                                    </span>
-                                    <span class="text-xs text-gray-500">{{ broker.approvedAt|date('M j, Y') }}</span>
-                                </div>
-                                
-                                <div class="mb-4">
-                                    <h4 class="text-sm font-medium text-gray-900 mb-1 break-words">{{ broker.applicant.email }}</h4>
-                                    {% if broker.applicant.fullName %}
-                                        <p class="text-xs text-gray-600">{{ broker.applicant.fullName }}</p>
-                                    {% endif %}
-                                </div>
-
-                                <div class="space-y-2 text-xs text-gray-600 mb-4">
-                                    <div class="flex justify-between">
-                                        <span>Submitted:</span>
-                                        <span class="font-medium">{{ broker.submittedAt|date('M j, Y') }}</span>
+                            <div class="card bg-base-200 border border-base-300 hover:shadow-md transition-shadow">
+                                <div class="card-body p-4">
+                                    <div class="flex items-center justify-between gap-2 mb-3">
+                                        <span class="badge badge-success badge-soft gap-1">
+                                            <span class="size-1.5 rounded-full bg-success"></span>
+                                            Approved Broker
+                                        </span>
+                                        <span class="text-xs text-base-content/50 shrink-0">{{ broker.approvedAt|date('M j, Y') }}</span>
                                     </div>
-                                    {% if broker.evaluator %}
-                                        <div class="flex justify-between">
-                                            <span>Evaluated by:</span>
-                                            <span class="font-medium text-right">{{ broker.evaluator.email|slice(0, 20) }}{{ broker.evaluator.email|length > 20 ? '...' : '' }}</span>
-                                        </div>
-                                    {% endif %}
-                                </div>
 
-                                <a href="{{ path('app_admin_application_detail', {id: broker.id}) }}" 
-                                   class="inline-flex items-center justify-center w-full px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                    </svg>
-                                    View Details
-                                </a>
+                                    <div class="flex items-start gap-3 mb-4">
+                                        <div class="size-10 rounded-full {{ avatar_colors(broker.applicant) }} flex items-center justify-center shrink-0">
+                                            <span class="text-sm font-semibold">{{ broker.applicant.email|slice(0, 1)|upper }}</span>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <h4 class="text-sm font-semibold text-base-content break-words">{{ broker.applicant.email }}</h4>
+                                            {% if broker.applicant.fullName %}
+                                                <p class="text-xs text-base-content/60 mt-0.5">{{ broker.applicant.fullName }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <dl class="space-y-2 text-xs text-base-content/70 mb-4">
+                                        <div class="flex justify-between gap-2">
+                                            <dt>Submitted</dt>
+                                            <dd class="font-medium text-base-content">{{ broker.submittedAt|date('M j, Y') }}</dd>
+                                        </div>
+                                        {% if broker.evaluator %}
+                                            <div class="flex justify-between gap-2">
+                                                <dt>Evaluated by</dt>
+                                                <dd class="font-medium text-base-content text-right truncate max-w-[60%]" title="{{ broker.evaluator.email }}">
+                                                    {{ broker.evaluator.email }}
+                                                </dd>
+                                            </div>
+                                        {% endif %}
+                                    </dl>
+
+                                    <a href="{{ path('app_admin_application_detail', {id: broker.id}) }}"
+                                       class="btn btn-outline btn-primary btn-sm w-full gap-2">
+                                        <span class="icon-[tabler--eye] size-4"></span>
+                                        View Details
+                                    </a>
+                                </div>
                             </div>
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="text-center py-12">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6M8 8v10l4-2 4 2V8"></path>
-                        </svg>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900">No approved brokers</h3>
-                        <p class="mt-1 text-sm text-gray-500">Approved broker applications will appear here</p>
+                    <div class="flex flex-col items-center justify-center py-16 text-center">
+                        <span class="icon-[tabler--briefcase-off] size-12 text-base-content/30"></span>
+                        <h3 class="mt-4 text-base font-medium text-base-content">No approved brokers</h3>
+                        <p class="mt-2 text-sm text-base-content/60">Approved broker applications will appear here.</p>
                     </div>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Approved Consignees Section -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-lg font-medium text-gray-900">Approved Consignees</h3>
-                <span class="text-sm text-gray-500">{{ consignees|length }} consignee{{ consignees|length != 1 ? 's' : '' }}</span>
+        {# Approved consignees #}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 sm:px-6 pt-4 sm:pt-5">
+                <div class="flex items-center gap-2">
+                    <span class="icon-[tabler--building] size-5 text-secondary"></span>
+                    <div>
+                        <h3 class="card-title text-base sm:text-lg">Approved Consignees</h3>
+                        <p class="text-sm text-base-content/60 mt-1">Consignee applications with final approval</p>
+                    </div>
+                </div>
+                <span class="badge badge-secondary badge-soft">{{ consignees|length }} consignee{{ consignees|length != 1 ? 's' : '' }}</span>
             </div>
-            <div class="p-6">
+            <div class="card-body p-4 sm:p-6 pt-2 sm:pt-3">
                 {% if consignees|length > 0 %}
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         {% for consignee in consignees %}
-                            <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
-                                <div class="flex items-center justify-between mb-3">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        <div class="w-2 h-2 bg-green-400 rounded-full mr-1"></div>
-                                        Approved Consignee
-                                    </span>
-                                    <span class="text-xs text-gray-500">{{ consignee.approvedAt|date('M j, Y') }}</span>
-                                </div>
-                                
-                                <div class="mb-4">
-                                    <h4 class="text-sm font-medium text-gray-900 mb-1 break-words">{{ consignee.applicant.email }}</h4>
-                                    {% if consignee.applicant.businessName is defined and consignee.applicant.businessName %}
-                                        <p class="text-xs text-gray-600">{{ consignee.applicant.businessName }}</p>
-                                    {% endif %}
-                                </div>
-
-                                <div class="space-y-2 text-xs text-gray-600 mb-4">
-                                    <div class="flex justify-between">
-                                        <span>Submitted:</span>
-                                        <span class="font-medium">{{ consignee.submittedAt|date('M j, Y') }}</span>
+                            <div class="card bg-base-200 border border-base-300 hover:shadow-md transition-shadow">
+                                <div class="card-body p-4">
+                                    <div class="flex items-center justify-between gap-2 mb-3">
+                                        <span class="badge badge-success badge-soft gap-1">
+                                            <span class="size-1.5 rounded-full bg-success"></span>
+                                            Approved Consignee
+                                        </span>
+                                        <span class="text-xs text-base-content/50 shrink-0">{{ consignee.approvedAt|date('M j, Y') }}</span>
                                     </div>
-                                    {% if consignee.evaluator %}
-                                        <div class="flex justify-between">
-                                            <span>Evaluated by:</span>
-                                            <span class="font-medium text-right">{{ consignee.evaluator.email|slice(0, 20) }}{{ consignee.evaluator.email|length > 20 ? '...' : '' }}</span>
-                                        </div>
-                                    {% endif %}
-                                </div>
 
-                                <a href="{{ path('app_admin_application_detail', {id: consignee.id}) }}" 
-                                   class="inline-flex items-center justify-center w-full px-3 py-2 text-xs font-medium text-purple-600 bg-purple-50 border border-purple-200 rounded-md hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                    </svg>
-                                    View Details
-                                </a>
+                                    <div class="flex items-start gap-3 mb-4">
+                                        <div class="size-10 rounded-full {{ avatar_colors(consignee.applicant) }} flex items-center justify-center shrink-0">
+                                            <span class="text-sm font-semibold">{{ consignee.applicant.email|slice(0, 1)|upper }}</span>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <h4 class="text-sm font-semibold text-base-content break-words">{{ consignee.applicant.email }}</h4>
+                                            {% if consignee.applicant.businessName is defined and consignee.applicant.businessName %}
+                                                <p class="text-xs text-base-content/60 mt-0.5">{{ consignee.applicant.businessName }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <dl class="space-y-2 text-xs text-base-content/70 mb-4">
+                                        <div class="flex justify-between gap-2">
+                                            <dt>Submitted</dt>
+                                            <dd class="font-medium text-base-content">{{ consignee.submittedAt|date('M j, Y') }}</dd>
+                                        </div>
+                                        {% if consignee.evaluator %}
+                                            <div class="flex justify-between gap-2">
+                                                <dt>Evaluated by</dt>
+                                                <dd class="font-medium text-base-content text-right truncate max-w-[60%]" title="{{ consignee.evaluator.email }}">
+                                                    {{ consignee.evaluator.email }}
+                                                </dd>
+                                            </div>
+                                        {% endif %}
+                                    </dl>
+
+                                    <a href="{{ path('app_admin_application_detail', {id: consignee.id}) }}"
+                                       class="btn btn-outline btn-secondary btn-sm w-full gap-2">
+                                        <span class="icon-[tabler--eye] size-4"></span>
+                                        View Details
+                                    </a>
+                                </div>
                             </div>
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="text-center py-12">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                        </svg>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900">No approved consignees</h3>
-                        <p class="mt-1 text-sm text-gray-500">Approved consignee applications will appear here</p>
+                    <div class="flex flex-col items-center justify-center py-16 text-center">
+                        <span class="icon-[tabler--building-off] size-12 text-base-content/30"></span>
+                        <h3 class="mt-4 text-base font-medium text-base-content">No approved consignees</h3>
+                        <p class="mt-2 text-sm text-base-content/60">Approved consignee applications will appear here.</p>
                     </div>
                 {% endif %}
             </div>
         </div>
-    </div>
 </div>
+{% endblock %}
 
+{% block page_scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Accreditation Distribution Chart
-    try {
-        const brokersCount = {{ brokers|length }};
-        const consigneesCount = {{ consignees|length }};
-        const totalCount = brokersCount + consigneesCount;
+document.addEventListener('DOMContentLoaded', function () {
+    const chartEl = document.getElementById('accreditationChart');
+    if (!chartEl) return;
 
-        if (totalCount > 0) {
-            const chartOptions = {
-                series: [brokersCount, consigneesCount],
-                chart: {
-                    type: 'donut',
-                    height: 300,
-                    fontFamily: 'Inter, system-ui, sans-serif'
-                },
-                labels: ['Brokers', 'Consignees'],
-                colors: ['#3B82F6', '#8B5CF6'],
-                plotOptions: {
-                    pie: {
-                        donut: {
-                            size: '70%',
-                            labels: {
+    const brokersCount = {{ brokers|length }};
+    const consigneesCount = {{ consignees|length }};
+    const totalCount = brokersCount + consigneesCount;
+
+    const emptyStateHtml = `
+        <div class="flex flex-col items-center justify-center py-12 text-base-content/40">
+            <span class="icon-[tabler--chart-pie-off] size-16 mb-4"></span>
+            <p class="text-sm font-medium text-base-content/60">No data to display</p>
+            <p class="text-xs text-base-content/40 mt-1">Chart will appear when applications are approved</p>
+        </div>`;
+
+    const errorStateHtml = `
+        <div class="flex flex-col items-center justify-center py-12 text-base-content/40">
+            <span class="icon-[tabler--alert-circle] size-16 mb-4 text-error/60"></span>
+            <p class="text-sm font-medium text-base-content/60">Unable to load chart</p>
+        </div>`;
+
+    if (totalCount === 0) {
+        chartEl.innerHTML = emptyStateHtml;
+        return;
+    }
+
+    try {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+            || document.documentElement.getAttribute('data-theme') === 'claude';
+
+        const chartOptions = {
+            series: [brokersCount, consigneesCount],
+            chart: {
+                type: 'donut',
+                height: 300,
+                fontFamily: 'Inter, system-ui, sans-serif',
+                foreColor: isDark ? '#a3a3a3' : '#6b7280',
+            },
+            labels: ['Brokers', 'Consignees'],
+            colors: ['#570df8', '#f000b8'],
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '70%',
+                        labels: {
+                            show: true,
+                            total: {
                                 show: true,
-                                total: {
-                                    show: true,
-                                    label: 'Total Approved',
-                                    fontSize: '16px',
-                                    fontWeight: 600,
-                                    color: '#374151',
-                                    formatter: function () {
-                                        return totalCount;
-                                    }
+                                label: 'Total Approved',
+                                fontSize: '14px',
+                                fontWeight: 600,
+                                formatter: function () {
+                                    return totalCount;
                                 }
                             }
                         }
                     }
-                },
-                dataLabels: {
-                    enabled: true,
-                    formatter: function(val, opts) {
-                        return opts.w.config.series[opts.seriesIndex];
-                    },
-                    style: {
-                        fontSize: '14px',
-                        fontWeight: 'bold',
-                        colors: ['#ffffff']
-                    }
-                },
-                legend: {
-                    position: 'bottom',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    fontFamily: 'Inter, system-ui, sans-serif'
-                },
-                stroke: {
-                    width: 2,
-                    colors: ['#ffffff']
-                },
-                tooltip: {
-                    enabled: true,
-                    style: {
-                        fontSize: '14px',
-                        fontFamily: 'Inter, system-ui, sans-serif'
-                    },
-                    y: {
-                        formatter: function(val) {
-                            return val + ' approved';
-                        }
-                    }
-                },
-                noData: {
-                    text: 'No data available'
                 }
-            };
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function (val, opts) {
+                    return opts.w.config.series[opts.seriesIndex];
+                },
+                style: {
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    colors: ['#ffffff']
+                }
+            },
+            legend: {
+                position: 'bottom',
+                fontSize: '13px',
+                fontWeight: 500,
+            },
+            stroke: {
+                width: 2,
+                colors: [isDark ? '#1d232a' : '#ffffff']
+            },
+            tooltip: {
+                y: {
+                    formatter: function (val) {
+                        return val + ' approved';
+                    }
+                }
+            }
+        };
 
-            new ApexCharts(document.querySelector("#accreditationChart"), chartOptions).render();
-        } else {
-            document.getElementById('accreditationChart').innerHTML = `
-                <div class="flex flex-col items-center justify-center h-full text-gray-400">
-                    <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
-                    </svg>
-                    <p class="text-sm font-medium">No data to display</p>
-                    <p class="text-xs text-gray-400 mt-1">Chart will appear when applications are approved</p>
-                </div>
-            `;
-        }
+        new ApexCharts(chartEl, chartOptions).render();
     } catch (error) {
         console.error('Error rendering accreditation chart:', error);
-        document.getElementById('accreditationChart').innerHTML = `
-            <div class="flex flex-col items-center justify-center h-full text-gray-400">
-                <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <p class="text-sm font-medium">Unable to load chart</p>
-            </div>
-        `;
+        chartEl.innerHTML = errorStateHtml;
     }
 });
 </script>

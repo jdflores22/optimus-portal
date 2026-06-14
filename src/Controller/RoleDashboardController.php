@@ -17,6 +17,8 @@ use App\Entity\StaffUser;
 use App\Entity\TerminalSlot;
 use App\Service\AccreditationWorkflowService;
 use App\Service\BrokerRelationshipService;
+use App\Service\ConsigneeOnboardingGuideService;
+use App\Service\SlStaffDashboardLocationService;
 use App\Service\WorkspaceService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -31,7 +33,9 @@ class RoleDashboardController extends AbstractController
         private EntityManagerInterface $entityManager,
         private AccreditationWorkflowService $accreditationService,
         private WorkspaceService $workspaceService,
-        private BrokerRelationshipService $brokerRelationshipService
+        private BrokerRelationshipService $brokerRelationshipService,
+        private ConsigneeOnboardingGuideService $consigneeOnboardingGuideService,
+        private SlStaffDashboardLocationService $slStaffDashboardLocationService,
     ) {
     }
 
@@ -139,8 +143,29 @@ class RoleDashboardController extends AbstractController
             }
         }
         
+        $showWelcomeModal = !$user->hasSeenWelcomeModal();
+        $session = $request->getSession();
+        if ($session->get('show_consignee_welcome', false)) {
+            $showWelcomeModal = true;
+            $session->remove('show_consignee_welcome');
+        }
+
+        $pendingGuideSteps = $this->consigneeOnboardingGuideService->getDashboardSteps(
+            $user,
+            count($accreditationSubmissions),
+            count($approvedBrokers)
+        );
+
+        $showGuideSuccessModal = $this->consigneeOnboardingGuideService->shouldShowGuideSuccessModal($user);
+
         $response = $this->render('dashboard/consignee.html.twig', [
             'user' => $user,
+            'show_welcome_modal' => $showWelcomeModal,
+            'show_onboarding_guide' => count($pendingGuideSteps) > 0,
+            'onboarding_guide_steps' => $pendingGuideSteps,
+            'start_onboarding_guide' => count($pendingGuideSteps) > 0,
+            'start_guide_after_welcome' => $showWelcomeModal,
+            'show_guide_success_modal' => $showGuideSuccessModal && !$showWelcomeModal,
             'accreditationSubmissions' => $accreditationSubmissions,
             'approvedCount' => $approvedCount,
             'pendingCount' => $pendingCount,
@@ -510,124 +535,19 @@ class RoleDashboardController extends AbstractController
             ->getQuery()
             ->getResult();
         
-        // Get CY Empty Return Locations (using same logic as API endpoint)
+        // Port/Terminal (laden inbound) and CY (empty return) — separated by terminal type
         /** @var StaffUser $currentUser */
         $currentUser = $this->getUser();
         $shippingLine = $currentUser->getShippingLineScope();
-        
+
+        $portLocationsData = [];
         $cyLocationsData = [];
-        
+
         if ($shippingLine) {
-            // Query allocations filtered by the user's shipping line
-            $allocations = $this->entityManager->getRepository(\App\Entity\ShippingLineTerminalAllocation::class)
-                ->createQueryBuilder('alloc')
-                ->leftJoin('alloc.terminal', 'terminal')
-                ->leftJoin('terminal.region', 'region')
-                ->leftJoin('terminal.city', 'city')
-                ->addSelect('terminal', 'region', 'city')
-                ->where('alloc.shippingLine = :shippingLine')
-                ->setParameter('shippingLine', $shippingLine)
-                ->getQuery()
-                ->getResult();
-            
-            foreach ($allocations as $allocation) {
-                $terminal = $allocation->getTerminal();
-                $allocatedTeu = $allocation->getAllocatedCapacity();
-                
-                // Calculate TEU from containers with allocation_status = 'allocated'
-                $allocatedContainers = $this->entityManager->getRepository(\App\Entity\Container::class)
-                    ->createQueryBuilder('c')
-                    ->leftJoin('c.containerSize', 'cs')
-                    ->addSelect('cs')
-                    ->where('c.cyAllocation = :allocation')
-                    ->andWhere('c.allocationStatus = :status')
-                    ->andWhere('c.shippingLine = :shippingLine')
-                    ->setParameter('allocation', $allocation)
-                    ->setParameter('status', \App\Entity\Enum\AllocationStatus::ALLOCATED)
-                    ->setParameter('shippingLine', $shippingLine)
-                    ->getQuery()
-                    ->getResult();
-                
-                $allocatedTeuCount = 0;
-                foreach ($allocatedContainers as $container) {
-                    $size = $container->getContainerSize();
-                    if ($size) {
-                        $allocatedTeuCount += $size->getTeuValue();
-                    }
-                }
-                
-                // Calculate TEU from containers with allocation_status = 'pre_forecast'
-                $preForecastContainers = $this->entityManager->getRepository(\App\Entity\Container::class)
-                    ->createQueryBuilder('c')
-                    ->leftJoin('c.containerSize', 'cs')
-                    ->addSelect('cs')
-                    ->where('c.cyAllocation = :allocation')
-                    ->andWhere('c.allocationStatus = :status')
-                    ->andWhere('c.shippingLine = :shippingLine')
-                    ->setParameter('allocation', $allocation)
-                    ->setParameter('status', \App\Entity\Enum\AllocationStatus::PRE_FORECAST)
-                    ->setParameter('shippingLine', $shippingLine)
-                    ->getQuery()
-                    ->getResult();
-                
-                $preForecastTeuCount = 0;
-                foreach ($preForecastContainers as $container) {
-                    $size = $container->getContainerSize();
-                    if ($size) {
-                        $preForecastTeuCount += $size->getTeuValue();
-                    }
-                }
-                
-                $totalUsedTeu = $allocatedTeuCount + $preForecastTeuCount;
-                $availableTeu = $allocatedTeu - $totalUsedTeu;
-                $utilizationPercent = $allocatedTeu > 0 ? ($totalUsedTeu / $allocatedTeu) * 100 : 0;
-                
-                // Calculate 20ft container counts
-                $allocated20ft = $this->countContainersBySize($allocation, \App\Entity\Enum\AllocationStatus::ALLOCATED, 1.0, $shippingLine);
-                $preForecast20ft = $this->countContainersBySize($allocation, \App\Entity\Enum\AllocationStatus::PRE_FORECAST, 1.0, $shippingLine);
-                
-                // Calculate 40ft container counts
-                $allocated40ft = $this->countContainersBySize($allocation, \App\Entity\Enum\AllocationStatus::ALLOCATED, 2.0, $shippingLine);
-                $preForecast40ft = $this->countContainersBySize($allocation, \App\Entity\Enum\AllocationStatus::PRE_FORECAST, 2.0, $shippingLine);
-                
-                // Calculate size-specific metrics
-                $capacity20ft = $allocation->getCapacity20ft();
-                $capacity40ft = $allocation->getCapacity40ft();
-                
-                $used20ft = $allocated20ft + $preForecast20ft;
-                $used40ft = $allocated40ft + $preForecast40ft;
-                
-                $available20ft = max(0, $capacity20ft - $used20ft);
-                $available40ft = max(0, $capacity40ft - $used40ft);
-                
-                $utilization20ft = $capacity20ft > 0 ? ($used20ft / $capacity20ft) * 100 : 0;
-                $utilization40ft = $capacity40ft > 0 ? ($used40ft / $capacity40ft) * 100 : 0;
-                
-                $cyLocationsData[] = [
-                    'terminal' => $terminal,
-                    'allocation' => $allocation,
-                    'total_teu_capacity' => $allocatedTeu,
-                    'allocated_teu' => $allocatedTeuCount,
-                    'pre_forecast_teu' => $preForecastTeuCount,
-                    'used_teu' => $totalUsedTeu,
-                    'available_teu' => max(0, $availableTeu),
-                    'utilization_percent' => round($utilizationPercent, 1),
-                    // 20ft container fields
-                    'capacity_20ft' => $capacity20ft,
-                    'allocated_20ft' => $allocated20ft,
-                    'pre_forecast_20ft' => $preForecast20ft,
-                    'available_20ft' => $available20ft,
-                    'utilization_20ft' => round($utilization20ft, 1),
-                    // 40ft container fields
-                    'capacity_40ft' => $capacity40ft,
-                    'allocated_40ft' => $allocated40ft,
-                    'pre_forecast_40ft' => $preForecast40ft,
-                    'available_40ft' => $available40ft,
-                    'utilization_40ft' => round($utilization40ft, 1),
-                ];
-            }
+            $portLocationsData = $this->slStaffDashboardLocationService->buildPortTerminalLocations($shippingLine);
+            $cyLocationsData = $this->slStaffDashboardLocationService->buildCyEmptyReturnLocations($shippingLine);
         }
-        
+
         // Get recent NOAs from the workflow (not old shipments)
         $recentShipments = $this->entityManager->getRepository(\App\Entity\NOA::class)
             ->createQueryBuilder('n')
@@ -720,6 +640,7 @@ class RoleDashboardController extends AbstractController
             'manifestsReadyForEDO' => $manifestsReadyForEDO,
             'recentEDOs' => $recentEDOs,
             'cyLocations' => $cyLocationsData,
+            'portLocations' => $portLocationsData,
             'stats' => $stats,
             'chartData' => $chartData,
         ]);
@@ -1015,6 +936,13 @@ class RoleDashboardController extends AbstractController
             'terminalTypes' => $this->formatTerminalTypeDistribution($allocatedTerminals),
             'consigneeImportTrends' => $this->getConsigneeImportTrends($shippingLine),
         ];
+
+        $portLocationsData = [];
+        $cyLocationsData = [];
+        if ($shippingLine) {
+            $portLocationsData = $this->slStaffDashboardLocationService->buildPortTerminalLocations($shippingLine);
+            $cyLocationsData = $this->slStaffDashboardLocationService->buildCyEmptyReturnLocations($shippingLine);
+        }
         
         $response = $this->render('dashboard/shipping_admin.html.twig', [
             'allocatedTerminals' => $allocatedTerminals,
@@ -1022,6 +950,8 @@ class RoleDashboardController extends AbstractController
             'recentActivity' => $recentActivity,
             'stats' => $stats,
             'chartData' => $chartData,
+            'portLocations' => $portLocationsData,
+            'cyLocations' => $cyLocationsData,
         ]);
 
         // Prevent browser caching
@@ -1038,44 +968,34 @@ class RoleDashboardController extends AbstractController
     {
         /** @var StaffUser $currentUser */
         $currentUser = $this->getUser();
+        $shippingLine = $currentUser->getShippingLineScope();
 
-        // Get all consignees (they are not scoped to shipping lines)
+        if (!$shippingLine) {
+            throw $this->createAccessDeniedException('No shipping line assigned to your account.');
+        }
+
+        // Consignees accredited (registered) to this shipping line only
         $consignees = $this->entityManager->getRepository(Consignee::class)
             ->createQueryBuilder('c')
-            ->leftJoin('c.linkedBroker', 'b')
-            ->addSelect('b')
+            ->innerJoin(AccreditationSubmission::class, 'a', 'WITH', 'a.applicant = c')
+            ->where('a.shippingLine = :shippingLine')
+            ->andWhere('a.status = :approved')
+            ->setParameter('shippingLine', $shippingLine)
+            ->setParameter('approved', AccreditationStatus::APPROVED)
+            ->groupBy('c.id')
             ->orderBy('c.businessName', 'ASC')
             ->getQuery()
             ->getResult();
 
-        // Get statistics for each consignee
         $consigneeStats = [];
         foreach ($consignees as $consignee) {
-            $noaCount = $this->entityManager->getRepository(\App\Entity\NOA::class)
-                ->count(['consignee' => $consignee]);
-
-            $manifestCount = $this->entityManager->getRepository(\App\Entity\Manifest::class)
-                ->count(['consignee' => $consignee]);
-
-            $containerCount = $this->entityManager->getRepository(\App\Entity\Container::class)
-                ->createQueryBuilder('c')
-                ->select('COUNT(c.id)')
-                ->join('c.noa', 'n')
-                ->where('n.consignee = :consignee')
-                ->setParameter('consignee', $consignee)
-                ->getQuery()
-                ->getSingleScalarResult();
-
-            $consigneeStats[$consignee->getId()] = [
-                'noa_count' => $noaCount,
-                'manifest_count' => $manifestCount,
-                'container_count' => $containerCount,
-            ];
+            $consigneeStats[$consignee->getId()] = $this->buildConsigneeStatsForShippingLine($consignee, $shippingLine);
         }
 
         return $this->render('shipping_admin/consignees.html.twig', [
             'consignees' => $consignees,
             'consigneeStats' => $consigneeStats,
+            'shippingLine' => $shippingLine,
         ]);
     }
 
@@ -1083,47 +1003,74 @@ class RoleDashboardController extends AbstractController
     #[IsGranted('ROLE_SHIPPING_LINES_ADMIN')]
     public function consigneeDetail(int $id): Response
     {
+        /** @var StaffUser $currentUser */
+        $currentUser = $this->getUser();
+        $shippingLine = $currentUser->getShippingLineScope();
+
+        if (!$shippingLine) {
+            throw $this->createAccessDeniedException('No shipping line assigned to your account.');
+        }
+
         $consignee = $this->entityManager->getRepository(Consignee::class)->find($id);
-        
+
         if (!$consignee) {
             throw $this->createNotFoundException('Consignee not found');
         }
 
-        // Get NOAs
+        if (!$this->isConsigneeRegisteredToShippingLine($consignee, $shippingLine)) {
+            throw $this->createAccessDeniedException('This consignee is not registered to your shipping line.');
+        }
+
         $noas = $this->entityManager->getRepository(\App\Entity\NOA::class)
-            ->findBy(['consignee' => $consignee], ['createdAt' => 'DESC']);
+            ->createQueryBuilder('n')
+            ->innerJoin(\App\Entity\Manifest::class, 'm', 'WITH', 'm.noa = n')
+            ->where('n.consignee = :consignee')
+            ->andWhere('m.shippingLine = :shippingLine')
+            ->setParameter('consignee', $consignee)
+            ->setParameter('shippingLine', $shippingLine)
+            ->groupBy('n.id')
+            ->orderBy('n.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
 
-        // Get Manifests
         $manifests = $this->entityManager->getRepository(\App\Entity\Manifest::class)
-            ->findBy(['consignee' => $consignee], ['createdAt' => 'DESC']);
+            ->findBy(
+                ['consignee' => $consignee, 'shippingLine' => $shippingLine],
+                ['createdAt' => 'DESC']
+            );
 
-        // Get statistics
         $stats = [
             'total_noas' => count($noas),
             'total_manifests' => count($manifests),
-            'total_containers' => $this->entityManager->getRepository(\App\Entity\Container::class)
+            'total_containers' => (int) $this->entityManager->getRepository(\App\Entity\Container::class)
                 ->createQueryBuilder('c')
                 ->select('COUNT(c.id)')
-                ->join('c.noa', 'n')
-                ->where('n.consignee = :consignee')
+                ->join('c.manifest', 'm')
+                ->where('m.consignee = :consignee')
+                ->andWhere('m.shippingLine = :shippingLine')
                 ->setParameter('consignee', $consignee)
+                ->setParameter('shippingLine', $shippingLine)
                 ->getQuery()
                 ->getSingleScalarResult(),
-            'total_edos' => $this->entityManager->getRepository(\App\Entity\ElectronicDeliveryOrder::class)
+            'total_edos' => (int) $this->entityManager->getRepository(\App\Entity\ElectronicDeliveryOrder::class)
                 ->createQueryBuilder('e')
                 ->select('COUNT(e.id)')
                 ->join('e.manifest', 'm')
                 ->where('m.consignee = :consignee')
+                ->andWhere('m.shippingLine = :shippingLine')
                 ->setParameter('consignee', $consignee)
+                ->setParameter('shippingLine', $shippingLine)
                 ->getQuery()
                 ->getSingleScalarResult(),
         ];
 
         return $this->render('shipping_admin/consignee_detail.html.twig', [
             'consignee' => $consignee,
+            'linkedBrokers' => $this->getLinkedBrokersForConsignee($consignee, $shippingLine),
             'noas' => $noas,
             'manifests' => $manifests,
             'stats' => $stats,
+            'shippingLine' => $shippingLine,
         ]);
     }
 
@@ -1133,44 +1080,33 @@ class RoleDashboardController extends AbstractController
     {
         /** @var StaffUser $currentUser */
         $currentUser = $this->getUser();
+        $shippingLine = $currentUser->getShippingLineScope();
 
-        // Get all brokers (they are not scoped to shipping lines)
+        if (!$shippingLine) {
+            throw $this->createAccessDeniedException('No shipping line assigned to your account.');
+        }
+
+        // Brokers accredited (registered) to this shipping line only
         $brokers = $this->entityManager->getRepository(Broker::class)
             ->createQueryBuilder('b')
+            ->innerJoin(AccreditationSubmission::class, 'a', 'WITH', 'a.applicant = b')
+            ->where('a.shippingLine = :shippingLine')
+            ->andWhere('a.status = :approved')
+            ->setParameter('shippingLine', $shippingLine)
+            ->setParameter('approved', AccreditationStatus::APPROVED)
             ->orderBy('b.fullName', 'ASC')
             ->getQuery()
             ->getResult();
 
-        // Get statistics for each broker
         $brokerStats = [];
         foreach ($brokers as $broker) {
-            // Get linked consignees
-            $linkedConsignees = $this->entityManager->getRepository(Consignee::class)
-                ->findBy(['linkedBroker' => $broker]);
-
-            $manifestCount = $this->entityManager->getRepository(\App\Entity\Manifest::class)
-                ->count(['broker' => $broker]);
-
-            $edoCount = $this->entityManager->getRepository(\App\Entity\ElectronicDeliveryOrder::class)
-                ->createQueryBuilder('e')
-                ->select('COUNT(e.id)')
-                ->join('e.manifest', 'm')
-                ->where('m.broker = :broker')
-                ->setParameter('broker', $broker)
-                ->getQuery()
-                ->getSingleScalarResult();
-
-            $brokerStats[$broker->getId()] = [
-                'linked_consignees' => $linkedConsignees,
-                'consignee_count' => count($linkedConsignees),
-                'manifest_count' => $manifestCount,
-                'edo_count' => $edoCount,
-            ];
+            $brokerStats[$broker->getId()] = $this->buildBrokerStatsForShippingLine($broker, $shippingLine);
         }
 
         return $this->render('shipping_admin/brokers.html.twig', [
             'brokers' => $brokers,
             'brokerStats' => $brokerStats,
+            'shippingLine' => $shippingLine,
         ]);
     }
 
@@ -1178,31 +1114,43 @@ class RoleDashboardController extends AbstractController
     #[IsGranted('ROLE_SHIPPING_LINES_ADMIN')]
     public function brokerDetail(int $id): Response
     {
+        /** @var StaffUser $currentUser */
+        $currentUser = $this->getUser();
+        $shippingLine = $currentUser->getShippingLineScope();
+
+        if (!$shippingLine) {
+            throw $this->createAccessDeniedException('No shipping line assigned to your account.');
+        }
+
         $broker = $this->entityManager->getRepository(Broker::class)->find($id);
-        
+
         if (!$broker) {
             throw $this->createNotFoundException('Broker not found');
         }
 
-        // Get linked consignees
-        $linkedConsignees = $this->entityManager->getRepository(Consignee::class)
-            ->findBy(['linkedBroker' => $broker]);
+        if (!$this->isBrokerRegisteredToShippingLine($broker, $shippingLine)) {
+            throw $this->createAccessDeniedException('This broker is not registered to your shipping line.');
+        }
 
-        // Get Manifests
+        $linkedConsignees = $this->getLinkedConsigneesForBroker($broker);
+
         $manifests = $this->entityManager->getRepository(\App\Entity\Manifest::class)
-            ->findBy(['broker' => $broker], ['createdAt' => 'DESC']);
+            ->findBy(
+                ['broker' => $broker, 'shippingLine' => $shippingLine],
+                ['createdAt' => 'DESC']
+            );
 
-        // Get EDOs
         $edos = $this->entityManager->getRepository(\App\Entity\ElectronicDeliveryOrder::class)
             ->createQueryBuilder('e')
             ->join('e.manifest', 'm')
             ->where('m.broker = :broker')
+            ->andWhere('m.shippingLine = :shippingLine')
             ->setParameter('broker', $broker)
+            ->setParameter('shippingLine', $shippingLine)
             ->orderBy('e.generatedAt', 'DESC')
             ->getQuery()
             ->getResult();
 
-        // Get statistics
         $stats = [
             'total_consignees' => count($linkedConsignees),
             'total_manifests' => count($manifests),
@@ -1212,7 +1160,9 @@ class RoleDashboardController extends AbstractController
                 ->select('COUNT(c.id)')
                 ->join('c.manifest', 'm')
                 ->where('m.broker = :broker')
+                ->andWhere('m.shippingLine = :shippingLine')
                 ->setParameter('broker', $broker)
+                ->setParameter('shippingLine', $shippingLine)
                 ->getQuery()
                 ->getSingleScalarResult(),
         ];
@@ -1223,7 +1173,178 @@ class RoleDashboardController extends AbstractController
             'manifests' => $manifests,
             'edos' => $edos,
             'stats' => $stats,
+            'shippingLine' => $shippingLine,
         ]);
+    }
+
+    /**
+     * @return Broker[]
+     */
+    private function getLinkedBrokersForConsignee(Consignee $consignee, ?ShippingLine $shippingLine = null): array
+    {
+        $brokersById = [];
+
+        foreach ($this->brokerRelationshipService->getActiveBrokersForConsignee($consignee) as $relationship) {
+            $broker = $relationship->getBroker();
+            if ($broker instanceof Broker) {
+                $brokersById[$broker->getId()] = $broker;
+            }
+        }
+
+        $legacyBroker = $consignee->getLinkedBroker();
+        if ($legacyBroker instanceof Broker) {
+            $brokersById[$legacyBroker->getId()] = $legacyBroker;
+        }
+
+        $brokers = array_values($brokersById);
+
+        if ($shippingLine !== null) {
+            $brokers = array_values(array_filter(
+                $brokers,
+                fn (Broker $broker): bool => $this->isBrokerRegisteredToShippingLine($broker, $shippingLine)
+            ));
+        }
+
+        usort($brokers, static fn (Broker $a, Broker $b): int => strcasecmp(
+            $a->getFullName() ?? '',
+            $b->getFullName() ?? ''
+        ));
+
+        return $brokers;
+    }
+
+    /**
+     * @return Consignee[]
+     */
+    private function getLinkedConsigneesForBroker(Broker $broker): array
+    {
+        $consigneesById = [];
+
+        foreach ($this->brokerRelationshipService->getActiveConsigneesForBroker($broker) as $relationship) {
+            $consignee = $relationship->getConsignee();
+            if ($consignee instanceof Consignee) {
+                $consigneesById[$consignee->getId()] = $consignee;
+            }
+        }
+
+        foreach ($broker->getLinkedConsignees() as $consignee) {
+            $consigneesById[$consignee->getId()] = $consignee;
+        }
+
+        $legacyLinked = $this->entityManager->getRepository(Consignee::class)
+            ->findBy(['linkedBroker' => $broker]);
+        foreach ($legacyLinked as $consignee) {
+            $consigneesById[$consignee->getId()] = $consignee;
+        }
+
+        $consignees = array_values($consigneesById);
+        usort($consignees, static fn (Consignee $a, Consignee $b): int => strcasecmp(
+            $a->getBusinessName() ?? '',
+            $b->getBusinessName() ?? ''
+        ));
+
+        return $consignees;
+    }
+
+    private function buildBrokerStatsForShippingLine(Broker $broker, ShippingLine $shippingLine): array
+    {
+        $linkedConsignees = $this->getLinkedConsigneesForBroker($broker);
+
+        $manifestCount = $this->entityManager->getRepository(\App\Entity\Manifest::class)
+            ->count(['broker' => $broker, 'shippingLine' => $shippingLine]);
+
+        $edoCount = $this->entityManager->getRepository(\App\Entity\ElectronicDeliveryOrder::class)
+            ->createQueryBuilder('e')
+            ->select('COUNT(e.id)')
+            ->join('e.manifest', 'm')
+            ->where('m.broker = :broker')
+            ->andWhere('m.shippingLine = :shippingLine')
+            ->setParameter('broker', $broker)
+            ->setParameter('shippingLine', $shippingLine)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return [
+            'linked_consignees' => $linkedConsignees,
+            'consignee_count' => count($linkedConsignees),
+            'manifest_count' => $manifestCount,
+            'edo_count' => (int) $edoCount,
+        ];
+    }
+
+    private function isBrokerRegisteredToShippingLine(Broker $broker, ShippingLine $shippingLine): bool
+    {
+        $count = (int) $this->entityManager->getRepository(AccreditationSubmission::class)
+            ->createQueryBuilder('a')
+            ->select('COUNT(a.id)')
+            ->where('a.applicant = :broker')
+            ->andWhere('a.shippingLine = :shippingLine')
+            ->andWhere('a.status = :approved')
+            ->setParameter('broker', $broker)
+            ->setParameter('shippingLine', $shippingLine)
+            ->setParameter('approved', AccreditationStatus::APPROVED)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $count > 0;
+    }
+
+    private function isConsigneeRegisteredToShippingLine(Consignee $consignee, ShippingLine $shippingLine): bool
+    {
+        $count = (int) $this->entityManager->getRepository(AccreditationSubmission::class)
+            ->createQueryBuilder('a')
+            ->select('COUNT(a.id)')
+            ->where('a.applicant = :consignee')
+            ->andWhere('a.shippingLine = :shippingLine')
+            ->andWhere('a.status = :approved')
+            ->setParameter('consignee', $consignee)
+            ->setParameter('shippingLine', $shippingLine)
+            ->setParameter('approved', AccreditationStatus::APPROVED)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $count > 0;
+    }
+
+    /**
+     * @return array{linked_brokers: Broker[], broker_count: int, noa_count: int, manifest_count: int, container_count: int}
+     */
+    private function buildConsigneeStatsForShippingLine(Consignee $consignee, ShippingLine $shippingLine): array
+    {
+        $linkedBrokers = $this->getLinkedBrokersForConsignee($consignee, $shippingLine);
+
+        $noaCount = (int) $this->entityManager->getRepository(\App\Entity\NOA::class)
+            ->createQueryBuilder('n')
+            ->select('COUNT(DISTINCT n.id)')
+            ->innerJoin(\App\Entity\Manifest::class, 'm', 'WITH', 'm.noa = n')
+            ->where('n.consignee = :consignee')
+            ->andWhere('m.shippingLine = :shippingLine')
+            ->setParameter('consignee', $consignee)
+            ->setParameter('shippingLine', $shippingLine)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $manifestCount = $this->entityManager->getRepository(\App\Entity\Manifest::class)
+            ->count(['consignee' => $consignee, 'shippingLine' => $shippingLine]);
+
+        $containerCount = (int) $this->entityManager->getRepository(\App\Entity\Container::class)
+            ->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->join('c.manifest', 'm')
+            ->where('m.consignee = :consignee')
+            ->andWhere('m.shippingLine = :shippingLine')
+            ->setParameter('consignee', $consignee)
+            ->setParameter('shippingLine', $shippingLine)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return [
+            'linked_brokers' => $linkedBrokers,
+            'broker_count' => count($linkedBrokers),
+            'noa_count' => $noaCount,
+            'manifest_count' => $manifestCount,
+            'container_count' => $containerCount,
+        ];
     }
 
     private function formatTerminalUtilizationData(array $terminalStats): array
@@ -1428,62 +1549,70 @@ class RoleDashboardController extends AbstractController
             ->getQuery()
             ->getResult();
         
-        // Get pending EDO payments (Billing Payments)
-        $pendingEdoPayments = $this->entityManager->getRepository(\App\Entity\EDOPayment::class)
-            ->createQueryBuilder('ep')
-            ->leftJoin('ep.manifest', 'm')
+        // Pending final manifest payments (shipping-line accounting workflow)
+        $pendingFinalPayments = $this->entityManager->getRepository(\App\Entity\Payment::class)
+            ->createQueryBuilder('p')
+            ->leftJoin('p.manifest', 'm')
             ->leftJoin('m.broker', 'b')
             ->leftJoin('m.consignee', 'c')
-            ->leftJoin('ep.shippingLine', 'sl')
+            ->leftJoin('p.shippingLine', 'sl')
             ->addSelect('m', 'b', 'c', 'sl')
-            ->where('ep.status = :status')
+            ->where('p.paymentType = :paymentType')
+            ->andWhere('p.status = :status')
+            ->setParameter('paymentType', \App\Entity\Enum\PaymentType::FINAL_PAYMENT)
             ->setParameter('status', PaymentStatus::PENDING_VALIDATION)
-            ->orderBy('ep.createdAt', 'DESC')
+            ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
-        
-        // Get recently validated EDO payments
-        $recentlyValidatedEdoPayments = $this->entityManager->getRepository(\App\Entity\EDOPayment::class)
-            ->createQueryBuilder('ep')
-            ->leftJoin('ep.manifest', 'm')
+
+        // Recently validated final payments by this accountant
+        $recentlyValidatedFinalPayments = $this->entityManager->getRepository(\App\Entity\Payment::class)
+            ->createQueryBuilder('p')
+            ->leftJoin('p.manifest', 'm')
             ->leftJoin('m.broker', 'b')
-            ->leftJoin('m.consignee', 'c')
-            ->leftJoin('ep.shippingLine', 'sl')
-            ->addSelect('m', 'b', 'c', 'sl')
-            ->where('ep.status = :status')
-            ->andWhere('ep.validatedBy = :user')
+            ->leftJoin('p.shippingLine', 'sl')
+            ->addSelect('m', 'b', 'sl')
+            ->where('p.paymentType = :paymentType')
+            ->andWhere('p.status = :status')
+            ->andWhere('p.validatedBy = :user')
+            ->setParameter('paymentType', \App\Entity\Enum\PaymentType::FINAL_PAYMENT)
             ->setParameter('status', PaymentStatus::VERIFIED)
             ->setParameter('user', $this->getUser())
-            ->orderBy('ep.validatedAt', 'DESC')
+            ->orderBy('p.validatedAt', 'DESC')
             ->setMaxResults(10)
             ->getQuery()
             ->getResult();
-            
-        // Calculate statistics for billing payments only
+
+        $paymentRepo = $this->entityManager->getRepository(\App\Entity\Payment::class);
+        $finalPaymentType = \App\Entity\Enum\PaymentType::FINAL_PAYMENT;
+
         $stats = [
             'billing_pending_count' => count($pendingBillingManifests),
             'billing_generated_count' => count($billingGeneratedManifests),
-            'edo_pending_count' => count($pendingEdoPayments),
-            'edo_verified_today' => $this->entityManager->getRepository(\App\Entity\EDOPayment::class)
-                ->createQueryBuilder('ep')
-                ->select('COUNT(ep.id)')
-                ->where('ep.validatedBy = :user')
-                ->andWhere('ep.validatedAt >= :today')
+            'final_payment_pending_count' => count($pendingFinalPayments),
+            'final_payment_verified_today' => (int) $paymentRepo->createQueryBuilder('p')
+                ->select('COUNT(p.id)')
+                ->where('p.paymentType = :paymentType')
+                ->andWhere('p.validatedBy = :user')
+                ->andWhere('p.validatedAt >= :today')
+                ->setParameter('paymentType', $finalPaymentType)
                 ->setParameter('user', $this->getUser())
                 ->setParameter('today', new \DateTime('today'))
                 ->getQuery()
                 ->getSingleScalarResult(),
-            'edo_total_verified' => $this->entityManager->getRepository(\App\Entity\EDOPayment::class)
-                ->createQueryBuilder('ep')
-                ->select('COUNT(ep.id)')
-                ->where('ep.status = :status')
+            'final_payment_total_verified' => (int) $paymentRepo->createQueryBuilder('p')
+                ->select('COUNT(p.id)')
+                ->where('p.paymentType = :paymentType')
+                ->andWhere('p.status = :status')
+                ->setParameter('paymentType', $finalPaymentType)
                 ->setParameter('status', PaymentStatus::VERIFIED)
                 ->getQuery()
                 ->getSingleScalarResult(),
-            'edo_rejected_count' => $this->entityManager->getRepository(\App\Entity\EDOPayment::class)
-                ->createQueryBuilder('ep')
-                ->select('COUNT(ep.id)')
-                ->where('ep.status = :status')
+            'final_payment_rejected_count' => (int) $paymentRepo->createQueryBuilder('p')
+                ->select('COUNT(p.id)')
+                ->where('p.paymentType = :paymentType')
+                ->andWhere('p.status = :status')
+                ->setParameter('paymentType', $finalPaymentType)
                 ->setParameter('status', PaymentStatus::REJECTED)
                 ->getQuery()
                 ->getSingleScalarResult(),
@@ -1492,8 +1621,8 @@ class RoleDashboardController extends AbstractController
         $response = $this->render('dashboard/accounting.html.twig', [
             'pendingBillingManifests' => $pendingBillingManifests,
             'billingGeneratedManifests' => $billingGeneratedManifests,
-            'pendingEdoPayments' => $pendingEdoPayments,
-            'recentlyValidatedEdoPayments' => $recentlyValidatedEdoPayments,
+            'pendingFinalPayments' => $pendingFinalPayments,
+            'recentlyValidatedFinalPayments' => $recentlyValidatedFinalPayments,
             'stats' => $stats,
         ]);
 

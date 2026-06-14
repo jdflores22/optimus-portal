@@ -64,9 +64,7 @@
                             </label>
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <span class="text-base-content/60 text-sm">
-                                        {% if billing.originalCurrency == 'USD' %}${% else %}₱{% endif %}
-                                    </span>
+                                    <span class="text-base-content/60 text-sm">{{ (0|format_money(billing.originalCurrency))|slice(0, -4) }}</span>
                                 </div>
                                 <input type="number" 
                                        id="amount" 
@@ -188,13 +186,13 @@
                             <div class="text-right">
                                 {% if billing.originalCurrency == 'USD' and billing.freightChargesUsd %}
                                     <div class="text-xs font-medium">
-                                        <div>${{ billing.freightChargesUsd|number_format(2) }}</div>
+                                        <div>{{ billing|format_billing_charge(billing.freightCharges, billing.freightChargesUsd) }}</div>
                                         {% if billing.exchangeRate %}
-                                            <div class="text-[10px] text-base-content/60">₱{{ (billing.freightChargesUsd * billing.exchangeRate)|number_format(2) }}</div>
+                                            <div class="text-[10px] text-base-content/60">{{ (billing.freightChargesUsd * billing.exchangeRate)|format_money('PHP') }}</div>
                                         {% endif %}
                                     </div>
                                 {% else %}
-                                    <span class="text-xs font-medium">₱{{ billing.freightCharges|number_format(2) }}</span>
+                                    <span class="text-xs font-medium">{{ billing|format_billing_charge(billing.freightCharges, billing.freightChargesUsd) }}</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -205,13 +203,13 @@
                             <div class="text-right">
                                 {% if billing.originalCurrency == 'USD' and billing.thcChargesUsd %}
                                     <div class="text-xs font-medium">
-                                        <div>${{ billing.thcChargesUsd|number_format(2) }}</div>
+                                        <div>{{ billing|format_billing_charge(billing.thcCharges, billing.thcChargesUsd) }}</div>
                                         {% if billing.exchangeRate %}
-                                            <div class="text-[10px] text-base-content/60">₱{{ (billing.thcChargesUsd * billing.exchangeRate)|number_format(2) }}</div>
+                                            <div class="text-[10px] text-base-content/60">{{ (billing.thcChargesUsd * billing.exchangeRate)|format_money('PHP') }}</div>
                                         {% endif %}
                                     </div>
                                 {% else %}
-                                    <span class="text-xs font-medium">₱{{ billing.thcCharges|number_format(2) }}</span>
+                                    <span class="text-xs font-medium">{{ billing|format_billing_charge(billing.thcCharges, billing.thcChargesUsd) }}</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -224,13 +222,13 @@
                                     <div class="text-right">
                                         {% if billing.originalCurrency == 'USD' and charge.amountUsd %}
                                             <div class="text-xs font-medium">
-                                                <div>${{ charge.amountUsd|number_format(2) }}</div>
+                                                <div>{{ charge.amountUsd|format_money('USD') }}</div>
                                                 {% if billing.exchangeRate %}
-                                                    <div class="text-[10px] text-base-content/60">₱{{ (charge.amountUsd * billing.exchangeRate)|number_format(2) }}</div>
+                                                    <div class="text-[10px] text-base-content/60">{{ (charge.amountUsd * billing.exchangeRate)|format_money('PHP') }}</div>
                                                 {% endif %}
                                             </div>
                                         {% else %}
-                                            <span class="text-xs font-medium">₱{{ charge.amount|number_format(2) }}</span>
+                                            <span class="text-xs font-medium">{{ charge.amount|format_money(billing.originalCurrency) }}</span>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -242,12 +240,12 @@
                             <span class="text-sm font-semibold">Total</span>
                             <div class="text-right">
                                 {% if billing.originalCurrency == 'USD' and billing.totalAmountUsd %}
-                                    <div class="text-base font-bold text-primary">${{ billing.totalAmountUsd|number_format(2) }}</div>
+                                    <div class="text-base font-bold text-primary">{{ billing|format_billing }}</div>
                                     {% if billing.exchangeRate %}
-                                        <div class="text-xs font-semibold text-base-content/70">₱{{ (billing.totalAmountUsd * billing.exchangeRate)|number_format(2) }}</div>
+                                        <div class="text-xs font-semibold text-base-content/70">{{ (billing.totalAmountUsd * billing.exchangeRate)|format_money('PHP') }}</div>
                                     {% endif %}
                                 {% else %}
-                                    <span class="text-base font-bold text-primary">₱{{ billing.totalAmount|number_format(2) }}</span>
+                                    <span class="text-base font-bold text-primary">{{ billing|format_billing }}</span>
                                 {% endif %}
                             </div>
                         </div>

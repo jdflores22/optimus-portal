@@ -1,230 +1,369 @@
-{% extends 'base.html.twig' %}
-{% block title %}System Configuration{% endblock %}
-{% block body %}
-<div class="min-h-screen bg-gray-50">
-    <!-- Top Navigation Bar -->
-    <nav class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <a href="{{ path('admin_system_settings') }}" class="text-gray-600 hover:text-gray-900 mr-4">
-                        <i class="fas fa-arrow-left"></i>
-                    </a>
-                    <span class="text-2xl font-bold text-meta-blue">System Configuration</span>
-                    <span class="ml-4 text-gray-600">Manage eDO workflow settings</span>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <form method="POST" action="{{ path('admin_configuration_cache_clear') }}">
-                        <button type="submit" class="px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                            <i class="fas fa-sync-alt mr-1"></i>Clear Cache
-                        </button>
-                    </form>
-                    <span class="text-sm text-gray-600">System Admin</span>
-                </div>
-            </div>
-        </div>
-    </nav>
+{% extends 'layout/admin_base.html.twig' %}
 
-    <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Flash Messages -->
-        {% for message in app.flashes('success') %}
-        <div class="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
-            <div class="flex items-center">
-                <i class="fas fa-check-circle text-green-600 mr-3"></i>
-                <span class="text-green-800">{{ message }}</span>
+{% block title %}eDO Configuration - OPTIMUS{% endblock %}
+
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+        {% if permissions.is_system_admin %}
+            <li><a href="{{ path('admin_system_settings') }}">System Settings</a></li>
+        {% else %}
+            <li><a href="{{ path('app_admin_dashboard') }}">Admin</a></li>
+        {% endif %}
+        <li>eDO Configuration</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-5 sm:space-y-6">
+        {# Header #}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-4 sm:p-6">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-4">
+                            <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                <span class="icon-[tabler--file-certificate] size-6 text-primary"></span>
+                            </div>
+                            <div class="min-w-0">
+                                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">eDO Configuration</h1>
+                                <p class="text-sm text-base-content/60 mt-1">Manage eDO validity, billing rates, and container yard locations</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        {% if permissions.is_system_admin %}
+                            <form method="POST" action="{{ path('admin_configuration_cache_clear') }}">
+                                <button type="submit" class="btn btn-outline btn-sm gap-2">
+                                    <span class="icon-[tabler--refresh] size-4"></span>
+                                    Clear Cache
+                                </button>
+                            </form>
+                            <a href="{{ path('admin_system_settings') }}" class="btn btn-ghost btn-sm gap-2">
+                                <span class="icon-[tabler--arrow-left] size-4"></span>
+                                System Settings
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
+
+        {# Flash messages #}
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success">
+                <span class="icon-[tabler--circle-check] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
         {% endfor %}
         {% for message in app.flashes('error') %}
-        <div class="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div class="flex items-center">
-                <i class="fas fa-exclamation-circle text-red-600 mr-3"></i>
-                <span class="text-red-800">{{ message }}</span>
+            <div class="alert alert-error">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <span>{{ message }}</span>
             </div>
-        </div>
         {% endfor %}
 
-        <div class="space-y-6">
-            <!-- eDO Configuration Section -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <div>
-                        <h2 class="text-2xl font-bold text-gray-900">eDO Configuration</h2>
-                        <p class="text-gray-600 mt-1">Configure eDO validity period and billing rates</p>
+        {# eDO Configuration #}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-4 sm:p-6">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="size-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                        <span class="icon-[tabler--file-invoice] size-5 text-primary"></span>
                     </div>
-                    <i class="fas fa-file-invoice text-4xl text-blue-500"></i>
+                    <div>
+                        <h2 class="text-lg font-semibold text-base-content">eDO Settings</h2>
+                        <p class="text-sm text-base-content/60">Configure validity period and billing rates</p>
+                    </div>
                 </div>
 
-                <form method="POST" action="{{ path('admin_configuration_edo_update') }}" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-gray-50 rounded-lg p-4 {{ permissions.can_edit_validity_period ? '' : 'opacity-60' }}">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-calendar-alt mr-2"></i>eDO Validity Period (days)
-                                {% if not permissions.can_edit_validity_period %}
-                                    <span class="text-xs text-red-600 ml-2">(SL_STAFF only)</span>
-                                {% endif %}
+                <form method="POST" action="{{ path('admin_configuration_edo_update') }}" class="space-y-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                        <div class="form-control rounded-xl bg-base-200/50 p-4 {{ permissions.can_edit_validity_period ? '' : 'opacity-60' }}">
+                            <label class="label py-1">
+                                <span class="label-text font-medium flex items-center gap-2">
+                                    <span class="icon-[tabler--calendar] size-4 text-base-content/50"></span>
+                                    eDO Validity Period (days)
+                                    {% if not permissions.can_edit_validity_period %}
+                                        <span class="badge badge-error badge-xs">SL Staff only</span>
+                                    {% endif %}
+                                </span>
                             </label>
                             {% set validityConfig = configurations.edo|filter(c => c.configKey == 'edo.validity_period_days')|first %}
-                            <input type="number" name="validity_days" 
-                                   value="{{ validityConfig ? validityConfig.typedValue : 30 }}" 
-                                   min="1" max="365" 
+                            <input type="number"
+                                   name="validity_days"
+                                   value="{{ validityConfig ? validityConfig.typedValue : 30 }}"
+                                   min="1" max="365"
                                    {{ permissions.can_edit_validity_period ? 'required' : 'readonly disabled' }}
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {{ permissions.can_edit_validity_period ? '' : 'bg-gray-200 cursor-not-allowed' }}">
-                            <p class="mt-2 text-sm text-gray-500">
-                                Number of days an eDO remains valid after generation
-                                {% if not permissions.can_edit_validity_period %}
-                                    <br><span class="text-red-600 font-medium">Only SL_STAFF can modify this setting</span>
-                                {% endif %}
-                            </p>
+                                   class="input input-bordered w-full {{ permissions.can_edit_validity_period ? '' : 'input-disabled' }}">
+                            <label class="label py-1">
+                                <span class="label-text-alt text-base-content/60">Days an eDO remains valid after generation</span>
+                            </label>
                         </div>
 
-                        <div class="bg-gray-50 rounded-lg p-4 {{ permissions.can_edit_per_day_rate ? '' : 'opacity-60' }}">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                <i class="fas fa-dollar-sign mr-2"></i>Per-Day Rate for Expired eDOs
-                                {% if not permissions.can_edit_per_day_rate %}
-                                    <span class="text-xs text-red-600 ml-2">(ACCOUNTING only)</span>
-                                {% endif %}
+                        <div class="form-control rounded-xl bg-base-200/50 p-4 {{ permissions.can_edit_per_day_rate ? '' : 'opacity-60' }}">
+                            <label class="label py-1">
+                                <span class="label-text font-medium flex items-center gap-2">
+                                    <span class="icon-[tabler--currency-peso] size-4 text-base-content/50"></span>
+                                    Per-Day Rate for Expired eDOs
+                                    {% if not permissions.can_edit_per_day_rate %}
+                                        <span class="badge badge-warning badge-xs">Accounting only</span>
+                                    {% endif %}
+                                </span>
                             </label>
                             {% set rateConfig = configurations.edo|filter(c => c.configKey == 'edo.expired_per_day_rate')|first %}
-                            <input type="number" name="per_day_rate" step="0.01" 
-                                   value="{{ rateConfig ? rateConfig.typedValue : 50.00 }}" 
-                                   min="0" 
+                            <input type="number"
+                                   name="per_day_rate"
+                                   step="0.01"
+                                   value="{{ rateConfig ? rateConfig.typedValue : 50.00 }}"
+                                   min="0"
                                    {{ permissions.can_edit_per_day_rate ? 'required' : 'readonly disabled' }}
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {{ permissions.can_edit_per_day_rate ? '' : 'bg-gray-200 cursor-not-allowed' }}">
-                            <p class="mt-2 text-sm text-gray-500">
-                                Daily charge applied for expired eDO days
-                                {% if not permissions.can_edit_per_day_rate %}
-                                    <br><span class="text-red-600 font-medium">Only ACCOUNTING can modify this setting</span>
-                                {% endif %}
-                            </p>
+                                   class="input input-bordered w-full {{ permissions.can_edit_per_day_rate ? '' : 'input-disabled' }}">
+                            <label class="label py-1">
+                                <span class="label-text-alt text-base-content/60">Daily charge applied for expired eDO days</span>
+                            </label>
                         </div>
                     </div>
 
                     {% if permissions.can_edit_validity_period or permissions.can_edit_per_day_rate %}
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-comment mr-2"></i>Reason for Change (Optional)
-                        </label>
-                        <textarea name="reason" rows="2" 
-                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                  placeholder="Describe why this configuration is being changed..."></textarea>
-                    </div>
-
-                    <button type="submit" class="w-full px-4 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200">
-                        <i class="fas fa-save mr-2"></i>Update eDO Configuration
-                    </button>
-                    {% else %}
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <div class="flex items-center">
-                            <i class="fas fa-info-circle text-yellow-600 mr-3"></i>
-                            <span class="text-yellow-800">You do not have permission to modify eDO configuration settings.</span>
+                        <div class="form-control">
+                            <label class="label py-1">
+                                <span class="label-text font-medium">Reason for Change <span class="text-base-content/50 font-normal">(optional)</span></span>
+                            </label>
+                            <textarea name="reason"
+                                      rows="2"
+                                      class="textarea textarea-bordered w-full"
+                                      placeholder="Describe why this configuration is being changed..."></textarea>
                         </div>
-                    </div>
+
+                        <button type="submit" class="btn btn-primary gap-2 w-full sm:w-auto">
+                            <span class="icon-[tabler--device-floppy] size-4"></span>
+                            Update eDO Configuration
+                        </button>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <span class="icon-[tabler--info-circle] size-5"></span>
+                            <span>You do not have permission to modify eDO configuration settings.</span>
+                        </div>
                     {% endif %}
                 </form>
             </div>
+        </div>
 
-            <!-- CY Locations Configuration Section -->
-            {% if permissions.can_edit_cy_locations %}
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <div>
-                        <h2 class="text-2xl font-bold text-gray-900">Container Yard Locations</h2>
-                        <p class="text-gray-600 mt-1">Manage CY locations and their TEU capacities</p>
-                    </div>
-                    <i class="fas fa-warehouse text-4xl text-green-500"></i>
-                </div>
-
-                <!-- Existing CY Locations -->
-                <form method="POST" action="{{ path('admin_configuration_cy_update') }}" class="space-y-4 mb-6">
-                    <div class="space-y-3">
-                        {% for location, capacity in cyLocations %}
-                        <div class="flex items-center space-x-4 bg-gray-50 rounded-lg p-4">
-                            <div class="flex-1">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">{{ location }}</label>
-                                <div class="flex items-center space-x-2">
-                                    <input type="number" name="cy_locations[{{ location }}]" 
-                                           value="{{ capacity }}" step="0.1" min="0" required
-                                           class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <span class="text-sm text-gray-600">TEU</span>
-                                </div>
-                            </div>
-                            <form method="POST" action="{{ path('admin_configuration_cy_remove', {location: location}) }}" class="inline">
-                                <button type="submit" onclick="return confirm('Remove {{ location }}?')" 
-                                        class="px-3 py-2 text-sm text-red-600 hover:text-red-800">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
+        {# CY Locations #}
+        {% if permissions.can_edit_cy_locations %}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-6">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="size-10 bg-success/10 rounded-full flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--building-warehouse] size-5 text-success"></span>
                         </div>
-                        {% endfor %}
+                        <div>
+                            <h2 class="text-lg font-semibold text-base-content">Container Yard Locations</h2>
+                            <p class="text-sm text-base-content/60">Manage CY locations and their TEU capacities</p>
+                        </div>
                     </div>
 
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-comment mr-2"></i>Reason for Change (Optional)
-                        </label>
-                        <textarea name="reason" rows="2" 
-                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                  placeholder="Describe why capacities are being changed..."></textarea>
-                    </div>
+                    {% if cyLocations is empty %}
+                        <div class="text-center py-8 text-base-content/60">
+                            <span class="icon-[tabler--map-pin-off] size-10 mx-auto block opacity-40"></span>
+                            <p class="mt-3 text-sm">No CY locations configured yet.</p>
+                        </div>
+                    {% else %}
+                        <form method="POST" action="{{ path('admin_configuration_cy_update') }}" class="space-y-4 mb-6">
+                            <div class="space-y-3">
+                                {% for location, capacity in cyLocations %}
+                                    <div class="flex flex-col sm:flex-row sm:items-end gap-3 rounded-xl bg-base-200/50 p-4">
+                                        <div class="form-control flex-1">
+                                            <label class="label py-1">
+                                                <span class="label-text font-medium">{{ location }}</span>
+                                            </label>
+                                            <label class="input input-bordered flex items-center gap-2">
+                                                <input type="number"
+                                                       name="cy_locations[{{ location }}]"
+                                                       value="{{ capacity }}"
+                                                       step="0.1"
+                                                       min="0"
+                                                       required
+                                                       class="grow">
+                                                <span class="text-sm text-base-content/50 shrink-0">TEU</span>
+                                            </label>
+                                        </div>
+                                        <button type="button"
+                                                class="btn btn-error btn-sm gap-1 cy-remove-btn shrink-0"
+                                                data-location="{{ location|e('html_attr') }}"
+                                                data-remove-url="{{ path('admin_configuration_cy_remove', {location: location}) }}">
+                                            <span class="icon-[tabler--trash] size-4"></span>
+                                            Remove
+                                        </button>
+                                    </div>
+                                {% endfor %}
+                            </div>
 
-                    <button type="submit" class="w-full px-4 py-3 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-200">
-                        <i class="fas fa-save mr-2"></i>Update CY Capacities
-                    </button>
-                </form>
+                            <div class="form-control">
+                                <label class="label py-1">
+                                    <span class="label-text font-medium">Reason for Change <span class="text-base-content/50 font-normal">(optional)</span></span>
+                                </label>
+                                <textarea name="reason"
+                                          rows="2"
+                                          class="textarea textarea-bordered w-full"
+                                          placeholder="Describe why capacities are being changed..."></textarea>
+                            </div>
 
-                <!-- Add New CY Location -->
-                <div class="border-t border-gray-200 pt-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Add New CY Location</h3>
+                            <button type="submit" class="btn btn-success gap-2 w-full sm:w-auto">
+                                <span class="icon-[tabler--device-floppy] size-4"></span>
+                                Update CY Capacities
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    <div class="divider my-2"></div>
+
+                    <h3 class="font-semibold text-base text-base-content mb-4 flex items-center gap-2">
+                        <span class="icon-[tabler--plus] size-4"></span>
+                        Add New CY Location
+                    </h3>
                     <form method="POST" action="{{ path('admin_configuration_cy_add') }}" class="space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Location Name</label>
-                                <input type="text" name="new_location" required 
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="form-control">
+                                <label class="label py-1"><span class="label-text font-medium">Location Name</span></label>
+                                <input type="text"
+                                       name="new_location"
+                                       required
                                        placeholder="e.g., CY-WEST"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                       class="input input-bordered w-full">
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">TEU Capacity</label>
-                                <input type="number" name="new_capacity" step="0.1" min="0" required 
+                            <div class="form-control">
+                                <label class="label py-1"><span class="label-text font-medium">TEU Capacity</span></label>
+                                <input type="number"
+                                       name="new_capacity"
+                                       step="0.1"
+                                       min="0"
+                                       required
                                        placeholder="e.g., 1500"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                       class="input input-bordered w-full">
                             </div>
                         </div>
-                        <button type="submit" class="w-full px-4 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200">
-                            <i class="fas fa-plus mr-2"></i>Add CY Location
+                        <button type="submit" class="btn btn-primary gap-2 w-full sm:w-auto">
+                            <span class="icon-[tabler--plus] size-4"></span>
+                            Add CY Location
                         </button>
                     </form>
                 </div>
             </div>
-            {% endif %}
+        {% endif %}
 
-            <!-- Configuration History Links -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 class="text-xl font-bold text-gray-900 mb-4">Configuration History</h2>
+        {# Configuration History #}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-4 sm:p-6">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="icon-[tabler--history] size-5 text-base-content/70"></span>
+                    <h2 class="font-semibold text-base text-base-content">Configuration History</h2>
+                </div>
                 <div class="space-y-2">
                     {% for config in configurations.edo %}
-                    <a href="{{ path('admin_configuration_history', {key: config.configKey}) }}" 
-                       class="block px-4 py-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <div class="flex items-center justify-between">
-                            <span class="font-medium text-gray-900">{{ config.configKey }}</span>
-                            <i class="fas fa-history text-gray-400"></i>
-                        </div>
-                        <span class="text-sm text-gray-600">{{ config.description }}</span>
-                    </a>
+                        <a href="{{ path('admin_configuration_history', {key: config.configKey}) }}"
+                           class="flex items-center justify-between gap-4 rounded-xl bg-base-200/50 px-4 py-3 hover:bg-base-200 transition-colors">
+                            <div class="min-w-0">
+                                <p class="font-medium text-sm text-base-content font-mono">{{ config.configKey }}</p>
+                                <p class="text-xs text-base-content/60 truncate">{{ config.description }}</p>
+                            </div>
+                            <span class="icon-[tabler--chevron-right] size-4 text-base-content/40 shrink-0"></span>
+                        </a>
                     {% endfor %}
-                    <a href="{{ path('admin_configuration_history', {key: 'cy.locations'}) }}" 
-                       class="block px-4 py-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <div class="flex items-center justify-between">
-                            <span class="font-medium text-gray-900">cy.locations</span>
-                            <i class="fas fa-history text-gray-400"></i>
-                        </div>
-                        <span class="text-sm text-gray-600">Container Yard locations with TEU capacities</span>
-                    </a>
+                    {% if permissions.can_edit_cy_locations %}
+                        <a href="{{ path('admin_configuration_history', {key: 'cy.locations'}) }}"
+                           class="flex items-center justify-between gap-4 rounded-xl bg-base-200/50 px-4 py-3 hover:bg-base-200 transition-colors">
+                            <div class="min-w-0">
+                                <p class="font-medium text-sm text-base-content font-mono">cy.locations</p>
+                                <p class="text-xs text-base-content/60">Container Yard locations with TEU capacities</p>
+                            </div>
+                            <span class="icon-[tabler--chevron-right] size-4 text-base-content/40 shrink-0"></span>
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block page_modals %}
+{% if permissions.can_edit_cy_locations %}
+<form id="cyRemoveForm" method="POST" action="" class="hidden">
+    <input type="hidden" name="reason" value="Removed via admin configuration">
+</form>
+<div id="cyRemoveModal"
+     class="hidden fixed inset-0 z-[10002] items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="cyRemoveModalTitle">
+    <div class="absolute inset-0 bg-black/60" onclick="closeCyRemoveModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6">
+        <div class="text-center">
+            <div class="size-14 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="icon-[tabler--trash] size-7 text-error"></span>
+            </div>
+            <h3 id="cyRemoveModalTitle" class="text-lg font-bold mb-2">Remove CY Location</h3>
+            <p id="cyRemoveModalMessage" class="text-sm text-base-content/70 mb-6">Are you sure?</p>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeCyRemoveModal()" class="btn btn-ghost flex-1">Cancel</button>
+                <button type="button" id="cyRemoveConfirmBtn" class="btn btn-error flex-1">Remove</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block page_scripts %}
+{% if permissions.can_edit_cy_locations %}
+<script>
+(function () {
+    const modal = document.getElementById('cyRemoveModal');
+    const form = document.getElementById('cyRemoveForm');
+    const message = document.getElementById('cyRemoveModalMessage');
+    const confirmBtn = document.getElementById('cyRemoveConfirmBtn');
+    let pendingLocation = null;
+    let pendingRemoveUrl = null;
+
+    function openModal(location, removeUrl) {
+        pendingLocation = location;
+        pendingRemoveUrl = removeUrl;
+        message.textContent = 'Are you sure you want to remove "' + location + '"? This action cannot be undone.';
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeCyRemoveModal() {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+        pendingLocation = null;
+        pendingRemoveUrl = null;
+    }
+
+    window.closeCyRemoveModal = closeCyRemoveModal;
+
+    document.querySelectorAll('.cy-remove-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            openModal(btn.dataset.location, btn.dataset.removeUrl);
+        });
+    });
+
+    confirmBtn.addEventListener('click', function () {
+        if (!pendingRemoveUrl || !form) return;
+        form.action = pendingRemoveUrl;
+        form.submit();
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+            closeCyRemoveModal();
+        }
+    });
+})();
+</script>
+{% endif %}
 {% endblock %}

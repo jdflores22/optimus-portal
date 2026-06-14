@@ -159,8 +159,8 @@ class NOADocumentGenerator
             <span>' . $noa->getEta()->format('Y-m-d H:i') . '</span>
         </div>
         <div class="info-row">
-            <span class="label">CY Location:</span>
-            <span>' . htmlspecialchars($noa->getCyLocation()) . '</span>
+            <span class="label">Port Location:</span>
+            <span>' . htmlspecialchars($noa->getDischargeLocation()) . '</span>
         </div>
     </div>
 
@@ -250,7 +250,7 @@ class NOADocumentGenerator
             'CY-SOUTH' => 2500.0,
         ];
 
-        $availableTEU = $cyCapacities[$noa->getCyLocation()] ?? 0.0;
+        $availableTEU = $cyCapacities[$noa->getDischargeLocation()] ?? 0.0;
         $remainingTEU = $availableTEU - $totalTEU;
 
         return [

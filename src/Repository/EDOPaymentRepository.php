@@ -221,6 +221,159 @@ class EDOPaymentRepository extends ServiceEntityRepository
     }
 
     /**
+     * Revenue report for eDO access payments within a date range.
+     */
+    public function getRevenueReport(\DateTimeInterface $from, \DateTimeInterface $to, ?int $shippingLineId = null): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        $fromStr = $from->format('Y-m-d 00:00:00');
+        $toStr = $to->format('Y-m-d 23:59:59');
+        $shippingLineCondition = $shippingLineId !== null ? 'AND ep.shipping_line_id = :shippingLineId' : '';
+
+        $bindShippingLine = static function ($stmt) use ($shippingLineId): void {
+            if ($shippingLineId !== null) {
+                $stmt->bindValue('shippingLineId', $shippingLineId);
+            }
+        };
+
+        // Collected revenue (verified in date range)
+        $verifiedStmt = $conn->prepare("
+            SELECT COUNT(*) AS payment_count, COALESCE(SUM(ep.amount), 0) AS total_amount
+            FROM payments_edo ep
+            WHERE ep.status = :verified_status
+            AND ep.validated_at >= :fromDate
+            AND ep.validated_at <= :toDate
+            {$shippingLineCondition}
+        ");
+        $verifiedStmt->bindValue('verified_status', PaymentStatus::VERIFIED->value);
+        $verifiedStmt->bindValue('fromDate', $fromStr);
+        $verifiedStmt->bindValue('toDate', $toStr);
+        $bindShippingLine($verifiedStmt);
+        $verified = $verifiedStmt->executeQuery()->fetchAssociative();
+
+        // Pending submissions in date range
+        $pendingStmt = $conn->prepare("
+            SELECT COUNT(*) AS payment_count, COALESCE(SUM(ep.amount), 0) AS total_amount
+            FROM payments_edo ep
+            WHERE ep.status = :pending_status
+            AND ep.created_at >= :fromDate
+            AND ep.created_at <= :toDate
+            {$shippingLineCondition}
+        ");
+        $pendingStmt->bindValue('pending_status', PaymentStatus::PENDING_VALIDATION->value);
+        $pendingStmt->bindValue('fromDate', $fromStr);
+        $pendingStmt->bindValue('toDate', $toStr);
+        $bindShippingLine($pendingStmt);
+        $pending = $pendingStmt->executeQuery()->fetchAssociative();
+
+        // Rejected in date range
+        $rejectedStmt = $conn->prepare("
+            SELECT COUNT(*) AS payment_count, COALESCE(SUM(ep.amount), 0) AS total_amount
+            FROM payments_edo ep
+            WHERE ep.status = :rejected_status
+            AND ep.validated_at >= :fromDate
+            AND ep.validated_at <= :toDate
+            {$shippingLineCondition}
+        ");
+        $rejectedStmt->bindValue('rejected_status', PaymentStatus::REJECTED->value);
+        $rejectedStmt->bindValue('fromDate', $fromStr);
+        $rejectedStmt->bindValue('toDate', $toStr);
+        $bindShippingLine($rejectedStmt);
+        $rejected = $rejectedStmt->executeQuery()->fetchAssociative();
+
+        // Daily collected revenue
+        $dailyStmt = $conn->prepare("
+            SELECT DATE(ep.validated_at) AS day, COUNT(*) AS payment_count, COALESCE(SUM(ep.amount), 0) AS total_amount
+            FROM payments_edo ep
+            WHERE ep.status = :verified_status
+            AND ep.validated_at >= :fromDate
+            AND ep.validated_at <= :toDate
+            {$shippingLineCondition}
+            GROUP BY DATE(ep.validated_at)
+            ORDER BY day ASC
+        ");
+        $dailyStmt->bindValue('verified_status', PaymentStatus::VERIFIED->value);
+        $dailyStmt->bindValue('fromDate', $fromStr);
+        $dailyStmt->bindValue('toDate', $toStr);
+        $bindShippingLine($dailyStmt);
+        $dailyRevenue = $dailyStmt->executeQuery()->fetchAllAssociative();
+
+        // Revenue by shipping line
+        $lineStmt = $conn->prepare("
+            SELECT sl.id, sl.brand_name, COUNT(*) AS payment_count, COALESCE(SUM(ep.amount), 0) AS total_amount
+            FROM payments_edo ep
+            INNER JOIN shipping_lines sl ON sl.id = ep.shipping_line_id
+            WHERE ep.status = :verified_status
+            AND ep.validated_at >= :fromDate
+            AND ep.validated_at <= :toDate
+            {$shippingLineCondition}
+            GROUP BY sl.id, sl.brand_name
+            ORDER BY total_amount DESC
+        ");
+        $lineStmt->bindValue('verified_status', PaymentStatus::VERIFIED->value);
+        $lineStmt->bindValue('fromDate', $fromStr);
+        $lineStmt->bindValue('toDate', $toStr);
+        $bindShippingLine($lineStmt);
+        $byShippingLine = $lineStmt->executeQuery()->fetchAllAssociative();
+
+        return [
+            'verified' => [
+                'count' => (int) $verified['payment_count'],
+                'amount' => (float) $verified['total_amount'],
+            ],
+            'pending' => [
+                'count' => (int) $pending['payment_count'],
+                'amount' => (float) $pending['total_amount'],
+            ],
+            'rejected' => [
+                'count' => (int) $rejected['payment_count'],
+                'amount' => (float) $rejected['total_amount'],
+            ],
+            'dailyRevenue' => array_map(static fn (array $row) => [
+                'day' => $row['day'],
+                'count' => (int) $row['payment_count'],
+                'amount' => (float) $row['total_amount'],
+            ], $dailyRevenue),
+            'byShippingLine' => array_map(static fn (array $row) => [
+                'id' => (int) $row['id'],
+                'brandName' => $row['brand_name'],
+                'count' => (int) $row['payment_count'],
+                'amount' => (float) $row['total_amount'],
+            ], $byShippingLine),
+        ];
+    }
+
+    /**
+     * Verified eDO payments validated within a date range.
+     *
+     * @return EDOPayment[]
+     */
+    public function findVerifiedPaymentsInRange(\DateTimeInterface $from, \DateTimeInterface $to, int $limit = 50): array
+    {
+        return $this->createQueryBuilder('ep')
+            ->leftJoin('ep.manifest', 'm')
+            ->addSelect('m')
+            ->leftJoin('ep.edo', 'e')
+            ->addSelect('e')
+            ->leftJoin('ep.shippingLine', 'sl')
+            ->addSelect('sl')
+            ->leftJoin('ep.submittedBy', 's')
+            ->addSelect('s')
+            ->leftJoin('ep.validatedBy', 'v')
+            ->addSelect('v')
+            ->where('ep.status = :status')
+            ->andWhere('ep.validatedAt >= :from')
+            ->andWhere('ep.validatedAt <= :to')
+            ->setParameter('status', PaymentStatus::VERIFIED)
+            ->setParameter('from', $from->format('Y-m-d 00:00:00'))
+            ->setParameter('to', $to->format('Y-m-d 23:59:59'))
+            ->orderBy('ep.validatedAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Find all pending payments with eager loading for per-container payment workflow
      * Orders by submission timestamp ascending
      * Includes eDO, manifest, container, and user relationships

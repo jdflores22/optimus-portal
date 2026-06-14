@@ -1,0 +1,9 @@
+{% if broker_count > 0 %}
+    <span class="badge badge-success badge-soft">Linked</span>
+{% elseif code.currentUses >= (code.maxUses ?? 1) %}
+    <span class="badge badge-info badge-soft">Used</span>
+{% elseif code.isActive %}
+    <span class="badge badge-success badge-soft">Available</span>
+{% else %}
+    <span class="badge badge-ghost badge-soft">Deactivated</span>
+{% endif %}

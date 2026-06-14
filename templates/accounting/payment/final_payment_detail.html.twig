@@ -1,678 +1,548 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Payment Validation - {{ payment.manifest.manifestNumber }}{% endblock %}
+{% block title %}Review Payment — {{ payment.manifest.manifestNumber }}{% endblock %}
+{% block page_title %}Review Payment{% endblock %}
+
+{% set amountsMatch = discrepancy <= 0.01 %}
+{% set currencyMismatch = billing.originalCurrency and payment.currency and billing.originalCurrency != payment.currency %}
+{% set billingDownloadUrl = path('api_billing_download', {billingId: billing.id}) %}
 
 {% block body %}
-<div class="w-full bg-base-200 min-h-screen">
-<div class="w-full px-4 sm:px-6 lg:px-8 py-6">
-    {# Breadcrumb #}
-    <div class="breadcrumbs text-sm mb-4">
-        <ul>
-            <li><a href="{{ path('accounting_payment_dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
-            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-            <li><a href="{{ path('accounting_payment_final_list') }}">Final Payments</a></li>
-            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-            <li aria-current="page">Payment #{{ payment.id }}</li>
-        </ul>
-    </div>
+<div class="space-y-5 sm:space-y-6 max-w-7xl mx-auto">
 
-    {# Status Banner #}
-    <div class="mb-6">
-        {% if payment.status.value == 'pending_validation' %}
-            <div class="alert alert-warning shadow-lg">
-                <span class="icon-[tabler--clock] size-6"></span>
-                <div class="flex-1">
-                    <h3 class="font-bold text-lg">Pending Validation</h3>
-                    <p class="text-sm">This payment is awaiting your review and approval.</p>
-                </div>
-            </div>
-        {% elseif payment.status.value == 'verified' %}
-            <div class="alert alert-success shadow-lg">
-                <span class="icon-[tabler--circle-check] size-6"></span>
-                <div class="flex-1">
-                    <h3 class="font-bold text-lg">Payment Verified</h3>
-                    <p class="text-sm">Verified by {{ payment.validatedBy.fullName }} on {{ payment.validatedAt|date('F d, Y H:i') }}</p>
-                </div>
-            </div>
-        {% elseif payment.status.value == 'rejected' %}
-            <div class="alert alert-error shadow-lg">
-                <span class="icon-[tabler--circle-x] size-6"></span>
-                <div class="flex-1">
-                    <h3 class="font-bold text-lg">Payment Rejected</h3>
-                    <p class="text-sm">{{ payment.rejectionReason }}</p>
-                    <p class="text-xs mt-1">Rejected by {{ payment.validatedBy.fullName }} on {{ payment.validatedAt|date('F d, Y H:i') }}</p>
-                </div>
-            </div>
-            <div class="alert alert-info mt-4">
-                <span class="icon-[tabler--info-circle] size-5"></span>
-                <div>
-                    <p class="text-sm font-medium">Broker needs to resubmit payment with corrected proof of payment.</p>
-                </div>
-            </div>
-        {% endif %}
-    </div>
-
-    {# Main Content - 3 Column Layout #}
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-        
-        {# LEFT COLUMN - Payment & Manifest Info #}
-        <div class="space-y-6">
-            {# Payment Summary Card #}
-            <div class="card bg-base-100 shadow-lg">
-                <div class="card-header bg-gradient-to-r from-primary to-primary/80 text-primary-content">
-                    <h3 class="card-title text-lg">
-                        <span class="icon-[tabler--receipt] size-5"></span>
-                        Payment Summary
-                    </h3>
-                </div>
-                <div class="card-body space-y-4">
-                    <div>
-                        <div class="text-xs text-base-content/60 mb-1">Payment ID</div>
-                        <div class="text-lg font-bold">#{{ payment.id }}</div>
+    {# Header #}
+    <div class="bg-base-100 shadow-sm rounded-xl">
+        <div class="p-4 sm:p-6">
+            <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                <div class="min-w-0">
+                    <div class="breadcrumbs text-xs mb-2">
+                        <ul>
+                            <li><a href="{{ path('app_accounting_dashboard_new') }}">Accounting</a></li>
+                            <li><a href="{{ path('accounting_payment_final_list') }}">Final Payments</a></li>
+                            <li><a href="{{ path('accounting_payment_final_list') }}">Final Payments</a></li>
+                            <li>#{{ payment.id }}</li>
+                        </ul>
                     </div>
-                    <div class="divider my-2"></div>
-                    <div>
-                        <div class="text-xs text-base-content/60 mb-1">Manifest Number</div>
-                        <a href="{{ path('manifest_workflow_detail', {id: payment.manifest.id}) }}" 
-                           class="text-base font-semibold text-primary hover:text-primary/80">
-                            {{ payment.manifest.manifestNumber }}
-                        </a>
-                    </div>
-                    <div>
-                        <div class="text-xs text-base-content/60 mb-1">Consignee</div>
-                        <div class="text-sm font-medium">
-                            {% if payment.manifest.consignee %}
-                                {{ payment.manifest.consignee.businessName }}
-                            {% else %}
-                                <span class="text-base-content/40">Not declared</span>
-                            {% endif %}
+                    <div class="flex items-start gap-4">
+                        <div class="size-12 rounded-xl {% if payment.status.value == 'pending_validation' %}bg-warning/10 text-warning{% elseif payment.status.value == 'verified' %}bg-success/10 text-success{% else %}bg-error/10 text-error{% endif %} flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--receipt-2] size-6"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">
+                                {{ payment.manifest.manifestNumber }}
+                            </h1>
+                            <p class="text-sm text-base-content/60 mt-1">
+                                Payment #{{ payment.id }} · Submitted {{ payment.createdAt|date('M j, Y \\a\\t g:i A') }}
+                            </p>
                         </div>
                     </div>
-                    <div>
-                        <div class="text-xs text-base-content/60 mb-1">Broker</div>
-                        <div class="text-sm font-medium">
-                            {% if payment.manifest.broker %}
-                                {{ payment.manifest.broker.fullName }}
-                            {% else %}
-                                <span class="text-base-content/40">None</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="divider my-2"></div>
-                    <div>
-                        <div class="text-xs text-base-content/60 mb-1">Submitted By</div>
-                        <div class="text-sm font-medium">{{ payment.submittedBy.fullName }}</div>
-                        <div class="text-xs text-base-content/60">{{ payment.submittedBy.email }}</div>
-                    </div>
-                    <div>
-                        <div class="text-xs text-base-content/60 mb-1">Submitted At</div>
-                        <div class="text-sm font-medium">{{ payment.createdAt|date('F d, Y') }}</div>
-                        <div class="text-xs text-base-content/60">{{ payment.createdAt|date('H:i:s') }}</div>
-                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 shrink-0">
+                    {% if payment.status.value == 'pending_validation' %}
+                        <span class="badge badge-warning badge-lg">Needs your review</span>
+                    {% elseif payment.status.value == 'verified' %}
+                        <span class="badge badge-success badge-lg">Approved</span>
+                    {% else %}
+                        <span class="badge badge-error badge-lg">Rejected</span>
+                    {% endif %}
+                    <a href="{{ path('audit_trail_manifest', {id: payment.manifest.id}) }}" class="btn btn-ghost btn-sm gap-2">
+                        <span class="icon-[tabler--history] size-4"></span>
+                        Audit trail
+                    </a>
+                    <a href="{{ path('accounting_payment_final_list') }}" class="btn btn-ghost btn-sm gap-2">
+                        <span class="icon-[tabler--arrow-left] size-4"></span>
+                        Back to list
+                    </a>
                 </div>
             </div>
+        </div>
+    </div>
 
-            {# Amount Comparison Card #}
-            <div class="card bg-base-100 shadow-lg {% if discrepancy > 0.01 %}border-2 border-error{% endif %}">
-                <div class="card-header {% if discrepancy > 0.01 %}bg-error/10{% else %}bg-success/10{% endif %}">
-                    <h3 class="card-title text-base">
-                        <span class="icon-[tabler--calculator] size-5"></span>
-                        Amount Verification
-                    </h3>
-                </div>
-                <div class="card-body space-y-4">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-base-content/60">Billing Amount</span>
-                        <div class="text-right">
+    {# Status message #}
+    {% if payment.status.value == 'pending_validation' %}
+        <div class="alert alert-warning shadow-sm">
+            <span class="icon-[tabler--info-circle] size-5"></span>
+            <div>
+                <p class="font-medium">Review this payment</p>
+                <p class="text-sm opacity-90">Check that the broker’s receipt matches the billing amount, then approve or reject.</p>
+            </div>
+        </div>
+    {% elseif payment.status.value == 'verified' %}
+        <div class="alert alert-success shadow-sm">
+            <span class="icon-[tabler--circle-check] size-5"></span>
+            <div>
+                <p class="font-medium">This payment was approved</p>
+                <p class="text-sm opacity-90">
+                    By {{ payment.validatedBy.fullName }} on {{ payment.validatedAt|date('M j, Y \\a\\t g:i A') }}
+                </p>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-error shadow-sm">
+            <span class="icon-[tabler--circle-x] size-5"></span>
+            <div>
+                <p class="font-medium">This payment was rejected</p>
+                <p class="text-sm opacity-90">{{ payment.rejectionReason ?: 'No reason recorded.' }}</p>
+                {% if payment.validatedBy %}
+                    <p class="text-xs mt-1 opacity-80">By {{ payment.validatedBy.fullName }} · {{ payment.validatedAt|date('M j, Y g:i A') }}</p>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 xl:grid-cols-5 gap-5 sm:gap-6">
+
+        {# Left — summary & actions #}
+        <div class="xl:col-span-2 space-y-5 sm:space-y-6">
+
+            {# Amount check — plain language #}
+            <div class="card shadow-sm {% if amountsMatch %}bg-success/5{% else %}bg-warning/5{% endif %}">
+                <div class="card-body p-4 sm:p-6">
+                    <h2 class="font-semibold text-base-content flex items-center gap-2 mb-4">
+                        <span class="icon-[tabler--scale] size-5"></span>
+                        Does the amount match?
+                    </h2>
+
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div class="rounded-xl bg-base-100/80 p-4">
+                            <p class="text-xs text-base-content/60 mb-1">Bill amount</p>
                             {% if billing.originalCurrency == 'USD' %}
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xl font-bold">${{ billing.totalAmountUsd|number_format(2) }}</span>
-                                    <span class="badge badge-warning badge-sm font-bold">USD</span>
-                                </div>
-                                {% if billing.exchangeRate %}
-                                    <div class="text-xs text-base-content/60">(₱{{ billing.totalAmount|number_format(2) }} PHP at rate {{ billing.exchangeRate }})</div>
-                                {% endif %}
+                                <p class="text-xl font-bold">{{ billing|format_billing }}</p>
+                                <p class="text-xs text-base-content/50 mt-1">≈ {{ billing.totalAmount|format_money('PHP') }}</p>
                             {% else %}
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xl font-bold">₱{{ billing.totalAmount|number_format(2) }}</span>
-                                    <span class="badge badge-info badge-sm font-bold">PHP</span>
-                                </div>
+                                <p class="text-xl font-bold">{{ billing|format_billing }}</p>
                             {% endif %}
                         </div>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-base-content/60">Payment Amount</span>
-                        <div class="text-right">
-                            <div class="flex items-center gap-2">
-                                <span class="text-xl font-bold">{% if payment.currency == 'USD' %}${% else %}₱{% endif %}{{ payment.amount|number_format(2) }}</span>
-                                <span class="badge {% if payment.currency == 'USD' %}badge-warning{% else %}badge-info{% endif %} badge-sm font-bold">{{ payment.currency }}</span>
-                            </div>
+                        <div class="rounded-xl bg-base-100/80 p-4">
+                            <p class="text-xs text-base-content/60 mb-1">Broker paid</p>
+                            <p class="text-xl font-bold">{{ payment|format_payment }}</p>
+                            <p class="text-xs text-base-content/50 mt-1">{{ payment.currency }}</p>
                         </div>
                     </div>
-                    
-                    {# Currency Mismatch Warning #}
-                    {% if billing.originalCurrency and payment.currency and billing.originalCurrency != payment.currency %}
-                        <div class="alert alert-error py-2 text-xs">
-                            <span class="icon-[tabler--alert-triangle] size-4"></span>
-                            <span><strong>CURRENCY MISMATCH:</strong> Billing is in {{ billing.originalCurrency }} but payment was submitted in {{ payment.currency }}. Verify with broker.</span>
+
+                    {% if currencyMismatch %}
+                        <div class="rounded-xl bg-error/10 p-3 text-sm text-error mb-3 flex gap-2">
+                            <span class="icon-[tabler--alert-triangle] size-4 shrink-0 mt-0.5"></span>
+                            <span>Billing is in {{ billing.originalCurrency }} but payment was sent in {{ payment.currency }}. Double-check before approving.</span>
                         </div>
                     {% endif %}
-                    
-                    <div class="divider my-2"></div>
-                    <div class="text-center p-4 rounded-lg {% if discrepancy > 0.01 %}bg-error/10{% else %}bg-success/10{% endif %}">
-                        {% if discrepancy > 0.01 %}
-                            <div class="text-error mb-2">
-                                <span class="icon-[tabler--alert-triangle] size-8 inline-block"></span>
+
+                    {% if amountsMatch %}
+                        <div class="flex items-center gap-3 rounded-xl bg-success/10 p-4 text-success">
+                            <span class="icon-[tabler--circle-check] size-8 shrink-0"></span>
+                            <div>
+                                <p class="font-semibold">Yes — amounts match</p>
+                                <p class="text-sm opacity-90">You can approve if the receipt looks correct.</p>
                             </div>
-                            <div class="text-sm font-bold text-error mb-1">MISMATCH DETECTED</div>
-                            <div class="text-2xl font-bold text-error">₱{{ discrepancy|number_format(2) }}</div>
-                            <div class="text-xs text-error/80 mt-2">Justification required if approving</div>
-                        {% else %}
-                            <div class="text-success mb-2">
-                                <span class="icon-[tabler--circle-check] size-8 inline-block"></span>
+                        </div>
+                    {% else %}
+                        <div class="flex items-center gap-3 rounded-xl bg-warning/10 p-4 text-warning">
+                            <span class="icon-[tabler--alert-triangle] size-8 shrink-0"></span>
+                            <div>
+                                <p class="font-semibold">No — difference of {{ discrepancy|format_money(payment.currency) }}</p>
+                                <p class="text-sm opacity-90">If you still approve, you must add a short note explaining why.</p>
                             </div>
-                            <div class="text-sm font-bold text-success mb-1">AMOUNTS MATCH</div>
-                            <div class="text-xs text-success/80">Perfect match</div>
-                        {% endif %}
-                    </div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
 
-            {# Billing Breakdown Card #}
-            <div class="card bg-base-100 shadow-lg">
-                <div class="card-header bg-base-200">
-                    <h3 class="card-title text-base">
-                        <span class="icon-[tabler--file-invoice] size-5"></span>
-                        Billing Breakdown
-                    </h3>
+            {# Shipment info #}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-6 space-y-4">
+                    <h2 class="font-semibold text-base-content flex items-center gap-2">
+                        <span class="icon-[tabler--ship] size-5 text-base-content/70"></span>
+                        Shipment details
+                    </h2>
+                    <dl class="space-y-3 text-sm">
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-base-content/60">Manifest</dt>
+                            <dd class="font-medium text-right">
+                                <a href="{{ path('manifest_workflow_detail', {id: payment.manifest.id}) }}" class="link link-primary">
+                                    {{ payment.manifest.manifestNumber }}
+                                </a>
+                            </dd>
+                        </div>
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-base-content/60">Consignee</dt>
+                            <dd class="font-medium text-right">{{ payment.manifest.consignee ? payment.manifest.consignee.businessName : 'Not set' }}</dd>
+                        </div>
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-base-content/60">Broker</dt>
+                            <dd class="font-medium text-right">{{ payment.manifest.broker ? payment.manifest.broker.fullName : 'Not set' }}</dd>
+                        </div>
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-base-content/60">Submitted by</dt>
+                            <dd class="text-right">
+                                <span class="font-medium">{{ payment.submittedBy.fullName }}</span>
+                                <p class="text-xs text-base-content/50">{{ payment.submittedBy.email }}</p>
+                            </dd>
+                        </div>
+                    </dl>
                 </div>
-                <div class="card-body space-y-2 text-sm">
-                    <div class="flex justify-between">
-                        <span class="text-base-content/60">Freight Charges</span>
-                        <span class="font-medium">₱{{ billing.freightCharges|number_format(2) }}</span>
+            </div>
+
+            {# Billing breakdown — compact #}
+            <details class="card bg-base-100 shadow-sm group">
+                <summary class="card-body p-4 sm:p-6 cursor-pointer list-none flex items-center justify-between gap-2">
+                    <span class="font-semibold flex items-center gap-2">
+                        <span class="icon-[tabler--list-details] size-5 text-base-content/70"></span>
+                        Billing breakdown
+                    </span>
+                    <span class="icon-[tabler--chevron-down] size-4 text-base-content/40 group-open:rotate-180 transition-transform"></span>
+                </summary>
+                <div class="px-4 sm:px-6 pb-4 sm:pb-6 pt-0 space-y-2 text-sm border-t border-base-200/80">
+                    <div class="flex justify-between pt-4">
+                        <span class="text-base-content/60">Freight</span>
+                        <span>{{ billing|format_billing_charge(billing.freightCharges, billing.freightChargesUsd) }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-base-content/60">THC Charges</span>
-                        <span class="font-medium">₱{{ billing.thcCharges|number_format(2) }}</span>
+                        <span class="text-base-content/60">THC</span>
+                        <span>{{ billing|format_billing_charge(billing.thcCharges, billing.thcChargesUsd) }}</span>
                     </div>
                     {% if billing.additionalCharges %}
                         {% for charge in billing.additionalCharges %}
                             <div class="flex justify-between">
                                 <span class="text-base-content/60">{{ charge.description }}</span>
-                                <span class="font-medium">₱{{ charge.amount|number_format(2) }}</span>
+                                <span>{{ charge.amount|format_money(billing.originalCurrency) }}</span>
                             </div>
                         {% endfor %}
                     {% endif %}
-                    <div class="divider my-2"></div>
-                    <div class="flex justify-between text-base font-bold">
+                    <div class="flex justify-between font-semibold pt-2 mt-2 border-t border-base-200/80">
                         <span>Total</span>
-                        <span class="text-primary">₱{{ billing.totalAmount|number_format(2) }}</span>
+                        <span class="text-primary">{{ billing|format_billing }}</span>
                     </div>
-                    <div class="pt-3 mt-3 border-t text-xs text-base-content/60">
-                        <div>Generated by: {{ billing.generatedBy.fullName }}</div>
-                        <div>Date: {{ billing.createdAt|date('M d, Y H:i') }}</div>
-                    </div>
+                    <p class="text-xs text-base-content/50 pt-2">
+                        Issued {{ billing.createdAt|date('M j, Y') }} by {{ billing.generatedBy.fullName }}
+                    </p>
                 </div>
-            </div>
-        </div>
+            </details>
 
-        {# MIDDLE COLUMN - Billing Document #}
-        <div>
-            <div class="card bg-base-100 shadow-lg h-full">
-                <div class="card-header bg-primary text-primary-content flex justify-between items-center">
-                    <h3 class="card-title">
-                        <span class="icon-[tabler--file-text] size-5"></span>
-                        Billing Document
-                    </h3>
-                    {% if billing %}
-                        <a href="/api/billing/{{ billing.id }}/download?inline=false" target="_blank" 
-                           class="btn btn-sm btn-ghost hover:bg-primary-content/20">
-                            <span class="icon-[tabler--download] size-4"></span>
-                            Download
-                        </a>
-                    {% endif %}
-                </div>
-                <div class="p-0">
-                    {% if billing %}
-                        <div class="bg-base-200" style="height: 800px;">
-                            <iframe src="/api/billing/{{ billing.id }}/download?inline=true" 
-                                    class="w-full h-full border-0"></iframe>
+            {# Actions #}
+            {% if payment.status.value == 'pending_validation' %}
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-4 sm:p-6">
+                        <h2 class="font-semibold text-base-content mb-1">Your decision</h2>
+                        <p class="text-sm text-base-content/60 mb-4">After reviewing the documents on the right.</p>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <button type="button" onclick="openApprovalModal()" class="btn btn-success flex-1 gap-2">
+                                <span class="icon-[tabler--circle-check] size-5"></span>
+                                Approve payment
+                            </button>
+                            <button type="button" onclick="openRejectionModal()" class="btn btn-ghost text-error hover:bg-error/10 flex-1 gap-2">
+                                <span class="icon-[tabler--circle-x] size-5"></span>
+                                Reject payment
+                            </button>
                         </div>
-                    {% else %}
-                        <div class="flex flex-col items-center justify-center p-12 text-center bg-base-200" style="height: 800px;">
-                            <span class="icon-[tabler--file-off] size-20 text-base-content/20 mb-4"></span>
-                            <p class="text-base-content/60 font-medium mb-2">No billing found</p>
-                            <p class="text-sm text-base-content/40">Billing information is not available</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        {# RIGHT COLUMN - Payment Receipt #}
-        <div>
-            <div class="card bg-base-100 shadow-lg h-full">
-                <div class="card-header bg-success text-success-content flex justify-between items-center">
-                    <h3 class="card-title">
-                        <span class="icon-[tabler--receipt-2] size-5"></span>
-                        Payment Receipt
-                    </h3>
-                    <a href="{{ path('accounting_payment_receipt', {id: payment.id}) }}?inline=false" target="_blank" 
-                       class="btn btn-sm btn-ghost hover:bg-success-content/20">
-                        <span class="icon-[tabler--download] size-4"></span>
-                        Download
-                    </a>
-                </div>
-                <div class="p-0">
-                    {% if payment.receiptFilePath %}
-                        <div class="bg-base-200" style="height: 800px;">
-                            <iframe src="{{ path('accounting_payment_receipt', {id: payment.id}) }}?inline=true" 
-                                    class="w-full h-full border-0"></iframe>
-                        </div>
-                    {% else %}
-                        <div class="flex flex-col items-center justify-center p-12 text-center" style="height: 800px;">
-                            <span class="icon-[tabler--file-off] size-20 text-base-content/20 mb-4"></span>
-                            <p class="text-base-content/60">No receipt uploaded</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {# Official Receipt (if generated) #}
-    {% if payment.officialReceiptPath %}
-        <div class="card bg-base-100 shadow-lg mb-6">
-            <div class="card-header bg-accent text-accent-content flex justify-between items-center">
-                <div>
-                    <h3 class="card-title">
-                        <span class="icon-[tabler--file-certificate] size-5"></span>
-                        Official Receipt
-                    </h3>
-                    <p class="text-sm opacity-80 mt-1">Generated by {{ payment.shippingLine.name }}</p>
-                </div>
-                <a href="{{ path('accounting_payment_receipt', {id: payment.id}) }}?type=official&inline=false" target="_blank" 
-                   class="btn btn-sm btn-ghost hover:bg-accent-content/20">
-                    <span class="icon-[tabler--download] size-4"></span>
-                    Download
-                </a>
-            </div>
-            <div class="p-0">
-                <div class="bg-base-200" style="height: 600px;">
-                    <iframe src="{{ path('accounting_payment_receipt', {id: payment.id}) }}?type=official&inline=true" 
-                            class="w-full h-full border-0"></iframe>
-                </div>
-            </div>
-        </div>
-    {% endif %}
-
-    {# Action Buttons - Sticky at Bottom within content area #}
-    {% if payment.status.value == 'pending_validation' %}
-        <div class="sticky bottom-0 bg-base-100 border-t border-base-300 shadow-2xl z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
-            <div class="py-4">
-                <div class="flex flex-col sm:flex-row gap-3 justify-center items-center">
-                    {% if discrepancy > 0.01 %}
-                        <div class="alert alert-warning py-2 px-4 flex-1 max-w-md">
-                            <span class="icon-[tabler--alert-triangle] size-5"></span>
-                            <span class="text-sm">Amount mismatch - justification required</span>
-                        </div>
-                    {% endif %}
-                    <div class="flex gap-3">
-                        <button type="button" onclick="openRejectionModal()" 
-                                class="btn btn-error btn-lg gap-2 min-w-[180px]">
-                            <span class="icon-[tabler--circle-x] size-5"></span>
-                            Reject Payment
-                        </button>
-                        <button type="button" onclick="openApprovalModal()" 
-                                class="btn btn-success btn-lg gap-2 min-w-[180px]">
-                            <span class="icon-[tabler--circle-check] size-5"></span>
-                            Approve Payment
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {# Spacer for sticky buttons #}
-        <div class="h-4"></div>
-    {% endif %}
-
-    {# Validation History #}
-    {% if validationHistory is not empty %}
-        <div class="card bg-base-100 shadow-lg">
-            <div class="card-header">
-                <div>
-                    <h3 class="card-title">
-                        <span class="icon-[tabler--history] size-5"></span>
-                        Validation History
-                    </h3>
-                    <p class="text-sm text-base-content/60 mt-1">Previous payment attempts for this manifest</p>
-                </div>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="table table-zebra">
-                    <thead>
-                        <tr>
-                            <th>Payment ID</th>
-                            <th>Submitted By</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Validated By</th>
-                            <th>Date</th>
-                            <th>Reason</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for historyPayment in validationHistory %}
-                            <tr>
-                                <td class="font-medium">#{{ historyPayment.id }}</td>
-                                <td>{{ historyPayment.submittedBy.fullName }}</td>
-                                <td>₱{{ historyPayment.amount|number_format(2) }}</td>
-                                <td>
-                                    {% if historyPayment.status.value == 'verified' %}
-                                        <span class="badge badge-success badge-sm">Verified</span>
-                                    {% elseif historyPayment.status.value == 'rejected' %}
-                                        <span class="badge badge-error badge-sm">Rejected</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ historyPayment.validatedBy.fullName }}</td>
-                                <td>{{ historyPayment.validatedAt|date('M d, Y H:i') }}</td>
-                                <td>
-                                    {% if historyPayment.rejectionReason %}
-                                        <div class="max-w-xs truncate" title="{{ historyPayment.rejectionReason }}">
-                                            {{ historyPayment.rejectionReason }}
-                                        </div>
-                                    {% else %}
-                                        <span class="text-base-content/40">-</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    {% endif %}
-</div>
-</div>
-
-{# Approval Modal #}
-<div id="approvalModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/60" onclick="closeApprovalModal()"></div>
-    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg z-10">
-        <div class="flex items-center justify-between px-5 py-4 border-b border-base-300">
-            <div class="flex items-center gap-3">
-                <div class="flex items-center justify-center size-10 rounded-full bg-success/10">
-                    <span class="icon-[tabler--check] size-5 text-success"></span>
-                </div>
-                <h3 class="font-semibold text-base text-base-content">Approve Payment</h3>
-            </div>
-            <button type="button" onclick="closeApprovalModal()" class="btn btn-ghost btn-sm btn-circle">
-                <span class="icon-[tabler--x] size-4"></span>
-            </button>
-        </div>
-        <div class="px-5 py-4">
-            <p class="text-sm text-base-content/60 mb-3">This action will:</p>
-            <ul class="text-sm text-base-content/80 space-y-2 mb-4 list-disc list-inside">
-                <li>Mark payment as verified</li>
-                <li>Generate official receipt</li>
-                <li>Transfer to SL_STAFF for eDO generation</li>
-                <li>Notify broker, consignee, and SL_STAFF</li>
-            </ul>
-            {% if discrepancy > 0.01 %}
-                <div class="alert alert-warning mb-4">
-                    <span class="icon-[tabler--alert-triangle] size-5"></span>
-                    <div>
-                        <p class="font-medium">Amount Mismatch</p>
-                        <p class="text-xs">Justification required</p>
                     </div>
                 </div>
             {% endif %}
-            <label for="approvalReason" class="label">
-                <span class="label-text">
-                    Justification / Notes
-                    {% if discrepancy > 0.01 %}<span class="text-error">*</span>{% else %}<span class="text-base-content/40">(Optional)</span>{% endif %}
-                </span>
-            </label>
-            <textarea id="approvalReason" rows="3" class="textarea textarea-bordered w-full" placeholder="Enter justification or notes..."></textarea>
         </div>
-        <div class="flex justify-end gap-2 px-5 py-4 border-t border-base-300">
-            <button type="button" onclick="closeApprovalModal()" class="btn btn-ghost">Cancel</button>
+
+        {# Right — documents #}
+        <div class="xl:col-span-3">
+            <div class="card bg-base-100 shadow-sm h-full">
+                <div class="px-4 sm:px-6 py-4 bg-base-200/50 rounded-t-xl">
+                    <h2 class="font-semibold text-base-content mb-3">Documents to review</h2>
+                    <div class="flex flex-wrap gap-2" role="tablist">
+                        <button type="button" class="doc-tab btn btn-sm btn-primary" data-doc="billing" aria-selected="true">
+                            <span class="icon-[tabler--file-invoice] size-4"></span>
+                            Billing
+                        </button>
+                        <button type="button" class="doc-tab btn btn-sm btn-ghost" data-doc="receipt">
+                            <span class="icon-[tabler--receipt] size-4"></span>
+                            Payment proof
+                        </button>
+                        {% if payment.officialReceiptPath %}
+                            <button type="button" class="doc-tab btn btn-sm btn-ghost" data-doc="official">
+                                <span class="icon-[tabler--file-certificate] size-4"></span>
+                                Official receipt
+                            </button>
+                        {% endif %}
+                        <a id="doc-download" href="{{ billingDownloadUrl }}?inline=false" target="_blank" rel="noopener"
+                           class="btn btn-sm btn-ghost ml-auto gap-1">
+                            <span class="icon-[tabler--download] size-4"></span>
+                            Download
+                        </a>
+                    </div>
+                </div>
+                <div class="p-0">
+                    <div id="panel-billing" class="doc-panel">
+                        <div class="bg-base-200/50 min-h-[420px] lg:min-h-[calc(100vh-16rem)]">
+                            <iframe src="{{ billingDownloadUrl }}?inline=true" class="w-full h-[420px] lg:h-[calc(100vh-16rem)] border-0" title="Billing document"></iframe>
+                        </div>
+                    </div>
+                    <div id="panel-receipt" class="doc-panel hidden">
+                        {% if payment.receiptFilePath %}
+                            <div class="bg-base-200/50 min-h-[420px] lg:min-h-[calc(100vh-16rem)]">
+                                <iframe src="{{ path('accounting_payment_receipt', {id: payment.id}) }}?inline=true" class="w-full h-[420px] lg:h-[calc(100vh-16rem)] border-0" title="Payment receipt"></iframe>
+                            </div>
+                        {% else %}
+                            <div class="flex flex-col items-center justify-center py-20 px-4 text-center">
+                                <span class="icon-[tabler--photo-off] size-12 text-base-content/30"></span>
+                                <p class="mt-3 font-medium">No payment proof uploaded</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% if payment.officialReceiptPath %}
+                        <div id="panel-official" class="doc-panel hidden">
+                            <div class="bg-base-200/50 min-h-[420px] lg:min-h-[calc(100vh-16rem)]">
+                                <iframe src="{{ path('accounting_payment_receipt', {id: payment.id}) }}?type=official&inline=true" class="w-full h-[420px] lg:h-[calc(100vh-16rem)] border-0" title="Official receipt"></iframe>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Previous attempts #}
+    {% if validationHistory is not empty %}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="px-4 sm:px-6 py-4 bg-base-200/50 rounded-t-xl">
+                <h2 class="font-semibold text-base-content">Previous attempts</h2>
+                <p class="text-sm text-base-content/60 mt-0.5">Earlier payments for this manifest</p>
+            </div>
+            <div class="divide-y divide-base-200/80">
+                {% for historyPayment in validationHistory %}
+                    <div class="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                            <p class="font-medium text-sm">Payment #{{ historyPayment.id }}</p>
+                            <p class="text-xs text-base-content/50">{{ historyPayment.submittedBy.fullName }} · {{ historyPayment|format_payment }}</p>
+                        </div>
+                        <div class="flex items-center gap-3 text-sm">
+                            {% if historyPayment.status.value == 'verified' %}
+                                <span class="badge badge-success badge-sm">Approved</span>
+                            {% else %}
+                                <span class="badge badge-error badge-sm">Rejected</span>
+                            {% endif %}
+                            <span class="text-base-content/50 text-xs">{{ historyPayment.validatedAt|date('M j, Y') }}</span>
+                            {% if historyPayment.rejectionReason %}
+                                <span class="text-xs text-base-content/60 truncate max-w-[12rem]" title="{{ historyPayment.rejectionReason }}">{{ historyPayment.rejectionReason }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+{# Approve modal #}
+<dialog id="approvalModal" class="modal">
+    <div class="modal-box max-w-lg">
+        <h3 class="font-bold text-lg flex items-center gap-2">
+            <span class="icon-[tabler--circle-check] size-5 text-success"></span>
+            Approve this payment?
+        </h3>
+        <p class="py-3 text-sm text-base-content/70">
+            The broker and consignee will be notified. The shipment moves forward for eDO processing.
+        </p>
+        {% if not amountsMatch %}
+            <div class="rounded-xl bg-warning/10 p-3 text-sm text-warning mb-3">
+                Amounts do not match — please explain why you are approving anyway.
+            </div>
+        {% endif %}
+        <label class="label pb-1" for="approvalReason">
+            <span class="label-text">Note{% if not amountsMatch %} <span class="text-error">(required)</span>{% else %} (optional){% endif %}</span>
+        </label>
+        <textarea id="approvalReason" rows="3" class="textarea w-full bg-base-200/50 focus:outline-none focus:ring-2 focus:ring-success/30" placeholder="e.g. Verified with bank confirmation"></textarea>
+        <div class="modal-action">
+            <button type="button" class="btn btn-ghost" onclick="closeApprovalModal()">Cancel</button>
             <button type="button" id="approvalSubmitBtn" onclick="confirmApproval()" class="btn btn-success gap-1">
-                <span class="icon-[tabler--circle-check] size-4"></span>
-                Confirm Approval
-            </button>
-        </div>
-    </div>
-</div>
-
-{# Rejection Modal #}
-<div id="rejectionModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/60" onclick="closeRejectionModal()"></div>
-    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg z-10">
-        <div class="flex items-center justify-between px-5 py-4 border-b border-base-300">
-            <div class="flex items-center gap-3">
-                <div class="flex items-center justify-center size-10 rounded-full bg-error/10">
-                    <span class="icon-[tabler--x] size-5 text-error"></span>
-                </div>
-                <h3 class="font-semibold text-base text-base-content">Reject Payment</h3>
-            </div>
-            <button type="button" onclick="closeRejectionModal()" class="btn btn-ghost btn-sm btn-circle">
-                <span class="icon-[tabler--x] size-4"></span>
-            </button>
-        </div>
-        <div class="px-5 py-4">
-            <p class="text-sm text-base-content/60 mb-3">This action will:</p>
-            <ul class="text-sm text-base-content/80 space-y-2 mb-4 list-disc list-inside">
-                <li>Mark payment as rejected</li>
-                <li>Revert manifest to billing_generated state</li>
-                <li>Notify broker and consignee</li>
-                <li>Require broker to resubmit payment</li>
-            </ul>
-            <label for="rejectionReason" class="label">
-                <span class="label-text">Reason for Rejection <span class="text-error">*</span></span>
-            </label>
-            <textarea id="rejectionReason" rows="4" required class="textarea textarea-bordered w-full" placeholder="Provide detailed reason..."></textarea>
-            <label class="label">
-                <span class="label-text-alt text-base-content/60">This will be sent to broker and consignee</span>
-            </label>
-        </div>
-        <div class="flex justify-end gap-2 px-5 py-4 border-t border-base-300">
-            <button type="button" onclick="closeRejectionModal()" class="btn btn-ghost">Cancel</button>
-            <button type="button" id="rejectionSubmitBtn" onclick="confirmRejection()" class="btn btn-error gap-1">
-                <span class="icon-[tabler--circle-x] size-4"></span>
-                Confirm Rejection
-            </button>
-        </div>
-    </div>
-</div>
-
-{# Success Modal #}
-<div id="successModal" class="hidden fixed inset-0 z-[10000] flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/60"></div>
-    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg z-10">
-        <div class="px-6 pt-8 pb-6 text-center">
-            <div class="flex items-center justify-center mb-4">
-                <div class="flex items-center justify-center size-20 rounded-full bg-success/20 animate-bounce-once">
-                    <span class="icon-[tabler--check] size-12 text-success"></span>
-                </div>
-            </div>
-            <h3 class="text-2xl font-bold text-base-content mb-4">Success!</h3>
-            <p class="text-base text-base-content/80 mb-4" id="successMessage"></p>
-            <div id="successDetails" class="mt-4 space-y-2 text-sm text-base-content/70"></div>
-        </div>
-        <div class="px-6 py-4 border-t border-base-300">
-            <button type="button" onclick="closeSuccessModal()" class="btn btn-success w-full gap-1">
                 <span class="icon-[tabler--check] size-4"></span>
-                OK
+                Yes, approve
             </button>
         </div>
     </div>
-</div>
+    <form method="dialog" class="modal-backdrop"><button type="button" onclick="closeApprovalModal()">close</button></form>
+</dialog>
 
-{# Error Modal #}
-<div id="errorModal" class="hidden fixed inset-0 z-[10000] flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/60"></div>
-    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg z-10">
-        <div class="px-6 pt-8 pb-6 text-center">
-            <div class="flex items-center justify-center mb-4">
-                <div class="flex items-center justify-center size-20 rounded-full bg-error/20 animate-shake">
-                    <span class="icon-[tabler--x] size-12 text-error"></span>
-                </div>
-            </div>
-            <h3 class="text-2xl font-bold text-base-content mb-4">Error</h3>
-            <p class="text-base text-base-content/80" id="errorMessage"></p>
-        </div>
-        <div class="px-6 py-4 border-t border-base-300">
-            <button type="button" onclick="closeErrorModal()" class="btn btn-error w-full gap-1">
+{# Reject modal #}
+<dialog id="rejectionModal" class="modal">
+    <div class="modal-box max-w-lg">
+        <h3 class="font-bold text-lg flex items-center gap-2">
+            <span class="icon-[tabler--circle-x] size-5 text-error"></span>
+            Reject this payment?
+        </h3>
+        <p class="py-3 text-sm text-base-content/70">
+            The broker will need to upload a new payment proof. Tell them what was wrong.
+        </p>
+        <label class="label pb-1" for="rejectionReason">
+            <span class="label-text">Reason <span class="text-error">(required)</span></span>
+        </label>
+        <textarea id="rejectionReason" rows="4" class="textarea w-full bg-base-200/50 focus:outline-none focus:ring-2 focus:ring-error/30" placeholder="e.g. Receipt amount does not match billing"></textarea>
+        <div class="modal-action">
+            <button type="button" class="btn btn-ghost" onclick="closeRejectionModal()">Cancel</button>
+            <button type="button" id="rejectionSubmitBtn" onclick="confirmRejection()" class="btn btn-error gap-1">
                 <span class="icon-[tabler--x] size-4"></span>
-                Close
+                Yes, reject
             </button>
         </div>
     </div>
-</div>
+    <form method="dialog" class="modal-backdrop"><button type="button" onclick="closeRejectionModal()">close</button></form>
+</dialog>
 
-<style>
-@keyframes bounce-once {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-}
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-10px); }
-    75% { transform: translateX(10px); }
-}
-.animate-bounce-once { animation: bounce-once 0.6s ease-in-out; }
-.animate-shake { animation: shake 0.5s ease-in-out; }
-</style>
+{# Success modal #}
+<dialog id="successModal" class="modal">
+    <div class="modal-box max-w-md text-center">
+        <div class="inline-flex items-center justify-center size-16 rounded-full bg-success/10 text-success mb-4">
+            <span class="icon-[tabler--circle-check] size-10"></span>
+        </div>
+        <h3 class="font-bold text-xl">Done</h3>
+        <p class="text-sm text-base-content/70 mt-2" id="successMessage"></p>
+        <div id="successDetails" class="mt-3 space-y-1 text-sm text-base-content/60"></div>
+        <div class="modal-action justify-center mt-4">
+            <button type="button" onclick="closeSuccessModal()" class="btn btn-success">OK</button>
+        </div>
+    </div>
+</dialog>
+
+{# Error modal #}
+<dialog id="errorModal" class="modal">
+    <div class="modal-box max-w-md text-center">
+        <div class="inline-flex items-center justify-center size-16 rounded-full bg-error/10 text-error mb-4">
+            <span class="icon-[tabler--alert-circle] size-10"></span>
+        </div>
+        <h3 class="font-bold text-xl">Something went wrong</h3>
+        <p class="text-sm text-base-content/70 mt-2" id="errorMessage"></p>
+        <div class="modal-action justify-center mt-4">
+            <button type="button" onclick="closeErrorModal()" class="btn btn-ghost">Close</button>
+        </div>
+    </div>
+</dialog>
 
 <script>
-function openApprovalModal() { document.getElementById('approvalModal').classList.remove('hidden'); }
-function closeApprovalModal() { document.getElementById('approvalModal').classList.add('hidden'); document.getElementById('approvalReason').value = ''; }
-function openRejectionModal() { document.getElementById('rejectionModal').classList.remove('hidden'); }
-function closeRejectionModal() { document.getElementById('rejectionModal').classList.add('hidden'); document.getElementById('rejectionReason').value = ''; }
+(function() {
+    const downloadLink = document.getElementById('doc-download');
+    const urls = {
+        billing: '{{ billingDownloadUrl }}?inline=false',
+        receipt: '{{ path('accounting_payment_receipt', {id: payment.id}) }}?inline=false',
+        {% if payment.officialReceiptPath %}
+        official: '{{ path('accounting_payment_receipt', {id: payment.id}) }}?type=official&inline=false',
+        {% endif %}
+    };
+
+    document.querySelectorAll('.doc-tab').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const doc = btn.dataset.doc;
+            document.querySelectorAll('.doc-tab').forEach(function(b) {
+                b.classList.remove('btn-primary');
+                b.classList.add('btn-ghost');
+                b.setAttribute('aria-selected', 'false');
+            });
+            btn.classList.add('btn-primary');
+            btn.classList.remove('btn-ghost');
+            btn.setAttribute('aria-selected', 'true');
+            document.querySelectorAll('.doc-panel').forEach(function(p) { p.classList.add('hidden'); });
+            const panel = document.getElementById('panel-' + doc);
+            if (panel) panel.classList.remove('hidden');
+            if (downloadLink && urls[doc]) downloadLink.href = urls[doc];
+        });
+    });
+})();
+
+function openApprovalModal() { document.getElementById('approvalModal').showModal(); }
+function closeApprovalModal() { document.getElementById('approvalModal').close(); document.getElementById('approvalReason').value = ''; }
+function openRejectionModal() { document.getElementById('rejectionModal').showModal(); }
+function closeRejectionModal() { document.getElementById('rejectionModal').close(); document.getElementById('rejectionReason').value = ''; }
 
 function showSuccessModal(message, details = []) {
     document.getElementById('successMessage').textContent = message;
     const detailsContainer = document.getElementById('successDetails');
     detailsContainer.innerHTML = '';
-    if (details.length > 0) {
-        details.forEach(detail => {
-            const div = document.createElement('div');
-            div.className = 'flex items-center justify-center text-success';
-            div.innerHTML = `<span class="icon-[tabler--circle-check] size-5 mr-2 flex-shrink-0"></span><span>${detail}</span>`;
-            detailsContainer.appendChild(div);
-        });
-    }
-    document.getElementById('successModal').classList.remove('hidden');
+    details.forEach(function(detail) {
+        const div = document.createElement('p');
+        div.textContent = detail;
+        detailsContainer.appendChild(div);
+    });
+    document.getElementById('successModal').showModal();
 }
 
 function closeSuccessModal() {
-    document.getElementById('successModal').classList.add('hidden');
+    document.getElementById('successModal').close();
     window.location.reload();
 }
 
 function showErrorModal(message) {
     document.getElementById('errorMessage').textContent = message;
-    document.getElementById('errorModal').classList.remove('hidden');
+    document.getElementById('errorModal').showModal();
 }
 
 function closeErrorModal() {
-    document.getElementById('errorModal').classList.add('hidden');
+    document.getElementById('errorModal').close();
 }
 
 function confirmApproval() {
     const reason = document.getElementById('approvalReason').value.trim();
-    const hasDiscrepancy = {{ discrepancy > 0.01 ? 'true' : 'false' }};
+    const hasDiscrepancy = {{ amountsMatch ? 'false' : 'true' }};
     if (hasDiscrepancy && !reason) {
-        alert('Please provide justification for the amount override.');
+        alert('Please add a short note explaining the amount difference.');
         return;
     }
     const submitBtn = document.getElementById('approvalSubmitBtn');
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span>Processing...';
-    fetch(`/api/payments/{{ payment.id }}/validate-final`, {
+    submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Working…';
+    fetch('/api/payments/{{ payment.id }}/validate-final', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ approved: true, reason: reason || null })
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
         if (data.error) {
-            let errorMsg = 'Failed to approve payment. Please try again.';
-            if (typeof data.error === 'string') errorMsg = data.error;
-            else if (data.message) errorMsg = data.message;
             closeApprovalModal();
-            showErrorModal(errorMsg);
+            showErrorModal(typeof data.error === 'string' ? data.error : (data.message || 'Could not approve. Try again.'));
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<span class="icon-[tabler--circle-check] size-4"></span>Confirm Approval';
-        } else if (data.success) {
-            closeApprovalModal();
-            const details = [];
-            if (data.officialReceiptGenerated) details.push('Official Receipt has been generated');
-            if (data.nextStep) details.push(data.nextStep);
-            showSuccessModal(data.message || 'Payment approved successfully!', details);
+            submitBtn.innerHTML = '<span class="icon-[tabler--check] size-4"></span> Yes, approve';
         } else {
             closeApprovalModal();
-            showSuccessModal('Payment approved successfully! Official receipt has been issued. Manifest transferred to SL_STAFF for eDO generation.');
+            const details = [];
+            if (data.officialReceiptGenerated) details.push('Official receipt created.');
+            if (data.nextStep) details.push(data.nextStep);
+            showSuccessModal(data.message || 'Payment approved.', details);
         }
     })
-    .catch(error => {
+    .catch(function() {
         closeApprovalModal();
-        showErrorModal('An error occurred. Please try again.');
-        console.error('Error:', error);
+        showErrorModal('Could not approve. Try again.');
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<span class="icon-[tabler--circle-check] size-4"></span>Confirm Approval';
+        submitBtn.innerHTML = '<span class="icon-[tabler--check] size-4"></span> Yes, approve';
     });
 }
 
 function confirmRejection() {
     const reason = document.getElementById('rejectionReason').value.trim();
     if (!reason) {
-        alert('Please provide a reason for rejection.');
+        alert('Please tell the broker why this payment is being rejected.');
         return;
     }
     const submitBtn = document.getElementById('rejectionSubmitBtn');
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span>Processing...';
-    fetch(`/api/payments/{{ payment.id }}/validate-final`, {
+    submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Working…';
+    fetch('/api/payments/{{ payment.id }}/validate-final', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ approved: false, reason: reason })
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
         if (data.error) {
-            let errorMsg = 'Failed to reject payment. Please try again.';
-            if (typeof data.error === 'string') errorMsg = data.error;
-            else if (data.message) errorMsg = data.message;
             closeRejectionModal();
-            showErrorModal(errorMsg);
+            showErrorModal(typeof data.error === 'string' ? data.error : (data.message || 'Could not reject. Try again.'));
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<span class="icon-[tabler--circle-x] size-4"></span>Confirm Rejection';
-        } else if (data.success) {
-            closeRejectionModal();
-            showSuccessModal(data.message || 'Payment rejected successfully!');
+            submitBtn.innerHTML = '<span class="icon-[tabler--x] size-4"></span> Yes, reject';
         } else {
             closeRejectionModal();
-            showSuccessModal('Payment rejected successfully!');
+            showSuccessModal(data.message || 'Payment rejected. The broker can submit again.');
         }
     })
-    .catch(error => {
+    .catch(function() {
         closeRejectionModal();
-        showErrorModal('An error occurred. Please try again.');
-        console.error('Error:', error);
+        showErrorModal('Could not reject. Try again.');
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<span class="icon-[tabler--circle-x] size-4"></span>Confirm Rejection';
+        submitBtn.innerHTML = '<span class="icon-[tabler--x] size-4"></span> Yes, reject';
     });
 }
-
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        const approvalModal = document.getElementById('approvalModal');
-        const rejectionModal = document.getElementById('rejectionModal');
-        if (!approvalModal.classList.contains('hidden')) closeApprovalModal();
-        if (!rejectionModal.classList.contains('hidden')) closeRejectionModal();
-    }
-});
 </script>
 {% endblock %}

@@ -227,7 +227,7 @@ class SeedManifestWorkflowDataCommand extends Command
         $manifest1->setVoyageNumber('V123');
         $manifest1->setArrivalDate(new \DateTime('+7 days'));
         $manifest1->setCreatedBy($slStaff);
-        $manifest1->setWorkflowState(WorkflowState::PENDING_PAYMENT);
+        $manifest1->setWorkflowState(WorkflowState::PAYMENT_SUBMITTED);
         
         if (isset($users['consignee1'])) {
             $manifest1->setConsignee($users['consignee1']);
@@ -238,7 +238,7 @@ class SeedManifestWorkflowDataCommand extends Command
         
         $this->entityManager->persist($manifest1);
         $manifests['manifest1'] = $manifest1;
-        $io->writeln('✓ Created manifest: MAN-2024-001 (pending_payment)');
+        $io->writeln('✓ Created manifest: MAN-2024-001 (payment_submitted)');
 
         // Manifest 2: Payment verified
         $manifest2 = new Manifest();

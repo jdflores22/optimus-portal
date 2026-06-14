@@ -3,8 +3,10 @@
 namespace App\Controller\Admin;
 
 use App\Entity\ElectronicDeliveryOrder;
+use App\Repository\EDOPaymentRepository;
 use App\Service\EDOReleaseServiceInterface;
 use App\Service\NotificationServiceInterface;
+use App\Service\PaymentFeeConfigurationServiceInterface;
 use App\Repository\ElectronicDeliveryOrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -23,6 +25,8 @@ class EDOReleaseController extends AbstractController
         private NotificationServiceInterface $notificationService,
         private ElectronicDeliveryOrderRepository $edoRepository,
         private \App\Service\EDOPaymentServiceInterface $edoPaymentService,
+        private EDOPaymentRepository $edoPaymentRepository,
+        private PaymentFeeConfigurationServiceInterface $paymentFeeConfigurationService,
         private EntityManagerInterface $entityManager
     ) {
     }
@@ -110,6 +114,56 @@ class EDOReleaseController extends AbstractController
             'pendingEdoPayments' => $pendingEdoPayments,
             'stats' => $stats,
             'activeTab' => $activeTab,
+        ]);
+    }
+
+    /**
+     * eDO access payment revenue dashboard
+     *
+     * GET /admin/edo-release/revenue
+     */
+    #[Route('/revenue', name: 'admin_edo_release_revenue', methods: ['GET'])]
+    public function revenue(Request $request): Response
+    {
+        $fromInput = $request->query->get('from');
+        $toInput = $request->query->get('to');
+
+        $to = $toInput
+            ? \DateTime::createFromFormat('Y-m-d', $toInput)
+            : new \DateTime();
+        if (!$to) {
+            $to = new \DateTime();
+        }
+        $to->setTime(23, 59, 59);
+
+        $from = $fromInput
+            ? \DateTime::createFromFormat('Y-m-d', $fromInput)
+            : (clone $to)->modify('-30 days');
+        if (!$from) {
+            $from = (clone $to)->modify('-30 days');
+        }
+        $from->setTime(0, 0, 0);
+
+        if ($from > $to) {
+            [$from, $to] = [$to, $from];
+            $from->setTime(0, 0, 0);
+            $to->setTime(23, 59, 59);
+        }
+
+        $revenueReport = $this->edoPaymentRepository->getRevenueReport($from, $to);
+        $recentPayments = $this->edoPaymentRepository->findVerifiedPaymentsInRange($from, $to, 25);
+        $lifetimeStats = $this->edoPaymentRepository->getPaymentStatistics();
+        $currentEdoFee = $this->paymentFeeConfigurationService->getCurrentEDOFee();
+
+        return $this->render('admin/edo_release/revenue.html.twig', [
+            'dateRange' => [
+                'from' => $from->format('Y-m-d'),
+                'to' => $to->format('Y-m-d'),
+            ],
+            'revenueReport' => $revenueReport,
+            'recentPayments' => $recentPayments,
+            'lifetimeStats' => $lifetimeStats,
+            'currentEdoFee' => $currentEdoFee,
         ]);
     }
 

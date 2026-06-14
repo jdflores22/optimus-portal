@@ -3,7 +3,7 @@
         <button type="button" class="btn btn-text btn-circle md:hidden" onclick="toggleMobileSidebar()" aria-label="Toggle menu">
             <span class="icon-[tabler--menu-2] size-5"></span>
         </button>
-        <span class="text-base-content font-semibold text-base hidden md:block">
+        <span class="text-base-content font-semibold text-base">
             {% block page_title %}
                 {% if app.user.role.value == 'SYSTEM_ADMIN' %}System Administration
                 {% elseif app.user.role.value == 'CONSIGNEE' %}Consignee Portal

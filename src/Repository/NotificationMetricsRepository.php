@@ -179,13 +179,18 @@ class NotificationMetricsRepository extends ServiceEntityRepository
         
         // Calculate rates
         foreach ($results as &$result) {
-            $total = $result['total'];
-            $delivered = $result['delivered'];
-            $opened = $result['opened'];
-            
+            $total = (int) $result['total'];
+            $delivered = (int) $result['delivered'];
+            $opened = (int) $result['opened'];
+            $failed = (int) $result['failed'];
+
+            $result['total'] = $total;
+            $result['delivered'] = $delivered;
+            $result['opened'] = $opened;
+            $result['failed'] = $failed;
             $result['delivery_rate'] = $total > 0 ? ($delivered / $total) * 100 : 0;
             $result['open_rate'] = $delivered > 0 ? ($opened / $delivered) * 100 : 0;
-            $result['failure_rate'] = $total > 0 ? ($result['failed'] / $total) * 100 : 0;
+            $result['failure_rate'] = $total > 0 ? ($failed / $total) * 100 : 0;
         }
         
         return $results;
@@ -196,23 +201,38 @@ class NotificationMetricsRepository extends ServiceEntityRepository
      */
     public function getMetricsTrend(\DateTimeInterface $startDate, \DateTimeInterface $endDate): array
     {
-        $qb = $this->createQueryBuilder('nm');
-        
-        return $qb->select('DATE(nm.sentAt) as date')
-            ->addSelect('COUNT(nm.id) as total')
-            ->addSelect('SUM(CASE WHEN nm.deliveryStatus IN (:delivered_statuses) THEN 1 ELSE 0 END) as delivered')
-            ->addSelect('SUM(CASE WHEN nm.deliveryStatus = :opened_status THEN 1 ELSE 0 END) as opened')
-            ->addSelect('SUM(CASE WHEN nm.deliveryStatus = :failed_status THEN 1 ELSE 0 END) as failed')
-            ->where('nm.sentAt BETWEEN :start AND :end')
-            ->groupBy('date')
-            ->orderBy('date', 'ASC')
-            ->setParameter('start', $startDate)
-            ->setParameter('end', $endDate)
-            ->setParameter('delivered_statuses', ['delivered', 'opened'])
-            ->setParameter('opened_status', 'opened')
-            ->setParameter('failed_status', 'failed')
-            ->getQuery()
-            ->getResult();
+        $conn = $this->getEntityManager()->getConnection();
+
+        $sql = <<<'SQL'
+            SELECT DATE(sent_at) AS date,
+                   COUNT(id) AS total,
+                   SUM(CASE WHEN delivery_status IN ('delivered', 'opened') THEN 1 ELSE 0 END) AS delivered,
+                   SUM(CASE WHEN delivery_status = 'opened' THEN 1 ELSE 0 END) AS opened,
+                   SUM(CASE WHEN delivery_status = 'failed' THEN 1 ELSE 0 END) AS failed
+            FROM notification_metrics
+            WHERE sent_at BETWEEN :start AND :end
+            GROUP BY DATE(sent_at)
+            ORDER BY date ASC
+            SQL;
+
+        $rows = $conn->fetchAllAssociative($sql, [
+            'start' => $startDate->format('Y-m-d H:i:s'),
+            'end' => $endDate->format('Y-m-d H:i:s'),
+        ]);
+
+        foreach ($rows as &$row) {
+            if ($row['date'] instanceof \DateTimeInterface) {
+                $row['date'] = $row['date']->format('Y-m-d');
+            } elseif (is_string($row['date']) && strlen($row['date']) > 10) {
+                $row['date'] = substr($row['date'], 0, 10);
+            }
+            $row['total'] = (int) $row['total'];
+            $row['delivered'] = (int) $row['delivered'];
+            $row['opened'] = (int) $row['opened'];
+            $row['failed'] = (int) $row['failed'];
+        }
+
+        return $rows;
     }
 
     /**

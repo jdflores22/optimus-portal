@@ -40,11 +40,11 @@
                                 <div class="text-sm text-blue-700">Total Containers</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-2xl font-bold text-green-600">₱500</div>
+                                <div class="text-2xl font-bold text-green-600" id="edoFeePerContainer">{{ 500|format_money('PHP') }}</div>
                                 <div class="text-sm text-green-700">eDO Fee per Container</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-2xl font-bold text-purple-600" id="totalEdoFees">₱0</div>
+                                <div class="text-2xl font-bold text-purple-600" id="totalEdoFees">{{ 0|format_money('PHP') }}</div>
                                 <div class="text-sm text-purple-700">Total eDO Fees</div>
                             </div>
                         </div>
@@ -123,6 +123,17 @@
 </div>
 
 <script>
+const MONEY_PREFIX = {{ (0|format_money('PHP'))|slice(0, -4)|json_encode|raw }};
+window.MONEY_PREFIX = MONEY_PREFIX;
+
+function formatMoneyAmount(amount) {
+    const value = parseFloat(amount);
+    if (Number.isNaN(value)) {
+        return MONEY_PREFIX + '0.00';
+    }
+    return MONEY_PREFIX + value.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('edoExpirationDateModal');
     const form = document.getElementById('expirationDateForm');
@@ -133,6 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const confirmBtn = document.getElementById('confirmExpirationBtn');
     const manifestNumber = document.getElementById('manifestNumber');
     const containerCount = document.getElementById('containerCount');
+    const edoFeePerContainer = document.getElementById('edoFeePerContainer');
     const totalEdoFees = document.getElementById('totalEdoFees');
     const containerList = document.getElementById('containerList');
     
@@ -201,7 +213,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear container data
         manifestNumber.textContent = '';
         containerCount.textContent = '0';
-        totalEdoFees.textContent = '₱0';
+        if (edoFeePerContainer) {
+            edoFeePerContainer.textContent = formatMoneyAmount(500);
+        }
+        totalEdoFees.textContent = formatMoneyAmount(0);
         containerList.innerHTML = '';
     }
     
@@ -209,7 +224,11 @@ document.addEventListener('DOMContentLoaded', function() {
     window.populateEDOModal = function(data) {
         manifestNumber.textContent = data.manifestNumber;
         containerCount.textContent = data.containerCount;
-        totalEdoFees.textContent = '₱' + data.totalEdoFees.toLocaleString('en-PH', { minimumFractionDigits: 2 });
+        const perContainerFee = data.edoFeePerContainer ?? 500;
+        if (edoFeePerContainer) {
+            edoFeePerContainer.textContent = formatMoneyAmount(perContainerFee);
+        }
+        totalEdoFees.textContent = formatMoneyAmount(data.totalEdoFees);
         
         // Populate container list
         containerList.innerHTML = '';
@@ -226,7 +245,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="text-xs text-gray-500">${container.size || 'N/A'} • ${container.type || 'N/A'}</div>
                     </div>
                 </div>
-                <div class="text-sm font-medium text-green-600">₱500</div>
+                <div class="text-sm font-medium text-green-600">${formatMoneyAmount(perContainerFee)}</div>
             `;
             containerList.appendChild(containerItem);
         });

@@ -21,7 +21,8 @@ class AccreditationWorkflowService
         private DynamicFormRenderer $formRenderer,
         private AuditService $auditService,
         private NotificationService $notificationService,
-        private DatabaseTransactionService $dbTransactionService
+        private DatabaseTransactionService $dbTransactionService,
+        private BrokerRelationshipService $brokerRelationshipService
     ) {
     }
 
@@ -90,6 +91,9 @@ class AccreditationWorkflowService
                 
                 // Update the existing submission for resubmission
                 $existingSubmission->setFormConfig($formConfig);
+                if ($status === AccreditationStatus::COMPLIANCE_REQUIRED) {
+                    $submissionData['_resubmitted_after_compliance'] = true;
+                }
                 $existingSubmission->setSubmittedData($submissionData);
                 $existingSubmission->setStatus(AccreditationStatus::PENDING);
                 $existingSubmission->setEvaluator(null);
@@ -136,12 +140,16 @@ class AccreditationWorkflowService
      */
     public function canSubmitAccreditation(User $user, ?int $shippingLineId = null): array
     {
-        // Check if user is a consignee without a linked broker
-        if ($user instanceof Consignee && $user->getLinkedBroker() === null) {
-            return [
-                'valid' => false,
-                'message' => 'Consignees must link a broker before submitting accreditation'
-            ];
+        // Consignees need at least one active broker (referral relationship or legacy link)
+        if ($user instanceof Consignee) {
+            $this->brokerRelationshipService->syncLegacyLinkedBrokerFromRelationships($user);
+
+            if (!$this->brokerRelationshipService->consigneeHasActiveBroker($user) && $user->getLinkedBroker() === null) {
+                return [
+                    'valid' => false,
+                    'message' => 'Consignees must link a broker before submitting accreditation'
+                ];
+            }
         }
 
         // If shipping line ID is provided, check for that specific shipping line

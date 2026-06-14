@@ -1,10 +1,20 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 {% block title %}Admin Dashboard - OPTIMUS{% endblock %}
 {% block stylesheets %}
 {{ parent() }}
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 {% endblock %}
-{% block body %}
+
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+        <li>Admin</li>
+        <li>Dashboard</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
 <div class="space-y-6">
     <!-- Page Header -->
     <div class="card">
@@ -24,7 +34,7 @@
                         <span class="icon-[tabler--currency-peso] size-8"></span>
                     </div>
                     <div class="stat-title">Total Fees</div>
-                    <div class="stat-value text-primary">₱{{ edoPaymentStats.total_fees|number_format(2, '.', ',') }}</div>
+                    <div class="stat-value text-primary">{{ edoPaymentStats.total_fees|format_money('PHP') }}</div>
                     <div class="stat-desc">All verified payments</div>
                 </div>
                 <div class="stat">
@@ -32,7 +42,7 @@
                         <span class="icon-[tabler--calendar-check] size-8"></span>
                     </div>
                     <div class="stat-title">Daily Fees</div>
-                    <div class="stat-value text-success">₱{{ edoPaymentStats.daily_fees|number_format(2, '.', ',') }}</div>
+                    <div class="stat-value text-success">{{ edoPaymentStats.daily_fees|format_money('PHP') }}</div>
                     <div class="stat-desc">Today collections</div>
                 </div>
                 <div class="stat">
@@ -41,7 +51,7 @@
                     </div>
                     <div class="stat-title">Awaiting Payment</div>
                     <div class="stat-value text-warning">{{ edoPaymentStats.awaiting_payment_count }}</div>
-                    <div class="stat-desc">₱{{ edoPaymentStats.awaiting_payment_amount|number_format(2, '.', ',') }}</div>
+                    <div class="stat-desc">{{ edoPaymentStats.awaiting_payment_amount|format_money('PHP') }}</div>
                 </div>
                 <div class="stat">
                     <div class="stat-figure text-secondary">
@@ -49,7 +59,7 @@
                     </div>
                     <div class="stat-title">Completed</div>
                     <div class="stat-value text-secondary">{{ edoPaymentStats.completed_payment_count }}</div>
-                    <div class="stat-desc">₱{{ edoPaymentStats.completed_payment_amount|number_format(2, '.', ',') }}</div>
+                    <div class="stat-desc">{{ edoPaymentStats.completed_payment_amount|format_money('PHP') }}</div>
                 </div>
                 <div class="stat">
                     <div class="stat-figure text-info">
@@ -57,7 +67,7 @@
                     </div>
                     <div class="stat-title">Total Payments</div>
                     <div class="stat-value text-info">{{ edoPaymentStats.total_payment_count }}</div>
-                    <div class="stat-desc">₱{{ edoPaymentStats.total_payment_amount|number_format(2, '.', ',') }}</div>
+                    <div class="stat-desc">{{ edoPaymentStats.total_payment_amount|format_money('PHP') }}</div>
                 </div>
             </div>
         </div>
@@ -273,8 +283,7 @@
     </div>
 </div>
 {% endblock %}
-{% block javascripts %}
-{{ parent() }}
+{% block page_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded',function(){
     new ApexCharts(document.querySelector("#userChart"),{

@@ -79,6 +79,12 @@ abstract class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'datetime', nullable: true)]
     protected ?\DateTimeInterface $emailVerifiedAt = null;
 
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    protected ?\DateTimeInterface $welcomeModalDismissedAt = null;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    protected ?array $onboardingGuideCompletedSteps = null;
+
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     protected ?string $profilePhoto = null;
 
@@ -250,6 +256,44 @@ abstract class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function isEmailVerified(): bool
     {
         return $this->emailVerifiedAt !== null;
+    }
+
+    public function getWelcomeModalDismissedAt(): ?\DateTimeInterface
+    {
+        return $this->welcomeModalDismissedAt;
+    }
+
+    public function setWelcomeModalDismissedAt(?\DateTimeInterface $welcomeModalDismissedAt): self
+    {
+        $this->welcomeModalDismissedAt = $welcomeModalDismissedAt;
+        return $this;
+    }
+
+    public function hasSeenWelcomeModal(): bool
+    {
+        return $this->welcomeModalDismissedAt !== null;
+    }
+
+    /** @return string[] */
+    public function getOnboardingGuideCompletedSteps(): array
+    {
+        return $this->onboardingGuideCompletedSteps ?? [];
+    }
+
+    public function hasCompletedGuideStep(string $step): bool
+    {
+        return in_array($step, $this->getOnboardingGuideCompletedSteps(), true);
+    }
+
+    public function completeGuideStep(string $step): self
+    {
+        $steps = $this->getOnboardingGuideCompletedSteps();
+        if (!in_array($step, $steps, true)) {
+            $steps[] = $step;
+            $this->onboardingGuideCompletedSteps = $steps;
+        }
+
+        return $this;
     }
 
     public function isEmailVerificationTokenValid(): bool

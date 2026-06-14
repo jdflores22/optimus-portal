@@ -1,0 +1,48 @@
+{#
+  Shared Optimus logo component.
+
+  size: xs | sm | md | lg | xl
+  variant: plain | card
+  show_tagline: bool
+  link: optional route/url
+  align: start | center
+  class: extra wrapper classes
+#}
+{% set size = size|default('md') %}
+{% set variant = variant|default('plain') %}
+{% set show_tagline = show_tagline|default(false) %}
+{% set align = align|default('center') %}
+{% set sizes = {
+    'xs': 'h-8 w-auto max-w-[72px]',
+    'sm': 'h-10 w-auto max-w-[96px]',
+    'md': 'h-12 w-auto max-w-[120px]',
+    'lg': 'h-24 sm:h-28 w-auto max-w-[200px]',
+    'xl': 'h-32 w-auto max-w-[280px]',
+} %}
+{% set img_class = sizes[size]|default(sizes.md) %}
+{% set align_class = align == 'start' ? 'items-start' : 'items-center text-center' %}
+{% set tagline_class = variant == 'card' ? 'text-gray-400 mt-3' : 'text-base-content/40 mt-2' %}
+
+<div class="flex flex-col {{ align_class }} {{ class|default('') }}">
+    {% if link is defined and link %}
+        <a href="{{ link }}" class="flex flex-col {{ align_class }} no-underline hover:opacity-90 transition-opacity">
+    {% endif %}
+
+    <div class="{{ variant == 'card' ? 'bg-white rounded-2xl p-3 sm:p-4 shadow-xl ring-1 ring-white/20' : '' }}">
+        <img src="{{ asset('images/optimus.jpg') }}"
+             alt="OPTIMUS Shipping System"
+             class="{{ img_class }} object-contain {{ align == 'center' ? 'mx-auto' : '' }}"
+             loading="{{ size in ['xs', 'sm'] ? 'lazy' : 'eager' }}"
+             decoding="async">
+    </div>
+
+    {% if show_tagline %}
+        <p class="text-xs {{ tagline_class }} tracking-wider">
+            Developed By: Trans-net Software Development Services
+        </p>
+    {% endif %}
+
+    {% if link is defined and link %}
+        </a>
+    {% endif %}
+</div>

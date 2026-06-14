@@ -42,7 +42,7 @@
                             <span class="icon-[tabler--file-text] size-4"></span>
                             View Affected Manifests
                         </a>
-                        <a href="{{ path('consignee_referral_codes') }}" class="btn btn-error btn-sm rounded-lg gap-2">
+                        <a href="{{ path('consignee_brokers') }}" class="btn btn-error btn-sm rounded-lg gap-2">
                             <span class="icon-[tabler--plus] size-4"></span>
                             Add New Broker
                         </a>
@@ -162,7 +162,9 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {% if accreditationSubmissions|length == 0 %}
-                    <a href="{{ path('accreditation_index') }}" class="card bg-base-100/10 hover:bg-base-100/20 backdrop-blur-sm transition-all">
+                    <a href="{{ path('accreditation_index') }}"
+                       id="guide-submit-accreditation"
+                       class="card bg-base-100/10 hover:bg-base-100/20 backdrop-blur-sm transition-all">
                         <div class="card-body p-4">
                             <div class="flex items-start gap-3">
                                 <div class="size-10 bg-base-100/20 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -178,7 +180,9 @@
                     {% endif %}
                     
                     {% if approvedBrokers|length == 0 %}
-                    <a href="{{ path('consignee_referral_codes') }}" class="card bg-base-100/10 hover:bg-base-100/20 backdrop-blur-sm transition-all">
+                    <a href="{{ path('consignee_brokers') }}"
+                       id="guide-link-brokers"
+                       class="card bg-base-100/10 hover:bg-base-100/20 backdrop-blur-sm transition-all">
                         <div class="card-body p-4">
                             <div class="flex items-start gap-3">
                                 <div class="size-10 bg-base-100/20 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -342,7 +346,7 @@
                                     </div>
                                     {% endfor %}
                                 </div>
-                                <a href="{{ path('consignee_referral_codes') }}" class="mt-3 inline-flex items-center text-xs text-primary hover:underline font-medium gap-1">
+                                <a href="{{ path('consignee_brokers') }}" class="mt-3 inline-flex items-center text-xs text-primary hover:underline font-medium gap-1">
                                     <span class="icon-[tabler--plus] size-4"></span>
                                     Add more brokers
                                 </a>
@@ -438,4 +442,167 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block app_main_overlays %}
+    {% if show_onboarding_guide|default(false) %}
+        {% include 'consignee/_onboarding_guide_overlay.html.twig' %}
+    {% endif %}
+{% endblock %}
+
+{% block page_modals %}
+    {{ parent() }}
+    {% include 'dashboard/_consignee_welcome_modal.html.twig' %}
+    {% include 'dashboard/_consignee_guide_success_modal.html.twig' %}
+{% endblock %}
+
+{% block page_scripts %}
+    {{ parent() }}
+    {% include 'consignee/_onboarding_guide_scripts.html.twig' %}
+    {% if show_welcome_modal %}
+    <script>
+        (function () {
+            const modal = document.getElementById('consigneeWelcomeModal');
+            if (!modal) return;
+
+            const dismissUrl = {{ path('consignee_welcome_modal_dismiss')|json_encode|raw }};
+            let dismissed = false;
+            let opened = false;
+
+            function persistDismissal() {
+                if (dismissed) return;
+                dismissed = true;
+
+                fetch(dismissUrl, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin'
+                }).catch(function () {
+                    dismissed = false;
+                });
+            }
+
+            function startOnboardingGuide() {
+                const config = window.consigneeOnboardingGuideConfig;
+                if (!config || !config.enabled || !config.steps || config.steps.length === 0) {
+                    return;
+                }
+
+                const guide = window.consigneeOnboardingGuide
+                    || (typeof initConsigneeOnboardingGuide === 'function'
+                        ? initConsigneeOnboardingGuide(config)
+                        : null);
+
+                if (guide) {
+                    window.setTimeout(function () {
+                        guide.start();
+                    }, 250);
+                }
+            }
+
+            function closeWelcomeModal() {
+                persistDismissal();
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+                startOnboardingGuide();
+            }
+
+            function openWelcomeModal() {
+                if (opened) return;
+                opened = true;
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function waitForPermissionModalThenOpen() {
+                const permissionModal = document.getElementById('first-launch-permission-modal');
+                if (permissionModal) {
+                    window.setTimeout(waitForPermissionModalThenOpen, 300);
+                    return;
+                }
+                openWelcomeModal();
+            }
+
+            document.getElementById('consigneeWelcomeDismissBtn')?.addEventListener('click', closeWelcomeModal);
+            document.getElementById('consigneeWelcomeCloseBtn')?.addEventListener('click', closeWelcomeModal);
+            document.getElementById('consigneeWelcomeBackdrop')?.addEventListener('click', closeWelcomeModal);
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    closeWelcomeModal();
+                }
+            });
+
+            if (document.readyState === 'complete') {
+                waitForPermissionModalThenOpen();
+            } else {
+                window.addEventListener('load', waitForPermissionModalThenOpen);
+            }
+        })();
+    </script>
+    {% endif %}
+    {% if show_guide_success_modal|default(false) %}
+    <script>
+        (function () {
+            const modal = document.getElementById('consigneeGuideSuccessModal');
+            if (!modal) return;
+
+            const dismissUrl = {{ path('consignee_guide_dismiss_success')|json_encode|raw }};
+            let dismissed = false;
+
+            function stripGuideSuccessQueryParam() {
+                const url = new URL(window.location.href);
+                if (!url.searchParams.has('guide_success')) {
+                    return;
+                }
+                url.searchParams.delete('guide_success');
+                const next = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '') + url.hash;
+                window.history.replaceState({}, '', next);
+            }
+
+            function persistDismissal() {
+                if (dismissed) {
+                    return Promise.resolve();
+                }
+                dismissed = true;
+
+                return fetch(dismissUrl, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin'
+                }).catch(function () {
+                    dismissed = false;
+                });
+            }
+
+            function closeSuccessModal() {
+                persistDismissal().finally(function () {
+                    modal.classList.add('hidden');
+                    document.body.style.overflow = '';
+                    stripGuideSuccessQueryParam();
+                });
+            }
+
+            function openSuccessModal() {
+                stripGuideSuccessQueryParam();
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+
+            document.getElementById('consigneeGuideSuccessDismissBtn')?.addEventListener('click', closeSuccessModal);
+            document.getElementById('consigneeGuideSuccessCloseBtn')?.addEventListener('click', closeSuccessModal);
+            document.getElementById('consigneeGuideSuccessBackdrop')?.addEventListener('click', closeSuccessModal);
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    closeSuccessModal();
+                }
+            });
+
+            window.addEventListener('load', function () {
+                window.setTimeout(openSuccessModal, 400);
+            });
+        })();
+    </script>
+    {% endif %}
 {% endblock %}

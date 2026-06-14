@@ -1,0 +1,11 @@
+{#
+    Admin layout shim — maps legacy {% block content %} pages onto FlyonUI base.
+#}
+{% extends 'base.html.twig' %}
+
+{% block body %}
+<div class="space-y-5 sm:space-y-6 max-w-7xl mx-auto">
+    {% block admin_breadcrumbs %}{% endblock %}
+    {% block content %}{% endblock %}
+</div>
+{% endblock %}

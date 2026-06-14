@@ -18,7 +18,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-#[Route('/admin/user-hierarchy', name: 'admin_user_hierarchy_')]
+#[Route('/admin/api/user-hierarchy', name: 'admin_api_user_hierarchy_')]
 #[IsGranted('ROLE_SYSTEM_ADMIN')]
 class UserHierarchyAdminController extends AbstractController
 {

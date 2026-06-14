@@ -108,11 +108,11 @@ class DynamicFormRenderer
         $label = htmlspecialchars($field['label']);
         $type = $field['type'];
         $required = $field['required'] ?? false;
-        $requiredMark = $required ? '<span class="text-red-500">*</span>' : '';
+        $requiredMark = $required ? '<span class="text-error">*</span>' : '';
 
-        $html = '<div class="form-field mb-4">';
-        $html .= "<label for=\"{$fieldId}\" class=\"block text-sm font-medium text-gray-700 mb-1\">";
-        $html .= "{$label} {$requiredMark}";
+        $html = '<div class="form-control mb-4">';
+        $html .= "<label for=\"{$fieldId}\" class=\"label py-1\">";
+        $html .= "<span class=\"label-text font-medium\">{$label} {$requiredMark}</span>";
         $html .= '</label>';
 
         switch ($type) {
@@ -138,10 +138,10 @@ class DynamicFormRenderer
                 $html .= $this->renderRadioField($field);
                 break;
             default:
-                $html .= '<p class="text-red-500">Unknown field type</p>';
+                $html .= '<p class="text-error text-sm">Unknown field type</p>';
         }
 
-        $html .= '<div class="field-error text-red-500 text-sm mt-1 hidden"></div>';
+        $html .= '<label class="label py-0"><span class="label-text-alt text-error hidden field-error"></span></label>';
         $html .= '</div>';
 
         return $html;
@@ -156,7 +156,7 @@ class DynamicFormRenderer
         $required = $field['required'] ? 'required' : '';
         
         return "<input type=\"text\" id=\"{$fieldId}\" name=\"{$fieldId}\" {$required} " .
-               "class=\"w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500\" />";
+               "class=\"input input-bordered w-full\" />";
     }
 
     /**
@@ -168,7 +168,7 @@ class DynamicFormRenderer
         $required = $field['required'] ? 'required' : '';
         
         return "<input type=\"number\" id=\"{$fieldId}\" name=\"{$fieldId}\" {$required} " .
-               "class=\"w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500\" />";
+               "class=\"input input-bordered w-full\" />";
     }
 
     /**
@@ -180,7 +180,7 @@ class DynamicFormRenderer
         $required = $field['required'] ? 'required' : '';
         
         return "<input type=\"date\" id=\"{$fieldId}\" name=\"{$fieldId}\" {$required} " .
-               "class=\"w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500\" />";
+               "class=\"input input-bordered w-full\" />";
     }
 
     /**
@@ -199,7 +199,7 @@ class DynamicFormRenderer
         }
         
         return "<input type=\"file\" id=\"{$fieldId}\" name=\"{$fieldId}\" {$required} {$accept} " .
-               "class=\"w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500\" />";
+               "class=\"file-input file-input-bordered w-full\" />";
     }
 
     /**
@@ -213,7 +213,7 @@ class DynamicFormRenderer
         $options = $validation['options'] ?? [];
         
         $html = "<select id=\"{$fieldId}\" name=\"{$fieldId}\" {$required} " .
-                "class=\"w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500\">";
+                "class=\"select select-bordered w-full\">";
         $html .= '<option value="">-- Select --</option>';
         
         foreach ($options as $option) {
@@ -236,7 +236,7 @@ class DynamicFormRenderer
         $required = $field['required'] ? 'required' : '';
         
         return "<input type=\"checkbox\" id=\"{$fieldId}\" name=\"{$fieldId}\" value=\"1\" {$required} " .
-               "class=\"h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded\" />";
+               "class=\"checkbox checkbox-primary\" />";
     }
 
     /**
@@ -256,11 +256,11 @@ class DynamicFormRenderer
             $label = htmlspecialchars($option['label'] ?? $option);
             $optionId = "{$fieldId}_{$index}";
             
-            $html .= '<div class="flex items-center">';
+            $html .= '<label class="flex items-center gap-3 cursor-pointer">';
             $html .= "<input type=\"radio\" id=\"{$optionId}\" name=\"{$fieldId}\" value=\"{$value}\" {$required} " .
-                     "class=\"h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300\" />";
-            $html .= "<label for=\"{$optionId}\" class=\"ml-2 text-sm text-gray-700\">{$label}</label>";
-            $html .= '</div>';
+                     "class=\"radio radio-primary\" />";
+            $html .= "<span class=\"text-sm\">{$label}</span>";
+            $html .= '</label>';
         }
         
         $html .= '</div>';

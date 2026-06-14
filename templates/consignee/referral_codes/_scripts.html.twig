@@ -1,0 +1,99 @@
+<style>
+    #generateModal.guide-backdrop-hidden #generateModalBackdrop {
+        background-color: transparent !important;
+    }
+</style>
+<script>
+function showToast(message, type) {
+    const container = document.getElementById('copyToastContainer');
+    if (!container) {
+        return;
+    }
+
+    const typeClass = type === 'error' ? 'alert-error' : 'alert-success';
+    const icon = type === 'error' ? 'icon-[tabler--alert-circle]' : 'icon-[tabler--check]';
+    const toast = document.createElement('div');
+    toast.className = 'alert ' + typeClass + ' shadow-lg pointer-events-auto';
+    toast.innerHTML = '<span class="' + icon + ' size-5"></span><span>' + message + '</span>';
+    container.appendChild(toast);
+
+    window.setTimeout(function () {
+        toast.remove();
+    }, 2500);
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function () {
+        showToast('Code copied to clipboard!', 'success');
+    }, function (err) {
+        console.error('Could not copy text: ', err);
+        showToast('Could not copy code', 'error');
+    });
+}
+
+function openModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) {
+        return;
+    }
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) {
+        return;
+    }
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+}
+
+function openGenerateModal() {
+    openModal('generateModal');
+}
+
+function closeGenerateModal() {
+    closeModal('generateModal');
+}
+
+function showDeactivateModal(codeId, codeText) {
+    document.getElementById('deactivateCodeId').value = codeId;
+    document.getElementById('deactivateCodeDisplay').textContent = codeText;
+    document.getElementById('deactivateForm').action = '{{ path('consignee_deactivate_code', {id: '__ID__'}) }}'.replace('__ID__', codeId);
+    openModal('deactivateModal');
+}
+
+function closeDeactivateModal() {
+    closeModal('deactivateModal');
+}
+
+function confirmDeactivate() {
+    document.getElementById('deactivateForm').submit();
+}
+
+function showReactivateModal(codeId, codeText) {
+    document.getElementById('reactivateCodeId').value = codeId;
+    document.getElementById('reactivateCodeDisplay').textContent = codeText;
+    document.getElementById('reactivateForm').action = '{{ path('consignee_reactivate_code', {id: '__ID__'}) }}'.replace('__ID__', codeId);
+    openModal('reactivateModal');
+}
+
+function closeReactivateModal() {
+    closeModal('reactivateModal');
+}
+
+function confirmReactivate() {
+    document.getElementById('reactivateForm').submit();
+}
+
+document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+        closeGenerateModal();
+        closeDeactivateModal();
+        closeReactivateModal();
+    }
+});
+</script>

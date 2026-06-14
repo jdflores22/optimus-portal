@@ -1,0 +1,152 @@
+{% set fieldId = field.id %}
+{% set isRequired = field.required|default(false) %}
+{% set fieldValue = submittedData[fieldId] is defined ? submittedData[fieldId] : '' %}
+{% set fieldIcon = {
+    'text': 'icon-[tabler--forms]',
+    'number': 'icon-[tabler--hash]',
+    'file': 'icon-[tabler--upload]',
+    'dropdown': 'icon-[tabler--selector]',
+    'checkbox': 'icon-[tabler--checkbox]',
+    'textarea': 'icon-[tabler--align-left]',
+    'email': 'icon-[tabler--mail]',
+    'date': 'icon-[tabler--calendar]'
+}[field.type|default('text')] ?? 'icon-[tabler--forms]' %}
+
+<div class="rounded-xl p-4 sm:p-5 {{ fieldHasError ? 'bg-error/5 ring-1 ring-error/30' : 'bg-base-200/50' }}" data-field-block>
+    <div class="flex items-start gap-3 mb-4">
+        <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <span class="{{ fieldIcon }} size-4 text-primary"></span>
+        </div>
+        <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="badge badge-ghost badge-sm">#{{ loopIndex }}</span>
+                <h3 class="font-semibold text-base-content">
+                    {{ field.label }}
+                    {% if isRequired %}<span class="text-error">*</span>{% endif %}
+                </h3>
+            </div>
+            {% if field.validation.message is defined %}
+                <p class="text-xs text-base-content/60 mt-1">{{ field.validation.message }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="form-control">
+        {% if field.type == 'text' or field.type == 'email' %}
+            <input type="{{ field.type }}"
+                   name="{{ fieldId }}"
+                   id="field_{{ fieldId }}"
+                   class="input input-bordered w-full {{ fieldHasError ? 'input-error' : '' }}"
+                   value="{{ fieldValue }}"
+                   {{ isRequired ? 'required data-required=true' : '' }}>
+
+        {% elseif field.type == 'number' %}
+            <input type="number"
+                   name="{{ fieldId }}"
+                   id="field_{{ fieldId }}"
+                   class="input input-bordered w-full {{ fieldHasError ? 'input-error' : '' }}"
+                   value="{{ fieldValue }}"
+                   {{ field.validation.min is defined ? 'min="' ~ field.validation.min ~ '"' : '' }}
+                   {{ field.validation.max is defined ? 'max="' ~ field.validation.max ~ '"' : '' }}
+                   {{ isRequired ? 'required data-required=true' : '' }}>
+
+        {% elseif field.type == 'date' %}
+            <input type="date"
+                   name="{{ fieldId }}"
+                   id="field_{{ fieldId }}"
+                   class="input input-bordered w-full {{ fieldHasError ? 'input-error' : '' }}"
+                   value="{{ fieldValue }}"
+                   {{ isRequired ? 'required data-required=true' : '' }}>
+
+        {% elseif field.type == 'textarea' %}
+            <textarea name="{{ fieldId }}"
+                      id="field_{{ fieldId }}"
+                      rows="4"
+                      class="textarea textarea-bordered w-full {{ fieldHasError ? 'textarea-error' : '' }}"
+                      {{ isRequired ? 'required data-required=true' : '' }}>{{ fieldValue }}</textarea>
+
+        {% elseif field.type == 'file' %}
+            <input type="file"
+                   name="{{ fieldId }}"
+                   id="field_{{ fieldId }}"
+                   class="hidden"
+                   data-file-input
+                   data-field-label="{{ field.label }}"
+                   {{ field.validation.allowedTypes is defined ? 'accept=".' ~ field.validation.allowedTypes|join(',.') ~ '"' : '' }}
+                   {{ isRequired ? 'required data-required=true' : '' }}>
+            <div class="border border-dashed border-base-content/15 rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                 data-file-zone="field_{{ fieldId }}"
+                 data-file-trigger="field_{{ fieldId }}">
+                <span class="icon-[tabler--cloud-upload] size-10 text-base-content/40 mx-auto"></span>
+                <p class="mt-3 text-sm font-medium" data-file-label="field_{{ fieldId }}">Click to upload or drag and drop</p>
+                <p class="text-xs text-base-content/60 mt-1">
+                    {% if field.validation.allowedTypes is defined %}
+                        Allowed: {{ field.validation.allowedTypes|join(', ')|upper }}
+                    {% else %}
+                        PDF, JPG, or PNG
+                    {% endif %}
+                </p>
+                <p class="text-sm text-success font-medium mt-2 hidden" data-file-name="field_{{ fieldId }}"></p>
+            </div>
+
+        {% elseif field.type == 'dropdown' %}
+            <select name="{{ fieldId }}"
+                    id="field_{{ fieldId }}"
+                    class="select select-bordered w-full {{ fieldHasError ? 'select-error' : '' }}"
+                    {{ isRequired ? 'required data-required=true' : '' }}>
+                <option value="">Select an option</option>
+                {% if field.validation.options is defined %}
+                    {% for option_value, option_label in field.validation.options %}
+                        <option value="{{ option_value }}" {{ (fieldValue == option_value) ? 'selected' : '' }}>
+                            {{ option_label }}
+                        </option>
+                    {% endfor %}
+                {% endif %}
+            </select>
+
+        {% elseif field.type == 'checkbox' %}
+            {% if field.validation.options is defined %}
+                <div class="space-y-3">
+                    {% for option_value, option_label in field.validation.options %}
+                        {% set checkbox_name = fieldId ~ '[]' %}
+                        {% set is_checked = submittedData[fieldId] is defined and submittedData[fieldId] is iterable and option_value in submittedData[fieldId] %}
+                        <label class="flex items-center gap-3 cursor-pointer rounded-lg bg-base-100 px-4 py-3 hover:bg-base-100/80 transition-colors">
+                            <input type="checkbox"
+                                   name="{{ checkbox_name }}"
+                                   value="{{ option_value }}"
+                                   class="checkbox checkbox-primary"
+                                   {{ is_checked ? 'checked' : '' }}
+                                   {{ isRequired ? 'data-required=true' : '' }}>
+                            <span class="text-sm">{{ option_label }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <label class="flex items-center gap-3 cursor-pointer rounded-lg bg-base-100 px-4 py-3 hover:bg-base-100/80 transition-colors">
+                    <input type="checkbox"
+                           name="{{ fieldId }}"
+                           id="field_{{ fieldId }}"
+                           value="1"
+                           class="checkbox checkbox-primary"
+                           {{ (fieldValue) ? 'checked' : '' }}
+                           {{ isRequired ? 'required data-required=true' : '' }}>
+                    <span class="text-sm">{{ field.label }}</span>
+                </label>
+            {% endif %}
+
+        {% else %}
+            <input type="text"
+                   name="{{ fieldId }}"
+                   id="field_{{ fieldId }}"
+                   class="input input-bordered w-full {{ fieldHasError ? 'input-error' : '' }}"
+                   value="{{ fieldValue }}"
+                   {{ isRequired ? 'required data-required=true' : '' }}>
+        {% endif %}
+
+        {% if fieldHasError and fieldError %}
+            <label class="label">
+                <span class="label-text-alt text-error">{{ fieldError }}</span>
+            </label>
+        {% endif %}
+    </div>
+</div>

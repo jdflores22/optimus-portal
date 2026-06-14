@@ -1,0 +1,148 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New Repositioning Request - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="space-y-6 max-w-6xl mx-auto">
+    <div>
+        <a href="{{ path(indexRoute) }}" class="text-sm text-base-content/60 hover:text-primary inline-flex items-center gap-1 mb-2">
+            <span class="icon-[tabler--arrow-left] size-4"></span> Back to requests
+        </a>
+        <h1 class="text-2xl font-bold text-base-content">New Export / Repositioning Request</h1>
+        <p class="text-sm text-base-content/60 mt-1">
+            Submit a request letter to move containers from a Container Yard to a Port/Terminal.
+            Containers are listed by <strong>highest dwell time first</strong> (CAO 8-2019 customs compliance).
+        </p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" action="{{ path(formAction) }}" class="space-y-6">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('repositioning_request') }}">
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body space-y-4">
+                <h2 class="font-semibold text-lg">Request Details</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-medium">Request Type</span></label>
+                        <select name="request_type" class="select select-bordered w-full" required>
+                            <option value="export">Export</option>
+                            <option value="repositioning">Repositioning</option>
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-medium">Request Letter (PDF/JPG/PNG)</span></label>
+                        <input type="file" name="request_letter" accept=".pdf,.jpg,.jpeg,.png" class="file-input file-input-bordered w-full">
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-medium">Source Container Yard *</span></label>
+                        <select name="source_cy" id="source_cy" class="select select-bordered w-full" required onchange="filterByCy(this.value)">
+                            <option value="">Select CY...</option>
+                            {% for cy in cyTerminals %}
+                            <option value="{{ cy.id }}" {{ selectedCyId == cy.id ? 'selected' : '' }}>{{ cy.name }} ({{ cy.code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-medium">Destination Port/Terminal *</span></label>
+                        <select name="destination_port" class="select select-bordered w-full" required>
+                            <option value="">Select port...</option>
+                            {% for port in portTerminals %}
+                            <option value="{{ port.id }}">{{ port.name }} ({{ port.code }}) — TERMINAL</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text font-medium">Purpose / Remarks *</span></label>
+                    <textarea name="purpose" class="textarea textarea-bordered h-24" required placeholder="Describe the export or repositioning purpose..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                    <div>
+                        <h2 class="font-semibold text-lg">Select Containers</h2>
+                        <p class="text-sm text-base-content/60">Sorted by dwell time — highest days first (select containers approaching customs limits)</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="search" name="search" value="{{ search|default('') }}" placeholder="Search container #..." class="input input-bordered input-sm">
+                        <button type="button" onclick="filterByCy(document.getElementById('source_cy').value)" class="btn btn-sm btn-ghost">Filter</button>
+                    </div>
+                </div>
+
+                {% if eligibleContainers|length > 0 %}
+                <div class="overflow-x-auto max-h-96 overflow-y-auto border border-base-300 rounded-lg">
+                    <table class="table table-sm table-pin-rows">
+                        <thead>
+                            <tr class="bg-base-200">
+                                <th><input type="checkbox" class="checkbox checkbox-sm" id="selectAll" onclick="toggleAll(this)"></th>
+                                <th>#</th>
+                                <th>Container</th>
+                                <th>Size</th>
+                                <th>CY</th>
+                                <th class="text-error font-bold">Dwell Days ↓</th>
+                                <th>Discharge Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in eligibleContainers %}
+                            {% set c = row.container %}
+                            <tr class="{{ row.dwell_days >= 60 ? 'bg-warning/10' : '' }}">
+                                <td><input type="checkbox" name="container_ids[]" value="{{ c.id }}" class="checkbox checkbox-sm container-cb"></td>
+                                <td class="text-base-content/50">{{ loop.index }}</td>
+                                <td class="font-mono font-semibold">{{ c.containerNumber }}</td>
+                                <td>{{ row.size }}</td>
+                                <td class="text-sm">{{ row.cy_name }}</td>
+                                <td>
+                                    <span class="badge {{ row.dwell_days >= 90 ? 'badge-error' : (row.dwell_days >= 60 ? 'badge-warning' : 'badge-neutral') }} badge-lg">
+                                        {{ row.dwell_days }} days
+                                    </span>
+                                </td>
+                                <td class="text-sm">
+                                    {% if row.discharge_date %}
+                                        {{ row.discharge_date|date('M j, Y') }}
+                                    {% else %}
+                                        <span class="text-base-content/40">Not recorded</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <span class="icon-[tabler--info-circle] size-5"></span>
+                    <span>Select a Container Yard above to load eligible containers from inventory.</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3">
+            <a href="{{ path(indexRoute) }}" class="btn btn-ghost">Cancel</a>
+            <button type="submit" class="btn btn-primary gap-2">
+                <span class="icon-[tabler--send] size-4"></span>
+                Submit Request
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function filterByCy(cyId) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('cy', cyId || '');
+    const search = document.querySelector('input[name="search"]');
+    if (search && search.value) url.searchParams.set('search', search.value);
+    window.location.href = url.toString();
+}
+function toggleAll(el) {
+    document.querySelectorAll('.container-cb').forEach(cb => cb.checked = el.checked);
+}
+</script>
+{% endblock %}

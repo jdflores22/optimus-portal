@@ -53,7 +53,7 @@ function displayNOADetails(noa) {
     document.getElementById('displayBlNumber').textContent = noa.blNumber;
     document.getElementById('displayVesselNumber').textContent = noa.vesselNumber;
     document.getElementById('displayEta').textContent = noa.eta;
-    document.getElementById('displayCyLocation').textContent = noa.cyLocation;
+    document.getElementById('displayCyLocation').textContent = noa.portLocation || 'N/A';
     document.getElementById('displayContainerCount').textContent = noa.containerCount;
     
     document.getElementById('noaDetailsDisplay').classList.remove('hidden');

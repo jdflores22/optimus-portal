@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Consignee;
 use App\Entity\User;
 use App\Service\EmailVerificationService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -19,7 +20,7 @@ class EmailVerificationController extends AbstractController
     }
 
     #[Route('/email/verify/{token}', name: 'email_verify', methods: ['GET'])]
-    public function verifyEmail(string $token): Response
+    public function verifyEmail(string $token, Request $request): Response
     {
         try {
             $user = $this->emailVerificationService->verifyEmail($token);
@@ -27,6 +28,12 @@ class EmailVerificationController extends AbstractController
             if (!$user) {
                 $this->addFlash('error', 'Invalid or expired verification link. Please request a new verification email.');
                 return $this->redirectToRoute('app_login');
+            }
+
+            if ($user instanceof Consignee) {
+                $user->setWelcomeModalDismissedAt(null);
+                $this->entityManager->flush();
+                $request->getSession()->set('show_consignee_welcome', true);
             }
 
             $this->addFlash('success', 'Email verified successfully! Your account is now pending approval. You will receive a notification once approved.');

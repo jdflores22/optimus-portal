@@ -1,136 +1,145 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 
-{% block title %}User Hierarchy Management{% endblock %}
-{% block page_title %}User Hierarchy{% endblock %}
+{% block title %}User Hierarchy Management - OPTIMUS{% endblock %}
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+                                <li><a href="{{ path('app_admin_dashboard') }}">Dashboard</a></li>
+                                <li>User Hierarchy</li>
+                            </ul>
+</div>
+{% endblock %}
 
-{% block body %}
-<div class="space-y-5">
-
-    {# ── Breadcrumb ── #}
-    <div class="breadcrumbs text-sm">
-        <ul>
-            <li>
-                <a href="{{ path('app_admin_dashboard') }}" class="inline-flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
-                    </svg>
-                    Dashboard
-                </a>
-            </li>
-            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-            <li aria-current="page">User Hierarchy</li>
-        </ul>
-    </div>
-
-    {# ── Header ── #}
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div class="flex items-center gap-4">
-            <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <span class="icon-[tabler--users] size-7 text-primary"></span>
-            </div>
-            <div>
-                <h1 class="text-2xl sm:text-3xl font-bold text-base-content">User Hierarchy</h1>
-                <p class="text-sm text-base-content/60 mt-1">Manage hierarchical user relationships and role assignments</p>
+{% block content %}
+<div class="space-y-5 sm:space-y-6">
+{# Header #}
+        <div class="bg-base-100 shadow-sm rounded-xl">
+            <div class="p-4 sm:p-6">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-4">
+                            <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                <span class="icon-[tabler--users] size-6 text-primary"></span>
+                            </div>
+                            <div class="min-w-0">
+                                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">User Hierarchy</h1>
+                                <p class="text-sm text-base-content/60 mt-1">Manage hierarchical user relationships and role assignments</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <a href="{{ path('admin_user_hierarchy_pending_invitations') }}" class="btn btn-ghost btn-sm gap-2">
+                            <span class="icon-[tabler--inbox] size-4"></span>
+                            Pending
+                        </a>
+                        {% if app.user.role.value == 'SYSTEM_ADMIN' %}
+                            <a href="{{ path('admin_user_hierarchy_statistics') }}" class="btn btn-ghost btn-sm gap-2">
+                                <span class="icon-[tabler--chart-bar] size-4"></span>
+                                Statistics
+                            </a>
+                            <a href="{{ path('admin_user_hierarchy_validate_integrity') }}" class="btn btn-ghost btn-sm gap-2">
+                                <span class="icon-[tabler--shield-check] size-4"></span>
+                                Validate
+                            </a>
+                        {% endif %}
+                        <a href="{{ path('admin_user_hierarchy_export', {format: 'csv'}) }}" class="btn btn-outline btn-sm gap-2">
+                            <span class="icon-[tabler--download] size-4"></span>
+                            Export
+                        </a>
+                        <a href="{{ path('admin_user_hierarchy_create') }}" class="btn btn-primary btn-sm gap-2">
+                            <span class="icon-[tabler--plus] size-4"></span>
+                            Create User
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-            <a href="{{ path('admin_user_hierarchy_pending_invitations') }}" class="btn btn-soft btn-sm gap-2 rounded-full">
-                <span class="icon-[tabler--inbox] size-4"></span>
-                Pending
-            </a>
-            {% if app.user.role.value == 'SYSTEM_ADMIN' %}
-                <a href="{{ path('admin_user_hierarchy_statistics') }}" class="btn btn-soft btn-sm gap-2 rounded-full">
-                    <span class="icon-[tabler--chart-bar] size-4"></span>
-                    Statistics
-                </a>
-                <a href="{{ path('admin_user_hierarchy_validate_integrity') }}" class="btn btn-soft btn-sm gap-2 rounded-full">
-                    <span class="icon-[tabler--shield-check] size-4"></span>
-                    Validate
-                </a>
-            {% endif %}
-            <a href="{{ path('admin_user_hierarchy_export', {format: 'csv'}) }}" class="btn btn-soft btn-sm gap-2 rounded-full">
-                <span class="icon-[tabler--download] size-4"></span>
-                Export
-            </a>
-            <a href="{{ path('admin_user_hierarchy_create') }}" class="btn btn-primary btn-sm gap-2 rounded-full">
-                <span class="icon-[tabler--plus] size-4"></span>
-                Create User
-            </a>
-        </div>
-    </div>
 
-    {# ── Flash messages ── #}
-    {% for message in app.flashes('success') %}
-        <div class="alert alert-success"><span class="icon-[tabler--circle-check] size-5"></span><span>{{ message }}</span></div>
-    {% endfor %}
-    {% for message in app.flashes('error') %}
-        <div class="alert alert-error"><span class="icon-[tabler--alert-circle] size-5"></span><span>{{ message }}</span></div>
-    {% endfor %}
-    {% for message in app.flashes('warning') %}
-        <div class="alert alert-warning"><span class="icon-[tabler--alert-triangle] size-5"></span><span>{{ message }}</span></div>
-    {% endfor %}
-
-    {# ── Filters ── #}
-    <div class="card bg-base-100 shadow-sm">
-        <div class="card-body p-5">
-            <div class="flex items-center gap-2 mb-4">
-                <span class="icon-[tabler--filter] size-5 text-base-content/70"></span>
-                <h3 class="font-semibold text-base text-base-content">Filters</h3>
+        {# Flash messages #}
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success">
+                <span class="icon-[tabler--circle-check] size-5"></span>
+                <span>{{ message }}</span>
             </div>
-            <form method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="form-control">
-                    <label class="label pb-1"><span class="label-text text-xs font-medium">Role</span></label>
-                    <select name="role" class="select select-bordered select-sm">
-                        <option value="">All Roles</option>
-                        <option value="SHIPPING_LINES_ADMIN" {% if filters.role == 'SHIPPING_LINES_ADMIN' %}selected{% endif %}>Shipping Lines Admin</option>
-                        <option value="SL_STAFF" {% if filters.role == 'SL_STAFF' %}selected{% endif %}>SL Staff</option>
-                        <option value="EVALUATOR" {% if filters.role == 'EVALUATOR' %}selected{% endif %}>Evaluator</option>
-                        <option value="ACCOUNTING" {% if filters.role == 'ACCOUNTING' %}selected{% endif %}>Accounting</option>
-                        <option value="TERMINAL_TEAM" {% if filters.role == 'TERMINAL_TEAM' %}selected{% endif %}>Terminal Team</option>
-                    </select>
-                </div>
-                <div class="form-control">
-                    <label class="label pb-1"><span class="label-text text-xs font-medium">Shipping Line</span></label>
-                    <select name="shipping_line_id" class="select select-bordered select-sm">
-                        <option value="">All Shipping Lines</option>
-                        {% for sl in shippingLines %}
-                            <option value="{{ sl.id }}" {% if filters.shipping_line_id == sl.id %}selected{% endif %}>{{ sl.brandName }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-control">
-                    <label class="label pb-1"><span class="label-text text-xs font-medium">Search</span></label>
-                    <input type="text" name="search" value="{{ filters.search }}"
-                           placeholder="Email, name..." class="input input-bordered input-sm w-full">
-                </div>
-                <div class="flex items-end gap-2">
-                    <button type="submit" class="btn btn-primary btn-sm flex-1 rounded-full">
-                        <span class="icon-[tabler--search] size-4"></span>
-                        Filter
-                    </button>
-                    <a href="{{ path('admin_user_hierarchy_list') }}" class="btn btn-ghost btn-sm rounded-full">Clear</a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    {# ── Users table ── #}
-    <div class="card bg-base-100 shadow-sm">
-        {% if users is empty %}
-            <div class="flex flex-col items-center justify-center py-16 text-base-content/40 gap-3">
-                <span class="icon-[tabler--users] size-14"></span>
-                <p class="font-medium text-base-content/60">No users found</p>
-                <p class="text-sm">No hierarchical users match your criteria.</p>
-                <a href="{{ path('admin_user_hierarchy_create') }}" class="btn btn-primary btn-sm gap-2 mt-2 rounded-full">
-                    <span class="icon-[tabler--plus] size-4"></span>
-                    Create User
-                </a>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-error">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <span>{{ message }}</span>
             </div>
-        {% else %}
-            <div class="card-body p-0">
-                <div class="px-6 py-4 border-b border-base-300">
-                    <h3 class="text-lg font-semibold text-base-content">Users</h3>
-                    <p class="text-sm text-base-content/60">{{ pagination.total }} total users</p>
+        {% endfor %}
+        {% for message in app.flashes('warning') %}
+            <div class="alert alert-warning">
+                <span class="icon-[tabler--alert-triangle] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+
+        {# Filters #}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-4 sm:p-5">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="icon-[tabler--filter] size-5 text-base-content/70"></span>
+                    <h3 class="font-semibold text-base text-base-content">Filters</h3>
+                </div>
+                <form method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="form-control">
+                        <label class="label py-1"><span class="label-text font-medium">Role</span></label>
+                        <select name="role" class="select select-bordered w-full">
+                            <option value="">All Roles</option>
+                            <option value="SHIPPING_LINES_ADMIN" {% if filters.role == 'SHIPPING_LINES_ADMIN' %}selected{% endif %}>Shipping Lines Admin</option>
+                            <option value="SL_STAFF" {% if filters.role == 'SL_STAFF' %}selected{% endif %}>SL Staff</option>
+                            <option value="EVALUATOR" {% if filters.role == 'EVALUATOR' %}selected{% endif %}>Evaluator</option>
+                            <option value="ACCOUNTING" {% if filters.role == 'ACCOUNTING' %}selected{% endif %}>Accounting</option>
+                            <option value="TERMINAL_TEAM" {% if filters.role == 'TERMINAL_TEAM' %}selected{% endif %}>Terminal Team</option>
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label py-1"><span class="label-text font-medium">Shipping Line</span></label>
+                        <select name="shipping_line_id" class="select select-bordered w-full">
+                            <option value="">All Shipping Lines</option>
+                            {% for sl in shippingLines %}
+                                <option value="{{ sl.id }}" {% if filters.shipping_line_id == sl.id %}selected{% endif %}>{{ sl.brandName }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label py-1"><span class="label-text font-medium">Search</span></label>
+                        <label class="input input-bordered flex items-center gap-2">
+                            <span class="icon-[tabler--search] size-4 text-base-content/50"></span>
+                            <input type="text" name="search" value="{{ filters.search }}" class="grow" placeholder="Email, name...">
+                        </label>
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm flex-1 gap-2">
+                            <span class="icon-[tabler--search] size-4"></span>
+                            Filter
+                        </button>
+                        <a href="{{ path('admin_user_hierarchy_list') }}" class="btn btn-ghost btn-sm">Clear</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {# Users table #}
+        <div class="card bg-base-100 shadow-sm">
+            {% if users is empty %}
+                <div class="card-body flex flex-col items-center justify-center py-16 text-center">
+                    <span class="icon-[tabler--users] size-12 text-base-content/30"></span>
+                    <h3 class="mt-4 text-base font-medium text-base-content">No users found</h3>
+                    <p class="mt-2 text-sm text-base-content/60">No hierarchical users match your criteria.</p>
+                    <a href="{{ path('admin_user_hierarchy_create') }}" class="btn btn-primary btn-sm gap-2 mt-6">
+                        <span class="icon-[tabler--plus] size-4"></span>
+                        Create User
+                    </a>
+                </div>
+            {% else %}
+                <div class="card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 sm:px-6 pt-4 sm:pt-5">
+                    <div>
+                        <h3 class="card-title text-base sm:text-lg">Users</h3>
+                        <p class="text-sm text-base-content/60 mt-1">{{ pagination.total }} total users</p>
+                    </div>
+                    <span class="badge badge-ghost">{{ users|length }} shown</span>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="table">
@@ -148,11 +157,9 @@
                         <tbody>
                             {% for user in users %}
                                 <tr class="hover">
-
-                                    {# User #}
                                     <td>
                                         <div class="flex items-center gap-3">
-                                            <div class="size-10 rounded-full {{ avatar_colors(user) }} flex items-center justify-center flex-shrink-0">
+                                            <div class="size-10 rounded-full {{ avatar_colors(user) }} flex items-center justify-center shrink-0">
                                                 <span class="text-sm font-semibold">
                                                     {% if user.firstName is defined and user.lastName is defined %}
                                                         {{ (user.firstName ~ user.lastName)|slice(0,2)|upper }}
@@ -173,61 +180,55 @@
                                             </div>
                                         </div>
                                     </td>
-
-                                    {# Role #}
                                     <td>
                                         {% if user.role.value == 'SHIPPING_LINES_ADMIN' %}
-                                            <span class="badge badge-soft badge-secondary">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                                            <span class="badge badge-secondary badge-sm">{{ user.role.value|replace({'_': ' '})|title }}</span>
                                         {% elseif user.role.value == 'SL_STAFF' %}
-                                            <span class="badge badge-soft badge-primary">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                                            <span class="badge badge-primary badge-sm">{{ user.role.value|replace({'_': ' '})|title }}</span>
                                         {% elseif user.role.value == 'EVALUATOR' %}
-                                            <span class="badge badge-soft badge-info">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                                            <span class="badge badge-info badge-sm">{{ user.role.value|replace({'_': ' '})|title }}</span>
                                         {% elseif user.role.value == 'ACCOUNTING' %}
-                                            <span class="badge badge-soft badge-warning">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                                            <span class="badge badge-warning badge-sm">{{ user.role.value|replace({'_': ' '})|title }}</span>
                                         {% elseif user.role.value == 'TERMINAL_TEAM' %}
-                                            <span class="badge badge-soft badge-accent">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                                            <span class="badge badge-accent badge-sm">{{ user.role.value|replace({'_': ' '})|title }}</span>
                                         {% else %}
-                                            <span class="badge badge-soft badge-ghost">{{ user.role.value|replace({'_': ' '})|title }}</span>
+                                            <span class="badge badge-ghost badge-sm">{{ user.role.value|replace({'_': ' '})|title }}</span>
                                         {% endif %}
                                     </td>
-
-                                    {# Shipping line #}
                                     <td class="text-sm">
                                         {% if user.role.value == 'SHIPPING_LINES_ADMIN' and user.managedShippingLine %}
                                             <div class="flex items-center gap-2">
-                                                <span class="size-2 rounded-full bg-primary flex-shrink-0"></span>
+                                                <span class="size-2 rounded-full bg-primary shrink-0"></span>
                                                 <a href="{{ path('admin_shipping_lines_detail', {id: user.managedShippingLine.id}) }}"
-                                                   class="text-primary hover:underline font-medium">{{ user.managedShippingLine.brandName }}</a>
-                                                <span class="badge badge-soft badge-primary badge-xs">Managed</span>
+                                                   class="link link-primary font-medium">{{ user.managedShippingLine.brandName }}</a>
+                                                <span class="badge badge-primary badge-xs">Managed</span>
                                             </div>
                                         {% elseif user.shippingLineAdmin and user.shippingLineAdmin.managedShippingLine %}
                                             <div class="flex items-center gap-2">
-                                                <span class="size-2 rounded-full bg-base-content/30 flex-shrink-0"></span>
+                                                <span class="size-2 rounded-full bg-base-content/30 shrink-0"></span>
                                                 <a href="{{ path('admin_shipping_lines_detail', {id: user.shippingLineAdmin.managedShippingLine.id}) }}"
-                                                   class="text-base-content/70 hover:underline">{{ user.shippingLineAdmin.managedShippingLine.brandName }}</a>
-                                                <span class="badge badge-soft badge-ghost badge-xs">Scoped</span>
+                                                   class="link link-hover">{{ user.shippingLineAdmin.managedShippingLine.brandName }}</a>
+                                                <span class="badge badge-ghost badge-xs">Scoped</span>
                                             </div>
                                         {% else %}
-                                            <div class="flex items-center gap-2">
-                                                <span class="size-2 rounded-full bg-error flex-shrink-0"></span>
-                                                <span class="text-base-content/40">No scope assigned</span>
+                                            <div class="flex items-center gap-2 text-base-content/40">
+                                                <span class="size-2 rounded-full bg-error shrink-0"></span>
+                                                No scope assigned
                                             </div>
                                         {% endif %}
                                     </td>
-
-                                    {# Hierarchy #}
                                     <td class="text-sm">
                                         {% if user.role.value == 'SHIPPING_LINES_ADMIN' %}
-                                            <div class="flex items-center gap-2">
-                                                <span class="icon-[tabler--users] size-4 text-primary"></span>
-                                                <span class="text-primary font-medium">{{ user.subordinateUsers|length }} subordinates</span>
+                                            <div class="flex items-center gap-2 text-primary">
+                                                <span class="icon-[tabler--users] size-4"></span>
+                                                <span class="font-medium">{{ user.subordinateUsers|length }} subordinates</span>
                                             </div>
                                         {% elseif user.shippingLineAdmin %}
-                                            <div class="flex items-center gap-2">
+                                            <div class="flex flex-wrap items-center gap-1">
                                                 <span class="icon-[tabler--arrow-right] size-4 text-base-content/40"></span>
                                                 <span class="text-base-content/50">Reports to:</span>
                                                 <a href="{{ path('admin_user_hierarchy_detail', {id: user.shippingLineAdmin.id}) }}"
-                                                   class="text-primary hover:underline font-medium">
+                                                   class="link link-primary font-medium">
                                                     {% if user.shippingLineAdmin.firstName is defined %}
                                                         {{ user.shippingLineAdmin.firstName }} {{ user.shippingLineAdmin.lastName }}
                                                     {% else %}
@@ -236,97 +237,110 @@
                                                 </a>
                                             </div>
                                         {% else %}
-                                            <div class="flex items-center gap-2">
-                                                <span class="icon-[tabler--alert-triangle] size-4 text-error"></span>
-                                                <span class="text-error font-medium">No admin assigned</span>
+                                            <div class="flex items-center gap-2 text-error">
+                                                <span class="icon-[tabler--alert-triangle] size-4"></span>
+                                                <span class="font-medium">No admin assigned</span>
                                             </div>
                                         {% endif %}
                                     </td>
-
-                                    {# Status #}
                                     <td>
                                         {% if user.status.value == 'APPROVED' %}
-                                            <span class="badge badge-soft badge-success">Active</span>
+                                            <span class="badge badge-success badge-sm">Active</span>
                                         {% else %}
-                                            <span class="badge badge-soft badge-error">{{ user.status.value|title }}</span>
+                                            <span class="badge badge-error badge-sm">{{ user.status.value|title }}</span>
                                         {% endif %}
                                     </td>
-
-                                    {# Created #}
-                                    <td class="text-sm text-base-content/50">{{ user.createdAt|date('M d, Y') }}</td>
-
-                                    {# Actions #}
+                                    <td class="text-sm text-base-content/60 whitespace-nowrap">{{ user.createdAt|date('M d, Y') }}</td>
                                     <td>
                                         <div class="flex items-center justify-end gap-1">
                                             <a href="{{ path('admin_user_hierarchy_detail', {id: user.id}) }}"
-                                               class="btn btn-soft btn-primary btn-xs rounded-full">View</a>
+                                               class="btn btn-xs btn-ghost"
+                                               title="View">
+                                                <span class="icon-[tabler--eye] size-3"></span>
+                                            </a>
                                             <a href="{{ path('admin_user_hierarchy_edit', {id: user.id}) }}"
-                                               class="btn btn-soft btn-info btn-xs rounded-full">Edit</a>
+                                               class="btn btn-xs btn-primary"
+                                               title="Edit">
+                                                <span class="icon-[tabler--edit] size-3"></span>
+                                            </a>
                                             {% if user.role.value == 'SHIPPING_LINES_ADMIN' %}
                                                 <a href="{{ path('admin_user_hierarchy_create', {admin_id: user.id}) }}"
-                                                   class="btn btn-soft btn-success btn-xs rounded-full">+ Sub</a>
+                                                   class="btn btn-xs btn-success"
+                                                   title="Add Subordinate">
+                                                    <span class="icon-[tabler--user-plus] size-3"></span>
+                                                </a>
                                             {% endif %}
                                             {% if user.role.value != 'SHIPPING_LINES_ADMIN' or user.subordinateUsers|length == 0 %}
-                                                <button onclick="removeFromHierarchy({{ user.id }})"
-                                                        class="btn btn-soft btn-error btn-xs rounded-full">Remove</button>
+                                                <button type="button"
+                                                        onclick="removeFromHierarchy({{ user.id }})"
+                                                        class="btn btn-xs btn-error"
+                                                        title="Remove">
+                                                    <span class="icon-[tabler--user-minus] size-3"></span>
+                                                </button>
                                             {% endif %}
                                         </div>
                                     </td>
-
                                 </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
+            {% endif %}
+        </div>
+
+        {# Pagination #}
+        {% if pagination.pages > 1 %}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <p class="text-sm text-base-content/60">
+                        Showing
+                        <span class="font-medium text-base-content">{{ ((pagination.page - 1) * pagination.limit) + 1 }}</span>–<span class="font-medium text-base-content">{{ pagination.page * pagination.limit > pagination.total ? pagination.total : pagination.page * pagination.limit }}</span>
+                        of <span class="font-medium text-base-content">{{ pagination.total }}</span>
+                    </p>
+                    <div class="flex flex-wrap items-center gap-1">
+                        {% if pagination.page > 1 %}
+                            <a href="{{ path('admin_user_hierarchy_list', filters|merge({page: pagination.page - 1})) }}"
+                               class="btn btn-sm btn-ghost gap-1">
+                                <span class="icon-[tabler--chevron-left] size-4"></span>
+                                Prev
+                            </a>
+                        {% endif %}
+                        {% for page in 1..pagination.pages %}
+                            {% if page == pagination.page %}
+                                <span class="btn btn-sm btn-primary">{{ page }}</span>
+                            {% elseif page <= 2 or page >= pagination.pages - 1 or (page >= pagination.page - 1 and page <= pagination.page + 1) %}
+                                <a href="{{ path('admin_user_hierarchy_list', filters|merge({page: page})) }}"
+                                   class="btn btn-sm btn-ghost">{{ page }}</a>
+                            {% elseif page == 3 or page == pagination.pages - 2 %}
+                                <span class="btn btn-sm btn-ghost btn-disabled">…</span>
+                            {% endif %}
+                        {% endfor %}
+                        {% if pagination.page < pagination.pages %}
+                            <a href="{{ path('admin_user_hierarchy_list', filters|merge({page: pagination.page + 1})) }}"
+                               class="btn btn-sm btn-ghost gap-1">
+                                Next
+                                <span class="icon-[tabler--chevron-right] size-4"></span>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         {% endif %}
-    </div>
-
-    {# ── Pagination ── #}
-    {% if pagination.pages > 1 %}
-        <div class="flex items-center justify-between px-4 py-3 bg-base-100 rounded-xl shadow-sm">
-            <p class="text-sm text-base-content/60 hidden sm:block">
-                Showing <span class="font-medium text-base-content">{{ ((pagination.page - 1) * pagination.limit) + 1 }}</span>–<span class="font-medium text-base-content">{{ pagination.page * pagination.limit > pagination.total ? pagination.total : pagination.page * pagination.limit }}</span>
-                of <span class="font-medium text-base-content">{{ pagination.total }}</span>
-            </p>
-            <div class="flex items-center gap-1 ml-auto">
-                {% if pagination.page > 1 %}
-                    <a href="{{ path('admin_user_hierarchy_list', filters|merge({page: pagination.page - 1})) }}"
-                       class="btn btn-outline btn-sm gap-1 rounded-full">
-                        <span class="icon-[tabler--chevron-left] size-4"></span> Prev
-                    </a>
-                {% endif %}
-                {% for page in 1..pagination.pages %}
-                    {% if page == pagination.page %}
-                        <span class="btn btn-primary btn-sm rounded-full">{{ page }}</span>
-                    {% elseif page <= 2 or page >= pagination.pages - 1 or (page >= pagination.page - 1 and page <= pagination.page + 1) %}
-                        <a href="{{ path('admin_user_hierarchy_list', filters|merge({page: page})) }}"
-                           class="btn btn-outline btn-sm rounded-full">{{ page }}</a>
-                    {% elseif page == 3 or page == pagination.pages - 2 %}
-                        <span class="btn btn-ghost btn-sm btn-disabled rounded-full">…</span>
-                    {% endif %}
-                {% endfor %}
-                {% if pagination.page < pagination.pages %}
-                    <a href="{{ path('admin_user_hierarchy_list', filters|merge({page: pagination.page + 1})) }}"
-                       class="btn btn-outline btn-sm gap-1 rounded-full">
-                        Next <span class="icon-[tabler--chevron-right] size-4"></span>
-                    </a>
-                {% endif %}
-            </div>
-        </div>
-    {% endif %}
-
 </div>
+{% endblock %}
 
-{# Toast container #}
-<div id="toastContainer" class="fixed top-20 right-4 z-[9999] space-y-2 pointer-events-none"></div>
+{% block page_modals %}
+<div id="toastContainer" class="fixed top-20 right-4 z-[10003] flex flex-col gap-2 w-full max-w-sm pointer-events-none"></div>
 
-{# Confirmation modal #}
-<div id="confirmationModal" class="hidden fixed inset-0 z-[10000] flex items-center justify-center p-4">
+<div id="confirmationModal"
+     class="hidden fixed inset-0 z-[10002] flex items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="modalTitle">
     <div class="absolute inset-0 bg-black/60" onclick="hideConfirmationModal()"></div>
-    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-sm z-10">
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10">
         <div class="flex items-center gap-3 px-5 py-4 border-b border-base-300">
-            <div class="size-9 rounded-full bg-error/10 flex items-center justify-center flex-shrink-0">
+            <div class="size-10 rounded-full bg-error/10 flex items-center justify-center shrink-0">
                 <span class="icon-[tabler--alert-triangle] size-5 text-error"></span>
             </div>
             <h3 class="font-semibold text-base text-base-content" id="modalTitle">Confirm Action</h3>
@@ -341,10 +355,12 @@
     </div>
 </div>
 
-{# Edit user modal #}
-<div id="editUserModal" class="hidden fixed inset-0 z-[10000] flex items-center justify-center p-4">
+<div id="editUserModal"
+     class="hidden fixed inset-0 z-[10002] flex items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true">
     <div class="absolute inset-0 bg-black/60" onclick="closeEditModal()"></div>
-    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-sm z-10">
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10">
         <div class="flex items-center justify-between px-5 py-4 border-b border-base-300">
             <h3 class="font-semibold text-base text-base-content">Edit User</h3>
             <button type="button" onclick="closeEditModal()" class="btn btn-ghost btn-sm btn-circle">
@@ -353,22 +369,22 @@
         </div>
         <form id="editUserForm" class="px-5 py-4 space-y-4">
             <div class="form-control">
-                <label class="label pb-1"><span class="label-text">Email</span></label>
-                <input type="email" id="editEmail" class="input input-bordered input-sm w-full">
+                <label class="label py-1"><span class="label-text font-medium">Email</span></label>
+                <input type="email" id="editEmail" class="input input-bordered w-full">
             </div>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div class="form-control">
-                    <label class="label pb-1"><span class="label-text">First Name</span></label>
-                    <input type="text" id="editFirstName" class="input input-bordered input-sm w-full">
+                    <label class="label py-1"><span class="label-text font-medium">First Name</span></label>
+                    <input type="text" id="editFirstName" class="input input-bordered w-full">
                 </div>
                 <div class="form-control">
-                    <label class="label pb-1"><span class="label-text">Last Name</span></label>
-                    <input type="text" id="editLastName" class="input input-bordered input-sm w-full">
+                    <label class="label py-1"><span class="label-text font-medium">Last Name</span></label>
+                    <input type="text" id="editLastName" class="input input-bordered w-full">
                 </div>
             </div>
             <div class="form-control">
-                <label class="label pb-1"><span class="label-text">Status</span></label>
-                <select id="editIsActive" class="select select-bordered select-sm w-full">
+                <label class="label py-1"><span class="label-text font-medium">Status</span></label>
+                <select id="editIsActive" class="select select-bordered w-full">
                     <option value="1">Active</option>
                     <option value="0">Inactive</option>
                 </select>
@@ -380,28 +396,51 @@
         </form>
     </div>
 </div>
+{% endblock %}
 
+{% block page_scripts %}
 <script>
-function showToast(message, type = 'info', duration = 4000) {
+function showToast(message, type, duration) {
+    type = type || 'info';
+    duration = duration === undefined ? 4000 : duration;
+
     const container = document.getElementById('toastContainer');
-    const map = { success:'alert-success icon-[tabler--circle-check]', error:'alert-error icon-[tabler--alert-circle]', warning:'alert-warning icon-[tabler--alert-triangle]', info:'alert-info icon-[tabler--info-circle]' };
-    const [alertCls, iconCls] = (map[type] || map.info).split(' ');
+    if (!container) return;
+
+    const map = {
+        success: ['alert-success', 'icon-[tabler--circle-check]'],
+        error: ['alert-error', 'icon-[tabler--alert-circle]'],
+        warning: ['alert-warning', 'icon-[tabler--alert-triangle]'],
+        info: ['alert-info', 'icon-[tabler--info-circle]']
+    };
+    const pair = map[type] || map.info;
+
     const el = document.createElement('div');
-    el.className = `alert ${alertCls} shadow-lg pointer-events-auto max-w-sm text-sm translate-x-full opacity-0 transition-all duration-300`;
-    el.innerHTML = `<span class="${iconCls} size-5"></span><span>${message}</span>
-        <button onclick="this.parentElement.remove()" class="btn btn-ghost btn-xs btn-circle ml-auto"><span class="icon-[tabler--x] size-3"></span></button>`;
+    el.className = 'alert ' + pair[0] + ' shadow-lg pointer-events-auto text-sm';
+    el.innerHTML = '<span class="' + pair[1] + ' size-5"></span><span>' + message + '</span>' +
+        '<button type="button" onclick="this.parentElement.remove()" class="btn btn-ghost btn-xs btn-circle ml-auto"><span class="icon-[tabler--x] size-3"></span></button>';
     container.appendChild(el);
-    requestAnimationFrame(() => el.classList.remove('translate-x-full','opacity-0'));
-    if (duration > 0) setTimeout(() => { el.classList.add('translate-x-full','opacity-0'); setTimeout(() => el.remove(), 300); }, duration);
+
+    if (duration > 0) {
+        window.setTimeout(function () { el.remove(); }, duration);
+    }
 }
 
 function showConfirmationModal(title, message, onConfirm) {
     document.getElementById('modalTitle').textContent = title;
     document.getElementById('modalMessage').textContent = message;
     document.getElementById('confirmationModal').classList.remove('hidden');
-    document.getElementById('confirmButton').onclick = () => { hideConfirmationModal(); onConfirm(); };
+    document.body.style.overflow = 'hidden';
+    document.getElementById('confirmButton').onclick = function () {
+        hideConfirmationModal();
+        onConfirm();
+    };
 }
-function hideConfirmationModal() { document.getElementById('confirmationModal').classList.add('hidden'); }
+
+function hideConfirmationModal() {
+    document.getElementById('confirmationModal').classList.add('hidden');
+    document.body.style.overflow = '';
+}
 
 document.getElementById('cancelButton').addEventListener('click', hideConfirmationModal);
 
@@ -409,49 +448,89 @@ let currentEditUserId = null;
 
 function editUser(userId) {
     currentEditUserId = userId;
-    fetch(`/admin/user-hierarchy/${userId}/ajax`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-    .then(r => r.json()).then(data => {
-        if (data.success) {
-            const u = data.data.user;
-            document.getElementById('editEmail').value = u.email;
-            document.getElementById('editFirstName').value = u.firstName || '';
-            document.getElementById('editLastName').value = u.lastName || '';
-            document.getElementById('editIsActive').value = u.isActive ? '1' : '0';
-            document.getElementById('editUserModal').classList.remove('hidden');
-        } else { showToast('Failed to load user: ' + data.error, 'error'); }
-    }).catch(() => showToast('Failed to load user data.', 'error'));
+    fetch('/admin/user-hierarchy/' + userId + '/ajax', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.success) {
+                const u = data.data.user;
+                document.getElementById('editEmail').value = u.email;
+                document.getElementById('editFirstName').value = u.firstName || '';
+                document.getElementById('editLastName').value = u.lastName || '';
+                document.getElementById('editIsActive').value = u.isActive ? '1' : '0';
+                document.getElementById('editUserModal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            } else {
+                showToast('Failed to load user: ' + data.error, 'error');
+            }
+        })
+        .catch(function () {
+            showToast('Failed to load user data.', 'error');
+        });
 }
 
-function closeEditModal() { document.getElementById('editUserModal').classList.add('hidden'); currentEditUserId = null; }
+function closeEditModal() {
+    document.getElementById('editUserModal').classList.add('hidden');
+    document.body.style.overflow = '';
+    currentEditUserId = null;
+}
 
-document.getElementById('editUserForm').addEventListener('submit', function(e) {
+document.getElementById('editUserForm').addEventListener('submit', function (e) {
     e.preventDefault();
     if (!currentEditUserId) return;
+
     const fd = new FormData();
     fd.append('email', document.getElementById('editEmail').value);
     fd.append('firstName', document.getElementById('editFirstName').value);
     fd.append('lastName', document.getElementById('editLastName').value);
     fd.append('isActive', document.getElementById('editIsActive').value);
-    fetch(`/admin/user-hierarchy/${currentEditUserId}/update`, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: fd })
-    .then(r => r.json()).then(data => {
-        if (data.success) { closeEditModal(); showToast('User updated successfully.', 'success'); setTimeout(() => location.reload(), 1500); }
-        else showToast('Update failed: ' + (data.errors ? Object.values(data.errors).join(', ') : data.error), 'error');
-    }).catch(() => showToast('Update failed.', 'error'));
+
+    fetch('/admin/user-hierarchy/' + currentEditUserId + '/update', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: fd
+    })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.success) {
+                closeEditModal();
+                showToast('User updated successfully.', 'success');
+                window.setTimeout(function () { location.reload(); }, 1500);
+            } else {
+                showToast('Update failed: ' + (data.errors ? Object.values(data.errors).join(', ') : data.error), 'error');
+            }
+        })
+        .catch(function () {
+            showToast('Update failed.', 'error');
+        });
 });
 
 function removeFromHierarchy(userId) {
-    showConfirmationModal('Remove User from Hierarchy', 'Are you sure? This action cannot be undone.', () => {
+    showConfirmationModal('Remove User from Hierarchy', 'Are you sure? This action cannot be undone.', function () {
         showToast('Removing user...', 'info', 0);
-        fetch(`/admin/user-hierarchy/${userId}/remove-from-hierarchy`, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(r => r.json()).then(data => {
-            if (data.success) { showToast('User removed successfully.', 'success'); setTimeout(() => location.reload(), 1500); }
-            else showToast('Failed: ' + data.error, 'error');
-        }).catch(() => showToast('Failed to remove user.', 'error'));
+        fetch('/admin/user-hierarchy/' + userId + '/remove-from-hierarchy', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    showToast('User removed successfully.', 'success');
+                    window.setTimeout(function () { location.reload(); }, 1500);
+                } else {
+                    showToast('Failed: ' + data.error, 'error');
+                }
+            })
+            .catch(function () {
+                showToast('Failed to remove user.', 'error');
+            });
     });
 }
 
-document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { hideConfirmationModal(); closeEditModal(); }
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        hideConfirmationModal();
+        closeEditModal();
+    }
 });
 </script>
 {% endblock %}

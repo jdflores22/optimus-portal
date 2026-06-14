@@ -1,269 +1,279 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Audit Trail - {{ manifest.manifestNumber }}{% endblock %}
+{% block title %}Audit Trail — {{ manifest.manifestNumber }}{% endblock %}
+{% block page_title %}Audit Trail{% endblock %}
+
+{% macro action_icon(action) %}
+    {% if action == 'state_transition' %}
+        <span class="icon-[tabler--arrow-right] size-5"></span>
+    {% elseif action in ['payment_verification', 'payment_submission', 'payment_resubmission'] %}
+        <span class="icon-[tabler--credit-card] size-5"></span>
+    {% elseif action starts with 'edo_payment_' %}
+        <span class="icon-[tabler--receipt] size-5"></span>
+    {% elseif action == 'document_upload' %}
+        <span class="icon-[tabler--upload] size-5"></span>
+    {% elseif action == 'document_download' %}
+        <span class="icon-[tabler--download] size-5"></span>
+    {% else %}
+        <span class="icon-[tabler--activity] size-5"></span>
+    {% endif %}
+{% endmacro %}
+
+{% macro action_color(action) %}
+    {% if action == 'state_transition' %}bg-info/15 text-info ring-info/20
+    {% elseif action in ['payment_verification', 'edo_payment_approved'] %}bg-success/15 text-success ring-success/20
+    {% elseif action in ['payment_submission', 'payment_resubmission', 'edo_payment_submitted'] %}bg-warning/15 text-warning ring-warning/20
+    {% elseif action in ['edo_payment_rejected'] %}bg-error/15 text-error ring-error/20
+    {% elseif action == 'document_upload' %}bg-secondary/15 text-secondary ring-secondary/20
+    {% elseif action == 'document_download' %}bg-base-content/10 text-base-content/70 ring-base-content/10
+    {% else %}bg-warning/15 text-warning ring-warning/20{% endif %}
+{% endmacro %}
+
+{% set hasFilters = filters.action_type or filters.user_id or filters.date_from or filters.date_to %}
 
 {% block body %}
-<div class="min-h-screen bg-gray-50 py-8">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <!-- Header -->
-        <div class="mb-8">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Audit Trail</h1>
-                    <p class="mt-2 text-sm text-gray-600">
-                        Manifest: <span class="font-semibold text-gray-900">{{ manifest.manifestNumber }}</span>
-                    </p>
+<div class="space-y-5 sm:space-y-6 max-w-6xl mx-auto">
+
+    {# Header #}
+    <div class="bg-base-100 shadow-sm rounded-xl">
+        <div class="p-4 sm:p-6">
+            <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                <div class="min-w-0">
+                    <div class="breadcrumbs text-xs mb-2">
+                        <ul>
+                            <li><a href="{{ path('manifest_workflow_detail', {id: manifest.id}) }}">{{ manifest.manifestNumber }}</a></li>
+                            <li>Audit trail</li>
+                        </ul>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="size-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--history] size-6"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">Audit Trail</h1>
+                            <p class="text-sm text-base-content/60 mt-1">
+                                Workflow, payment, and eDO activity for manifest <span class="font-medium text-base-content">{{ manifest.manifestNumber }}</span>
+                            </p>
+                        </div>
+                    </div>
                 </div>
-                <div class="flex flex-wrap gap-2">
+                <div class="flex flex-wrap gap-2 shrink-0">
                     {% if is_granted('ROLE_SYSTEM_ADMIN') %}
-                        <a href="{{ path('audit_trail_export', {id: manifest.id, format: 'csv'}) }}" 
-                           class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                            CSV
-                        </a>
-                        <a href="{{ path('audit_trail_export', {id: manifest.id, format: 'json'}) }}" 
-                           class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                            JSON
-                        </a>
-                        <a href="{{ path('audit_trail_export', {id: manifest.id, format: 'pdf'}) }}" 
-                           class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                            <svg class="w-4 h-4 mr-2 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
-                            </svg>
-                            PDF
-                        </a>
+                        <div class="dropdown">
+                            <button type="button" tabindex="0" class="btn btn-ghost btn-sm gap-2">
+                                <span class="icon-[tabler--download] size-4"></span>
+                                Export
+                                <span class="icon-[tabler--chevron-down] size-4"></span>
+                            </button>
+                            <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-xl shadow-lg z-20 w-44 p-2 mt-1">
+                                <li><a href="{{ path('audit_trail_export', {id: manifest.id, format: 'csv'}) }}">CSV file</a></li>
+                                <li><a href="{{ path('audit_trail_export', {id: manifest.id, format: 'json'}) }}">JSON file</a></li>
+                                <li><a href="{{ path('audit_trail_export', {id: manifest.id, format: 'pdf'}) }}">PDF report</a></li>
+                            </ul>
+                        </div>
                     {% endif %}
-                    <a href="{{ path('manifest_workflow_detail', {id: manifest.id}) }}" 
-                       class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-medium transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                        </svg>
-                        Back to Manifest
+                    <a href="{{ path('manifest_workflow_detail', {id: manifest.id}) }}" class="btn btn-primary btn-sm gap-2">
+                        <span class="icon-[tabler--arrow-left] size-4"></span>
+                        Back to manifest
                     </a>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Filters -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-900">Filters</h2>
+    {# Filters #}
+    <div class="card bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 py-4 bg-base-200/50 rounded-t-xl flex items-center justify-between gap-3">
+            <h2 class="font-semibold text-base-content flex items-center gap-2">
+                <span class="icon-[tabler--filter] size-5 text-base-content/70"></span>
+                Filter activity
+            </h2>
+            {% if hasFilters %}
+                <a href="{{ path('audit_trail_manifest', {id: manifest.id}) }}" class="btn btn-ghost btn-xs gap-1">
+                    <span class="icon-[tabler--x] size-3.5"></span>
+                    Clear
+                </a>
+            {% endif %}
+        </div>
+        <div class="card-body p-4 sm:p-6">
+            <form method="get" action="{{ path('audit_trail_manifest', {id: manifest.id}) }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="form-control">
+                    <label class="label py-1" for="action_type"><span class="label-text text-xs font-medium">Action type</span></label>
+                    <select name="action_type" id="action_type" class="select w-full bg-base-200/50 focus:outline-none focus:ring-2 focus:ring-primary/30">
+                        <option value="">All actions</option>
+                        {% for actionType in actionTypes %}
+                            <option value="{{ actionType }}" {% if filters.action_type == actionType %}selected{% endif %}>
+                                {{ actionType|replace({'_': ' '})|title }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-control">
+                    <label class="label py-1" for="user_id"><span class="label-text text-xs font-medium">User</span></label>
+                    <select name="user_id" id="user_id" class="select w-full bg-base-200/50 focus:outline-none focus:ring-2 focus:ring-primary/30">
+                        <option value="">All users</option>
+                        {% for user in users %}
+                            <option value="{{ user.id }}" {% if filters.user_id == user.id %}selected{% endif %}>
+                                {{ user.fullName ?? user.email }} ({{ user.role.value }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-control">
+                    <label class="label py-1" for="date_from"><span class="label-text text-xs font-medium">From date</span></label>
+                    <input type="date" name="date_from" id="date_from" value="{{ filters.date_from }}"
+                           class="input w-full bg-base-200/50 focus:outline-none focus:ring-2 focus:ring-primary/30">
+                </div>
+                <div class="form-control">
+                    <label class="label py-1" for="date_to"><span class="label-text text-xs font-medium">To date</span></label>
+                    <input type="date" name="date_to" id="date_to" value="{{ filters.date_to }}"
+                           class="input w-full bg-base-200/50 focus:outline-none focus:ring-2 focus:ring-primary/30">
+                </div>
+                <div class="form-control justify-end">
+                    <label class="label py-1 hidden sm:block"><span class="label-text">&nbsp;</span></label>
+                    <button type="submit" class="btn btn-primary gap-2">
+                        <span class="icon-[tabler--search] size-4"></span>
+                        Apply filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# Timeline #}
+    <div class="card bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 py-4 bg-base-200/50 rounded-t-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+                <h2 class="font-semibold text-base-content">Activity timeline</h2>
+                <p class="text-sm text-base-content/60 mt-0.5">Who did what, and when</p>
             </div>
-            <div class="p-6">
-                <form method="get" action="{{ path('audit_trail_manifest', {id: manifest.id}) }}">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-                        <div>
-                            <label for="action_type" class="block text-sm font-medium text-gray-700 mb-2">Action Type</label>
-                            <select name="action_type" id="action_type" 
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                <option value="">All Actions</option>
-                                {% for actionType in actionTypes %}
-                                <option value="{{ actionType }}" {% if filters.action_type == actionType %}selected{% endif %}>
-                                    {{ actionType|replace({'_': ' '})|title }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div>
-                            <label for="user_id" class="block text-sm font-medium text-gray-700 mb-2">User</label>
-                            <select name="user_id" id="user_id" 
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                <option value="">All Users</option>
-                                {% for user in users %}
-                                <option value="{{ user.id }}" {% if filters.user_id == user.id %}selected{% endif %}>
-                                    {{ user.fullName ?? user.email }} ({{ user.role.value }})
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div>
-                            <label for="date_from" class="block text-sm font-medium text-gray-700 mb-2">Date From</label>
-                            <input type="date" name="date_from" id="date_from" value="{{ filters.date_from }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        </div>
-                        <div>
-                            <label for="date_to" class="block text-sm font-medium text-gray-700 mb-2">Date To</label>
-                            <input type="date" name="date_to" id="date_to" value="{{ filters.date_to }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        </div>
-                        <div class="flex items-end">
-                            <button type="submit" 
-                                    class="w-full inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
-                                </svg>
-                                Apply
-                            </button>
-                        </div>
-                    </div>
-                    {% if filters.action_type or filters.user_id or filters.date_from or filters.date_to %}
-                    <div>
-                        <a href="{{ path('audit_trail_manifest', {id: manifest.id}) }}" 
-                           class="inline-flex items-center px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
-                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                            Clear Filters
-                        </a>
-                    </div>
-                    {% endif %}
-                </form>
-            </div>
+            <span class="badge badge-lg badge-ghost">{{ auditLogs|length }} {{ auditLogs|length == 1 ? 'entry' : 'entries' }}</span>
         </div>
 
-        <!-- Audit Log Timeline -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-900">
-                    Activity Timeline
-                    <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        {{ auditLogs|length }} entries
-                    </span>
-                </h2>
-            </div>
-            <div class="p-6">
-                {% if auditLogs is empty %}
-                    <div class="text-center py-12">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <p class="mt-4 text-gray-500 font-medium">No audit log entries found</p>
-                        <p class="mt-1 text-sm text-gray-400">Try adjusting your filters</p>
+        <div class="card-body p-4 sm:p-6">
+            {% if auditLogs is empty %}
+                <div class="text-center py-16 px-4">
+                    <div class="inline-flex items-center justify-center size-14 bg-base-200 rounded-2xl mb-3">
+                        <span class="icon-[tabler--history-off] size-7 text-base-content/40"></span>
                     </div>
-                {% else %}
-                    <div class="flow-root">
-                        <ul class="-mb-8">
-                            {% for log in auditLogs %}
-                            <li>
-                                <div class="relative pb-8">
-                                    {% if not loop.last %}
-                                    <span class="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
-                                    {% endif %}
-                                    <div class="relative flex items-start space-x-3">
-                                        <div class="relative">
-                                            <div class="h-10 w-10 rounded-full flex items-center justify-center ring-8 ring-white
-                                                {% if log.action == 'state_transition' %}bg-blue-500
-                                                {% elseif log.action == 'payment_verification' %}bg-green-500
-                                                {% elseif log.action == 'document_upload' %}bg-indigo-500
-                                                {% elseif log.action == 'document_download' %}bg-gray-500
-                                                {% else %}bg-yellow-500{% endif %}">
-                                                <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    {% if log.action == 'state_transition' %}
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                                                    {% elseif log.action == 'payment_verification' %}
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                    {% elseif log.action == 'document_upload' %}
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                                                    {% elseif log.action == 'document_download' %}
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
-                                                    {% else %}
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                                                    {% endif %}
-                                                </svg>
-                                            </div>
+                    <p class="font-medium text-base-content">No activity found</p>
+                    <p class="text-sm text-base-content/60 mt-1">
+                        {% if hasFilters %}Try clearing or changing your filters.{% else %}Activity will appear here as users work on this manifest.{% endif %}
+                    </p>
+                    {% if hasFilters %}
+                        <a href="{{ path('audit_trail_manifest', {id: manifest.id}) }}" class="btn btn-ghost btn-sm mt-4 gap-1">
+                            <span class="icon-[tabler--x] size-4"></span>
+                            Clear filters
+                        </a>
+                    {% endif %}
+                </div>
+            {% else %}
+                <ul class="space-y-0">
+                    {% for log in auditLogs %}
+                        <li class="relative flex gap-4 pb-8 last:pb-0">
+                            {% if not loop.last %}
+                                <span class="absolute left-5 top-11 bottom-0 w-px bg-base-300/80" aria-hidden="true"></span>
+                            {% endif %}
+                            <div class="relative z-10 shrink-0">
+                                <div class="size-10 rounded-xl ring-4 ring-base-100 flex items-center justify-center {{ _self.action_color(log.action) }}">
+                                    {{ _self.action_icon(log.action) }}
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0 pt-0.5">
+                                <div class="rounded-xl bg-base-200/40 p-4 sm:p-5">
+                                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <h3 class="font-semibold text-sm text-base-content">
+                                                {{ log.action|replace({'_': ' '})|title }}
+                                            </h3>
+                                            <span class="badge badge-ghost badge-sm">{{ log.entityType }}</span>
                                         </div>
-                                        <div class="min-w-0 flex-1">
-                                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                                <div class="flex items-center justify-between mb-2">
-                                                    <div class="flex items-center space-x-2">
-                                                        <h3 class="text-sm font-semibold text-gray-900">
-                                                            {{ log.action|replace({'_': ' '})|title }}
-                                                        </h3>
-                                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-800">
-                                                            {{ log.entityType }}
+                                        <time class="text-xs text-base-content/50 whitespace-nowrap" datetime="{{ log.timestamp|date('c') }}">
+                                            {{ log.timestamp|date('M j, Y g:i A') }}
+                                        </time>
+                                    </div>
+
+                                    <div class="flex flex-wrap items-center gap-2 text-sm">
+                                        <span class="icon-[tabler--user] size-4 text-base-content/40"></span>
+                                        <span class="font-medium">{{ log.user.fullName ?? log.user.email }}</span>
+                                        <span class="badge badge-primary badge-sm badge-soft">{{ log.user.role.value|replace({'_': ' '})|title }}</span>
+                                    </div>
+                                    {% if log.ipAddress %}
+                                        <p class="text-xs text-base-content/50 mt-1.5 flex items-center gap-1">
+                                            <span class="icon-[tabler--world] size-3.5"></span>
+                                            IP {{ log.ipAddress }}
+                                        </p>
+                                    {% endif %}
+
+                                    {% if log.changes is not empty %}
+                                        <div class="mt-4 pt-4 border-t border-base-300/50">
+                                            <p class="text-xs font-medium text-base-content/70 mb-2">Details</p>
+                                            <div class="rounded-lg bg-base-100/80 p-3 sm:p-4 text-sm">
+                                                {% if log.action == 'state_transition' %}
+                                                    <div class="flex flex-wrap items-center gap-2">
+                                                        <span class="badge badge-ghost">{{ log.changes.from_state|default('N/A')|replace({'_': ' '})|title }}</span>
+                                                        <span class="icon-[tabler--arrow-right] size-4 text-base-content/40"></span>
+                                                        <span class="badge badge-info badge-soft">{{ log.changes.to_state|replace({'_': ' '})|title }}</span>
+                                                    </div>
+                                                    {% if log.changes.reason %}
+                                                        <p class="text-xs text-base-content/60 mt-2">
+                                                            <span class="font-medium">Reason:</span> {{ log.changes.reason }}
+                                                        </p>
+                                                    {% endif %}
+                                                {% elseif log.action == 'payment_verification' %}
+                                                    {% if log.changes.approved %}
+                                                        <span class="badge badge-success gap-1">
+                                                            <span class="icon-[tabler--check] size-3"></span>
+                                                            Approved
                                                         </span>
-                                                    </div>
-                                                    <time class="text-xs text-gray-500">
-                                                        {{ log.timestamp|date('Y-m-d H:i:s') }}
-                                                    </time>
-                                                </div>
-                                                
-                                                <div class="text-sm text-gray-700 mb-3">
-                                                    <div class="flex items-center space-x-2">
-                                                        <span class="font-medium">{{ log.user.fullName ?? log.user.email }}</span>
-                                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                                            {{ log.user.role.value }}
+                                                    {% else %}
+                                                        <span class="badge badge-error gap-1">
+                                                            <span class="icon-[tabler--x] size-3"></span>
+                                                            Rejected
                                                         </span>
-                                                    </div>
-                                                    <div class="text-xs text-gray-500 mt-1">
-                                                        IP: {{ log.ipAddress }}
-                                                    </div>
-                                                </div>
-                                                
-                                                {% if log.changes is not empty %}
-                                                <div class="mt-3 pt-3 border-t border-gray-200">
-                                                    <p class="text-xs font-medium text-gray-700 mb-2">Changes:</p>
-                                                    <div class="bg-white rounded p-3 border border-gray-200">
-                                                        {% if log.action == 'state_transition' %}
-                                                            <div class="flex items-center space-x-2">
-                                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-800">
-                                                                    {{ log.changes.from_state|default('N/A') }}
-                                                                </span>
-                                                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                                                                </svg>
-                                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                                    {{ log.changes.to_state }}
-                                                                </span>
-                                                            </div>
-                                                            {% if log.changes.reason %}
-                                                            <div class="mt-2 text-xs text-gray-600">
-                                                                <span class="font-medium">Reason:</span> {{ log.changes.reason }}
-                                                            </div>
-                                                            {% endif %}
-                                                        {% elseif log.action == 'payment_verification' %}
-                                                            <div class="flex items-center space-x-2">
-                                                                <span class="text-xs font-medium text-gray-700">Status:</span>
-                                                                {% if log.changes.approved %}
-                                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                                        Approved
-                                                                    </span>
-                                                                {% else %}
-                                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                                        Rejected
-                                                                    </span>
-                                                                {% endif %}
-                                                            </div>
-                                                            {% if log.changes.reason %}
-                                                            <div class="mt-2 text-xs text-gray-600">
-                                                                <span class="font-medium">Reason:</span> {{ log.changes.reason }}
-                                                            </div>
-                                                            {% endif %}
-                                                        {% elseif log.action == 'document_upload' %}
-                                                            <div class="text-xs">
-                                                                <div><span class="font-medium text-gray-700">Filename:</span> {{ log.changes.filename }}</div>
-                                                                {% if log.changes.upload_time %}
-                                                                <div class="mt-1 text-gray-500">
-                                                                    <span class="font-medium">Upload Time:</span> {{ log.changes.upload_time }}
-                                                                </div>
-                                                                {% endif %}
-                                                            </div>
-                                                        {% elseif log.action == 'document_download' %}
-                                                            <div class="text-xs text-gray-600">
-                                                                <span class="font-medium">Download Time:</span> {{ log.changes.download_time }}
-                                                            </div>
-                                                        {% else %}
-                                                            <pre class="text-xs text-gray-600 overflow-x-auto"><code>{{ log.changes|json_encode(constant('JSON_PRETTY_PRINT')) }}</code></pre>
-                                                        {% endif %}
-                                                    </div>
-                                                </div>
+                                                    {% endif %}
+                                                    {% if log.changes.reason %}
+                                                        <p class="text-xs text-base-content/60 mt-2">
+                                                            <span class="font-medium">Reason:</span> {{ log.changes.reason }}
+                                                        </p>
+                                                    {% endif %}
+                                                {% elseif log.action in ['payment_submission', 'payment_resubmission', 'edo_payment_submitted', 'edo_payment_approved', 'edo_payment_rejected'] %}
+                                                    {% if log.changes.amount is defined %}
+                                                        <p class="text-sm font-semibold">{{ log.changes.amount|format_money(log.changes.currency|default('PHP')) }}</p>
+                                                    {% endif %}
+                                                    {% if log.changes.payment_type is defined %}
+                                                        <p class="text-xs text-base-content/60 mt-1">Type: {{ log.changes.payment_type|replace({'_': ' '})|title }}</p>
+                                                    {% endif %}
+                                                    {% if log.changes.edo_number is defined %}
+                                                        <p class="text-xs text-base-content/60 mt-1">eDO: {{ log.changes.edo_number }}</p>
+                                                    {% endif %}
+                                                    {% if log.changes.version is defined %}
+                                                        <p class="text-xs text-base-content/60">Version {{ log.changes.version }}</p>
+                                                    {% endif %}
+                                                    {% if log.changes.rejection_reason is defined %}
+                                                        <p class="text-xs text-error mt-2"><span class="font-medium">Reason:</span> {{ log.changes.rejection_reason }}</p>
+                                                    {% endif %}
+                                                {% elseif log.action == 'document_upload' %}
+                                                    <p><span class="text-base-content/60">File:</span> <span class="font-medium">{{ log.changes.filename }}</span></p>
+                                                    {% if log.changes.upload_time %}
+                                                        <p class="text-xs text-base-content/50 mt-1">Uploaded {{ log.changes.upload_time }}</p>
+                                                    {% endif %}
+                                                {% elseif log.action == 'document_download' %}
+                                                    <p class="text-xs text-base-content/60">
+                                                        Downloaded {{ log.changes.download_time }}
+                                                    </p>
+                                                {% else %}
+                                                    <pre class="text-xs text-base-content/70 overflow-x-auto whitespace-pre-wrap"><code>{{ log.changes|json_encode(constant('JSON_PRETTY_PRINT')) }}</code></pre>
                                                 {% endif %}
                                             </div>
                                         </div>
-                                    </div>
+                                    {% endif %}
                                 </div>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                {% endif %}
-            </div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
         </div>
     </div>
 </div>

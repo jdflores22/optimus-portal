@@ -1,21 +1,25 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 
 {% block title %}Shipping Lines Management - OPTIMUS{% endblock %}
 
-{% block body %}
-<div class="min-h-screen bg-base-200">
-    <!-- Header -->
-    <div class="bg-base-100 border-b border-base-300">
-        <div class="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-            <div class="py-4 sm:py-6">
-                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold">Shipping Lines Management</h1>
-                <p class="mt-1 sm:mt-2 text-xs sm:text-sm text-base-content/70">Manage shipping lines and their configurations</p>
-            </div>
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+        <li><a href="{{ path('app_admin_dashboard') }}">Admin</a></li>
+        <li>Shipping Lines</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h1 class="card-title text-xl sm:text-2xl">Shipping Lines Management</h1>
+            <p class="text-sm text-base-content/70">Manage shipping lines and their configurations</p>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
         <!-- Flash Messages -->
         {% for message in app.flashes('success') %}
             <div class="alert alert-success mb-4">
@@ -106,11 +110,9 @@
         </div>
 
         <!-- Actions Bar -->
-        <div class="card bg-base-100 shadow-sm mb-6 sm:mb-8">
-            <div class="card-header">
-                <h3 class="card-title text-base sm:text-lg">Quick Actions</h3>
-            </div>
+        <div class="card bg-base-100 shadow-sm">
             <div class="card-body p-4 sm:p-6">
+                <h3 class="font-semibold text-base sm:text-lg mb-4">Quick Actions</h3>
                 <div class="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
                     <a href="{{ path('admin_shipping_lines_create') }}" class="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto">
                         <span class="icon-[tabler--plus] size-4 sm:size-5"></span>
@@ -132,11 +134,11 @@
 
         <!-- Shipping Lines List -->
         <div class="card bg-base-100 shadow-sm">
-            <div class="card-header flex justify-between items-center">
-                <h3 class="card-title text-base sm:text-lg">All Shipping Lines</h3>
-                <span class="badge badge-ghost text-xs sm:text-sm">{{ shippingLines|length }} total</span>
-            </div>
             <div class="card-body p-3 sm:p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-semibold text-base sm:text-lg">All Shipping Lines</h3>
+                    <span class="badge badge-ghost text-xs sm:text-sm">{{ shippingLines|length }} total</span>
+                </div>
                 {% if shippingLines is empty %}
                     <div class="text-center py-8 sm:py-12">
                         <span class="icon-[tabler--building] size-10 sm:size-12 text-base-content/40 mx-auto"></span>
@@ -226,73 +228,46 @@
                 {% endif %}
             </div>
         </div>
-    </div>
 </div>
+{% endblock %}
 
+{% block page_modals %}
 <!-- Activate Modal -->
-<div id="activateModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center" style="z-index: 9999;">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div class="p-6">
-            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-green-100 rounded-full mb-4">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Activate Shipping Line</h3>
-            <p class="text-sm text-gray-600 text-center mb-4" id="activateModalMessage">
-                Are you sure you want to activate this shipping line?
-            </p>
-            <p class="text-xs text-green-600 text-center mb-6">
-                This shipping line will become operational and accessible.
-            </p>
-            <div class="flex space-x-3">
-                <button type="button" 
-                        onclick="closeActivateModal()"
-                        class="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
-                    Cancel
-                </button>
-                <button type="button" 
-                        id="confirmActivateBtn"
-                        class="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700">
-                    Activate
-                </button>
-            </div>
+<div id="activateModal" class="hidden fixed inset-0 z-[10002] items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div class="absolute inset-0 bg-black/60" onclick="closeActivateModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6 text-center">
+        <div class="mx-auto flex items-center justify-center size-14 rounded-full bg-success/10 mb-4">
+            <span class="icon-[tabler--circle-check] size-7 text-success"></span>
+        </div>
+        <h3 class="text-lg font-bold mb-2">Activate Shipping Line</h3>
+        <p class="text-sm text-base-content/70 mb-2" id="activateModalMessage">Are you sure you want to activate this shipping line?</p>
+        <p class="text-xs text-success mb-6">This shipping line will become operational and accessible.</p>
+        <div class="flex gap-3">
+            <button type="button" onclick="closeActivateModal()" class="btn btn-ghost flex-1">Cancel</button>
+            <button type="button" id="confirmActivateBtn" class="btn btn-success flex-1">Activate</button>
         </div>
     </div>
 </div>
 
 <!-- Deactivate Modal -->
-<div id="deactivateModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center" style="z-index: 9999;">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div class="p-6">
-            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
-                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Deactivate Shipping Line</h3>
-            <p class="text-sm text-gray-600 text-center mb-4" id="deactivateModalMessage">
-                Are you sure you want to deactivate this shipping line?
-            </p>
-            <p class="text-xs text-red-600 text-center mb-6">
-                This shipping line will no longer be accessible.
-            </p>
-            <div class="flex space-x-3">
-                <button type="button" 
-                        onclick="closeDeactivateModal()"
-                        class="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
-                    Cancel
-                </button>
-                <button type="button" 
-                        id="confirmDeactivateBtn"
-                        class="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700">
-                    Deactivate
-                </button>
-            </div>
+<div id="deactivateModal" class="hidden fixed inset-0 z-[10002] items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div class="absolute inset-0 bg-black/60" onclick="closeDeactivateModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6 text-center">
+        <div class="mx-auto flex items-center justify-center size-14 rounded-full bg-error/10 mb-4">
+            <span class="icon-[tabler--alert-triangle] size-7 text-error"></span>
+        </div>
+        <h3 class="text-lg font-bold mb-2">Deactivate Shipping Line</h3>
+        <p class="text-sm text-base-content/70 mb-2" id="deactivateModalMessage">Are you sure you want to deactivate this shipping line?</p>
+        <p class="text-xs text-error mb-6">This shipping line will no longer be accessible.</p>
+        <div class="flex gap-3">
+            <button type="button" onclick="closeDeactivateModal()" class="btn btn-ghost flex-1">Cancel</button>
+            <button type="button" id="confirmDeactivateBtn" class="btn btn-error flex-1">Deactivate</button>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block page_scripts %}
 <script>
 let currentShippingLineId = null;
 
@@ -345,20 +320,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Close modal when clicking outside
-    document.getElementById('activateModal')?.addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeActivateModal();
-        }
-    });
-
-    document.getElementById('deactivateModal')?.addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeDeactivateModal();
-        }
-    });
-
-    // Close modal on escape key
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
             closeActivateModal();

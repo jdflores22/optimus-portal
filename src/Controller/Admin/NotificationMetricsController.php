@@ -10,7 +10,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/admin/notification-metrics')]
-#[IsGranted('ROLE_ADMIN')]
+#[IsGranted('ROLE_SYSTEM_ADMIN')]
 class NotificationMetricsController extends AbstractController
 {
     public function __construct(

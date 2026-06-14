@@ -438,8 +438,7 @@ class FormBuilderController extends AbstractController
         }
 
         try {
-            $form->deactivate();
-            $this->entityManager->flush();
+            $this->formBuilderService->deactivateForm($id);
             
             if ($request->isXmlHttpRequest()) {
                 return new JsonResponse(['success' => true, 'message' => 'Form deactivated successfully']);
@@ -455,6 +454,41 @@ class FormBuilderController extends AbstractController
         }
 
         return $this->redirectToRoute('form_builder_list');
+    }
+
+    /**
+     * Unpublish a form configuration (revert to draft)
+     */
+    #[Route('/{id}/unpublish', name: 'form_builder_unpublish', methods: ['POST'])]
+    public function unpublish(int $id, Request $request): Response
+    {
+        $form = $this->entityManager->getRepository(FormConfiguration::class)->find($id);
+
+        if (!$form) {
+            if ($request->isXmlHttpRequest()) {
+                return new JsonResponse(['success' => false, 'message' => 'Form not found'], 404);
+            }
+            $this->addFlash('error', 'Form not found');
+            return $this->redirectToRoute('form_builder_list');
+        }
+
+        try {
+            $this->formBuilderService->unpublishForm($id);
+
+            if ($request->isXmlHttpRequest()) {
+                return new JsonResponse(['success' => true, 'message' => 'Form unpublished successfully']);
+            }
+
+            $this->addFlash('success', 'Form unpublished successfully');
+        } catch (\Exception $e) {
+            if ($request->isXmlHttpRequest()) {
+                return new JsonResponse(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+
+            $this->addFlash('error', $e->getMessage());
+        }
+
+        return $this->redirectToRoute('form_builder_edit', ['id' => $id]);
     }
 
     /**

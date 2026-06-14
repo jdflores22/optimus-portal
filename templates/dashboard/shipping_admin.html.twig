@@ -137,7 +137,7 @@
                         </div>
                     </a>
 
-                    <a href="{{ path('app_dwell_time_monitoring') }}" class="card bg-gradient-to-br from-cyan-500/10 to-cyan-600/10 border border-cyan-500/20 hover:shadow-lg transition-all">
+                    <a href="{{ path('app_container_inventory') }}" class="card bg-gradient-to-br from-cyan-500/10 to-cyan-600/10 border border-cyan-500/20 hover:shadow-lg transition-all">
                         <div class="card-body p-5 text-center">
                             <div class="flex justify-center mb-3">
                                 <div class="size-12 rounded-lg bg-cyan-500/20 flex items-center justify-center">
@@ -203,6 +203,12 @@
             </div>
         </div>
     </div>
+
+    {# Port / Terminal and CY sections (separated by terminal type) #}
+    {% include 'dashboard/_port_cy_location_cards.html.twig' with {
+        repositioningRoute: 'app_shipping_admin_repositioning_index',
+        repositioningNewRoute: 'app_shipping_admin_repositioning_new'
+    } %}
 
     {# ── Container Yard Allocations ── #}
     <div class="card bg-base-100 shadow-sm">

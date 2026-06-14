@@ -116,14 +116,95 @@ class EDOGenerationController extends AbstractController
         }
         
         // Separate containers with and without eDOs
-        $containersNeedingEdo = array_filter($containersData, fn($data) => !$data['has_edo']);
-        $containersWithEdo = array_filter($containersData, fn($data) => $data['has_edo']);
-        
+        $containersNeedingEdo = array_values(array_filter($containersData, fn($data) => !$data['has_edo']));
+        $containersWithEdo = array_values(array_filter($containersData, fn($data) => $data['has_edo']));
+        $pendingGroups = $this->groupPendingContainersByManifest($containersNeedingEdo);
+
         return $this->render('sl_staff/edo_generation/list.html.twig', [
             'containersNeedingEdo' => $containersNeedingEdo,
             'containersWithEdo' => $containersWithEdo,
+            'pendingGroups' => $pendingGroups,
             'totalContainers' => count($containersData),
         ]);
+    }
+
+    /**
+     * @param list<array{container: \App\Entity\Container, manifest: Manifest, has_edo: bool, edo: ?ElectronicDeliveryOrder}> $containersNeedingEdo
+     *
+     * @return list<array{
+     *     id: int,
+     *     manifest: Manifest,
+     *     broker: string,
+     *     consignee: string,
+     *     containers: list<array{container: \App\Entity\Container, manifest: Manifest, has_edo: bool, edo: ?ElectronicDeliveryOrder}>,
+     *     total_in_manifest: int,
+     *     edo_count_in_manifest: int,
+     *     container_ids_csv: string,
+     *     search_text: string
+     * }>
+     */
+    private function groupPendingContainersByManifest(array $containersNeedingEdo): array
+    {
+        $groups = [];
+
+        foreach ($containersNeedingEdo as $data) {
+            $manifest = $data['manifest'];
+            $manifestId = $manifest->getId();
+
+            if (!isset($groups[$manifestId])) {
+                $groups[$manifestId] = [
+                    'id' => $manifestId,
+                    'manifest' => $manifest,
+                    'broker' => $manifest->getBroker()?->getFullName() ?? 'N/A',
+                    'consignee' => $manifest->getConsignee()?->getBusinessName() ?? 'N/A',
+                    'containers' => [],
+                    'total_in_manifest' => $manifest->getContainersLinkedToManifest()->count(),
+                    'edo_count_in_manifest' => $this->countManifestEdos($manifest),
+                    'container_ids' => [],
+                ];
+            }
+
+            $groups[$manifestId]['containers'][] = $data;
+            $groups[$manifestId]['container_ids'][] = $data['container']->getId();
+        }
+
+        $result = [];
+        foreach ($groups as $group) {
+            $manifest = $group['manifest'];
+            $containerNumbers = array_map(
+                static fn(array $item): string => $item['container']->getContainerNumber(),
+                $group['containers']
+            );
+
+            $group['container_ids_csv'] = implode(',', $group['container_ids']);
+            $group['search_text'] = strtolower(implode(' ', array_filter([
+                $group['broker'],
+                $group['consignee'],
+                $manifest->getManifestNumber(),
+                ...$containerNumbers,
+            ])));
+            unset($group['container_ids']);
+
+            $result[] = $group;
+        }
+
+        return $result;
+    }
+
+    private function countManifestEdos(Manifest $manifest): int
+    {
+        $count = 0;
+
+        foreach ($manifest->getContainersLinkedToManifest() as $container) {
+            foreach ($container->getEdos() as $edo) {
+                if (in_array($edo->getStatus(), [EDOStatus::PENDING_RELEASE, EDOStatus::RELEASED], true)) {
+                    $count++;
+                    break;
+                }
+            }
+        }
+
+        return $count;
     }
 
     /**

@@ -26,6 +26,7 @@ class HomeController extends AbstractController
                 UserRole::ACCOUNTING => $this->redirectToRoute('app_accounting_dashboard_new'),
                 UserRole::BROKER => $this->redirectToRoute('broker_workspace_selector'),
                 UserRole::CONSIGNEE => $this->redirectToRoute('app_consignee_dashboard'),
+                UserRole::TRUCKER => $this->redirectToRoute('trucker_dashboard'),
                 default => $this->render('features/index.html.twig')
             };
         }

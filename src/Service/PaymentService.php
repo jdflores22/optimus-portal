@@ -17,11 +17,11 @@ class PaymentService implements PaymentServiceInterface
         private EntityManagerInterface $entityManager,
         private FileService $fileService,
         private AuditService $auditService,
-        private PaymentVerificationTransactionService $verificationTransactionService,
         private ManifestNotificationService $notificationService,
         private ActivityLogService $activityLogService,
         private PaymentFeeConfigurationServiceInterface $paymentFeeConfigService,
         private PaymentReceiptGenerator $receiptGenerator,
+        private WorkflowOrchestrator $workflowOrchestrator,
         private string $projectDir
     ) {
     }
@@ -93,8 +93,12 @@ class PaymentService implements PaymentServiceInterface
 
         $this->entityManager->persist($payment);
         
-        // Update manifest state
-        $manifest->transitionTo(WorkflowState::PAYMENT_SUBMITTED);
+        $this->workflowOrchestrator->transitionState(
+            $manifest,
+            WorkflowState::PAYMENT_SUBMITTED,
+            $broker,
+            'Final payment submitted'
+        );
         
         $this->entityManager->flush();
 
@@ -139,11 +143,15 @@ class PaymentService implements PaymentServiceInterface
         }
 
         if ($approved) {
-            $payment->verify($accounting, $reason); // Pass approval notes/remarks
+            $payment->verify($accounting, $reason);
             
-            // Update manifest state to payment_verified (NOT edo_generated)
             $manifest = $payment->getManifest();
-            $manifest->setWorkflowState(WorkflowState::PAYMENT_VERIFIED);
+            $this->workflowOrchestrator->transitionState(
+                $manifest,
+                WorkflowState::PAYMENT_VERIFIED,
+                $accounting,
+                $reason ?? 'Final payment approved'
+            );
             
             // Flush payment and manifest changes together
             $this->entityManager->flush();
@@ -189,9 +197,13 @@ class PaymentService implements PaymentServiceInterface
             }
             $payment->reject($accounting, $reason);
             
-            // Revert manifest state to billing_generated
             $manifest = $payment->getManifest();
-            $manifest->setWorkflowState(WorkflowState::BILLING_GENERATED);
+            $this->workflowOrchestrator->transitionState(
+                $manifest,
+                WorkflowState::BILLING_GENERATED,
+                $accounting,
+                $reason ?? 'Final payment rejected'
+            );
             $this->entityManager->flush();
             
             // Notify broker, consignee, and SL_STAFF about rejection
@@ -314,8 +326,12 @@ class PaymentService implements PaymentServiceInterface
 
         $this->entityManager->persist($payment);
         
-        // Update manifest state
-        $manifest->transitionTo(WorkflowState::PAYMENT_SUBMITTED);
+        $this->workflowOrchestrator->transitionState(
+            $manifest,
+            WorkflowState::PAYMENT_SUBMITTED,
+            $broker,
+            'Final payment submitted'
+        );
         
         $this->entityManager->flush();
 

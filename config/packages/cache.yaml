@@ -1,55 +1,58 @@
 framework:
     cache:
-        # Unique name of your app: used to compute stable namespaces for cache keys.
         prefix_seed: optimus_shipping_portal
+        app: cache.adapter.filesystem
 
-        # Use Redis for application cache
-        app: cache.adapter.redis
-        default_redis_provider: '%env(REDIS_URL)%'
-
-        # Dedicated cache pools for different purposes
         pools:
-            # Avatar colors cache - for dynamic avatar color generation
             avatar_colors.cache:
-                adapter: cache.adapter.redis
-                default_lifetime: 3600 # 1 hour - matches avatar_colors.yaml config
-                
-            # Form configurations cache - invalidated when forms are published
+                adapter: cache.adapter.filesystem
+                default_lifetime: 3600
             form_configurations.cache:
-                adapter: cache.adapter.redis
-                default_lifetime: 3600 # 1 hour
-                
-            # User permissions cache - per session
+                adapter: cache.adapter.filesystem
+                default_lifetime: 3600
             user_permissions.cache:
-                adapter: cache.adapter.redis
-                default_lifetime: 1800 # 30 minutes (session timeout)
-                
-            # Dashboard metrics cache - short TTL for real-time feel
+                adapter: cache.adapter.filesystem
+                default_lifetime: 1800
             dashboard_metrics.cache:
-                adapter: cache.adapter.redis
-                default_lifetime: 300 # 5 minutes
-                
-            # File metadata cache - for lazy loading optimization
+                adapter: cache.adapter.filesystem
+                default_lifetime: 300
             file_metadata.cache:
-                adapter: cache.adapter.redis
-                default_lifetime: 7200 # 2 hours
-                
-            # Manifest workflow cache - for workflow state transition rules
+                adapter: cache.adapter.filesystem
+                default_lifetime: 7200
             manifest_workflow.cache:
-                adapter: cache.adapter.redis
-                default_lifetime: 3600 # 1 hour
-                
-            # Manifest authorization cache - for permission checks
+                adapter: cache.adapter.filesystem
+                default_lifetime: 3600
             manifest_authorization.cache:
-                adapter: cache.adapter.redis
-                default_lifetime: 1800 # 30 minutes
-                
-            # eDO PDF cache - for generated eDO PDF files
+                adapter: cache.adapter.filesystem
+                default_lifetime: 1800
             edo_pdf.cache:
-                adapter: cache.adapter.redis
-                default_lifetime: 86400 # 24 hours
-                
-            # Payment history cache - for payment version chains and statistics
+                adapter: cache.adapter.filesystem
+                default_lifetime: 86400
             payment_history.cache:
-                adapter: cache.adapter.redis
-                default_lifetime: 300 # 5 minutes
+                adapter: cache.adapter.filesystem
+                default_lifetime: 300
+
+when@prod:
+    framework:
+        cache:
+            app: cache.adapter.redis
+            default_redis_provider: '%env(REDIS_URL)%'
+            pools:
+                avatar_colors.cache:
+                    adapter: cache.adapter.redis
+                form_configurations.cache:
+                    adapter: cache.adapter.redis
+                user_permissions.cache:
+                    adapter: cache.adapter.redis
+                dashboard_metrics.cache:
+                    adapter: cache.adapter.redis
+                file_metadata.cache:
+                    adapter: cache.adapter.redis
+                manifest_workflow.cache:
+                    adapter: cache.adapter.redis
+                manifest_authorization.cache:
+                    adapter: cache.adapter.redis
+                edo_pdf.cache:
+                    adapter: cache.adapter.redis
+                payment_history.cache:
+                    adapter: cache.adapter.redis

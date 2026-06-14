@@ -40,10 +40,9 @@ class NOA
     #[Assert\NotNull(message: 'ETA is required')]
     private \DateTimeInterface $eta;
 
-    #[ORM\Column(type: 'string', length: 100)]
-    #[Assert\NotBlank(message: 'CY location is required')]
+    #[ORM\Column(type: 'string', length: 100, nullable: true)]
     #[Assert\Length(max: 100)]
-    private string $cyLocation;
+    private ?string $portLocation = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'RESTRICT')]
@@ -133,15 +132,20 @@ class NOA
         return $this;
     }
 
-    public function getCyLocation(): string
+    public function getPortLocation(): ?string
     {
-        return $this->cyLocation;
+        return $this->portLocation;
     }
 
-    public function setCyLocation(string $cyLocation): self
+    public function setPortLocation(?string $portLocation): self
     {
-        $this->cyLocation = $cyLocation;
+        $this->portLocation = $portLocation;
         return $this;
+    }
+
+    public function getDischargeLocation(): string
+    {
+        return $this->portLocation ?? 'N/A';
     }
 
     public function getConsignee(): User

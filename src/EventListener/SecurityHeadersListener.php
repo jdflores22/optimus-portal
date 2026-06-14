@@ -48,18 +48,18 @@ class SecurityHeadersListener
                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " .
                    "img-src 'self' data: blob:; " .
                    "font-src 'self' https://fonts.gstatic.com; " .
-                   "connect-src 'self'; " .
+                   "connect-src 'self' https://cdn.jsdelivr.net; " .
                    "frame-src 'self' blob:; " .
                    "object-src 'none'; " .
                    "frame-ancestors 'self'"; // Allow same-origin framing
         } else {
-            // Restrictive CSP for regular pages - allow ApexCharts CDN
+            // Restrictive CSP for regular pages - allow Chart.js and ApexCharts CDN
             $csp = "default-src 'self'; " .
                    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " .
                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " .
                    "img-src 'self' data: blob:; " .
                    "font-src 'self' https://fonts.gstatic.com; " .
-                   "connect-src 'self'; " .
+                   "connect-src 'self' https://cdn.jsdelivr.net; " .
                    "frame-src 'self' blob:; " .
                    "object-src 'none'; " .
                    "frame-ancestors 'none'"; // Deny framing

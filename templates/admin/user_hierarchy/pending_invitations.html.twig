@@ -1,539 +1,452 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 
-{% block title %}Pending Invitations Management{% endblock %}
+{% block title %}Pending Invitations - OPTIMUS{% endblock %}
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+                                <li><a href="{{ path('admin_user_hierarchy_list') }}">User Hierarchy</a></li>
+                                <li>Pending Invitations</li>
+                            </ul>
+</div>
+{% endblock %}
 
-{% block body %}
-<div class="min-h-screen bg-gray-50">
-    <div class="w-full py-6 px-4 sm:px-6 lg:px-8">
-        <!-- Header -->
-        <div class="md:flex md:items-center md:justify-between mb-6">
-            <div class="flex-1 min-w-0">
-                <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-                    Pending Invitations Management
-                </h2>
-                <p class="mt-1 text-sm text-gray-500">
-                    Manage pending role invitations and track invitation status
-                </p>
-            </div>
-            <div class="mt-4 flex md:mt-0 md:ml-4">
-                <a href="{{ path('admin_user_hierarchy_list') }}" 
-                   class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-                    </svg>
-                    User Management
-                </a>
-                <a href="{{ path('admin_user_hierarchy_create') }}" 
-                   class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                    </svg>
-                    Create User
-                </a>
+{% block content %}
+<div class="space-y-5 sm:space-y-6">
+{# Header #}
+        <div class="bg-base-100 shadow-sm rounded-xl">
+            <div class="p-4 sm:p-6">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-4">
+                            <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                <span class="icon-[tabler--inbox] size-6 text-primary"></span>
+                            </div>
+                            <div class="min-w-0">
+                                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">Pending Invitations</h1>
+                                <p class="text-sm text-base-content/60 mt-1">Manage pending role invitations and track invitation status</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <a href="{{ path('admin_user_hierarchy_list') }}" class="btn btn-ghost btn-sm gap-2">
+                            <span class="icon-[tabler--users] size-4"></span>
+                            User Management
+                        </a>
+                        <a href="{{ path('admin_user_hierarchy_create') }}" class="btn btn-primary btn-sm gap-2">
+                            <span class="icon-[tabler--plus] size-4"></span>
+                            Create User
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Filters Card -->
-        <div class="bg-white shadow rounded-lg mb-6">
-            <div class="px-4 py-5 sm:p-6">
-                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Filters</h3>
-                <form method="GET" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <div>
-                        <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
-                        <select class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
-                                id="status" 
-                                name="status">
+        {# Flash messages #}
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success">
+                <span class="icon-[tabler--circle-check] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-error">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+
+        {# Filters #}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-4 sm:p-5">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="icon-[tabler--filter] size-5 text-base-content/70"></span>
+                    <h3 class="font-semibold text-base text-base-content">Filters</h3>
+                </div>
+                <form method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="form-control">
+                        <label class="label py-1" for="status">
+                            <span class="label-text font-medium">Status</span>
+                        </label>
+                        <select id="status" name="status" class="select select-bordered w-full">
                             <option value="">All Statuses</option>
-                            <option value="pending" {% if filters.status == 'pending' %}selected{% endif %}>
-                                Pending
-                            </option>
-                            <option value="expired" {% if filters.status == 'expired' %}selected{% endif %}>
-                                Expired
-                            </option>
-                            <option value="accepted" {% if filters.status == 'accepted' %}selected{% endif %}>
-                                Accepted
-                            </option>
-                            <option value="declined" {% if filters.status == 'declined' %}selected{% endif %}>
-                                Declined
-                            </option>
-                            <option value="temporarily_disabled" {% if filters.status == 'temporarily_disabled' %}selected{% endif %}>
-                                Temporarily Disabled
-                            </option>
+                            <option value="pending" {% if filters.status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="expired" {% if filters.status == 'expired' %}selected{% endif %}>Expired</option>
+                            <option value="accepted" {% if filters.status == 'accepted' %}selected{% endif %}>Accepted</option>
+                            <option value="declined" {% if filters.status == 'declined' %}selected{% endif %}>Declined</option>
+                            <option value="temporarily_disabled" {% if filters.status == 'temporarily_disabled' %}selected{% endif %}>Temporarily Disabled</option>
                         </select>
                     </div>
-                    <div>
-                        <label for="search" class="block text-sm font-medium text-gray-700">Search</label>
-                        <input type="text" 
-                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
-                               id="search" 
-                               name="search" 
-                               placeholder="Email, name..."
-                               value="{{ filters.search }}">
+                    <div class="form-control">
+                        <label class="label py-1" for="search">
+                            <span class="label-text font-medium">Search</span>
+                        </label>
+                        <label class="input input-bordered flex items-center gap-2">
+                            <span class="icon-[tabler--search] size-4 text-base-content/50"></span>
+                            <input type="text"
+                                   id="search"
+                                   name="search"
+                                   value="{{ filters.search }}"
+                                   class="grow"
+                                   placeholder="Email, name...">
+                        </label>
                     </div>
-                    <div class="flex items-end space-x-2">
-                        <button type="submit" 
-                                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm flex-1 gap-2">
+                            <span class="icon-[tabler--search] size-4"></span>
                             Filter
                         </button>
-                        <a href="{{ path('admin_user_hierarchy_pending_invitations') }}" 
-                           class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            Clear
-                        </a>
+                        <a href="{{ path('admin_user_hierarchy_pending_invitations') }}" class="btn btn-ghost btn-sm">Clear</a>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- Pending Invitations Table -->
-        <div class="bg-white shadow overflow-hidden sm:rounded-md">
-            <div class="px-4 py-5 sm:p-6">
-                {% if pendingUsers is empty %}
-                    <div class="text-center py-12">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
-                        </svg>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900">No pending invitations</h3>
-                        <p class="mt-1 text-sm text-gray-500">No pending invitations found matching your criteria.</p>
-                        <div class="mt-6">
-                            <a href="{{ path('admin_user_hierarchy_create') }}" 
-                               class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                </svg>
-                                Create User
-                            </a>
-                        </div>
+        {# Invitations table #}
+        <div class="card bg-base-100 shadow-sm">
+            {% if pendingUsers is empty %}
+                <div class="card-body flex flex-col items-center justify-center py-16 text-center">
+                    <span class="icon-[tabler--inbox] size-12 text-base-content/30"></span>
+                    <h3 class="mt-4 text-base font-medium text-base-content">No pending invitations</h3>
+                    <p class="mt-2 text-sm text-base-content/60">No pending invitations found matching your criteria.</p>
+                    <a href="{{ path('admin_user_hierarchy_create') }}" class="btn btn-primary btn-sm gap-2 mt-6">
+                        <span class="icon-[tabler--plus] size-4"></span>
+                        Create User
+                    </a>
+                </div>
+            {% else %}
+                <div class="card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 sm:px-6 pt-4 sm:pt-5">
+                    <div>
+                        <h3 class="card-title text-base sm:text-lg">Invitations</h3>
+                        <p class="text-sm text-base-content/60 mt-1">{{ pagination.total }} total invitations</p>
                     </div>
-                {% else %}
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Invited User
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Role
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Status
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Expires
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Created By
-                                    </th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Shipping Line
-                                    </th>
-                                    <th scope="col" class="relative px-6 py-3">
-                                        <span class="sr-only">Actions</span>
-                                    </th>
+                    <span class="badge badge-ghost">{{ pendingUsers|length }} shown</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Invited User</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Expires</th>
+                                <th>Created By</th>
+                                <th>Shipping Line</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pendingUser in pendingUsers %}
+                                <tr class="hover">
+                                    <td>
+                                        <div class="flex items-center gap-3">
+                                            <div class="size-10 rounded-full {{ avatar_colors(pendingUser) }} flex items-center justify-center shrink-0">
+                                                <span class="text-sm font-semibold">
+                                                    {{ (pendingUser.firstName ~ ' ' ~ pendingUser.lastName)|slice(0, 2)|upper }}
+                                                </span>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <div class="font-medium text-base-content truncate">{{ pendingUser.fullName }}</div>
+                                                <div class="text-sm text-base-content/50 truncate">{{ pendingUser.email }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if pendingUser.role.value == 'SHIPPING_LINES_ADMIN' %}
+                                            <span class="badge badge-secondary badge-sm">{{ pendingUser.role.value|replace({'_': ' '})|title }}</span>
+                                        {% elseif pendingUser.role.value == 'SL_STAFF' %}
+                                            <span class="badge badge-primary badge-sm">{{ pendingUser.role.value|replace({'_': ' '})|title }}</span>
+                                        {% elseif pendingUser.role.value == 'EVALUATOR' %}
+                                            <span class="badge badge-info badge-sm">{{ pendingUser.role.value|replace({'_': ' '})|title }}</span>
+                                        {% elseif pendingUser.role.value == 'ACCOUNTING' %}
+                                            <span class="badge badge-warning badge-sm">{{ pendingUser.role.value|replace({'_': ' '})|title }}</span>
+                                        {% elseif pendingUser.role.value == 'TERMINAL_TEAM' %}
+                                            <span class="badge badge-accent badge-sm">{{ pendingUser.role.value|replace({'_': ' '})|title }}</span>
+                                        {% else %}
+                                            <span class="badge badge-ghost badge-sm">{{ pendingUser.role.value|replace({'_': ' '})|title }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if pendingUser.status == 'pending' %}
+                                            {% if pendingUser.isExpired %}
+                                                <span class="badge badge-error badge-sm">Expired</span>
+                                            {% else %}
+                                                <span class="badge badge-warning badge-sm">Pending</span>
+                                            {% endif %}
+                                        {% elseif pendingUser.status == 'expired' %}
+                                            <span class="badge badge-error badge-sm">Expired</span>
+                                        {% elseif pendingUser.status == 'declined' %}
+                                            <span class="badge badge-ghost badge-sm">Declined</span>
+                                        {% elseif pendingUser.status == 'accepted' %}
+                                            <span class="badge badge-success badge-sm">Accepted</span>
+                                        {% elseif pendingUser.status == 'temporarily_disabled' %}
+                                            <span class="badge badge-neutral badge-sm">Temporarily Disabled</span>
+                                        {% else %}
+                                            <span class="badge badge-info badge-sm">{{ pendingUser.status|title }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-sm whitespace-nowrap">
+                                        <div class="font-medium {% if pendingUser.isExpired %}text-error{% else %}text-base-content{% endif %}">
+                                            {{ pendingUser.tokenExpiresAt|date('M d, Y') }}
+                                        </div>
+                                        <div class="text-xs text-base-content/50">{{ pendingUser.tokenExpiresAt|date('H:i') }}</div>
+                                    </td>
+                                    <td class="text-sm">
+                                        <div class="font-medium text-base-content">{{ pendingUser.createdByAdmin.fullName }}</div>
+                                        <div class="text-base-content/50 truncate max-w-[10rem]">{{ pendingUser.createdByAdmin.email }}</div>
+                                    </td>
+                                    <td class="text-sm">
+                                        {% if pendingUser.shippingLine %}
+                                            <div class="flex items-center gap-2">
+                                                <span class="size-2 rounded-full bg-primary shrink-0"></span>
+                                                <span class="font-medium text-primary">{{ pendingUser.shippingLine.brandName }}</span>
+                                            </div>
+                                        {% else %}
+                                            <div class="flex items-center gap-2 text-base-content/40">
+                                                <span class="size-2 rounded-full bg-base-content/30 shrink-0"></span>
+                                                No shipping line
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-right">
+                                        <div class="flex items-center justify-end gap-1">
+                                            {% if pendingUser.status != 'accepted' %}
+                                                <button type="button"
+                                                        class="btn btn-xs btn-primary invitation-action-btn"
+                                                        data-action="resend"
+                                                        data-id="{{ pendingUser.id }}"
+                                                        data-email="{{ pendingUser.email|e('html_attr') }}"
+                                                        title="Resend invitation">
+                                                    <span class="icon-[tabler--refresh] size-3"></span>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn btn-xs btn-error invitation-action-btn"
+                                                        data-action="cancel"
+                                                        data-id="{{ pendingUser.id }}"
+                                                        data-email="{{ pendingUser.email|e('html_attr') }}"
+                                                        title="Cancel invitation">
+                                                    <span class="icon-[tabler--trash] size-3"></span>
+                                                </button>
+                                            {% else %}
+                                                <span class="text-xs text-base-content/40">—</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                {% for pendingUser in pendingUsers %}
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="flex-shrink-0 h-10 w-10">
-                                                    <div class="h-10 w-10 rounded-full {{ avatar_colors(pendingUser) }} flex items-center justify-center">
-                                                        <span class="text-sm font-medium">
-                                                            {{ (pendingUser.firstName ~ ' ' ~ pendingUser.lastName)|slice(0, 2)|upper }}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div class="ml-4">
-                                                    <div class="text-sm font-medium text-gray-900">
-                                                        {{ pendingUser.fullName }}
-                                                    </div>
-                                                    <div class="text-sm text-gray-500">
-                                                        {{ pendingUser.email }}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
-                                                {% if pendingUser.role.value == 'SHIPPING_LINES_ADMIN' %}bg-purple-100 text-purple-800
-                                                {% elseif pendingUser.role.value == 'SL_STAFF' %}bg-blue-100 text-blue-800
-                                                {% elseif pendingUser.role.value == 'EVALUATOR' %}bg-green-100 text-green-800
-                                                {% elseif pendingUser.role.value == 'ACCOUNTING' %}bg-yellow-100 text-yellow-800
-                                                {% elseif pendingUser.role.value == 'TERMINAL_TEAM' %}bg-indigo-100 text-indigo-800
-                                                {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                                {{ pendingUser.role.value|replace({'_': ' '})|title }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            {% if pendingUser.status == 'pending' %}
-                                                {% if pendingUser.isExpired %}
-                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                                                        Expired
-                                                    </span>
-                                                {% else %}
-                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                                        Pending
-                                                    </span>
-                                                {% endif %}
-                                            {% elseif pendingUser.status == 'expired' %}
-                                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                                                    Expired
-                                                </span>
-                                            {% elseif pendingUser.status == 'declined' %}
-                                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                                                    Declined
-                                                </span>
-                                            {% else %}
-                                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                    {{ pendingUser.status|title }}
-                                                </span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            <div class="flex flex-col">
-                                                <span class="{% if pendingUser.isExpired %}text-red-600 font-medium{% endif %}">
-                                                    {{ pendingUser.tokenExpiresAt|date('M d, Y') }}
-                                                </span>
-                                                <span class="text-xs text-gray-500">
-                                                    {{ pendingUser.tokenExpiresAt|date('H:i') }}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            <div class="flex items-center">
-                                                <div class="text-sm">
-                                                    <div class="font-medium text-gray-900">
-                                                        {{ pendingUser.createdByAdmin.fullName }}
-                                                    </div>
-                                                    <div class="text-gray-500">
-                                                        {{ pendingUser.createdByAdmin.email }}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {% if pendingUser.shippingLine %}
-                                                <div class="flex items-center">
-                                                    <div class="w-2 h-2 bg-blue-500 rounded-full mr-2" aria-hidden="true"></div>
-                                                    <span class="text-blue-600 font-medium">
-                                                        {{ pendingUser.shippingLine.brandName }}
-                                                    </span>
-                                                </div>
-                                            {% else %}
-                                                <div class="flex items-center">
-                                                    <div class="w-2 h-2 bg-gray-400 rounded-full mr-2" aria-hidden="true"></div>
-                                                    <span class="text-gray-400">No shipping line</span>
-                                                </div>
-                                            {% endif %}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div class="flex items-center space-x-2">
-                                                {% if pendingUser.status != 'accepted' %}
-                                                    <button onclick="resendInvitation({{ pendingUser.id }}, '{{ pendingUser.email }}')" 
-                                                            class="text-blue-600 hover:text-blue-900"
-                                                            title="Resend invitation">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                                        </svg>
-                                                    </button>
-                                                    <button onclick="cancelInvitation({{ pendingUser.id }}, '{{ pendingUser.email }}')" 
-                                                            class="text-red-600 hover:text-red-900"
-                                                            title="Cancel invitation">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                        </svg>
-                                                    </button>
-                                                {% else %}
-                                                    <span class="text-gray-400 text-xs">No actions</span>
-                                                {% endif %}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% endif %}
-            </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
         </div>
 
-        <!-- Pagination -->
+        {# Pagination #}
         {% if pagination.pages > 1 %}
-            <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-6 rounded-lg shadow">
-                <div class="flex-1 flex justify-between sm:hidden">
-                    {% if pagination.page > 1 %}
-                        <a href="{{ path('admin_user_hierarchy_pending_invitations', filters|merge({page: pagination.page - 1})) }}" 
-                           class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                            Previous
-                        </a>
-                    {% endif %}
-                    {% if pagination.page < pagination.pages %}
-                        <a href="{{ path('admin_user_hierarchy_pending_invitations', filters|merge({page: pagination.page + 1})) }}" 
-                           class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                            Next
-                        </a>
-                    {% endif %}
-                </div>
-                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                    <div>
-                        <p class="text-sm text-gray-700">
-                            Showing
-                            <span class="font-medium">{{ ((pagination.page - 1) * pagination.limit) + 1 }}</span>
-                            to
-                            <span class="font-medium">{{ min(pagination.page * pagination.limit, pagination.total) }}</span>
-                            of
-                            <span class="font-medium">{{ pagination.total }}</span>
-                            results
-                        </p>
-                    </div>
-                    <div>
-                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                            {% if pagination.page > 1 %}
-                                <a href="{{ path('admin_user_hierarchy_pending_invitations', filters|merge({page: pagination.page - 1})) }}" 
-                                   class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                                    <span class="sr-only">Previous</span>
-                                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                    </svg>
-                                </a>
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <p class="text-sm text-base-content/60">
+                        Showing
+                        <span class="font-medium text-base-content">{{ ((pagination.page - 1) * pagination.limit) + 1 }}</span>–<span class="font-medium text-base-content">{{ pagination.page * pagination.limit > pagination.total ? pagination.total : pagination.page * pagination.limit }}</span>
+                        of <span class="font-medium text-base-content">{{ pagination.total }}</span>
+                    </p>
+                    <div class="flex flex-wrap items-center gap-1">
+                        {% if pagination.page > 1 %}
+                            <a href="{{ path('admin_user_hierarchy_pending_invitations', filters|merge({page: pagination.page - 1})) }}"
+                               class="btn btn-sm btn-ghost gap-1">
+                                <span class="icon-[tabler--chevron-left] size-4"></span>
+                                Prev
+                            </a>
+                        {% endif %}
+                        {% for page in 1..pagination.pages %}
+                            {% if page == pagination.page %}
+                                <span class="btn btn-sm btn-primary">{{ page }}</span>
+                            {% elseif page <= 2 or page >= pagination.pages - 1 or (page >= pagination.page - 1 and page <= pagination.page + 1) %}
+                                <a href="{{ path('admin_user_hierarchy_pending_invitations', filters|merge({page: page})) }}"
+                                   class="btn btn-sm btn-ghost">{{ page }}</a>
+                            {% elseif page == 3 or page == pagination.pages - 2 %}
+                                <span class="btn btn-sm btn-ghost btn-disabled">…</span>
                             {% endif %}
-
-                            {% for page in 1..pagination.pages %}
-                                {% if page == pagination.page %}
-                                    <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
-                                        {{ page }}
-                                    </span>
-                                {% elseif page <= 3 or page >= pagination.pages - 2 or (page >= pagination.page - 1 and page <= pagination.page + 1) %}
-                                    <a href="{{ path('admin_user_hierarchy_pending_invitations', filters|merge({page: page})) }}" 
-                                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                                        {{ page }}
-                                    </a>
-                                {% elseif page == 4 or page == pagination.pages - 3 %}
-                                    <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                                        ...
-                                    </span>
-                                {% endif %}
-                            {% endfor %}
-
-                            {% if pagination.page < pagination.pages %}
-                                <a href="{{ path('admin_user_hierarchy_pending_invitations', filters|merge({page: pagination.page + 1})) }}" 
-                                   class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                                    <span class="sr-only">Next</span>
-                                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-                                    </svg>
-                                </a>
-                            {% endif %}
-                        </nav>
+                        {% endfor %}
+                        {% if pagination.page < pagination.pages %}
+                            <a href="{{ path('admin_user_hierarchy_pending_invitations', filters|merge({page: pagination.page + 1})) }}"
+                               class="btn btn-sm btn-ghost gap-1">
+                                Next
+                                <span class="icon-[tabler--chevron-right] size-4"></span>
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         {% endif %}
-
-        <!-- Toast Notification Container -->
-        <div id="toastContainer" class="fixed top-20 right-4 z-[9999] space-y-2"></div>
-    </div>
 </div>
+{% endblock %}
 
-<!-- Confirmation Modal -->
-<div id="confirmationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[9999]">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                </svg>
+{% block page_modals %}
+<div id="invitationToastContainer" class="fixed top-20 right-4 z-[10003] flex flex-col gap-2 w-full max-w-sm pointer-events-none"></div>
+
+<div id="invitationConfirmModal"
+     class="hidden fixed inset-0 z-[10002] items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="invitationModalTitle">
+    <div class="absolute inset-0 bg-black/60" data-invitation-modal-dismiss></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6" onclick="event.stopPropagation()">
+        <div class="text-center">
+            <div id="invitationModalIconWrap" class="size-14 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span id="invitationModalIcon" class="icon-[tabler--alert-triangle] size-7 text-error"></span>
             </div>
-            <h3 class="text-lg font-medium text-gray-900 mt-4" id="modalTitle">Confirm Action</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500" id="modalMessage">
-                    Are you sure you want to perform this action?
-                </p>
-            </div>
-            <div class="items-center px-4 py-3">
-                <button id="confirmButton" 
-                        class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-24 mr-2 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
-                    Confirm
-                </button>
-                <button id="cancelButton" 
-                        class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-24 hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                    Cancel
-                </button>
+            <h3 id="invitationModalTitle" class="text-lg font-bold mb-2">Confirm Action</h3>
+            <p id="invitationModalMessage" class="text-sm text-base-content/70 mb-6">Are you sure?</p>
+            <div class="flex gap-3">
+                <button type="button" data-invitation-modal-dismiss class="btn btn-ghost flex-1">Cancel</button>
+                <button type="button" id="invitationConfirmButton" class="btn btn-error flex-1">Confirm</button>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block page_scripts %}
 <script>
-// Toast notification system (reused from user hierarchy list)
-function showToast(message, type = 'info', duration = 5000) {
-    const toastContainer = document.getElementById('toastContainer');
-    const toast = document.createElement('div');
-    
-    // Set base classes
-    let bgColor, textColor, icon;
-    switch (type) {
-        case 'success':
-            bgColor = 'bg-green-50 border-green-200';
-            textColor = 'text-green-800';
-            icon = `<svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-            </svg>`;
-            break;
-        case 'error':
-            bgColor = 'bg-red-50 border-red-200';
-            textColor = 'text-red-800';
-            icon = `<svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-            </svg>`;
-            break;
-        case 'warning':
-            bgColor = 'bg-yellow-50 border-yellow-200';
-            textColor = 'text-yellow-800';
-            icon = `<svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-            </svg>`;
-            break;
-        default: // info
-            bgColor = 'bg-blue-50 border-blue-200';
-            textColor = 'text-blue-800';
-            icon = `<svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-            </svg>`;
-    }
-    
-    toast.className = `flex items-center p-4 border rounded-lg shadow-lg transform transition-all duration-300 ease-in-out translate-x-full opacity-0 ${bgColor} ${textColor} max-w-sm`;
-    toast.innerHTML = `
-        <div class="flex-shrink-0 mr-3">
-            ${icon}
-        </div>
-        <div class="flex-1 text-sm font-medium">
-            ${message}
-        </div>
-        <button onclick="removeToast(this.parentElement)" class="ml-3 flex-shrink-0 text-gray-400 hover:text-gray-600">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-            </svg>
-        </button>
-    `;
-    
-    toastContainer.appendChild(toast);
-    
-    // Animate in
-    setTimeout(() => {
-        toast.classList.remove('translate-x-full', 'opacity-0');
-    }, 100);
-    
-    // Auto remove after duration
-    if (duration > 0) {
-        setTimeout(() => {
-            removeToast(toast);
-        }, duration);
-    }
-}
+(function () {
+    let pendingInvitationAction = null;
+    let pendingInvitationId = null;
 
-function removeToast(toast) {
-    toast.classList.add('translate-x-full', 'opacity-0');
-    setTimeout(() => {
-        if (toast.parentElement) {
-            toast.parentElement.removeChild(toast);
+    const modal = document.getElementById('invitationConfirmModal');
+    const confirmButton = document.getElementById('invitationConfirmButton');
+    const modalTitle = document.getElementById('invitationModalTitle');
+    const modalMessage = document.getElementById('invitationModalMessage');
+    const modalIconWrap = document.getElementById('invitationModalIconWrap');
+    const modalIcon = document.getElementById('invitationModalIcon');
+
+    function showToast(message, type, duration) {
+        type = type || 'info';
+        duration = duration === undefined ? 4000 : duration;
+
+        const container = document.getElementById('invitationToastContainer');
+        if (!container) return;
+
+        const map = {
+            success: ['alert-success', 'icon-[tabler--circle-check]'],
+            error: ['alert-error', 'icon-[tabler--alert-circle]'],
+            warning: ['alert-warning', 'icon-[tabler--alert-triangle]'],
+            info: ['alert-info', 'icon-[tabler--info-circle]']
+        };
+        const pair = map[type] || map.info;
+
+        const el = document.createElement('div');
+        el.className = 'alert ' + pair[0] + ' shadow-lg pointer-events-auto text-sm';
+        el.innerHTML = '<span class="' + pair[1] + ' size-5"></span><span>' + message + '</span>' +
+            '<button type="button" class="btn btn-ghost btn-xs btn-circle ml-auto"><span class="icon-[tabler--x] size-3"></span></button>';
+        el.querySelector('button').addEventListener('click', function () { el.remove(); });
+        container.appendChild(el);
+
+        if (duration > 0) {
+            window.setTimeout(function () { el.remove(); }, duration);
         }
-    }, 300);
-}
-
-// Modal functionality
-function showConfirmationModal(title, message, onConfirm) {
-    document.getElementById('modalTitle').textContent = title;
-    document.getElementById('modalMessage').textContent = message;
-    document.getElementById('confirmationModal').classList.remove('hidden');
-    
-    // Set up confirm button
-    const confirmButton = document.getElementById('confirmButton');
-    confirmButton.onclick = function() {
-        hideConfirmationModal();
-        if (onConfirm) onConfirm();
-    };
-}
-
-function hideConfirmationModal() {
-    document.getElementById('confirmationModal').classList.add('hidden');
-}
-
-// Cancel button handler
-document.getElementById('cancelButton').addEventListener('click', hideConfirmationModal);
-
-// Close modal when clicking outside
-document.getElementById('confirmationModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        hideConfirmationModal();
     }
-});
 
-// Invitation management functions
-function resendInvitation(pendingUserId, email) {
-    showConfirmationModal(
-        'Resend Invitation',
-        `Are you sure you want to resend the invitation to ${email}?`,
-        function() {
-            // Show loading toast
-            showToast('Resending invitation...', 'info', 0);
-            
-            fetch(`/admin/user-hierarchy/pending-invitations/${pendingUserId}/resend`, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
+    function openInvitationModal(title, message, action, id, options) {
+        options = options || {};
+        pendingInvitationAction = action;
+        pendingInvitationId = id;
+
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        confirmButton.textContent = options.confirmText || 'Confirm';
+        confirmButton.className = 'btn flex-1 ' + (options.confirmClass || 'btn-error');
+
+        if (options.variant === 'primary') {
+            modalIconWrap.className = 'size-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4';
+            modalIcon.className = 'icon-[tabler--refresh] size-7 text-primary';
+        } else {
+            modalIconWrap.className = 'size-14 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-4';
+            modalIcon.className = 'icon-[tabler--alert-triangle] size-7 text-error';
+        }
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeInvitationModal() {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+        pendingInvitationAction = null;
+        pendingInvitationId = null;
+    }
+
+    function invitationUrl(action, id) {
+        return '/admin/user-hierarchy/pending-invitations/' + id + '/' + action;
+    }
+
+    function executeInvitationAction() {
+        if (!pendingInvitationAction || !pendingInvitationId) return;
+
+        const action = pendingInvitationAction;
+        const id = pendingInvitationId;
+        closeInvitationModal();
+
+        showToast(action === 'resend' ? 'Resending invitation...' : 'Cancelling invitation...', 'info', 0);
+
+        fetch(invitationUrl(action, id), {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
                 if (data.success) {
                     showToast(data.message, 'success');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1500);
+                    window.setTimeout(function () { location.reload(); }, 1500);
                 } else {
-                    showToast('Failed to resend invitation: ' + data.error, 'error');
+                    showToast('Failed: ' + (data.error || 'Unknown error'), 'error');
                 }
             })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Failed to resend invitation.', 'error');
+            .catch(function () {
+                showToast('Request failed. Please try again.', 'error');
             });
-        }
-    );
-}
+    }
 
-function cancelInvitation(pendingUserId, email) {
-    showConfirmationModal(
-        'Cancel Invitation',
-        `Are you sure you want to cancel the invitation for ${email}? This action cannot be undone.`,
-        function() {
-            // Show loading toast
-            showToast('Cancelling invitation...', 'info', 0);
-            
-            fetch(`/admin/user-hierarchy/pending-invitations/${pendingUserId}/cancel`, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast(data.message, 'success');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1500);
-                } else {
-                    showToast('Failed to cancel invitation: ' + data.error, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Failed to cancel invitation.', 'error');
-            });
+    document.querySelectorAll('[data-invitation-modal-dismiss]').forEach(function (el) {
+        el.addEventListener('click', closeInvitationModal);
+    });
+
+    if (confirmButton) {
+        confirmButton.addEventListener('click', executeInvitationAction);
+    }
+
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.invitation-action-btn');
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+        const email = btn.dataset.email || 'this user';
+
+        if (action === 'resend') {
+            openInvitationModal(
+                'Resend Invitation',
+                'Are you sure you want to resend the invitation to ' + email + '?',
+                'resend',
+                id,
+                { variant: 'primary', confirmClass: 'btn-primary', confirmText: 'Resend' }
+            );
+        } else if (action === 'cancel') {
+            openInvitationModal(
+                'Cancel Invitation',
+                'Are you sure you want to cancel the invitation for ' + email + '? This action cannot be undone.',
+                'cancel',
+                id,
+                { variant: 'danger', confirmClass: 'btn-error', confirmText: 'Cancel Invitation' }
+            );
         }
-    );
-}
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+            closeInvitationModal();
+        }
+    });
+})();
 </script>
 {% endblock %}

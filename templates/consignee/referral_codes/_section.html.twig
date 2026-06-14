@@ -1,0 +1,180 @@
+<div class="alert alert-info">
+    <span class="icon-[tabler--info-circle] size-5"></span>
+    <span class="text-sm">Each referral code can only be used once by a single broker. Generate a new code for each broker you want to link with.</span>
+</div>
+
+<div class="card bg-base-100 shadow-sm">
+    <div class="card-body p-4 border-b border-base-300">
+        <h3 class="text-sm font-semibold text-base-content">Your Referral Codes</h3>
+    </div>
+
+    {% if codeStats|length > 0 %}
+        <div class="divide-y divide-base-300 lg:hidden">
+            {% for stat in codeStats %}
+                {% set code = stat.code %}
+                <div class="p-4 space-y-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-xs text-base-content/60 mb-1">Code</p>
+                            <div class="flex items-center gap-2">
+                                <code class="text-sm font-mono font-semibold bg-base-200 px-2 py-1 rounded-lg">{{ code.code }}</code>
+                                <button type="button"
+                                        onclick="copyToClipboard('{{ code.code }}')"
+                                        class="btn btn-text btn-circle btn-sm"
+                                        title="Copy code">
+                                    <span class="icon-[tabler--copy] size-4"></span>
+                                </button>
+                            </div>
+                        </div>
+                        {% include 'consignee/referral_codes/_code_status_badge.html.twig' with {
+                            code: code,
+                            broker_count: stat.broker_count
+                        } %}
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <p class="text-xs text-base-content/60">Usage</p>
+                            <p class="font-medium">
+                                {{ code.currentUses }} / {{ code.maxUses ?? 1 }}
+                                {% if code.currentUses >= (code.maxUses ?? 1) %}
+                                    <span class="badge badge-warning badge-soft badge-xs ml-1">Used</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-base-content/60">Brokers Linked</p>
+                            <p class="font-medium">{{ stat.broker_count }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-base-content/60">Expires</p>
+                            <p class="font-medium">
+                                {% if code.expiresAt %}
+                                    {{ code.expiresAt|date('M d, Y') }}
+                                    {% if code.expiresAt < date() %}
+                                        <span class="text-error text-xs">(Expired)</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-base-content/50">Never</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-base-content/60">Created</p>
+                            <p class="font-medium">{{ code.createdAt|date('M d, Y') }}</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-1">
+                        {% if code.isActive %}
+                            <button type="button"
+                                    onclick="showDeactivateModal('{{ code.id }}', '{{ code.code }}')"
+                                    class="btn btn-error btn-soft btn-sm w-full">
+                                Deactivate
+                            </button>
+                        {% elseif code.currentUses >= (code.maxUses ?? 1) %}
+                            <span class="text-xs text-base-content/50">Used — cannot reactivate</span>
+                        {% else %}
+                            <button type="button"
+                                    onclick="showReactivateModal('{{ code.id }}', '{{ code.code }}')"
+                                    class="btn btn-success btn-soft btn-sm w-full">
+                                Reactivate
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="hidden lg:block overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Status</th>
+                        <th>Usage</th>
+                        <th>Brokers Linked</th>
+                        <th>Expires</th>
+                        <th>Created</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in codeStats %}
+                        {% set code = stat.code %}
+                        <tr class="hover">
+                            <td>
+                                <div class="flex items-center gap-2">
+                                    <code class="text-sm font-mono font-semibold bg-base-200 px-2 py-1 rounded-lg">{{ code.code }}</code>
+                                    <button type="button"
+                                            onclick="copyToClipboard('{{ code.code }}')"
+                                            class="btn btn-text btn-circle btn-sm"
+                                            title="Copy code">
+                                        <span class="icon-[tabler--copy] size-4"></span>
+                                    </button>
+                                </div>
+                            </td>
+                            <td>
+                                {% include 'consignee/referral_codes/_code_status_badge.html.twig' with {
+                                    code: code,
+                                    broker_count: stat.broker_count
+                                } %}
+                            </td>
+                            <td>
+                                {{ code.currentUses }} / {{ code.maxUses ?? 1 }}
+                                {% if code.currentUses >= (code.maxUses ?? 1) %}
+                                    <span class="badge badge-warning badge-soft badge-xs ml-1">Used</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ stat.broker_count }}</td>
+                            <td>
+                                {% if code.expiresAt %}
+                                    <div class="text-sm">{{ code.expiresAt|date('M d, Y') }}</div>
+                                    {% if code.expiresAt < date() %}
+                                        <div class="text-xs text-error">Expired</div>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-base-content/50">Never</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="text-sm">{{ code.createdAt|date('M d, Y') }}</div>
+                            </td>
+                            <td class="text-end">
+                                {% if code.isActive %}
+                                    <button type="button"
+                                            onclick="showDeactivateModal('{{ code.id }}', '{{ code.code }}')"
+                                            class="btn btn-error btn-soft btn-sm">
+                                        Deactivate
+                                    </button>
+                                {% elseif code.currentUses >= (code.maxUses ?? 1) %}
+                                    <span class="text-xs text-base-content/50">Used — cannot reactivate</span>
+                                {% else %}
+                                    <button type="button"
+                                            onclick="showReactivateModal('{{ code.id }}', '{{ code.code }}')"
+                                            class="btn btn-success btn-soft btn-sm">
+                                        Reactivate
+                                    </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="card-body items-center text-center py-16">
+            <div class="size-20 bg-base-200 rounded-full flex items-center justify-center mb-6">
+                <span class="icon-[tabler--ticket] size-10 text-base-content/40"></span>
+            </div>
+            <h3 class="text-lg font-bold text-base-content mb-2">No referral codes</h3>
+            <p class="text-sm text-base-content/60 mb-6">Get started by generating your first referral code.</p>
+            <button type="button"
+                    onclick="openGenerateModal()"
+                    class="btn btn-primary gap-2">
+                <span class="icon-[tabler--plus] size-4"></span>
+                Generate Code
+            </button>
+        </div>
+    {% endif %}
+</div>

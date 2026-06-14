@@ -95,7 +95,7 @@
             </div>
             <div class="detail-row">
                 <span class="detail-label">Payment Amount:</span>
-                <span class="detail-value">₱{{ payment.amount|number_format(2) }}</span>
+                <span class="detail-value">{{ payment|format_payment }}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-label">Payment ID:</span>

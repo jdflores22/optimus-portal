@@ -1,0 +1,151 @@
+<div id="edoDetailModal"
+     class="edo-release-modal hidden fixed inset-0 z-[10002] items-center justify-center p-4"
+     role="dialog" aria-modal="true" aria-labelledby="edoDetailModalTitle">
+    <div class="absolute inset-0 bg-black/60" onclick="closeModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-3xl z-10 p-6 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4 pb-3 border-b border-base-200">
+            <h3 id="edoDetailModalTitle" class="font-bold text-lg">eDO & Payment Details</h3>
+            <button type="button" onclick="closeModal()" class="btn btn-sm btn-circle btn-ghost" aria-label="Close">
+                <span class="icon-[tabler--x] size-5"></span>
+            </button>
+        </div>
+        <div id="edoDetailContent"></div>
+    </div>
+</div>
+
+<div id="rejectModal"
+     class="edo-release-modal hidden fixed inset-0 z-[10002] items-center justify-center p-4"
+     role="dialog" aria-modal="true">
+    <div class="absolute inset-0 bg-black/60" onclick="closeRejectModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6">
+        <h3 class="font-bold text-lg mb-4">Reject eDO Release</h3>
+        <form id="rejectForm" onsubmit="submitRejection(event)">
+            <input type="hidden" id="rejectEdoId" name="edoId">
+            <div class="form-control mb-4">
+                <label class="label py-1" for="edoRejectReason">
+                    <span class="label-text font-medium">Rejection Reason <span class="text-error">*</span></span>
+                </label>
+                <textarea id="edoRejectReason" name="reason" rows="4" required
+                          class="textarea textarea-bordered w-full"
+                          placeholder="Please provide a detailed reason for rejecting this eDO..."></textarea>
+            </div>
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                <button type="button" onclick="closeRejectModal()" class="btn btn-ghost">Cancel</button>
+                <button type="submit" class="btn btn-error">Reject eDO</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="rejectPaymentModal"
+     class="edo-release-modal hidden fixed inset-0 z-[10002] items-center justify-center p-4"
+     role="dialog" aria-modal="true">
+    <div class="absolute inset-0 bg-black/60" onclick="closeRejectPaymentModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6">
+        <h3 class="font-bold text-lg mb-4">Reject EDO Payment</h3>
+        <form id="rejectPaymentForm" onsubmit="submitPaymentRejection(event)">
+            <input type="hidden" id="rejectPaymentId">
+            <div class="form-control mb-4">
+                <label class="label py-1" for="paymentRejectionReason">
+                    <span class="label-text font-medium">Rejection Reason <span class="text-error">*</span></span>
+                </label>
+                <textarea id="paymentRejectionReason" rows="4" required
+                          class="textarea textarea-bordered w-full"
+                          placeholder="Please provide a detailed reason for rejecting this payment..."></textarea>
+            </div>
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                <button type="button" onclick="closeRejectPaymentModal()" class="btn btn-ghost">Cancel</button>
+                <button type="submit" class="btn btn-error">Reject Payment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="validatePaymentModal"
+     class="edo-release-modal hidden fixed inset-0 z-[10002] items-center justify-center p-4"
+     role="dialog" aria-modal="true">
+    <div class="absolute inset-0 bg-black/60" onclick="closeValidatePaymentModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-2xl z-10 p-6 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-lg">Validate eDO Release Payment</h3>
+            <button type="button" onclick="closeValidatePaymentModal()" class="btn btn-sm btn-circle btn-ghost" aria-label="Close">
+                <span class="icon-[tabler--x] size-5"></span>
+            </button>
+        </div>
+        <div id="validatePaymentContent"></div>
+    </div>
+</div>
+
+<div id="rejectionReasonModal"
+     class="edo-release-modal hidden fixed inset-0 z-[10003] items-center justify-center p-4"
+     role="dialog" aria-modal="true">
+    <div class="absolute inset-0 bg-black/60" onclick="closeRejectionReasonModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6 text-center">
+        <div class="mx-auto flex items-center justify-center size-16 rounded-full bg-error/10 mb-4">
+            <span class="icon-[tabler--alert-triangle] size-8 text-error"></span>
+        </div>
+        <h3 class="font-bold text-lg mb-2">Rejection Reason Required</h3>
+        <p class="text-sm text-base-content/70 mb-4">
+            Please provide a detailed reason for rejecting this payment. This will be sent to the broker.
+        </p>
+        <div class="form-control mb-6 text-left">
+            <textarea id="rejectionReasonInput" rows="4"
+                      class="textarea textarea-bordered w-full"
+                      placeholder="Enter rejection reason..."></textarea>
+        </div>
+        <div class="flex gap-2">
+            <button type="button" onclick="closeRejectionReasonModal()" class="btn btn-ghost flex-1">Cancel</button>
+            <button type="button" onclick="submitRejectionReason()" class="btn btn-error flex-1">Continue</button>
+        </div>
+    </div>
+</div>
+
+<div id="confirmationModal"
+     class="edo-release-modal hidden fixed inset-0 z-[10003] items-center justify-center p-4"
+     role="dialog" aria-modal="true">
+    <div class="absolute inset-0 bg-black/60" onclick="closeConfirmationModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6 text-center">
+        <div id="confirmationIcon" class="mx-auto flex items-center justify-center size-16 rounded-full mb-4"></div>
+        <h3 id="confirmationTitle" class="font-bold text-lg mb-2"></h3>
+        <p id="confirmationMessage" class="text-sm text-base-content/70 mb-6"></p>
+        <div id="confirmationAmount" class="hidden bg-base-200 rounded-lg p-3 mb-6">
+            <p class="text-xs text-base-content/60 mb-1">Payment Amount</p>
+            <p class="text-2xl font-bold">
+                <span id="confirmationAmountPrefix">{{ (0|format_money('PHP'))|slice(0, -4) }}</span><span id="confirmationAmountValue">0.00</span>
+            </p>
+        </div>
+        <div id="confirmationReason" class="hidden bg-error/10 rounded-lg p-3 mb-6 text-left border border-error/20">
+            <p class="text-xs text-error font-medium mb-1">Rejection Reason</p>
+            <p id="confirmationReasonText" class="text-sm"></p>
+        </div>
+        <div class="flex gap-2">
+            <button type="button" onclick="closeConfirmationModal()" class="btn btn-ghost flex-1">Cancel</button>
+            <button type="button" id="confirmationActionBtn" onclick="confirmValidatePayment()" class="btn flex-1"></button>
+        </div>
+    </div>
+</div>
+
+<div id="loadingModal"
+     class="edo-release-modal hidden fixed inset-0 z-[10005] items-center justify-center p-4"
+     role="dialog" aria-modal="true" aria-busy="true">
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-sm z-10 p-8 text-center">
+        <span class="loading loading-spinner loading-lg text-primary"></span>
+        <h3 class="font-semibold text-lg mt-4 mb-2">Processing...</h3>
+        <p class="text-sm text-base-content/70">Please wait while we validate the payment</p>
+    </div>
+</div>
+
+<div id="successModal"
+     class="edo-release-modal hidden fixed inset-0 z-[10005] items-center justify-center p-4"
+     role="dialog" aria-modal="true">
+    <div class="absolute inset-0 bg-black/60" onclick="closeSuccessModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6 text-center">
+        <div class="mx-auto flex items-center justify-center size-16 rounded-full bg-success/10 mb-4">
+            <span class="icon-[tabler--circle-check] size-10 text-success"></span>
+        </div>
+        <h3 id="successTitle" class="font-bold text-lg mb-2">Success!</h3>
+        <p id="successMessage" class="text-sm text-base-content/70 mb-6"></p>
+        <button type="button" onclick="closeSuccessModal()" class="btn btn-success w-full">Continue</button>
+    </div>
+</div>

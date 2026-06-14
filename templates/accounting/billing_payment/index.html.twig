@@ -71,7 +71,7 @@
                                 <div class="text-sm text-gray-900">{{ payment.shippingLine.brandName }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">₱{{ payment.amount|number_format(2) }}</div>
+                                <div class="text-sm font-medium text-gray-900">{{ payment.amount|format_money('PHP') }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-500">{{ payment.createdAt|date('M d, Y H:i') }}</div>

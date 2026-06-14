@@ -1,134 +1,227 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 
 {% block title %}Suspension Appeals - OPTIMUS{% endblock %}
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+                                <li><a href="{{ path('app_admin_dashboard') }}">Admin</a></li>
+                                <li>Suspension Appeals</li>
+                            </ul>
+</div>
+{% endblock %}
 
-{% block body %}
-<div class="bg-gradient-to-br from-gray-50 via-blue-50 to-gray-50 min-h-screen">
-    <!-- Header -->
-    <div class="bg-white border-b border-gray-200 shadow-sm mb-6">
-        <div class="px-6 py-4">
-            <h1 class="text-2xl font-bold text-gray-900">Suspension Appeals</h1>
-            <p class="text-sm text-gray-600 mt-1">Review and manage broker suspension appeals</p>
-        </div>
-    </div>
-
-    <div class="px-6">
-        <!-- Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-gray-500 uppercase">Pending Review</p>
-                        <p class="text-2xl font-bold text-yellow-600 mt-1">{{ pendingCount }}</p>
+{% block content %}
+<div class="space-y-5 sm:space-y-6">
+{# Header #}
+        <div class="bg-base-100 shadow-sm rounded-xl">
+            <div class="p-4 sm:p-6">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-4">
+                            <div class="size-12 rounded-xl bg-warning/10 flex items-center justify-center shrink-0">
+                                <span class="icon-[tabler--scale] size-6 text-warning"></span>
+                            </div>
+                            <div class="min-w-0">
+                                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">Suspension Appeals</h1>
+                                <p class="text-sm text-base-content/60 mt-1">Review and manage broker suspension appeals</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-gray-500 uppercase">Approved</p>
-                        <p class="text-2xl font-bold text-green-600 mt-1">{{ approvedCount }}</p>
-                    </div>
-                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-gray-500 uppercase">Rejected</p>
-                        <p class="text-2xl font-bold text-red-600 mt-1">{{ rejectedCount }}</p>
-                    </div>
-                    <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
+                    <a href="{{ path('app_admin_dashboard') }}" class="btn btn-ghost btn-sm gap-2 w-full sm:w-auto">
+                        <span class="icon-[tabler--arrow-left] size-4"></span>
+                        Back to Dashboard
+                    </a>
                 </div>
             </div>
         </div>
 
-        <!-- Appeals Table -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div class="px-4 py-3 border-b border-gray-200">
-                <h3 class="text-base font-semibold text-gray-900">All Appeals</h3>
+        {# Flash messages #}
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success">
+                <span class="icon-[tabler--circle-check] size-5"></span>
+                <span>{{ message }}</span>
             </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Broker</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submitted</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reviewed By</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for appeal in appeals %}
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-4 py-3">
-                                <div class="flex flex-col">
-                                    <span class="text-sm font-medium text-gray-900">{{ appeal.user.email }}</span>
-                                    <span class="text-xs text-gray-500">ID: {{ appeal.user.id }}</span>
-                                </div>
-                            </td>
-                            <td class="px-4 py-3 text-sm text-gray-600">
-                                {{ appeal.submittedAt|date('M j, Y g:i A') }}
-                            </td>
-                            <td class="px-4 py-3">
-                                {% if appeal.status == 'pending' %}
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                        Pending Review
-                                    </span>
-                                {% elseif appeal.status == 'approved' %}
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        Approved
-                                    </span>
-                                {% else %}
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                        Rejected
-                                    </span>
-                                {% endif %}
-                            </td>
-                            <td class="px-4 py-3 text-sm text-gray-600">
-                                {% if appeal.reviewedBy %}
-                                    <div class="flex flex-col">
-                                        <span>{{ appeal.reviewedBy.email }}</span>
-                                        <span class="text-xs text-gray-500">{{ appeal.reviewedAt|date('M j, Y') }}</span>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-error">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+
+        {# Statistics #}
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-center gap-3 sm:gap-4">
+                        <div class="size-10 sm:size-12 bg-warning/10 text-warning rounded-xl flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--clock] size-5 sm:size-6"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs sm:text-sm text-base-content/70">Pending Review</p>
+                            <p class="text-2xl sm:text-3xl font-bold text-warning">{{ pendingCount }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-center gap-3 sm:gap-4">
+                        <div class="size-10 sm:size-12 bg-success/10 text-success rounded-xl flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--circle-check] size-5 sm:size-6"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs sm:text-sm text-base-content/70">Approved</p>
+                            <p class="text-2xl sm:text-3xl font-bold text-success">{{ approvedCount }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-center gap-3 sm:gap-4">
+                        <div class="size-10 sm:size-12 bg-error/10 text-error rounded-xl flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--circle-x] size-5 sm:size-6"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs sm:text-sm text-base-content/70">Rejected</p>
+                            <p class="text-2xl sm:text-3xl font-bold text-error">{{ rejectedCount }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Appeals table #}
+        <div class="card bg-base-100 shadow-sm">
+            {% if appeals is empty %}
+                <div class="card-body flex flex-col items-center justify-center py-16 text-center">
+                    <span class="icon-[tabler--scale-off] size-12 text-base-content/30"></span>
+                    <h3 class="mt-4 text-base font-medium text-base-content">No appeals found</h3>
+                    <p class="mt-2 text-sm text-base-content/60">Broker suspension appeals will appear here when submitted.</p>
+                </div>
+            {% else %}
+                <div class="card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 sm:px-6 pt-4 sm:pt-5">
+                    <div>
+                        <h3 class="card-title text-base sm:text-lg">All Appeals</h3>
+                        <p class="text-sm text-base-content/60 mt-1">{{ appeals|length }} total appeal{{ appeals|length != 1 ? 's' : '' }}</p>
+                    </div>
+                    {% if pendingCount > 0 %}
+                        <span class="badge badge-warning badge-soft gap-1">
+                            <span class="icon-[tabler--clock] size-3.5"></span>
+                            {{ pendingCount }} pending
+                        </span>
+                    {% endif %}
+                </div>
+
+                {# Desktop table #}
+                <div class="hidden md:block overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Broker</th>
+                                <th>Submitted</th>
+                                <th>Status</th>
+                                <th>Reviewed By</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appeal in appeals %}
+                                <tr class="hover">
+                                    <td>
+                                        <div class="flex items-center gap-3">
+                                            <div class="size-10 rounded-full {{ avatar_colors(appeal.user) }} flex items-center justify-center shrink-0">
+                                                <span class="text-sm font-semibold">{{ appeal.user.email|slice(0, 1)|upper }}</span>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <div class="font-medium text-base-content truncate">{{ appeal.user.email }}</div>
+                                                <div class="text-xs text-base-content/50">ID: {{ appeal.user.id }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-sm text-base-content">{{ appeal.submittedAt|date('M j, Y') }}</div>
+                                        <div class="text-xs text-base-content/50">{{ appeal.submittedAt|date('g:i A') }}</div>
+                                    </td>
+                                    <td>
+                                        {% if appeal.status == 'pending' %}
+                                            <span class="badge badge-warning badge-soft">Pending Review</span>
+                                        {% elseif appeal.status == 'approved' %}
+                                            <span class="badge badge-success badge-soft">Approved</span>
+                                        {% else %}
+                                            <span class="badge badge-error badge-soft">Rejected</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if appeal.reviewedBy %}
+                                            <div class="text-sm text-base-content">{{ appeal.reviewedBy.email }}</div>
+                                            <div class="text-xs text-base-content/50">{{ appeal.reviewedAt|date('M j, Y') }}</div>
+                                        {% else %}
+                                            <span class="text-base-content/40">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-right">
+                                        <a href="{{ path('admin_appeals_detail', {id: appeal.id}) }}"
+                                           class="btn btn-ghost btn-xs gap-1">
+                                            <span class="icon-[tabler--eye] size-3.5"></span>
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {# Mobile cards #}
+                <div class="md:hidden p-4 space-y-3">
+                    {% for appeal in appeals %}
+                        <div class="card bg-base-200 border border-base-300">
+                            <div class="card-body p-4 space-y-3">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <div class="size-10 rounded-full {{ avatar_colors(appeal.user) }} flex items-center justify-center shrink-0">
+                                            <span class="text-sm font-semibold">{{ appeal.user.email|slice(0, 1)|upper }}</span>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-medium text-base-content truncate">{{ appeal.user.email }}</p>
+                                            <p class="text-xs text-base-content/50">ID: {{ appeal.user.id }}</p>
+                                        </div>
                                     </div>
-                                {% else %}
-                                    <span class="text-gray-400">-</span>
+                                    {% if appeal.status == 'pending' %}
+                                        <span class="badge badge-warning badge-soft badge-sm shrink-0">Pending</span>
+                                    {% elseif appeal.status == 'approved' %}
+                                        <span class="badge badge-success badge-soft badge-sm shrink-0">Approved</span>
+                                    {% else %}
+                                        <span class="badge badge-error badge-soft badge-sm shrink-0">Rejected</span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="flex items-center gap-2 text-xs text-base-content/60">
+                                    <span class="icon-[tabler--calendar] size-3.5"></span>
+                                    {{ appeal.submittedAt|date('M j, Y g:i A') }}
+                                </div>
+
+                                {% if appeal.reviewedBy %}
+                                    <div class="flex items-center gap-2 text-xs text-base-content/60">
+                                        <span class="icon-[tabler--user-check] size-3.5"></span>
+                                        Reviewed by {{ appeal.reviewedBy.email }} · {{ appeal.reviewedAt|date('M j, Y') }}
+                                    </div>
                                 {% endif %}
-                            </td>
-                            <td class="px-4 py-3">
-                                <a href="{{ path('admin_appeals_detail', {id: appeal.id}) }}" 
-                                   class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+
+                                <a href="{{ path('admin_appeals_detail', {id: appeal.id}) }}"
+                                   class="btn btn-outline btn-primary btn-sm w-full gap-2">
+                                    <span class="icon-[tabler--eye] size-4"></span>
                                     View Details
                                 </a>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="5" class="px-4 py-8 text-center text-gray-500">
-                                No appeals found
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
-    </div>
 </div>
 {% endblock %}

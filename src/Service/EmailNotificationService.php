@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\PendingUser;
 use App\Entity\User;
+use App\Entity\Enum\AccreditationStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
@@ -587,6 +588,39 @@ class EmailNotificationService
             $templateData,
             'templated_notification',
             null
+        );
+    }
+
+    /**
+     * Send accreditation status change email to applicant
+     */
+    public function sendAccreditationStatusChange(User $user, AccreditationStatus $status, ?string $reason = null): void
+    {
+        [$template, $subject] = match ($status) {
+            AccreditationStatus::APPROVED => ['emails/accreditation_approved.html.twig', 'Accreditation Approved - OPTIMUS Portal'],
+            AccreditationStatus::DENIED, AccreditationStatus::REJECTED => ['emails/accreditation_denied.html.twig', 'Accreditation Denied - OPTIMUS Portal'],
+            AccreditationStatus::COMPLIANCE_REQUIRED => ['emails/accreditation_compliance.html.twig', 'Compliance Required - OPTIMUS Portal'],
+            default => ['emails/accreditation_status_change.html.twig', 'Accreditation Status Update - OPTIMUS Portal'],
+        };
+
+        $businessName = method_exists($user, 'getBusinessName') ? $user->getBusinessName() : null;
+
+        $emailData = [
+            'user' => $user,
+            'status' => $status,
+            'reason' => $reason,
+            'businessName' => $businessName,
+            'loginUrl' => $this->urlGenerator->generate('app_login', [], UrlGeneratorInterface::ABSOLUTE_URL),
+            'accreditationUrl' => $this->urlGenerator->generate('accreditation_index', [], UrlGeneratorInterface::ABSOLUTE_URL),
+        ];
+
+        $this->sendEmailWithRetry(
+            $user->getEmail(),
+            $subject,
+            $template,
+            $emailData,
+            'accreditation_status_change',
+            $user->getId()
         );
     }
 

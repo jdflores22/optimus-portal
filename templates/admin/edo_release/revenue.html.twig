@@ -1,0 +1,327 @@
+{% extends 'layout/admin_base.html.twig' %}
+
+{% block title %}eDO Revenue - OPTIMUS{% endblock %}
+
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+        <li><a href="{{ path('app_admin_dashboard') }}">Admin</a></li>
+        <li><a href="{{ path('admin_edo_release_queue') }}">eDO Release Queue</a></li>
+        <li>Revenue</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-5 sm:space-y-6">
+
+        {# Header #}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-4 sm:p-6">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-4">
+                            <div class="size-12 rounded-xl bg-success/10 flex items-center justify-center shrink-0">
+                                <span class="icon-[tabler--currency-peso] size-6 text-success"></span>
+                            </div>
+                            <div class="min-w-0">
+                                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">eDO Access Revenue</h1>
+                                <p class="text-sm text-base-content/60 mt-1">Track collected fees, pending pipeline, and revenue by shipping line</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 w-full lg:w-auto">
+                        <a href="{{ path('admin_edo_release_queue') }}" class="btn btn-ghost btn-sm gap-2">
+                            <span class="icon-[tabler--arrow-left] size-4"></span>
+                            Release Queue
+                        </a>
+                        <a href="{{ path('admin_payment_fee_config') }}" class="btn btn-outline btn-sm gap-2">
+                            <span class="icon-[tabler--settings] size-4"></span>
+                            Fee Config
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Date filter #}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-4 sm:p-5">
+                <form method="GET" action="{{ path('admin_edo_release_revenue') }}" class="flex flex-col sm:flex-row sm:items-end gap-4">
+                    <div class="form-control flex-1">
+                        <label class="label py-1" for="from"><span class="label-text font-medium">From</span></label>
+                        <input type="date" name="from" id="from" value="{{ dateRange.from }}" class="input input-bordered w-full">
+                    </div>
+                    <div class="form-control flex-1">
+                        <label class="label py-1" for="to"><span class="label-text font-medium">To</span></label>
+                        <input type="date" name="to" id="to" value="{{ dateRange.to }}" class="input input-bordered w-full">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm gap-2 sm:mb-0.5">
+                        <span class="icon-[tabler--filter] size-4"></span>
+                        Apply
+                    </button>
+                </form>
+                <p class="text-xs text-base-content/50 mt-3">
+                    Period: {{ dateRange.from|date('M j, Y') }} – {{ dateRange.to|date('M j, Y') }}
+                    · Current eDO fee: <span class="font-medium text-base-content">{{ currentEdoFee|format_money('PHP') }}</span>
+                </p>
+            </div>
+        </div>
+
+        {# Period stats #}
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="size-10 bg-success/10 text-success rounded-xl flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--circle-check] size-5"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs text-base-content/70">Collected</p>
+                            <p class="text-xl sm:text-2xl font-bold text-success">{{ revenueReport.verified.amount|format_money('PHP') }}</p>
+                            <p class="text-xs text-base-content/50">{{ revenueReport.verified.count }} verified</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="size-10 bg-warning/10 text-warning rounded-xl flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--clock] size-5"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs text-base-content/70">Pending Review</p>
+                            <p class="text-xl sm:text-2xl font-bold text-warning">{{ revenueReport.pending.amount|format_money('PHP') }}</p>
+                            <p class="text-xs text-base-content/50">{{ revenueReport.pending.count }} submitted</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="size-10 bg-error/10 text-error rounded-xl flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--circle-x] size-5"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs text-base-content/70">Rejected</p>
+                            <p class="text-xl sm:text-2xl font-bold text-error">{{ revenueReport.rejected.amount|format_money('PHP') }}</p>
+                            <p class="text-xs text-base-content/50">{{ revenueReport.rejected.count }} in period</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="size-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--chart-line] size-5"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-xs text-base-content/70">All-Time Collected</p>
+                            <p class="text-xl sm:text-2xl font-bold text-primary">{{ lifetimeStats.total_fees|format_money('PHP') }}</p>
+                            <p class="text-xs text-base-content/50">{{ lifetimeStats.completed_payment_count }} total verified</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-5 sm:gap-6">
+            {# Daily revenue chart #}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--chart-bar] size-5 text-base-content/70"></span>
+                        <h2 class="card-title text-base sm:text-lg">Daily Collected Revenue</h2>
+                    </div>
+                </div>
+                <div class="card-body p-4 sm:p-6 pt-3 sm:pt-4">
+                    {% if revenueReport.dailyRevenue|length > 0 %}
+                        <div class="relative h-64">
+                            <canvas id="edoRevenueChart"></canvas>
+                        </div>
+                    {% else %}
+                        <div class="flex flex-col items-center justify-center h-48 text-center text-base-content/50">
+                            <span class="icon-[tabler--chart-bar-off] size-10 mb-2"></span>
+                            <p class="text-sm">No verified payments in this period</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# By shipping line #}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--ship] size-5 text-base-content/70"></span>
+                        <h2 class="card-title text-base sm:text-lg">Revenue by Shipping Line</h2>
+                    </div>
+                </div>
+                <div class="card-body p-4 sm:p-6 pt-3 sm:pt-4">
+                    {% if revenueReport.byShippingLine|length > 0 %}
+                        <div class="overflow-x-auto">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Shipping Line</th>
+                                        <th class="text-right">Payments</th>
+                                        <th class="text-right">Revenue</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for line in revenueReport.byShippingLine %}
+                                        <tr>
+                                            <td class="font-medium">{{ line.brandName }}</td>
+                                            <td class="text-right">{{ line.count }}</td>
+                                            <td class="text-right font-semibold text-success">{{ line.amount|format_money('PHP') }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="flex flex-col items-center justify-center h-48 text-center text-base-content/50">
+                            <span class="icon-[tabler--ship-off] size-10 mb-2"></span>
+                            <p class="text-sm">No shipping line breakdown for this period</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {# Recent verified payments #}
+        <div class="card bg-base-100 shadow-sm overflow-hidden">
+            <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="icon-[tabler--receipt] size-5 text-base-content/70"></span>
+                    <h2 class="card-title text-base sm:text-lg">Recent Verified Payments</h2>
+                    <span class="badge badge-primary badge-soft">{{ recentPayments|length }}</span>
+                </div>
+            </div>
+
+            {% if recentPayments|length > 0 %}
+                <div class="hidden lg:block overflow-x-auto">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Validated</th>
+                                <th>Manifest</th>
+                                <th>Shipping Line</th>
+                                <th>Submitted By</th>
+                                <th class="text-right">Amount</th>
+                                <th>Validated By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in recentPayments %}
+                                <tr class="hover align-top">
+                                    <td class="whitespace-nowrap text-sm">
+                                        <div>{{ payment.validatedAt|date('M j, Y') }}</div>
+                                        <div class="text-xs text-base-content/50">{{ payment.validatedAt|date('H:i') }}</div>
+                                    </td>
+                                    <td class="text-sm">
+                                        {% if payment.manifest %}
+                                            #{{ payment.manifest.id }}
+                                            {% if payment.edo %}
+                                                <div class="text-xs text-base-content/50">{{ payment.edo.edoNumber|default('') }}</div>
+                                            {% endif %}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-sm">{{ payment.shippingLine.brandName }}</td>
+                                    <td class="text-sm truncate max-w-[10rem]" title="{{ payment.submittedBy.email }}">{{ payment.submittedBy.email }}</td>
+                                    <td class="text-right font-semibold text-success whitespace-nowrap">{{ payment.amount|format_money('PHP') }}</td>
+                                    <td class="text-sm text-base-content/70">{{ payment.validatedBy ? payment.validatedBy.email : '—' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="lg:hidden p-4 space-y-3">
+                    {% for payment in recentPayments %}
+                        <div class="card bg-base-200 border border-base-300">
+                            <div class="card-body p-4 space-y-2">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div>
+                                        <p class="text-sm font-medium">Manifest #{{ payment.manifest.id }}</p>
+                                        <p class="text-xs text-base-content/50">{{ payment.validatedAt|date('M j, Y H:i') }}</p>
+                                    </div>
+                                    <span class="font-bold text-success">{{ payment.amount|format_money('PHP') }}</span>
+                                </div>
+                                <div class="text-xs text-base-content/70 space-y-1">
+                                    <p><span class="text-base-content/50">Line:</span> {{ payment.shippingLine.brandName }}</p>
+                                    <p><span class="text-base-content/50">By:</span> {{ payment.submittedBy.email }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="flex flex-col items-center justify-center py-16 text-center px-4">
+                    <span class="icon-[tabler--receipt-off] size-12 text-base-content/30"></span>
+                    <h3 class="mt-4 text-base font-medium text-base-content">No verified payments</h3>
+                    <p class="mt-2 text-sm text-base-content/60">No verified eDO payments were recorded in the selected date range.</p>
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+{% endblock %}
+
+{% block page_scripts %}
+{% if revenueReport.dailyRevenue|length > 0 %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const MONEY_PREFIX = {{ (0|format_money('PHP'))|slice(0, -4)|json_encode|raw }};
+    const canvas = document.getElementById('edoRevenueChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const labels = [
+        {% for day in revenueReport.dailyRevenue %}
+            {{ day.day|date('M j')|json_encode|raw }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    const amounts = [
+        {% for day in revenueReport.dailyRevenue %}
+            {{ day.amount }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Revenue (' + MONEY_PREFIX.trim() + ')',
+                data: amounts,
+                backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                borderColor: 'rgb(34, 197, 94)',
+                borderWidth: 1,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: (value) => MONEY_PREFIX + Number(value).toLocaleString()
+                    }
+                }
+            }
+        }
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,193 +1,341 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Final Payments - ACCOUNTING{% endblock %}
+{% block title %}Final Payments - OPTIMUS{% endblock %}
+{% block page_title %}Final Payments{% endblock %}
+
+{% macro status_badge(status) %}
+    {% if status.value == 'pending_validation' %}
+        <span class="badge badge-warning badge-sm">Pending</span>
+    {% elseif status.value == 'verified' %}
+        <span class="badge badge-success badge-sm">Verified</span>
+    {% elseif status.value == 'rejected' %}
+        <span class="badge badge-error badge-sm">Rejected</span>
+    {% else %}
+        <span class="badge badge-ghost badge-sm">{{ status.value|replace({'_': ' '})|title }}</span>
+    {% endif %}
+{% endmacro %}
 
 {% block body %}
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ path('accounting_payment_dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Final Payments</li>
-                </ol>
-            </nav>
-            <h1 class="h3 mb-0">Final Payments</h1>
-        </div>
-    </div>
+{% set listQuery = {status: statusFilter, limit: pagination.limit} %}
+<div class="space-y-5 sm:space-y-6">
 
-    <!-- Status Filter -->
-    <div class="row mb-4">
-        <div class="col">
-            <div class="card">
-                <div class="card-body">
-                    <div class="btn-group" role="group">
-                        <a href="{{ path('accounting_payment_final_list') }}" 
-                           class="btn {% if not statusFilter %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                            All
-                        </a>
-                        {% for status in paymentStatuses %}
-                            <a href="{{ path('accounting_payment_final_list', {status: status.value}) }}" 
-                               class="btn {% if statusFilter == status.value %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                                {{ status.value|replace({'_': ' '})|title }}
-                            </a>
-                        {% endfor %}
+    {# Header #}
+    <div class="bg-base-100 shadow-sm rounded-xl">
+        <div class="p-4 sm:p-6">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div class="min-w-0">
+                    <div class="breadcrumbs text-xs mb-2">
+                        <ul>
+                            <li><a href="{{ path('app_accounting_dashboard_new') }}">Accounting</a></li>
+                            <li><a href="{{ path('accounting_payment_final_list') }}">Final Payments</a></li>
+                            <li>Final Payments</li>
+                        </ul>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="size-12 rounded-xl bg-warning/10 flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--list-check] size-6 text-warning"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">Final Payments</h1>
+                            <p class="text-sm text-base-content/60 mt-1">
+                                Review broker final payments against billing amounts and validate receipts.
+                            </p>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Payments List -->
-    <div class="row">
-        <div class="col">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        {% if statusFilter %}
-                            {{ statusFilter|replace({'_': ' '})|title }} Payments
-                        {% else %}
-                            All Payments
-                        {% endif %}
-                        <span class="badge bg-secondary">{{ total }}</span>
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if payments is empty %}
-                        <div class="text-center py-5">
-                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">No payments found.</p>
-                        </div>
-                    {% else %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Manifest</th>
-                                        <th>Submitter</th>
-                                        <th>Billing Amount</th>
-                                        <th>Payment Amount</th>
-                                        <th>Discrepancy</th>
-                                        <th>Status</th>
-                                        <th>Submitted</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for payment in payments %}
-                                        {% set billing = payment.manifest.billing %}
-                                        {% set discrepancy = billing ? ((payment.currency == 'USD' and billing.originalCurrency == 'USD') ? (payment.amount - billing.totalAmountUsd)|abs : (payment.amount - billing.totalAmount)|abs) : 0 %}
-                                        <tr>
-                                            <td>#{{ payment.id }}</td>
-                                            <td>
-                                                <a href="{{ path('manifest_workflow_detail', {id: payment.manifest.id}) }}">
-                                                    {{ payment.manifest.manifestNumber }}
-                                                </a>
-                                                <br>
-                                                <small class="text-muted">
-                                                    {% if payment.manifest.consignee %}
-                                                        {{ payment.manifest.consignee.businessName }}
-                                                    {% endif %}
-                                                </small>
-                                            </td>
-                                            <td>
-                                                {{ payment.submittedBy.fullName }}
-                                                <br>
-                                                <small class="text-muted">{{ payment.submittedBy.email }}</small>
-                                            </td>
-                                            <td>
-                                                {% if billing %}
-                                                    <strong>₱{{ billing.totalAmount|number_format(2) }}</strong>
-                                                {% else %}
-                                                    <span class="text-muted">N/A</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                <strong>₱{{ payment.amount|number_format(2) }}</strong>
-                                            </td>
-                                            <td>
-                                                {% if discrepancy > 0.01 %}
-                                                    <span class="badge bg-warning text-dark">
-                                                        <i class="fas fa-exclamation-triangle"></i> ₱{{ discrepancy|number_format(2) }}
-                                                    </span>
-                                                {% else %}
-                                                    <span class="badge bg-success">
-                                                        <i class="fas fa-check"></i> Match
-                                                    </span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                {% if payment.status.value == 'pending_validation' %}
-                                                    <span class="badge bg-warning">Pending</span>
-                                                {% elseif payment.status.value == 'verified' %}
-                                                    <span class="badge bg-success">Verified</span>
-                                                    {% if payment.validatedBy %}
-                                                        <br>
-                                                        <small class="text-muted">by {{ payment.validatedBy.fullName }}</small>
-                                                    {% endif %}
-                                                {% elseif payment.status.value == 'rejected' %}
-                                                    <span class="badge bg-danger">Rejected</span>
-                                                    {% if payment.validatedBy %}
-                                                        <br>
-                                                        <small class="text-muted">by {{ payment.validatedBy.fullName }}</small>
-                                                    {% endif %}
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                {{ payment.createdAt|date('Y-m-d H:i') }}
-                                            </td>
-                                            <td>
-                                                <a href="{{ path('accounting_payment_final_detail', {id: payment.id}) }}" 
-                                                   class="btn btn-sm btn-primary">
-                                                    <i class="fas fa-eye"></i> Review
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Pagination -->
-                        {% if totalPages > 1 %}
-                            <nav aria-label="Payment pagination">
-                                <ul class="pagination justify-content-center mt-4">
-                                    <li class="page-item {% if currentPage == 1 %}disabled{% endif %}">
-                                        <a class="page-link" href="{{ path('accounting_payment_final_list', {page: currentPage - 1, status: statusFilter}) }}">
-                                            Previous
-                                        </a>
-                                    </li>
-                                    
-                                    {% for page in 1..totalPages %}
-                                        {% if page == currentPage %}
-                                            <li class="page-item active">
-                                                <span class="page-link">{{ page }}</span>
-                                            </li>
-                                        {% elseif page == 1 or page == totalPages or (page >= currentPage - 2 and page <= currentPage + 2) %}
-                                            <li class="page-item">
-                                                <a class="page-link" href="{{ path('accounting_payment_final_list', {page: page, status: statusFilter}) }}">
-                                                    {{ page }}
-                                                </a>
-                                            </li>
-                                        {% elseif page == currentPage - 3 or page == currentPage + 3 %}
-                                            <li class="page-item disabled">
-                                                <span class="page-link">...</span>
-                                            </li>
-                                        {% endif %}
-                                    {% endfor %}
-                                    
-                                    <li class="page-item {% if currentPage == totalPages %}disabled{% endif %}">
-                                        <a class="page-link" href="{{ path('accounting_payment_final_list', {page: currentPage + 1, status: statusFilter}) }}">
-                                            Next
-                                        </a>
-                                    </li>
-                                </ul>
-                            </nav>
-                        {% endif %}
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ path('accounting_payment_final_list') }}" class="btn btn-ghost btn-sm gap-2">
+                        <span class="icon-[tabler--arrow-left] size-4"></span>
+                        Dashboard
+                    </a>
+                    {% if stats.pending > 0 %}
+                        <a href="{{ path('accounting_payment_final_list', {status: 'pending_validation'}) }}" class="btn btn-primary btn-sm gap-2">
+                            <span class="icon-[tabler--player-play] size-4"></span>
+                            Review Pending ({{ stats.pending }})
+                        </a>
                     {% endif %}
                 </div>
             </div>
+        </div>
+    </div>
+
+    {# Flash messages #}
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success shadow-sm">
+            <span class="icon-[tabler--circle-check] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error shadow-sm">
+            <span class="icon-[tabler--circle-x] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+
+    {# Summary stats #}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        <a href="{{ path('accounting_payment_final_list', {status: 'pending_validation'}) }}"
+           class="card shadow-sm transition-colors {{ statusFilter == 'pending_validation' ? 'bg-warning/10 ring-2 ring-warning/30' : 'bg-base-100 hover:bg-warning/5' }}">
+            <div class="card-body p-4 sm:p-5">
+                <div class="flex items-center gap-3">
+                    <div class="size-10 bg-warning/10 text-warning rounded-xl flex items-center justify-center shrink-0">
+                        <span class="icon-[tabler--clock] size-5"></span>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xs text-base-content/70">Pending</p>
+                        <p class="text-2xl font-bold text-base-content">{{ stats.pending }}</p>
+                    </div>
+                </div>
+            </div>
+        </a>
+        <a href="{{ path('accounting_payment_final_list', {status: 'verified'}) }}"
+           class="card shadow-sm transition-colors {{ statusFilter == 'verified' ? 'bg-success/10 ring-2 ring-success/30' : 'bg-base-100 hover:bg-success/5' }}">
+            <div class="card-body p-4 sm:p-5">
+                <div class="flex items-center gap-3">
+                    <div class="size-10 bg-success/10 text-success rounded-xl flex items-center justify-center shrink-0">
+                        <span class="icon-[tabler--circle-check] size-5"></span>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xs text-base-content/70">Verified</p>
+                        <p class="text-2xl font-bold text-base-content">{{ stats.approved }}</p>
+                    </div>
+                </div>
+            </div>
+        </a>
+        <a href="{{ path('accounting_payment_final_list', {status: 'rejected'}) }}"
+           class="card shadow-sm transition-colors {{ statusFilter == 'rejected' ? 'bg-error/10 ring-2 ring-error/30' : 'bg-base-100 hover:bg-error/5' }}">
+            <div class="card-body p-4 sm:p-5">
+                <div class="flex items-center gap-3">
+                    <div class="size-10 bg-error/10 text-error rounded-xl flex items-center justify-center shrink-0">
+                        <span class="icon-[tabler--circle-x] size-5"></span>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xs text-base-content/70">Rejected</p>
+                        <p class="text-2xl font-bold text-base-content">{{ stats.rejected }}</p>
+                    </div>
+                </div>
+            </div>
+        </a>
+        <a href="{{ path('accounting_payment_final_list', {status: 'all'}) }}"
+           class="card shadow-sm transition-colors {{ statusFilter == 'all' ? 'bg-primary/10 ring-2 ring-primary/30' : 'bg-base-100 hover:bg-primary/5' }}">
+            <div class="card-body p-4 sm:p-5">
+                <div class="flex items-center gap-3">
+                    <div class="size-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0">
+                        <span class="icon-[tabler--stack-2] size-5"></span>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xs text-base-content/70">All Records</p>
+                        <p class="text-2xl font-bold text-base-content">{{ stats.total }}</p>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    {# Payments table #}
+    <div class="card bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 py-4 sm:py-5 bg-base-200/50 rounded-t-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <h2 class="text-lg font-semibold text-base-content">
+                    {% if statusFilter == 'all' %}
+                        All Final Payments
+                    {% elseif statusFilter == 'pending_validation' %}
+                        Pending Validation
+                    {% elseif statusFilter == 'verified' %}
+                        Verified Payments
+                    {% elseif statusFilter == 'rejected' %}
+                        Rejected Payments
+                    {% else %}
+                        {{ statusFilter|replace({'_': ' '})|title }}
+                    {% endif %}
+                </h2>
+                <p class="text-sm text-base-content/60 mt-0.5">
+                    Showing {{ pagination.start }}–{{ pagination.end }} of {{ pagination.total }} record{{ pagination.total == 1 ? '' : 's' }}
+                    · Page {{ pagination.page }} of {{ pagination.pages }}
+                </p>
+            </div>
+            {% if stats.discrepancies > 0 and statusFilter in ['pending_validation', 'all'] %}
+                <span class="badge badge-warning badge-lg gap-1">
+                    <span class="icon-[tabler--alert-triangle] size-4"></span>
+                    {{ stats.discrepancies }} amount mismatch{{ stats.discrepancies == 1 ? '' : 'es' }}
+                </span>
+            {% endif %}
+        </div>
+
+        <div class="card-body p-0">
+            {% if payments is empty %}
+                <div class="text-center py-16 px-4">
+                    <div class="inline-flex items-center justify-center size-14 bg-base-200 rounded-2xl mb-3">
+                        <span class="icon-[tabler--inbox] size-7 text-base-content/40"></span>
+                    </div>
+                    <p class="font-medium text-base-content">No payments found</p>
+                    <p class="text-sm text-base-content/60 mt-1">
+                        {% if statusFilter == 'pending_validation' %}
+                            All caught up — no payments waiting for validation.
+                        {% else %}
+                            Try a different status filter.
+                        {% endif %}
+                    </p>
+                    {% if statusFilter != 'pending_validation' %}
+                        <a href="{{ path('accounting_payment_final_list', {status: 'pending_validation'}) }}" class="btn btn-ghost btn-sm mt-4 gap-1">
+                            <span class="icon-[tabler--clock] size-4"></span>
+                            View pending
+                        </a>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr class="text-base-content/60">
+                                <th>Payment</th>
+                                <th>Manifest</th>
+                                <th>Submitter</th>
+                                <th>Billing</th>
+                                <th>Paid</th>
+                                <th>Match</th>
+                                <th>Status</th>
+                                <th>Submitted</th>
+                                <th class="text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments %}
+                                {% set billing = payment.manifest.billing %}
+                                {% set discrepancy = billing ? ((payment.currency == 'USD' and billing.originalCurrency == 'USD') ? (payment.amount - billing.totalAmountUsd)|abs : (payment.amount - billing.totalAmount)|abs) : 0 %}
+                                {% set rowClass = payment.status.value == 'pending_validation' ? 'bg-warning/5 hover:bg-warning/10' : (payment.status.value == 'verified' ? 'bg-success/5 hover:bg-success/10' : (payment.status.value == 'rejected' ? 'bg-error/5 hover:bg-error/10' : 'hover:bg-base-200/40')) %}
+                                <tr class="{{ rowClass }}">
+                                    <td>
+                                        <span class="font-mono text-sm font-medium">#{{ payment.id }}</span>
+                                        {% if payment.currency %}
+                                            <p class="text-xs text-base-content/50">{{ payment.currency }}</p>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ path('manifest_workflow_detail', {id: payment.manifest.id}) }}" class="font-medium link link-hover">
+                                            {{ payment.manifest.manifestNumber }}
+                                        </a>
+                                        {% if payment.manifest.consignee %}
+                                            <p class="text-xs text-base-content/50 truncate max-w-[10rem]">{{ payment.manifest.consignee.businessName }}</p>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="text-sm">{{ payment.submittedBy.fullName }}</span>
+                                        <p class="text-xs text-base-content/50 truncate max-w-[10rem]">{{ payment.submittedBy.email }}</p>
+                                    </td>
+                                    <td class="whitespace-nowrap">
+                                        {% if billing %}
+                                            <span class="font-semibold">{{ billing|format_billing }}</span>
+                                        {% else %}
+                                            <span class="text-base-content/40">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="whitespace-nowrap">
+                                        <span class="font-semibold">{{ payment|format_payment }}</span>
+                                    </td>
+                                    <td>
+                                        {% if discrepancy > 0.01 %}
+                                            <span class="badge badge-warning badge-sm gap-1">
+                                                <span class="icon-[tabler--alert-triangle] size-3"></span>
+                                                {{ discrepancy|format_money(payment.currency) }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-success badge-sm gap-1">
+                                                <span class="icon-[tabler--check] size-3"></span>
+                                                Match
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ _self.status_badge(payment.status) }}
+                                        {% if payment.validatedBy %}
+                                            <p class="text-xs text-base-content/50 mt-1">{{ payment.validatedBy.fullName }}</p>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-sm text-base-content/60 whitespace-nowrap">
+                                        {{ payment.createdAt|date('M j, Y') }}
+                                        <p class="text-xs">{{ payment.createdAt|date('g:i A') }}</p>
+                                    </td>
+                                    <td class="text-right">
+                                        <a href="{{ path('accounting_payment_final_detail', {id: payment.id}) }}"
+                                           class="btn btn-primary btn-sm gap-1.5">
+                                            <span class="icon-[tabler--eye] size-4"></span>
+                                            Review
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if pagination.total > 0 %}
+                    <div class="px-4 sm:px-6 py-4 flex flex-col lg:flex-row items-center justify-between gap-4 bg-base-200/30 rounded-b-xl border-t border-base-200/80">
+                        <p class="text-sm text-base-content/60 order-2 lg:order-1">
+                            Showing
+                            <span class="font-medium text-base-content">{{ pagination.start }}</span>–<span class="font-medium text-base-content">{{ pagination.end }}</span>
+                            of <span class="font-medium text-base-content">{{ pagination.total }}</span>
+                        </p>
+
+                        <div class="flex flex-col sm:flex-row items-center gap-3 order-1 lg:order-2 w-full lg:w-auto">
+                            <label class="flex items-center gap-2 text-sm text-base-content/70">
+                                <span class="whitespace-nowrap">Rows per page</span>
+                                <select class="select select-sm bg-base-100 w-20"
+                                        onchange="window.location.href = this.value">
+                                    {% for option in allowedLimits %}
+                                        <option value="{{ path('accounting_payment_final_list', listQuery|merge({page: 1, limit: option})) }}"
+                                                {% if pagination.limit == option %}selected{% endif %}>
+                                            {{ option }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+
+                            {% if pagination.pages > 1 %}
+                                <div class="join">
+                                    {% if pagination.page > 1 %}
+                                        <a href="{{ path('accounting_payment_final_list', listQuery|merge({page: pagination.page - 1})) }}"
+                                           class="join-item btn btn-sm btn-ghost gap-1">
+                                            <span class="icon-[tabler--chevron-left] size-4"></span>
+                                            Prev
+                                        </a>
+                                    {% else %}
+                                        <button class="join-item btn btn-sm btn-ghost btn-disabled" disabled>
+                                            <span class="icon-[tabler--chevron-left] size-4"></span>
+                                            Prev
+                                        </button>
+                                    {% endif %}
+
+                                    {% for page in 1..pagination.pages %}
+                                        {% if page == pagination.page %}
+                                            <button class="join-item btn btn-sm btn-primary" disabled>{{ page }}</button>
+                                        {% elseif page <= 2 or page >= pagination.pages - 1 or (page >= pagination.page - 1 and page <= pagination.page + 1) %}
+                                            <a href="{{ path('accounting_payment_final_list', listQuery|merge({page: page})) }}"
+                                               class="join-item btn btn-sm btn-ghost">{{ page }}</a>
+                                        {% elseif page == 3 or page == pagination.pages - 2 %}
+                                            <button class="join-item btn btn-sm btn-ghost btn-disabled" disabled>…</button>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    {% if pagination.page < pagination.pages %}
+                                        <a href="{{ path('accounting_payment_final_list', listQuery|merge({page: pagination.page + 1})) }}"
+                                           class="join-item btn btn-sm btn-ghost gap-1">
+                                            Next
+                                            <span class="icon-[tabler--chevron-right] size-4"></span>
+                                        </a>
+                                    {% else %}
+                                        <button class="join-item btn btn-sm btn-ghost btn-disabled" disabled>
+                                            Next
+                                            <span class="icon-[tabler--chevron-right] size-4"></span>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
         </div>
     </div>
 </div>

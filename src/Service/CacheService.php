@@ -149,7 +149,7 @@ class CacheService
                                 'audit.financial'
                             ]);
                             break;
-                        case 'ROLE_ADMIN':
+                        case 'ROLE_SYSTEM_ADMIN':
                             $permissions = array_merge($permissions, [
                                 'user.manage',
                                 'system.configure',

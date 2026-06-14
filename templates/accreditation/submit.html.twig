@@ -1,254 +1,313 @@
 {% extends 'base.html.twig' %}
-{% from 'components/alert.html.twig' import alert, validation_errors %}
 
-{% block title %}Submit SAS Application - OPTIMUS{% endblock %}
+{% block title %}Submit SAS Application{% if shippingLine is defined and shippingLine %} — {{ shippingLine.brandName }}{% endif %} - OPTIMUS{% endblock %}
 
 {% block body %}
+{% set sortedFields = formConfig ? formConfig.fields.fields|sort((a, b) => (a.order ?? 0) <=> (b.order ?? 0)) : [] %}
+{% set requiredCount = sortedFields|filter(f => f.required|default(false))|length %}
+{% set logoUrl = shippingLine is defined and shippingLine ? (shippingLine.logoPath ? asset('uploads/shipping-lines/' ~ shippingLine.logoPath) : (shippingLine.portalConfig.logoUrl ?? null)) : null %}
+
 <div class="min-h-screen bg-base-200">
-    <!-- Header Section -->
+    <!-- Top bar -->
     <div class="bg-base-100 shadow-sm">
-        <div class="px-4 sm:px-6 lg:px-8 py-4">
-            <div class="flex items-center gap-3 mb-3">
-                <a href="{{ path('accreditation_index') }}" class="btn btn-ghost btn-sm btn-circle">
-                    <span class="icon-[tabler--arrow-left] size-5"></span>
-                </a>
-                <div>
-                    <h1 class="text-2xl font-bold text-base-content">SAS Application</h1>
-                    <p class="text-sm text-base-content/60 mt-1">Complete the form below to submit your Secured Accreditation System application</p>
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="flex items-start gap-3">
+                    <a href="{{ path('accreditation_index') }}" class="btn btn-ghost btn-sm btn-circle mt-0.5 shrink-0" aria-label="Back to SAS">
+                        <span class="icon-[tabler--arrow-left] size-5"></span>
+                    </a>
+                    <div>
+                        <div class="breadcrumbs text-xs mb-1">
+                            <ul>
+                                <li><a href="{{ path('accreditation_index') }}">SAS</a></li>&nbsp;
+                                {% if shippingLine is defined and shippingLine %}
+                                    <li>{{ shippingLine.brandName }}</li>
+                                {% endif %}&nbsp;
+                                <li>Apply</li>
+                            </ul>
+                        </div>
+                        <h1 class="text-2xl font-bold text-base-content">Submit Application</h1>
+                        <p class="text-sm text-base-content/60 mt-1">Complete all required fields to apply for secured accreditation</p>
+                    </div>
                 </div>
-            </div>
-            
-            <!-- Breadcrumb -->
-            <div class="breadcrumbs text-sm">
-                <ul>
-                    <li><a href="{{ path('accreditation_index') }}">SAS</a></li>
-                    {% if shippingLine is defined and shippingLine %}
-                        <li>{{ shippingLine.brandName }}</li>
-                    {% endif %}
-                    <li>Apply</li>
-                </ul>
+                {% if shippingLine is defined and shippingLine %}
+                    <div class="flex items-center gap-3 sm:max-w-xs">
+                        {% if logoUrl %}
+                            <img src="{{ logoUrl }}" alt="{{ shippingLine.brandName }} logo" class="h-10 w-auto object-contain shrink-0">
+                        {% else %}
+                            <div class="avatar placeholder shrink-0">
+                                <div class="bg-primary text-primary-content rounded-xl size-10">
+                                    <span class="text-sm font-bold">{{ shippingLine.brandName|slice(0, 2)|upper }}</span>
+                                </div>
+                            </div>
+                        {% endif %}
+                        <div class="min-w-0">
+                            <p class="font-semibold text-base-content truncate">{{ shippingLine.brandName }}</p>
+                            <p class="text-xs text-base-content/60">Shipping line accreditation</p>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <!-- Shipping Line Header -->
-        {% if shippingLine is defined and shippingLine %}
-            <div class="card bg-base-100 shadow-sm mb-6">
-                <div class="card-body p-6">
-                    <div class="flex items-center gap-4">
-                        {% set logoUrl = shippingLine.logoPath ? asset('uploads/shipping-lines/' ~ shippingLine.logoPath) : (shippingLine.portalConfig.logoUrl ?? null) %}
-                        {% if logoUrl %}
-                            <img src="{{ logoUrl }}" 
-                                 alt="{{ shippingLine.brandName }} logo" 
-                                 class="h-12 w-auto object-contain">
-                        {% else %}
-                            <div class="avatar placeholder">
-                                <div class="bg-primary text-primary-content rounded-lg w-12">
-                                    <span class="text-xl font-bold">{{ shippingLine.brandName|slice(0, 2)|upper }}</span>
-                                </div>
-                            </div>
-                        {% endif %}
-                        <div>
-                            <h2 class="text-xl font-semibold">{{ shippingLine.brandName }}</h2>
-                            <p class="text-sm opacity-60">SAS Application</p>
-                        </div>
-                    </div>
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success mb-6">
+                <span class="icon-[tabler--check] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-error mb-6">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+
+        {% if errors|default([])|length > 0 %}
+            <div class="alert alert-error mb-6">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <div>
+                    <p class="font-semibold">Please correct the following errors</p>
+                    <ul class="mt-2 text-sm list-disc list-inside space-y-1">
+                        {% for fieldId, error in errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
                 </div>
             </div>
         {% endif %}
 
-        <!-- Form Card -->
-        <div class="card bg-base-100 shadow-sm">
-            <div class="card-body p-6">
-                <form method="post" action="{{ path('accreditation_submit', {shippingLineId: shippingLine.id}) }}" enctype="multipart/form-data">
-                    <!-- Display validation errors -->
-                    {{ validation_errors(errors|default([])) }}
-
-                    <!-- Dynamic Form Fields -->
-                    {% if formConfig %}
-                        <div class="space-y-6">
-                            {% for field in formConfig.fields.fields|sort((a, b) => (a.order ?? 0) <=> (b.order ?? 0)) %}
-                                <div class="form-control">
-                                    <label class="label">
-                                        <span class="label-text font-semibold">
-                                            {{ field.label }}
-                                            {% if field.required %}
-                                                <span class="text-error">*</span>
-                                            {% endif %}
-                                        </span>
-                                    </label>
-                                    
-                                    {% if field.type == 'text' %}
-                                        <input type="text" 
-                                               name="{{ field.id }}" 
-                                               class="input input-bordered w-full rounded-lg" 
-                                               value="{{ submittedData[field.id] is defined ? submittedData[field.id] : '' }}" 
-                                               {{ field.required ? 'required' : '' }}>
-                                    
-                                    {% elseif field.type == 'number' %}
-                                        <input type="number" 
-                                               name="{{ field.id }}" 
-                                               class="input input-bordered w-full rounded-lg" 
-                                               value="{{ submittedData[field.id] is defined ? submittedData[field.id] : '' }}" 
-                                               {{ field.validation.min is defined ? 'min="' ~ field.validation.min ~ '"' : '' }}
-                                               {{ field.validation.max is defined ? 'max="' ~ field.validation.max ~ '"' : '' }}
-                                               {{ field.required ? 'required' : '' }}>
-                                    
-                                    {% elseif field.type == 'file' %}
-                                        <input type="file" 
-                                               name="{{ field.id }}" 
-                                               class="file-input file-input-bordered w-full rounded-lg" 
-                                               {{ field.validation.allowedTypes is defined ? 'accept=".' ~ field.validation.allowedTypes|join(',.') ~ '"' : '' }}
-                                               {{ field.required ? 'required' : '' }}>
-                                    
-                                    {% elseif field.type == 'dropdown' %}
-                                        <select name="{{ field.id }}" 
-                                                class="select select-bordered w-full rounded-lg" 
-                                                {{ field.required ? 'required' : '' }}>
-                                            <option value="">Select an option</option>
-                                            {% if field.validation.options is defined %}
-                                                {% for option_value, option_label in field.validation.options %}
-                                                    <option value="{{ option_value }}" 
-                                                            {{ (submittedData[field.id] is defined and submittedData[field.id] == option_value) ? 'selected' : '' }}>
-                                                        {{ option_label }}
-                                                    </option>
-                                                {% endfor %}
-                                            {% endif %}
-                                        </select>
-                                    
-                                    {% elseif field.type == 'checkbox' %}
-                                        {% if field.validation.options is defined %}
-                                            <!-- Multiple checkboxes -->
-                                            <div class="space-y-3">
-                                                {% for option_value, option_label in field.validation.options %}
-                                                    {% set checkbox_name = field.id ~ '[]' %}
-                                                    {% set is_checked = submittedData[field.id] is defined and submittedData[field.id] is iterable and option_value in submittedData[field.id] %}
-                                                    <label class="flex items-center gap-3 cursor-pointer">
-                                                        <input type="checkbox" 
-                                                               name="{{ checkbox_name }}" 
-                                                               value="{{ option_value }}" 
-                                                               class="checkbox checkbox-primary rounded-lg" 
-                                                               {{ is_checked ? 'checked' : '' }}>
-                                                        <span class="label-text">{{ option_label }}</span>
-                                                    </label>
-                                                {% endfor %}
-                                            </div>
-                                        {% else %}
-                                            <!-- Single checkbox -->
-                                            <label class="flex items-center gap-3 cursor-pointer">
-                                                <input type="checkbox" 
-                                                       name="{{ field.id }}" 
-                                                       value="1" 
-                                                       class="checkbox checkbox-primary rounded-lg" 
-                                                       {{ (submittedData[field.id] is defined and submittedData[field.id]) ? 'checked' : '' }}
-                                                       {{ field.required ? 'required' : '' }}>
-                                                <span class="label-text">{{ field.label }}</span>
-                                            </label>
-                                        {% endif %}
-                                    
-                                    {% else %}
-                                        <!-- Fallback to text input -->
-                                        <input type="text" 
-                                               name="{{ field.id }}" 
-                                               class="input input-bordered w-full rounded-lg" 
-                                               value="{{ submittedData[field.id] is defined ? submittedData[field.id] : '' }}" 
-                                               {{ field.required ? 'required' : '' }}>
-                                    {% endif %}
-                                    
-                                    {% if errors[field.id] is defined %}
-                                        <label class="label">
-                                            <span class="label-text-alt text-error">{{ errors[field.id] }}</span>
-                                        </label>
-                                    {% endif %}
-                                    
-                                    {% if field.validation.message is defined %}
-                                        <label class="label">
-                                            <span class="label-text-alt opacity-60">{{ field.validation.message }}</span>
-                                        </label>
-                                    {% endif %}
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="text-center py-12">
-                            <div class="size-16 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span class="icon-[tabler--file-off] size-8 opacity-40"></span>
-                            </div>
-                            <h3 class="text-base font-semibold">No form configuration available</h3>
-                            <p class="mt-2 text-sm opacity-60">Please contact an administrator to set up the accreditation form.</p>
-                        </div>
-                    {% endif %}
-
-                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('accreditation_submit') }}">
-
-                    <!-- Submit Button -->
-                    <div class="mt-8 flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
-                        <a href="{{ path('accreditation_index') }}" class="btn btn-ghost rounded-lg w-full sm:w-auto">
-                            Cancel
-                        </a>
-                        <button type="submit" id="submitBtn" class="btn btn-primary rounded-lg gap-2 w-full sm:w-auto">
-                            <span id="submitLoading" class="loading loading-spinner loading-sm hidden"></span>
-                            <span id="submitText">Submit Application</span>
-                        </button>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+            <!-- Form column -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Progress steps -->
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-5 sm:p-6">
+                        {% include 'components/flyonui_stepper.html.twig' with {
+                            steps: [
+                                { label: 'Application' },
+                                { label: 'Review' },
+                                { label: 'Evaluation' }
+                            ],
+                            current: 1
+                        } %}
                     </div>
-                </form>
-            </div>
-        </div>
+                </div>
 
-        <!-- Help Text -->
-        <div class="alert alert-info mt-6">
-            <span class="icon-[tabler--info-circle] size-5"></span>
-            <div>
-                <strong>Note:</strong> Once submitted, your application will be reviewed by our evaluation team. You will be notified via email about the status of your application.
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-6">
+                        {% if formConfig and sortedFields|length > 0 %}
+                            <form method="post"
+                                  action="{{ path('accreditation_submit', {shippingLineId: shippingLine.id}) }}"
+                                  enctype="multipart/form-data"
+                                  id="accreditationSubmitForm"
+                                  class="space-y-6">
+
+                                {% for field in sortedFields %}
+                                    {% set fieldHasError = errors[field.id] is defined %}
+                                    {% include 'accreditation/_submit_field.html.twig' with {
+                                        field: field,
+                                        submittedData: submittedData|default([]),
+                                        fieldHasError: fieldHasError,
+                                        fieldError: errors[field.id]|default(null),
+                                        loopIndex: loop.index
+                                    } %}
+                                {% endfor %}
+
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('accreditation_submit') }}">
+
+                                <div class="divider"></div>
+
+                                <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+                                    <a href="{{ path('accreditation_index') }}" class="btn btn-ghost w-full sm:w-auto">
+                                        Cancel
+                                    </a>
+                                    <button type="submit" id="submitBtn" class="btn btn-primary gap-2 w-full sm:w-auto">
+                                        <span id="submitLoading" class="loading loading-spinner loading-sm hidden"></span>
+                                        <span class="icon-[tabler--send] size-4" id="submitIcon"></span>
+                                        <span id="submitText">Submit Application</span>
+                                    </button>
+                                </div>
+                            </form>
+                        {% else %}
+                            <div class="text-center py-12">
+                                <div class="size-20 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <span class="icon-[tabler--file-off] size-10 text-base-content/40"></span>
+                                </div>
+                                <h3 class="text-lg font-bold text-base-content mb-2">No form available</h3>
+                                <p class="text-sm text-base-content/60 mb-6">Please contact support to configure the accreditation form.</p>
+                                <a href="{{ path('accreditation_index') }}" class="btn btn-primary">Back to SAS</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="card bg-base-100 shadow-sm lg:sticky lg:top-24">
+                    <div class="card-body p-5 space-y-5">
+                        <div>
+                            <h2 class="font-bold text-base-content flex items-center gap-2">
+                                <span class="icon-[tabler--clipboard-check] size-5 text-primary"></span>
+                                Before you submit
+                            </h2>
+                            <p class="text-sm text-base-content/60 mt-2">
+                                Ensure your documents are clear, valid, and match your registered business details.
+                            </p>
+                        </div>
+
+                        <ul class="space-y-3 text-sm">
+                            <li class="flex items-start gap-3">
+                                <span class="icon-[tabler--circle-check] size-4 text-success shrink-0 mt-0.5"></span>
+                                <span>Fill in every field marked with <span class="text-error">*</span></span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="icon-[tabler--circle-check] size-4 text-success shrink-0 mt-0.5"></span>
+                                <span>Upload readable PDF or image files where required</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="icon-[tabler--circle-check] size-4 text-success shrink-0 mt-0.5"></span>
+                                <span>Double-check company name and registration details</span>
+                            </li>
+                        </ul>
+
+                        {% if requiredCount > 0 %}
+                            <div class="bg-base-200 rounded-xl p-4">
+                                <div class="flex items-center justify-between text-sm mb-2">
+                                    <span class="font-medium">Required fields</span>
+                                    <span id="fieldProgressLabel" class="text-base-content/60">0 / {{ requiredCount }}</span>
+                                </div>
+                                <progress id="fieldProgressBar" class="progress progress-primary w-full" value="0" max="{{ requiredCount }}"></progress>
+                            </div>
+                        {% endif %}
+
+                        <div class="alert alert-info">
+                            <span class="icon-[tabler--info-circle] size-5"></span>
+                            <span class="text-sm">After submission, our evaluation team will review your application. You'll be notified by email.</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block page_scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('accreditationSubmitForm');
     const submitBtn = document.getElementById('submitBtn');
     const submitText = document.getElementById('submitText');
     const submitLoading = document.getElementById('submitLoading');
-    
-    // Add file input change listeners
-    const fileInputs = document.querySelectorAll('input[type="file"]');
-    fileInputs.forEach(function(input) {
-        input.addEventListener('change', function() {
-            // Add visual feedback
-            const label = this.closest('.form-control').querySelector('.label-text');
-            if (this.files.length > 0) {
-                label.classList.add('text-success');
-                label.title = 'File selected: ' + this.files[0].name;
-            } else {
-                label.classList.remove('text-success');
-                label.title = '';
+    const submitIcon = document.getElementById('submitIcon');
+    const progressBar = document.getElementById('fieldProgressBar');
+    const progressLabel = document.getElementById('fieldProgressLabel');
+
+    function updateProgress() {
+        if (!form || !progressBar) {
+            return;
+        }
+
+        const requiredFields = form.querySelectorAll('[data-required="true"]');
+        let filled = 0;
+
+        requiredFields.forEach(function (field) {
+            if (field.type === 'checkbox') {
+                const group = form.querySelectorAll('[name="' + field.name + '"]');
+                if (Array.from(group).some(function (cb) { return cb.checked; })) {
+                    filled++;
+                }
+                return;
+            }
+
+            if (field.type === 'file') {
+                if (field.files && field.files.length > 0) {
+                    filled++;
+                }
+                return;
+            }
+
+            if (field.value && field.value.trim() !== '') {
+                filled++;
             }
         });
+
+        progressBar.value = filled;
+        if (progressLabel) {
+            progressLabel.textContent = filled + ' / ' + progressBar.max;
+        }
+    }
+
+    document.querySelectorAll('[data-file-trigger]').forEach(function (trigger) {
+        trigger.addEventListener('click', function () {
+            const inputId = trigger.getAttribute('data-file-trigger');
+            document.getElementById(inputId)?.click();
+        });
     });
-    
+
+    document.querySelectorAll('[data-file-input]').forEach(function (input) {
+        input.addEventListener('change', function () {
+            const label = document.querySelector('[data-file-label="' + input.id + '"]');
+            const nameEl = document.querySelector('[data-file-name="' + input.id + '"]');
+            const zone = document.querySelector('[data-file-zone="' + input.id + '"]');
+
+            if (input.files && input.files.length > 0) {
+                const fileName = input.files[0].name;
+                if (nameEl) {
+                    nameEl.textContent = fileName;
+                    nameEl.classList.remove('hidden');
+                }
+                if (label) {
+                    label.textContent = 'File selected';
+                }
+                zone?.classList.add('border-primary/40', 'bg-primary/5');
+            } else {
+                if (nameEl) {
+                    nameEl.textContent = '';
+                    nameEl.classList.add('hidden');
+                }
+                if (label) {
+                    label.textContent = 'Click to upload or drag and drop';
+                }
+                zone?.classList.remove('border-primary/40', 'bg-primary/5');
+            }
+
+            updateProgress();
+        });
+    });
+
+    form?.querySelectorAll('input:not([type="file"]), select, textarea').forEach(function (el) {
+        el.addEventListener('input', updateProgress);
+        el.addEventListener('change', updateProgress);
+    });
+
+    updateProgress();
+
     if (form && submitBtn) {
-        form.addEventListener('submit', function(e) {
-            // Check if all required files are selected
-            let missingFiles = [];
-            fileInputs.forEach(function(input) {
-                if (input.hasAttribute('required') && input.files.length === 0) {
-                    missingFiles.push(input.name);
+        form.addEventListener('submit', function (e) {
+            const fileInputs = form.querySelectorAll('input[type="file"][required]');
+            const missingFiles = [];
+
+            fileInputs.forEach(function (input) {
+                if (input.files.length === 0) {
+                    missingFiles.push(input.getAttribute('data-field-label') || input.name);
                 }
             });
-            
+
             if (missingFiles.length > 0) {
                 e.preventDefault();
-                alert('Please select files for: ' + missingFiles.join(', '));
+                alert('Please upload: ' + missingFiles.join(', '));
                 return false;
             }
-            
+
             submitBtn.disabled = true;
             submitText.textContent = 'Submitting...';
-            submitLoading.classList.remove('hidden');
+            submitLoading?.classList.remove('hidden');
+            submitIcon?.classList.add('hidden');
         });
     }
 });

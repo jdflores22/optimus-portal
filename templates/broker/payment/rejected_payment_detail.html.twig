@@ -80,24 +80,24 @@
                     <div class="divider my-2"></div>
                     <div class="flex justify-between">
                         <span class="text-base-content/60">Freight Charges:</span>
-                        <span>₱{{ billing.freightCharges|number_format(2) }}</span>
+                        <span>{{ billing|format_billing_charge(billing.freightCharges, billing.freightChargesUsd) }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-base-content/60">THC Charges:</span>
-                        <span>₱{{ billing.thcCharges|number_format(2) }}</span>
+                        <span>{{ billing|format_billing_charge(billing.thcCharges, billing.thcChargesUsd) }}</span>
                     </div>
                     {% if billing.additionalCharges %}
                         {% for charge in billing.additionalCharges %}
                             <div class="flex justify-between">
                                 <span class="text-base-content/60">{{ charge.description }}:</span>
-                                <span>₱{{ charge.amount|number_format(2) }}</span>
+                                <span>{{ charge.amount|format_money(billing.originalCurrency) }}</span>
                             </div>
                         {% endfor %}
                     {% endif %}
                     <div class="divider my-2"></div>
                     <div class="flex justify-between text-lg font-bold">
                         <span>Total Amount:</span>
-                        <span class="text-primary">₱{{ billing.totalAmount|number_format(2) }}</span>
+                        <span class="text-primary">{{ billing|format_billing }}</span>
                     </div>
                 </div>
 
@@ -132,7 +132,7 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-base-content/60">Amount Submitted:</span>
-                        <span class="font-medium">₱{{ payment.amount|number_format(2) }}</span>
+                        <span class="font-medium">{{ payment|format_payment }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-base-content/60">Submitted At:</span>
@@ -182,11 +182,11 @@
                            name="amount" 
                            step="0.01" 
                            min="0.01"
-                           value="{{ billing.totalAmount }}"
+                           value="{{ billing.originalCurrency == 'USD' ? billing.totalAmountUsd : billing.totalAmount }}"
                            class="input input-bordered w-full" 
                            required>
                     <label class="label">
-                        <span class="label-text-alt text-base-content/60">Expected: ₱{{ billing.totalAmount|number_format(2) }}</span>
+                        <span class="label-text-alt text-base-content/60">Expected: {{ billing|format_billing }}</span>
                     </label>
                 </div>
 

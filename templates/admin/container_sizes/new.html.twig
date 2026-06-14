@@ -1,122 +1,136 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 
 {% block title %}Create New Container Size - OPTIMUS{% endblock %}
 
-{% block body %}
-<div class="container mx-auto px-4 py-6">
-    <!-- Header -->
-    <div class="mb-6">
-        <div class="flex items-center mb-2">
-            <a href="{{ path('admin_container_sizes_index') }}" class="text-blue-600 hover:text-blue-800 mr-2">
-                <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                </svg>
-            </a>
-            <h1 class="text-2xl font-bold text-gray-900">Create New Container Size</h1>
+{% block content %}
+<div class="space-y-6">
+<!-- Header -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <div class="breadcrumbs text-xs mb-1">
+                        <ul>
+                            <li><a href="{{ path('admin_container_sizes_index') }}">Container Sizes</a></li>
+                            <li>Create</li>
+                        </ul>
+                    </div>
+                    <h1 class="text-xl sm:text-2xl font-bold text-base-content">Create New Container Size</h1>
+                    <p class="text-sm text-base-content/60 mt-1">Add a new container size classification to the system</p>
+                </div>
+                <a href="{{ path('admin_container_sizes_index') }}" class="btn btn-ghost btn-sm gap-2 w-full sm:w-auto">
+                    <span class="icon-[tabler--arrow-left] size-4"></span>
+                    Back to List
+                </a>
+            </div>
         </div>
-        <p class="text-sm text-gray-600">Add a new container size classification to the system</p>
     </div>
 
-    <!-- Flash Messages -->
-    {% for message in app.flashes('success') %}
-        <div class="mb-4 px-4 py-3 rounded-lg bg-green-100 text-green-800">
-            {{ message }}
-        </div>
-    {% endfor %}
-    {% for message in app.flashes('error') %}
-        <div class="mb-4 px-4 py-3 rounded-lg bg-red-100 text-red-800">
-            {{ message }}
-        </div>
-    {% endfor %}
-
-    <!-- Create Form -->
-    <div class="bg-white shadow-md rounded-lg p-6 max-w-2xl">
-        <form id="containerSizeForm" method="POST" action="{{ path('admin_container_sizes_store') }}">
-            <div class="space-y-6">
-                <!-- Name -->
-                <div>
-                    <label for="containerSizeName" class="block text-sm font-medium text-gray-700 mb-2">
-                        Name <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" 
-                           id="containerSizeName" 
-                           name="name" 
-                           required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                           placeholder="e.g., 20 Feet">
-                    <p class="mt-1 text-sm text-gray-500">Enter the display name for this container size</p>
+    <div class="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+        <div class="max-w-2xl mx-auto">
+            {% for message in app.flashes('success') %}
+                <div class="alert alert-success mb-6">
+                    <span class="icon-[tabler--check] size-5"></span>
+                    <span>{{ message }}</span>
                 </div>
-
-                <!-- Code -->
-                <div>
-                    <label for="containerSizeCode" class="block text-sm font-medium text-gray-700 mb-2">
-                        Code <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" 
-                           id="containerSizeCode" 
-                           name="code" 
-                           required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                           placeholder="e.g., 20FT">
-                    <p class="mt-1 text-sm text-gray-500">Enter a unique code identifier (e.g., 20FT, 40FT, 40HC)</p>
+            {% endfor %}
+            {% for message in app.flashes('error') %}
+                <div class="alert alert-error mb-6">
+                    <span class="icon-[tabler--alert-circle] size-5"></span>
+                    <span>{{ message }}</span>
                 </div>
+            {% endfor %}
 
-                <!-- Description -->
-                <div>
-                    <label for="containerSizeDescription" class="block text-sm font-medium text-gray-700 mb-2">
-                        Description
-                    </label>
-                    <textarea id="containerSizeDescription" 
-                              name="description" 
-                              rows="3"
-                              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              placeholder="e.g., Standard 20-foot container (1 TEU)"></textarea>
-                    <p class="mt-1 text-sm text-gray-500">Optional detailed description of this container size</p>
-                </div>
-
-                <!-- Info Box -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div class="flex">
-                        <svg class="w-5 h-5 text-blue-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                        </svg>
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-6 sm:p-8">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="size-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--resize] size-6 text-primary"></span>
+                        </div>
                         <div>
-                            <p class="text-sm text-blue-800 font-medium">New Container Size Status</p>
-                            <p class="text-sm text-blue-700 mt-1">The container size will be created with an <strong>Active</strong> status by default and will be immediately available for selection in shipment forms.</p>
+                            <h2 class="text-lg font-semibold text-base-content">Container Size Details</h2>
+                            <p class="text-sm text-base-content/60">Define the name, code, and description</p>
                         </div>
                     </div>
-                </div>
 
-                <!-- Action Buttons -->
-                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-                    <a href="{{ path('admin_container_sizes_index') }}" 
-                       class="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors">
-                        Cancel
-                    </a>
-                    <button type="submit" 
-                            id="submitBtn"
-                            class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors inline-flex items-center">
-                        <span id="btnText">Create Container Size</span>
-                        <svg id="btnSpinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                    </button>
+                    <form id="containerSizeForm" method="POST" action="{{ path('admin_container_sizes_store') }}" class="space-y-5">
+                        <div class="form-control">
+                            <label class="label py-1" for="containerSizeName">
+                                <span class="label-text font-medium">Name <span class="text-error">*</span></span>
+                            </label>
+                            <input type="text"
+                                   id="containerSizeName"
+                                   name="name"
+                                   required
+                                   class="input input-bordered w-full"
+                                   placeholder="e.g., 20 Feet">
+                            <label class="label py-1">
+                                <span class="label-text-alt text-base-content/60">Display name for this container size</span>
+                            </label>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label py-1" for="containerSizeCode">
+                                <span class="label-text font-medium">Code <span class="text-error">*</span></span>
+                            </label>
+                            <input type="text"
+                                   id="containerSizeCode"
+                                   name="code"
+                                   required
+                                   class="input input-bordered w-full font-mono"
+                                   placeholder="e.g., 20FT">
+                            <label class="label py-1">
+                                <span class="label-text-alt text-base-content/60">Unique identifier (e.g., 20FT, 40FT, 40HC)</span>
+                            </label>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label py-1" for="containerSizeDescription">
+                                <span class="label-text font-medium">Description</span>
+                            </label>
+                            <textarea id="containerSizeDescription"
+                                      name="description"
+                                      rows="3"
+                                      class="textarea textarea-bordered w-full"
+                                      placeholder="e.g., Standard 20-foot container (1 TEU)"></textarea>
+                            <label class="label py-1">
+                                <span class="label-text-alt text-base-content/60">Optional detailed description</span>
+                            </label>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <span class="icon-[tabler--info-circle] size-5"></span>
+                            <div class="text-sm">
+                                <p class="font-medium">New Container Size Status</p>
+                                <p class="mt-1 opacity-90">The container size will be created as <span class="badge badge-success badge-xs">Active</span> by default and will be immediately available in shipment forms.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
+                            <a href="{{ path('admin_container_sizes_index') }}" class="btn btn-ghost w-full sm:w-auto">
+                                Cancel
+                            </a>
+                            <button type="submit"
+                                    id="submitBtn"
+                                    class="btn btn-primary gap-2 w-full sm:w-auto">
+                                <span id="btnSpinner" class="loading loading-spinner loading-sm hidden"></span>
+                                <span id="btnText">Create Container Size</span>
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
-        </form>
+        </div>
     </div>
 </div>
 
 <script>
-document.getElementById('containerSizeForm').addEventListener('submit', function(e) {
+document.getElementById('containerSizeForm').addEventListener('submit', function () {
     const submitBtn = document.getElementById('submitBtn');
     const btnText = document.getElementById('btnText');
     const btnSpinner = document.getElementById('btnSpinner');
-    
-    // Disable button and show spinner
+
     submitBtn.disabled = true;
-    submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
     btnText.textContent = 'Creating...';
     btnSpinner.classList.remove('hidden');
 });

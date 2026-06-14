@@ -34,7 +34,8 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
         private EmailNotificationService $emailNotificationService,
         private \Symfony\Component\Routing\Generator\UrlGeneratorInterface $urlGenerator,
         private CYAllocationService $cyAllocationService,
-        private EDODocumentGenerator $edoDocumentGenerator
+        private EDODocumentGenerator $edoDocumentGenerator,
+        private WorkflowOrchestrator $workflowOrchestrator
     ) {
     }
 
@@ -100,8 +101,8 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
                 
                 // Set CY location from NOA if available
                 $noa = $container->getNoa();
-                if ($noa && $noa->getCyLocation()) {
-                    $edo->setCyLocation($noa->getCyLocation());
+                if ($noa && $noa->getPortLocation()) {
+                    $edo->setCyLocation($container->getCyAllocation()?->getTerminal()?->getName() ?? $noa->getPortLocation());
                 }
                 
                 // Set PDF path (will be generated later)
@@ -122,9 +123,11 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
                 }
             }
             
-            // Update manifest workflow state
-            $manifest->setWorkflowState(WorkflowState::EDO_GENERATED);
-            $manifest->setUpdatedAt(new \DateTime());
+            $this->workflowOrchestrator->transitionToEdoGeneratedIfNeeded(
+                $manifest,
+                $generatedBy,
+                'Batch eDO generation completed'
+            );
             
             // Flush changes to get eDO IDs
             $this->entityManager->flush();
@@ -432,9 +435,9 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
                     throw new EDOWorkflowException('Container must have associated NOA');
                 }
 
-                $cyLocation = $noa->getCyLocation();
+                $cyLocation = $container->getCyAllocation()?->getTerminal()?->getName();
                 if (empty($cyLocation)) {
-                    throw new EDOWorkflowException('NOA must have CY location');
+                    throw new EDOWorkflowException('Container must have CY allocation for eDO generation');
                 }
 
                 // Check if we've exceeded timeout before generation
@@ -576,8 +579,11 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
         
         // Update manifest workflow state to EDO_GENERATED if at least one eDO was generated successfully
         if ($session->getCompletedContainers() > 0) {
-            $manifest->setWorkflowState(\App\Entity\Enum\WorkflowState::EDO_GENERATED);
-            $manifest->setUpdatedAt(new \DateTime());
+            $this->workflowOrchestrator->transitionToEdoGeneratedIfNeeded(
+                $manifest,
+                $session->getInitiatedBy(),
+                'Batch eDO generation session completed'
+            );
         }
         
         $this->entityManager->flush();

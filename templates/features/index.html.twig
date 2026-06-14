@@ -10,15 +10,8 @@
     <div class="relative bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
             <div class="text-center max-w-4xl mx-auto">
-                <div class="mb-8">
-                    <h1 class="text-6xl md:text-8xl font-extrabold mb-2 tracking-tight">
-                        <span class="bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-300 bg-clip-text text-transparent">
-                            OPTIMUS
-                        </span>
-                    </h1>
-                    <p class="text-sm text-gray-400 tracking-wider">
-                        Developed By: Trans-net Software Development Services
-                    </p>
+                <div class="mb-8 flex justify-center">
+                    {% include 'components/optimus_logo.html.twig' with { size: 'xl', variant: 'card', show_tagline: true } %}
                 </div>
                 <div class="inline-block mb-6">
                     <span class="px-4 py-2 rounded-full text-sm font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">

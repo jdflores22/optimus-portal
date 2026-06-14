@@ -2,14 +2,13 @@
 
 namespace App\DataFixtures;
 
+use App\Entity\AuditLog;
 use App\Entity\Container;
 use App\Entity\ContainerSize;
 use App\Entity\ContainerType;
-use App\Entity\EDOAuditLog;
 use App\Entity\EDOBilling;
 use App\Entity\EDOPaymentReceipt;
 use App\Entity\ElectronicDeliveryOrder;
-use App\Entity\Enum\AuditEventType;
 use App\Entity\Enum\ContainerStatus;
 use App\Entity\Enum\EDOStatus;
 use App\Entity\Enum\PaymentStatus;
@@ -17,6 +16,7 @@ use App\Entity\Enum\RequestStatus;
 use App\Entity\Manifest;
 use App\Entity\NOA;
 use App\Entity\RegenerationRequest;
+use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
@@ -89,7 +89,7 @@ class ContainerEDOWorkflowFixtures extends Fixture implements DependentFixtureIn
         $noa1->setBlNumber('BL123456789');
         $noa1->setVesselNumber('VESSEL-001');
         $noa1->setEta(new \DateTime('+7 days'));
-        $noa1->setCyLocation('CY-NORTH');
+        $noa1->setPortLocation('CY-NORTH');
         $noa1->setConsignee($consignee1);
         $noa1->setCreatedBy($terminalUser);
         $noa1->setCreatedAt(new \DateTime());
@@ -103,7 +103,7 @@ class ContainerEDOWorkflowFixtures extends Fixture implements DependentFixtureIn
         $noa2->setBlNumber('BL987654321');
         $noa2->setVesselNumber('VESSEL-002');
         $noa2->setEta(new \DateTime('+10 days'));
-        $noa2->setCyLocation('CY-SOUTH');
+        $noa2->setPortLocation('CY-SOUTH');
         $noa2->setConsignee($consignee2);
         $noa2->setCreatedBy($terminalUser);
         $noa2->setCreatedAt(new \DateTime());
@@ -226,43 +226,30 @@ class ContainerEDOWorkflowFixtures extends Fixture implements DependentFixtureIn
 
         $manager->flush();
 
-        // Create audit logs for eDO creation
-        $auditLog1 = new EDOAuditLog();
-        $auditLog1->setEdo($edo1);
-        $auditLog1->setContainer($container1);
-        $auditLog1->setEventType(AuditEventType::EDO_CREATED);
-        $auditLog1->setUser($broker1);
-        $auditLog1->setDetails(['edo_number' => $edo1->getEdoNumber(), 'manifest_number' => $manifest1->getManifestNumber()]);
-        $auditLog1->setTimestamp(new \DateTime());
-        $manager->persist($auditLog1);
+        // Create audit logs for eDO workflow (audit_logs table)
+        $this->persistEdoAuditLog($manager, $broker1, $edo1, $container1, 'edo_generated', [
+            'edo_number' => $edo1->getEdoNumber(),
+            'manifest_number' => $manifest1->getManifestNumber(),
+            'container_number' => $container1->getContainerNumber(),
+        ]);
 
-        $auditLog2 = new EDOAuditLog();
-        $auditLog2->setEdo($edo2);
-        $auditLog2->setContainer($container2);
-        $auditLog2->setEventType(AuditEventType::EDO_CREATED);
-        $auditLog2->setUser($broker1);
-        $auditLog2->setDetails(['edo_number' => $edo2->getEdoNumber(), 'manifest_number' => $manifest1->getManifestNumber()]);
-        $auditLog2->setTimestamp(new \DateTime());
-        $manager->persist($auditLog2);
+        $this->persistEdoAuditLog($manager, $broker1, $edo2, $container2, 'edo_generated', [
+            'edo_number' => $edo2->getEdoNumber(),
+            'manifest_number' => $manifest1->getManifestNumber(),
+            'container_number' => $container2->getContainerNumber(),
+        ]);
 
-        $auditLog3 = new EDOAuditLog();
-        $auditLog3->setEdo($edo3);
-        $auditLog3->setContainer($container3);
-        $auditLog3->setEventType(AuditEventType::EDO_CREATED);
-        $auditLog3->setUser($broker1);
-        $auditLog3->setDetails(['edo_number' => $edo3->getEdoNumber(), 'manifest_number' => $manifest2->getManifestNumber()]);
-        $auditLog3->setTimestamp(new \DateTime('-19 days'));
-        $manager->persist($auditLog3);
+        $this->persistEdoAuditLog($manager, $broker1, $edo3, $container3, 'edo_generated', [
+            'edo_number' => $edo3->getEdoNumber(),
+            'manifest_number' => $manifest2->getManifestNumber(),
+            'container_number' => $container3->getContainerNumber(),
+        ], new \DateTime('-19 days'));
 
-        // Create audit log for expiration
-        $auditLog4 = new EDOAuditLog();
-        $auditLog4->setEdo($edo3);
-        $auditLog4->setContainer($container3);
-        $auditLog4->setEventType(AuditEventType::EDO_EXPIRED);
-        $auditLog4->setUser($terminalUser);
-        $auditLog4->setDetails(['edo_number' => $edo3->getEdoNumber(), 'expired_days' => 5]);
-        $auditLog4->setTimestamp(new \DateTime('-5 days'));
-        $manager->persist($auditLog4);
+        $this->persistEdoAuditLog($manager, $terminalUser, $edo3, $container3, 'edo_expired', [
+            'edo_number' => $edo3->getEdoNumber(),
+            'expired_days' => 5,
+            'container_number' => $container3->getContainerNumber(),
+        ], new \DateTime('-5 days'));
 
         // Create regeneration request for expired eDO
         $regenRequest = new RegenerationRequest();
@@ -274,15 +261,11 @@ class ContainerEDOWorkflowFixtures extends Fixture implements DependentFixtureIn
         $regenRequest->setNotes('Need to regenerate eDO for container pickup');
         $manager->persist($regenRequest);
 
-        // Create audit log for regeneration request
-        $auditLog5 = new EDOAuditLog();
-        $auditLog5->setEdo($edo3);
-        $auditLog5->setContainer($container3);
-        $auditLog5->setEventType(AuditEventType::REGENERATION_REQUESTED);
-        $auditLog5->setUser($consignee2);
-        $auditLog5->setDetails(['edo_number' => $edo3->getEdoNumber(), 'notes' => $regenRequest->getNotes()]);
-        $auditLog5->setTimestamp(new \DateTime('-4 days'));
-        $manager->persist($auditLog5);
+        $this->persistEdoAuditLog($manager, $consignee2, $edo3, $container3, 'edo_renewal_requested', [
+            'edo_number' => $edo3->getEdoNumber(),
+            'notes' => $regenRequest->getNotes(),
+            'container_number' => $container3->getContainerNumber(),
+        ], new \DateTime('-4 days'));
 
         $manager->flush();
 
@@ -297,20 +280,13 @@ class ContainerEDOWorkflowFixtures extends Fixture implements DependentFixtureIn
         $billing->setCreatedAt(new \DateTime('-3 days'));
         $manager->persist($billing);
 
-        // Create audit log for billing generation
-        $auditLog6 = new EDOAuditLog();
-        $auditLog6->setEdo($edo3);
-        $auditLog6->setContainer($container3);
-        $auditLog6->setEventType(AuditEventType::BILLING_GENERATED);
-        $auditLog6->setUser($accountingUser);
-        $auditLog6->setDetails([
+        $this->persistEdoAuditLog($manager, $accountingUser, $edo3, $container3, 'billing_generated', [
             'edo_number' => $edo3->getEdoNumber(),
             'expired_days' => 5,
             'per_day_rate' => 50.00,
-            'total_amount' => 250.00
-        ]);
-        $auditLog6->setTimestamp(new \DateTime('-3 days'));
-        $manager->persist($auditLog6);
+            'total_amount' => 250.00,
+            'container_number' => $container3->getContainerNumber(),
+        ], new \DateTime('-3 days'));
 
         // Create payment receipt (submitted but not yet confirmed)
         $payment = new EDOPaymentReceipt();
@@ -321,20 +297,41 @@ class ContainerEDOWorkflowFixtures extends Fixture implements DependentFixtureIn
         $payment->setStatus(PaymentStatus::SUBMITTED);
         $manager->persist($payment);
 
-        // Create audit log for payment submission
-        $auditLog7 = new EDOAuditLog();
-        $auditLog7->setEdo($edo3);
-        $auditLog7->setContainer($container3);
-        $auditLog7->setEventType(AuditEventType::PAYMENT_SUBMITTED);
-        $auditLog7->setUser($consignee2);
-        $auditLog7->setDetails([
+        $this->persistEdoAuditLog($manager, $consignee2, $edo3, $container3, 'edo_payment_submission', [
             'edo_number' => $edo3->getEdoNumber(),
             'amount' => 250.00,
-            'receipt_path' => $payment->getReceiptFilePath()
-        ]);
-        $auditLog7->setTimestamp(new \DateTime('-2 days'));
-        $manager->persist($auditLog7);
+            'receipt_path' => $payment->getReceiptFilePath(),
+            'container_number' => $container3->getContainerNumber(),
+        ], new \DateTime('-2 days'));
 
         $manager->flush();
+    }
+
+    /**
+     * @param array<string, mixed> $changes
+     */
+    private function persistEdoAuditLog(
+        ObjectManager $manager,
+        User $user,
+        ElectronicDeliveryOrder $edo,
+        Container $container,
+        string $action,
+        array $changes,
+        ?\DateTimeInterface $timestamp = null
+    ): void {
+        $auditLog = new AuditLog();
+        $auditLog->setUser($user);
+        $auditLog->setAction($action);
+        $auditLog->setEntityType('ElectronicDeliveryOrder');
+        $auditLog->setEntityId($edo->getId());
+        $auditLog->setChanges($changes);
+        $auditLog->setIpAddress('127.0.0.1');
+        $auditLog->setRelatedEdo($edo);
+
+        if ($timestamp !== null) {
+            $auditLog->setTimestamp($timestamp);
+        }
+
+        $manager->persist($auditLog);
     }
 }

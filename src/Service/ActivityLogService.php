@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\ActivityLog;
+use App\Utility\PaymentAmountFormatter;
 use App\Entity\User;
 use App\Entity\ShippingLine;
 use App\Entity\Enum\UserRole;
@@ -122,24 +123,64 @@ class ActivityLogService
     }
 
     /**
-     * Log failed login attempt
+     * Log failed login attempt to activity_logs for security reporting.
+     *
+     * @param string $email Attempted login email
+     * @param string $ipAddress Client IP address
+     * @param User|null $subjectUser Matched account, if any
+     * @param string|null $reason Failure reason (e.g. bad password, CSRF, locked account)
      */
-    public function logFailedLogin(string $email, string $ipAddress): void
-    {
-        // For failed logins, we create a log without a user
-        try {
-            $request = $this->requestStack->getCurrentRequest();
-            
-            $activityLog = new ActivityLog();
-            // We need a user for the foreign key constraint, so we'll use a system user or handle this differently
-            // For now, we'll skip failed logins without a valid user
-            // This should be handled by creating a system user for such cases
-            
-            // Alternative: Store failed login attempts in a separate table or use a system user
-            error_log("Failed login attempt for email: {$email} from IP: {$ipAddress}");
-        } catch (\Exception $e) {
-            error_log('Failed to log failed login: ' . $e->getMessage());
+    public function logFailedLogin(
+        string $email,
+        string $ipAddress,
+        ?User $subjectUser = null,
+        ?string $reason = null
+    ): void {
+        $auditUser = $subjectUser ?? $this->resolveAuditUserForFailedLogin($email);
+        if (!$auditUser) {
+            error_log(sprintf('Failed login for unknown email %s from IP %s (no audit user available)', $email, $ipAddress));
+            return;
         }
+
+        $context = [
+            'attempted_email' => $email,
+            'ip_address' => $ipAddress,
+            'reason' => $reason ?? 'Authentication failed',
+        ];
+
+        if ($subjectUser && $subjectUser->getId() !== $auditUser->getId()) {
+            $context['subject_user_id'] = $subjectUser->getId();
+        }
+
+        $this->logActivity(
+            $auditUser,
+            ActivityLog::TYPE_FAILED_LOGIN,
+            'User',
+            $subjectUser?->getId(),
+            null,
+            ['email' => $email],
+            $context
+        );
+    }
+
+    /**
+     * Resolve a User entity to attach failed-login rows to (activity_logs.user_id is NOT NULL).
+     */
+    private function resolveAuditUserForFailedLogin(string $email): ?User
+    {
+        $matched = $this->entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
+        if ($matched) {
+            return $matched;
+        }
+
+        return $this->entityManager->getRepository(User::class)
+            ->createQueryBuilder('u')
+            ->where('u.role = :role')
+            ->setParameter('role', UserRole::SYSTEM_ADMIN)
+            ->orderBy('u.id', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     /**
@@ -1553,9 +1594,9 @@ class ActivityLogService
                 'amount' => $edoPayment->getAmount(),
                 'payment_type' => 'edo_access',
                 'description' => sprintf(
-                    'Submitted eDO payment for manifest %s (Amount: ₱%s)',
+                    'Submitted eDO payment for manifest %s (Amount: %s)',
                     $manifest->getManifestNumber(),
-                    number_format($edoPayment->getAmount(), 2)
+                    PaymentAmountFormatter::formatEdoPaymentAmount($edoPayment->getAmount())
                 )
             ]
         );

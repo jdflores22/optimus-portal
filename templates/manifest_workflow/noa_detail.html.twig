@@ -122,8 +122,8 @@
                             <dd class="mt-1 text-sm text-base-content">{{ noa.eta|date('M j, Y g:i A') }}</dd>
                         </div>
                         <div>
-                            <dt class="text-sm font-medium text-base-content/60">CY Location</dt>
-                            <dd class="mt-1 text-sm text-base-content">{{ noa.cyLocation }}</dd>
+                            <dt class="text-sm font-medium text-base-content/60">Port Location</dt>
+                            <dd class="mt-1 text-sm text-base-content">{{ noa.dischargeLocation }}</dd>
                         </div>
                     </dl>
                 </div>
@@ -316,7 +316,7 @@
                                                 {% if paymentStatus.payment_status == 'verified' %}
                                                     <span class="badge badge-success badge-sm gap-1">
                                                         <span class="icon-[tabler--circle-check] size-3"></span>
-                                                        PAID ₱{{ paymentStatus.payment_amount|number_format(2) }}
+                                                        PAID {{ paymentStatus.payment_amount|format_money('PHP') }}
                                                     </span>
                                                 {% elseif paymentStatus.payment_status == 'pending_validation' %}
                                                     <span class="badge badge-warning badge-sm gap-1">
@@ -531,7 +531,7 @@
                                     <span class="icon-[tabler--receipt] size-6 sm:size-8 text-warning mr-2 sm:mr-3 flex-shrink-0"></span>
                                     <div class="min-w-0">
                                         <div class="text-xs sm:text-sm font-medium text-base-content truncate">Billing Document</div>
-                                        <div class="text-xs text-base-content/60 truncate">Total: ₱{{ manifest.billing.totalAmount|number_format(2) }}</div>
+                                        <div class="text-xs text-base-content/60 truncate">Total: {{ manifest.billing|format_billing }}</div>
                                     </div>
                                 </div>
                                 <a href="/api/billing/{{ manifest.billing.id }}/download" 
@@ -602,7 +602,7 @@
                                                 {% endif %}
                                             </div>
                                             <div class="text-sm text-base-content/80">
-                                                Amount: ₱{{ payment.amount|number_format(2) }}
+                                                Amount: {{ payment|format_payment }}
                                             </div>
                                             <div class="text-xs text-base-content/60 mt-1">
                                                 Submitted: {{ payment.createdAt|date('M j, Y g:i A') }}
@@ -642,7 +642,7 @@
                                             {% endif %}
                                         </div>
                                         <div class="text-sm text-base-content/80">
-                                            Amount: ₱{{ edoPaymentData.payment_amount|number_format(2) }}
+                                            Amount: {{ edoPaymentData.payment_amount|format_money('PHP') }}
                                         </div>
                                         <div class="text-xs text-base-content/60 mt-1">
                                             Submitted: {{ edoPaymentData.payment_verified_at ? edoPaymentData.payment_verified_at|date('M j, Y g:i A') : 'N/A' }}
@@ -1230,15 +1230,15 @@
                            required>
                 </div>
 
-                <!-- CY Location -->
+                <!-- Port Location -->
                 <div class="form-control">
                     <label class="label">
-                        <span class="label-text font-medium">CY Location <span class="text-error">*</span></span>
+                        <span class="label-text font-medium">Port Location <span class="text-error">*</span></span>
                     </label>
                     <input type="text" 
-                           id="editCyLocation" 
-                           name="cyLocation"
-                           value="{{ noa.cyLocation }}"
+                           id="editPortLocation" 
+                           name="portLocation"
+                           value="{{ noa.portLocation }}"
                            class="input input-bordered w-full" 
                            required>
                 </div>
@@ -1295,7 +1295,7 @@ async function submitNoaEdit(event) {
         blNumber: document.getElementById('editBlNumber').value,
         vesselNumber: document.getElementById('editVesselNumber').value,
         eta: document.getElementById('editEta').value,
-        cyLocation: document.getElementById('editCyLocation').value
+        portLocation: document.getElementById('editPortLocation').value
     };
     
     // Show spinner and disable buttons

@@ -1,0 +1,497 @@
+<script>
+const EDO_MONEY_PREFIX = {{ (0|format_money('PHP'))|slice(0, -4)|json_encode|raw }};
+
+const PAYMENT_STATUS_BADGE = {
+    pending_validation: 'badge badge-warning badge-sm',
+    verified: 'badge badge-success badge-sm',
+    rejected: 'badge badge-error badge-sm',
+};
+const PAYMENT_STATUS_LABEL = {
+    pending_validation: 'Pending Validation',
+    verified: 'Verified',
+    rejected: 'Rejected',
+};
+const EDO_STATUS_BADGE = {
+    pending_release: 'badge badge-warning badge-sm',
+    released: 'badge badge-success badge-sm',
+    rejected: 'badge badge-error badge-sm',
+};
+const EDO_STATUS_LABEL = {
+    pending_release: 'Pending Release',
+    released: 'Released',
+    rejected: 'Rejected',
+};
+
+function formatEdoMoney(amount) {
+    return EDO_MONEY_PREFIX + parseFloat(amount).toFixed(2);
+}
+
+function parseEdoMoneyText(text) {
+    return text.replace(/[^\d.-]/g, '');
+}
+
+function openDialog(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('hidden');
+    el.classList.add('flex');
+}
+
+function closeDialog(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('hidden');
+    el.classList.remove('flex');
+}
+
+document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    document.querySelectorAll('.edo-release-modal.flex').forEach((modal) => {
+        closeDialog(modal.id);
+    });
+});
+
+function loadingHtml(message) {
+    return `
+        <div class="text-center py-8">
+            <span class="loading loading-spinner loading-md text-primary"></span>
+            <p class="mt-2 text-sm text-base-content/60">${message}</p>
+        </div>
+    `;
+}
+
+async function viewEDODetails(edoDataOrId) {
+    const modal = document.getElementById('edoDetailModal');
+    const content = document.getElementById('edoDetailContent');
+    const edoId = typeof edoDataOrId === 'object' ? edoDataOrId.id : edoDataOrId;
+
+    if (!edoId) {
+        console.error('No EDO ID provided');
+        return;
+    }
+
+    openDialog('edoDetailModal');
+    content.innerHTML = loadingHtml('Loading details...');
+
+    try {
+        const response = await fetch(`/admin/edo-release/${edoId}/details`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Server returned non-JSON response');
+        }
+
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message || 'Failed to load EDO details');
+
+        const edoData = result.data;
+
+        function formatDate(dateString) {
+            if (!dateString) return null;
+            return new Date(dateString).toLocaleString();
+        }
+
+        let paymentHtml = '';
+        if (edoData.payment) {
+            const payment = edoData.payment;
+            paymentHtml = `
+                <div class="bg-info/10 rounded-lg p-4 border border-info/20">
+                    <h4 class="text-sm font-semibold mb-3">Payment Information</h4>
+                    <dl class="grid grid-cols-2 gap-3 text-sm">
+                        <div><dt class="text-base-content/60">Payment ID</dt><dd class="font-medium">#${payment.id}</dd></div>
+                        <div><dt class="text-base-content/60">Amount</dt><dd class="font-medium">${formatEdoMoney(payment.amount)}</dd></div>
+                        <div><dt class="text-base-content/60">Status</dt><dd><span class="${PAYMENT_STATUS_BADGE[payment.status] || 'badge badge-ghost badge-sm'}">${PAYMENT_STATUS_LABEL[payment.status] || payment.status}</span></dd></div>
+                        <div><dt class="text-base-content/60">Submitted By</dt><dd class="font-medium">${payment.submittedBy}</dd></div>
+                        <div><dt class="text-base-content/60">Submitted At</dt><dd class="font-medium">${formatDate(payment.createdAt)}</dd></div>
+                        ${payment.validatedAt ? `<div><dt class="text-base-content/60">Validated At</dt><dd class="font-medium">${formatDate(payment.validatedAt)}</dd></div>` : ''}
+                        ${payment.validatedBy ? `<div><dt class="text-base-content/60">Validated By</dt><dd class="font-medium">${payment.validatedBy}</dd></div>` : ''}
+                        ${payment.rejectionReason ? `<div class="col-span-2"><dt class="text-base-content/60">Rejection Reason</dt><dd class="font-medium text-error mt-1">${payment.rejectionReason}</dd></div>` : ''}
+                    </dl>
+                    ${payment.receiptPath || payment.officialReceiptPath ? `
+                    <div class="mt-3 pt-3 border-t border-info/20 flex flex-wrap gap-2">
+                        <a href="/admin/edo-payments/${payment.id}/receipt" target="_blank" class="btn btn-outline btn-sm gap-1">
+                            <span class="icon-[tabler--eye] size-4"></span> View Payment Receipt
+                        </a>
+                        ${payment.officialReceiptPath || payment.status === 'verified' ? `
+                        <a href="/admin/edo-payments/${payment.id}/official-receipt" target="_blank" class="btn btn-outline btn-success btn-sm gap-1">
+                            <span class="icon-[tabler--file-text] size-4"></span> View Official Receipt
+                        </a>` : ''}
+                    </div>` : ''}
+                </div>
+            `;
+        } else {
+            paymentHtml = `
+                <div class="bg-base-200 rounded-lg p-4 border border-base-300 text-center">
+                    <span class="icon-[tabler--currency-peso] size-10 text-base-content/30 block mx-auto"></span>
+                    <p class="mt-2 text-sm font-medium">No Payment Submitted</p>
+                    <p class="text-xs text-base-content/60">Awaiting payment from broker</p>
+                </div>
+            `;
+        }
+
+        content.innerHTML = `
+            <div class="space-y-4">
+                <div class="bg-base-200/60 rounded-lg p-4 border border-base-300">
+                    <h4 class="text-sm font-semibold mb-3">eDO Information</h4>
+                    <dl class="grid grid-cols-2 gap-3 text-sm">
+                        <div><dt class="text-base-content/60">eDO Number</dt><dd class="font-medium">${edoData.edoNumber}</dd></div>
+                        <div><dt class="text-base-content/60">Status</dt><dd><span class="${EDO_STATUS_BADGE[edoData.status] || 'badge badge-ghost badge-sm'}">${EDO_STATUS_LABEL[edoData.status] || edoData.status}</span></dd></div>
+                        <div><dt class="text-base-content/60">Manifest Number</dt><dd class="font-medium">${edoData.manifest.manifestNumber}</dd></div>
+                        <div><dt class="text-base-content/60">Generated At</dt><dd class="font-medium">${formatDate(edoData.generatedAt)}</dd></div>
+                        <div><dt class="text-base-content/60">Consignee</dt><dd class="font-medium">${edoData.manifest.consignee || 'Not declared'}</dd></div>
+                        <div><dt class="text-base-content/60">Broker</dt><dd class="font-medium">${edoData.manifest.broker || 'None'}</dd></div>
+                        ${edoData.releasedAt ? `<div><dt class="text-base-content/60">Released At</dt><dd class="font-medium">${formatDate(edoData.releasedAt)}</dd></div>` : ''}
+                    </dl>
+                </div>
+                ${paymentHtml}
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error displaying EDO details:', error);
+        content.innerHTML = `
+            <div class="text-center py-8">
+                <div class="size-16 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="icon-[tabler--alert-circle] size-8 text-error"></span>
+                </div>
+                <p class="text-sm font-semibold text-error mb-2">Error Loading Details</p>
+                <p class="text-xs text-base-content/60">${error.message}</p>
+                <button onclick="closeModal()" class="btn btn-ghost btn-sm mt-4">Close</button>
+            </div>
+        `;
+    }
+}
+
+function closeModal() {
+    closeDialog('edoDetailModal');
+}
+
+function showRejectModal(edoId) {
+    document.getElementById('rejectEdoId').value = edoId;
+    document.getElementById('edoRejectReason').value = '';
+    openDialog('rejectModal');
+}
+
+function closeRejectModal() {
+    closeDialog('rejectModal');
+}
+
+async function showValidatePaymentModal(paymentId, paymentData = null) {
+    const modal = document.getElementById('validatePaymentModal');
+    const content = document.getElementById('validatePaymentContent');
+
+    openDialog('validatePaymentModal');
+    content.innerHTML = loadingHtml('Loading payment details...');
+
+    try {
+        if (!paymentData) {
+            const response = await fetch(`/admin/edo-payments/${paymentId}/details`);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Server returned non-JSON response');
+            }
+
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message || 'Failed to load payment details');
+            paymentData = result.data;
+        }
+
+        const payment = paymentData;
+        const createdAtDate = new Date(payment.createdAt);
+        const id = payment.id || paymentId;
+        const amount = parseFloat(payment.amount || 0);
+        const submittedBy = payment.submittedBy || 'N/A';
+        const receiptPath = '/admin/edo-payments/' + paymentId + '/receipt';
+
+        content.innerHTML = `
+            <div class="space-y-4">
+                <div class="bg-base-200/60 rounded-lg p-4 border border-base-300">
+                    <h4 class="text-sm font-semibold mb-3">Payment Information</h4>
+                    <dl class="grid grid-cols-2 gap-3 text-sm">
+                        <div><dt class="text-base-content/60">Payment ID</dt><dd class="font-medium">#${id}</dd></div>
+                        <div><dt class="text-base-content/60">Amount</dt><dd class="font-medium">${formatEdoMoney(amount)}</dd></div>
+                        <div><dt class="text-base-content/60">Submitted By</dt><dd class="font-medium">${submittedBy}</dd></div>
+                        <div><dt class="text-base-content/60">Submitted At</dt><dd class="font-medium">${createdAtDate.toLocaleString()}</dd></div>
+                    </dl>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold mb-2">Payment Receipt</h4>
+                    <a href="${receiptPath}" target="_blank" class="btn btn-outline btn-sm gap-1">
+                        <span class="icon-[tabler--eye] size-4"></span> View Receipt
+                    </a>
+                </div>
+                <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                    <button type="button" onclick="closeValidatePaymentModal()" class="btn btn-ghost">Cancel</button>
+                    <button type="button" onclick="showRejectionReasonModal(${paymentId})" class="btn btn-error">Reject</button>
+                    <button type="button" onclick="validatePayment(${paymentId}, true)" class="btn btn-success">Approve & Release eDO</button>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error displaying payment modal:', error);
+        content.innerHTML = `
+            <div class="text-center py-8">
+                <div class="size-16 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="icon-[tabler--alert-circle] size-8 text-error"></span>
+                </div>
+                <p class="text-sm font-semibold text-error mb-2">Error Loading Payment Details</p>
+                <p class="text-xs text-base-content/60">${error.message}</p>
+                <button onclick="closeValidatePaymentModal()" class="btn btn-ghost btn-sm mt-4">Close</button>
+            </div>
+        `;
+    }
+}
+
+function closeValidatePaymentModal() {
+    closeDialog('validatePaymentModal');
+}
+
+let pendingValidation = { paymentId: null, approved: null, reason: null, amount: null };
+
+function showRejectionReasonModal(paymentId) {
+    pendingValidation.paymentId = paymentId;
+
+    const amountElements = document.querySelectorAll('#validatePaymentContent dd');
+    let amount = null;
+    if (amountElements.length > 1) {
+        amount = parseEdoMoneyText(amountElements[1].textContent);
+    }
+    pendingValidation.amount = amount;
+
+    document.getElementById('rejectionReasonInput').value = '';
+    closeValidatePaymentModal();
+    openDialog('rejectionReasonModal');
+}
+
+function closeRejectionReasonModal() {
+    closeDialog('rejectionReasonModal');
+    openDialog('validatePaymentModal');
+}
+
+function submitRejectionReason() {
+    const reason = document.getElementById('rejectionReasonInput').value.trim();
+    if (!reason) {
+        alert('Please provide a rejection reason.');
+        document.getElementById('rejectionReasonInput').focus();
+        return;
+    }
+
+    closeDialog('rejectionReasonModal');
+    showConfirmationModal(pendingValidation.paymentId, false, reason, pendingValidation.amount);
+}
+
+function showConfirmationModal(paymentId, approved, reason, amount) {
+    const icon = document.getElementById('confirmationIcon');
+    const title = document.getElementById('confirmationTitle');
+    const message = document.getElementById('confirmationMessage');
+    const amountDiv = document.getElementById('confirmationAmount');
+    const amountValue = document.getElementById('confirmationAmountValue');
+    const reasonDiv = document.getElementById('confirmationReason');
+    const reasonText = document.getElementById('confirmationReasonText');
+    const actionBtn = document.getElementById('confirmationActionBtn');
+
+    pendingValidation = { paymentId, approved, reason, amount };
+
+    if (approved) {
+        icon.className = 'mx-auto flex items-center justify-center size-16 rounded-full bg-success/10 mb-4';
+        icon.innerHTML = '<span class="icon-[tabler--circle-check] size-8 text-success"></span>';
+        title.textContent = 'Approve Payment & Release eDO?';
+        message.textContent = 'This will approve the payment and automatically release the eDO to the broker. This action cannot be undone.';
+        actionBtn.className = 'btn btn-success flex-1';
+        actionBtn.textContent = 'Approve & Release';
+        if (amount) {
+            amountDiv.classList.remove('hidden');
+            amountValue.textContent = parseFloat(amount).toFixed(2);
+        } else {
+            amountDiv.classList.add('hidden');
+        }
+        reasonDiv.classList.add('hidden');
+    } else {
+        icon.className = 'mx-auto flex items-center justify-center size-16 rounded-full bg-error/10 mb-4';
+        icon.innerHTML = '<span class="icon-[tabler--circle-x] size-8 text-error"></span>';
+        title.textContent = 'Reject Payment?';
+        message.textContent = 'This will reject the payment and notify the broker. They will need to resubmit a new payment.';
+        actionBtn.className = 'btn btn-error flex-1';
+        actionBtn.textContent = 'Reject Payment';
+        amountDiv.classList.add('hidden');
+        if (reason) {
+            reasonDiv.classList.remove('hidden');
+            reasonText.textContent = reason;
+        } else {
+            reasonDiv.classList.add('hidden');
+        }
+    }
+
+    openDialog('confirmationModal');
+}
+
+function closeConfirmationModal() {
+    closeDialog('confirmationModal');
+    pendingValidation = { paymentId: null, approved: null, reason: null, amount: null };
+}
+
+function showLoadingModal() {
+    openDialog('loadingModal');
+}
+
+function closeLoadingModal() {
+    closeDialog('loadingModal');
+}
+
+function showSuccessModal(message) {
+    document.getElementById('successMessage').textContent = message;
+    openDialog('successModal');
+}
+
+function closeSuccessModal() {
+    closeDialog('successModal');
+    window.location.reload();
+}
+
+function confirmValidatePayment() {
+    const { paymentId, approved, reason } = pendingValidation;
+    if (!paymentId) {
+        alert('Invalid payment context');
+        return;
+    }
+
+    closeConfirmationModal();
+    showLoadingModal();
+
+    fetch(`/api/payments/${paymentId}/validate-edo-access`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approved: approved, reason: reason || null })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        closeLoadingModal();
+        if (data.success) {
+            showSuccessModal(approved
+                ? 'Payment approved successfully! The eDO has been released to the broker.'
+                : 'Payment rejected successfully. The broker has been notified.');
+        } else {
+            alert('Error: ' + (data.message || data.error || 'An error occurred while validating the payment'));
+        }
+    })
+    .catch(error => {
+        closeLoadingModal();
+        console.error('Validation error:', error);
+        alert('An error occurred while validating the payment');
+    });
+}
+
+function validatePayment(paymentId, approved) {
+    const amountElements = document.querySelectorAll('#validatePaymentContent dd');
+    let amount = null;
+    if (amountElements.length > 1) {
+        amount = parseEdoMoneyText(amountElements[1].textContent);
+    }
+    closeValidatePaymentModal();
+    showConfirmationModal(paymentId, approved, null, amount);
+}
+
+function releaseEDO(edoId) {
+    if (!confirm('Are you sure you want to release this eDO?')) return;
+
+    fetch(`/admin/edo-release/${edoId}/release`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) window.location.reload();
+        else alert('Error: ' + data.message);
+    })
+    .catch(() => alert('An error occurred while releasing the eDO'));
+}
+
+function submitRejection(event) {
+    event.preventDefault();
+    const edoId = document.getElementById('rejectEdoId').value;
+    const reason = document.getElementById('edoRejectReason').value;
+    if (!reason.trim()) {
+        alert('Please provide a rejection reason');
+        return;
+    }
+
+    fetch(`/admin/edo-release/${edoId}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: reason })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) window.location.reload();
+        else alert('Error: ' + data.message);
+    })
+    .catch(() => alert('An error occurred while rejecting the eDO'));
+}
+
+function approveEDOPayment(paymentId) {
+    if (!confirm('Are you sure you want to approve this EDO payment? The EDO will be automatically released.')) return;
+
+    fetch(`/admin/edo-payments/${paymentId}/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approved: true })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to validate payment'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while validating the payment');
+    });
+}
+
+function showRejectPaymentModal(paymentId) {
+    document.getElementById('rejectPaymentId').value = paymentId;
+    document.getElementById('paymentRejectionReason').value = '';
+    openDialog('rejectPaymentModal');
+}
+
+function closeRejectPaymentModal() {
+    closeDialog('rejectPaymentModal');
+}
+
+function submitPaymentRejection(event) {
+    event.preventDefault();
+    const paymentId = document.getElementById('rejectPaymentId').value;
+    const reason = document.getElementById('paymentRejectionReason').value;
+    if (!reason.trim()) {
+        alert('Please provide a rejection reason');
+        return;
+    }
+
+    fetch(`/admin/edo-payments/${paymentId}/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approved: false, reason: reason })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to validate payment'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while rejecting the payment');
+    });
+}
+</script>

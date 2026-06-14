@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Entity\Enum\PaymentStatus;
+use App\Util\DecimalString;
 use App\Repository\EDOPaymentRepository;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -33,7 +34,7 @@ class EDOPayment
     private ShippingLine $shippingLine;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
-    private float $amount;
+    private string $amount = '0.00';
 
     #[ORM\Column(type: 'string', length: 500, nullable: true)]
     private ?string $receiptFilePath = null;
@@ -119,12 +120,12 @@ class EDOPayment
 
     public function getAmount(): float
     {
-        return $this->amount;
+        return DecimalString::toFloatOrZero($this->amount);
     }
 
     public function setAmount(float $amount): self
     {
-        $this->amount = $amount;
+        $this->amount = DecimalString::fromFloat($amount) ?? '0.00';
         return $this;
     }
 

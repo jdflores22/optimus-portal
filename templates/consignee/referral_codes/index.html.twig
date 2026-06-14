@@ -3,176 +3,281 @@
 {% block title %}Referral Codes - OPTIMUS{% endblock %}
 
 {% block body %}
-<div class="max-w-7xl mx-auto">
+<div class="min-h-screen bg-base-200">
     <!-- Header -->
-    <div class="mb-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">Broker Referral Codes</h1>
-                <p class="mt-2 text-gray-600">Generate and manage referral codes for broker registration</p>
+    <div class="bg-base-100 shadow-sm">
+        <div class="px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-base-content">Broker Referral Codes</h1>
+                    <p class="text-sm text-base-content/60 mt-1">Generate and manage referral codes for broker registration</p>
+                </div>
+                <button type="button"
+                        id="guide-generate-new-code"
+                        onclick="openGenerateModal()"
+                        class="btn btn-primary gap-2">
+                    <span class="icon-[tabler--plus] size-5"></span>
+                    Generate New Code
+                </button>
             </div>
-            <button type="button" onclick="openGenerateModal()"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                Generate New Code
-            </button>
         </div>
     </div>
 
-    <!-- Referral Codes List -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-medium text-gray-900">Your Referral Codes</h3>
+    <div class="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success">
+                <span class="icon-[tabler--check] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-error">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+
+        <div class="alert alert-info">
+            <span class="icon-[tabler--info-circle] size-5"></span>
+            <span class="text-sm">Each referral code can only be used once by a single broker. Generate a new code for each broker you want to link with.</span>
         </div>
 
-        {% if codeStats|length > 0 %}
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usage</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brokers Linked</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for stat in codeStats %}
-                            {% set code = stat.code %}
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <code class="text-sm font-mono font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">{{ code.code }}</code>
-                                        <button onclick="copyToClipboard('{{ code.code }}')" class="ml-2 text-gray-400 hover:text-gray-600" title="Copy code">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                                            </svg>
+        <!-- Referral Codes List -->
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-4 border-b border-base-300">
+                <h3 class="text-sm font-semibold text-base-content">Your Referral Codes</h3>
+            </div>
+
+            {% if codeStats|length > 0 %}
+                <!-- Mobile: Card Layout -->
+                <div class="divide-y divide-base-300 lg:hidden">
+                    {% for stat in codeStats %}
+                        {% set code = stat.code %}
+                        <div class="p-4 space-y-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-xs text-base-content/60 mb-1">Code</p>
+                                    <div class="flex items-center gap-2">
+                                        <code class="text-sm font-mono font-semibold bg-base-200 px-2 py-1 rounded-lg">{{ code.code }}</code>
+                                        <button type="button"
+                                                onclick="copyToClipboard('{{ code.code }}')"
+                                                class="btn btn-text btn-circle btn-sm"
+                                                title="Copy code">
+                                            <span class="icon-[tabler--copy] size-4"></span>
                                         </button>
                                     </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    {% if code.isActive %}
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            Active
-                                        </span>
-                                    {% else %}
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                            Inactive
-                                        </span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ code.currentUses }} / {{ code.maxUses ?? 1 }}
-                                    {% if code.currentUses >= (code.maxUses ?? 1) %}
-                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                            Used
-                                        </span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ stat.broker_count }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {% if code.expiresAt %}
-                                        {{ code.expiresAt|date('M d, Y') }}
-                                        {% if code.expiresAt < date() %}
-                                            <span class="text-red-600">(Expired)</span>
+                                </div>
+                                {% include 'consignee/referral_codes/_code_status_badge.html.twig' with {
+                                    code: code,
+                                    broker_count: stat.broker_count
+                                } %}
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <p class="text-xs text-base-content/60">Usage</p>
+                                    <p class="font-medium">
+                                        {{ code.currentUses }} / {{ code.maxUses ?? 1 }}
+                                        {% if code.currentUses >= (code.maxUses ?? 1) %}
+                                            <span class="badge badge-warning badge-soft badge-xs ml-1">Used</span>
                                         {% endif %}
-                                    {% else %}
-                                        <span class="text-gray-400">Never</span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {{ code.createdAt|date('M d, Y') }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    {% if code.isActive %}
-                                        <button type="button" 
-                                                onclick="showDeactivateModal('{{ code.id }}', '{{ code.code }}')"
-                                                class="text-red-600 hover:text-red-900">
-                                            Deactivate
-                                        </button>
-                                    {% elseif code.currentUses >= (code.maxUses ?? 1) %}
-                                        <span class="text-gray-400 text-xs">Used - Cannot reactivate</span>
-                                    {% else %}
-                                        <button type="button"
-                                                onclick="showReactivateModal('{{ code.id }}', '{{ code.code }}')"
-                                                class="text-green-600 hover:text-green-900">
-                                            Reactivate
-                                        </button>
-                                    {% endif %}
-                                </td>
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-base-content/60">Brokers Linked</p>
+                                    <p class="font-medium">{{ stat.broker_count }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-base-content/60">Expires</p>
+                                    <p class="font-medium">
+                                        {% if code.expiresAt %}
+                                            {{ code.expiresAt|date('M d, Y') }}
+                                            {% if code.expiresAt < date() %}
+                                                <span class="text-error text-xs">(Expired)</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-base-content/50">Never</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-base-content/60">Created</p>
+                                    <p class="font-medium">{{ code.createdAt|date('M d, Y') }}</p>
+                                </div>
+                            </div>
+
+                            <div class="pt-1">
+                                {% if code.isActive %}
+                                    <button type="button"
+                                            onclick="showDeactivateModal('{{ code.id }}', '{{ code.code }}')"
+                                            class="btn btn-error btn-soft btn-sm w-full">
+                                        Deactivate
+                                    </button>
+                                {% elseif code.currentUses >= (code.maxUses ?? 1) %}
+                                    <span class="text-xs text-base-content/50">Used — cannot reactivate</span>
+                                {% else %}
+                                    <button type="button"
+                                            onclick="showReactivateModal('{{ code.id }}', '{{ code.code }}')"
+                                            class="btn btn-success btn-soft btn-sm w-full">
+                                        Reactivate
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Desktop: Table -->
+                <div class="hidden lg:block overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Status</th>
+                                <th>Usage</th>
+                                <th>Brokers Linked</th>
+                                <th>Expires</th>
+                                <th>Created</th>
+                                <th class="text-end">Actions</th>
                             </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <div class="px-6 py-12 text-center">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/>
-                </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">No referral codes</h3>
-                <p class="mt-1 text-sm text-gray-500">Get started by generating your first referral code.</p>
-                <div class="mt-6">
-                    <button type="button" onclick="openGenerateModal()"
-                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                        </thead>
+                        <tbody>
+                            {% for stat in codeStats %}
+                                {% set code = stat.code %}
+                                <tr class="hover">
+                                    <td>
+                                        <div class="flex items-center gap-2">
+                                            <code class="text-sm font-mono font-semibold bg-base-200 px-2 py-1 rounded-lg">{{ code.code }}</code>
+                                            <button type="button"
+                                                    onclick="copyToClipboard('{{ code.code }}')"
+                                                    class="btn btn-text btn-circle btn-sm"
+                                                    title="Copy code">
+                                                <span class="icon-[tabler--copy] size-4"></span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% include 'consignee/referral_codes/_code_status_badge.html.twig' with {
+                                            code: code,
+                                            broker_count: stat.broker_count
+                                        } %}
+                                    </td>
+                                    <td>
+                                        {{ code.currentUses }} / {{ code.maxUses ?? 1 }}
+                                        {% if code.currentUses >= (code.maxUses ?? 1) %}
+                                            <span class="badge badge-warning badge-soft badge-xs ml-1">Used</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ stat.broker_count }}</td>
+                                    <td>
+                                        {% if code.expiresAt %}
+                                            <div class="text-sm">{{ code.expiresAt|date('M d, Y') }}</div>
+                                            {% if code.expiresAt < date() %}
+                                                <div class="text-xs text-error">Expired</div>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-base-content/50">Never</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="text-sm">{{ code.createdAt|date('M d, Y') }}</div>
+                                    </td>
+                                    <td class="text-end">
+                                        {% if code.isActive %}
+                                            <button type="button"
+                                                    onclick="showDeactivateModal('{{ code.id }}', '{{ code.code }}')"
+                                                    class="btn btn-error btn-soft btn-sm">
+                                                Deactivate
+                                            </button>
+                                        {% elseif code.currentUses >= (code.maxUses ?? 1) %}
+                                            <span class="text-xs text-base-content/50">Used — cannot reactivate</span>
+                                        {% else %}
+                                            <button type="button"
+                                                    onclick="showReactivateModal('{{ code.id }}', '{{ code.code }}')"
+                                                    class="btn btn-success btn-soft btn-sm">
+                                                Reactivate
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="card-body items-center text-center py-16">
+                    <div class="size-20 bg-base-200 rounded-full flex items-center justify-center mb-6">
+                        <span class="icon-[tabler--ticket] size-10 text-base-content/40"></span>
+                    </div>
+                    <h3 class="text-lg font-bold text-base-content mb-2">No referral codes</h3>
+                    <p class="text-sm text-base-content/60 mb-6">Get started by generating your first referral code.</p>
+                    <button type="button"
+                            onclick="openGenerateModal()"
+                            class="btn btn-primary gap-2">
+                        <span class="icon-[tabler--plus] size-4"></span>
                         Generate Code
                     </button>
                 </div>
-            </div>
-        {% endif %}
+            {% endif %}
+        </div>
     </div>
 </div>
 
-<!-- Generate Code Modal - Uses fixed positioning to overlay entire viewport -->
-<div id="generateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 items-center justify-center hidden" style="z-index: 9999;">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+<div id="copyToastContainer" class="fixed top-20 end-4 z-[10020] space-y-2 pointer-events-none"></div>
+{% endblock %}
+
+{% block app_main_overlays %}
+    {% if show_onboarding_guide|default(false) %}
+        {% include 'consignee/_onboarding_guide_overlay.html.twig' %}
+    {% endif %}
+{% endblock %}
+
+{% block page_modals %}
+<!-- Generate Code Modal -->
+<div id="generateModal"
+     class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="generateModalTitle">
+    <div id="generateModalBackdrop" class="absolute inset-0 bg-black/60" onclick="closeGenerateModal()"></div>
+    <div id="guide-generate-referral-modal" class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10">
         <form method="POST" action="{{ path('consignee_generate_code') }}">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('generate_referral_code') }}">
-            
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900">Generate Referral Code</h3>
+
+            <div class="flex justify-between items-center p-6 pb-0">
+                <h3 id="generateModalTitle" class="text-lg font-bold">Generate Referral Code</h3>
+                <button type="button" onclick="closeGenerateModal()" class="btn btn-text btn-circle btn-sm" aria-label="Close">
+                    <span class="icon-[tabler--x] size-5"></span>
+                </button>
             </div>
-            
-            <div class="px-6 py-4 space-y-4">
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm text-blue-700">
-                                Each referral code can only be used once by a single broker. Generate a new code for each broker you want to link with.
-                            </p>
-                        </div>
-                    </div>
+
+            <div class="p-6 space-y-4">
+                <div class="alert alert-info">
+                    <span class="icon-[tabler--info-circle] size-5"></span>
+                    <span class="text-sm">Each referral code can only be used once by a single broker. Generate a new code for each broker you want to link with.</span>
                 </div>
-                
-                <div>
-                    <label for="expires_at" class="block text-sm font-medium text-gray-700 mb-1">
-                        Expiry Date (Optional)
+
+                <div class="form-control">
+                    <label for="expires_at" class="label">
+                        <span class="label-text">Expiry Date (Optional)</span>
                     </label>
-                    <input type="date" name="expires_at" id="expires_at" min="{{ 'now'|date('Y-m-d') }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <p class="mt-1 text-sm text-gray-500">Leave empty for no expiration</p>
+                    <input type="date"
+                           name="expires_at"
+                           id="expires_at"
+                           min="{{ 'now'|date('Y-m-d') }}"
+                           class="input input-bordered w-full">
+                    <label class="label">
+                        <span class="label-text-alt">Leave empty for no expiration</span>
+                    </label>
                 </div>
             </div>
-            
-            <div class="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end space-x-3">
-                <button type="button" onclick="closeGenerateModal()"
-                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+
+            <div class="flex justify-end gap-3 p-6 pt-0">
+                <button type="button" onclick="closeGenerateModal()" class="btn btn-ghost">
                     Cancel
                 </button>
-                <button type="submit"
-                        class="px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                <button type="submit" class="btn btn-primary gap-2">
+                    <span class="icon-[tabler--ticket] size-4"></span>
                     Generate Code
                 </button>
             </div>
@@ -180,129 +285,37 @@
     </div>
 </div>
 
-<script>
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(function() {
-        alert('Code copied to clipboard!');
-    }, function(err) {
-        console.error('Could not copy text: ', err);
-    });
-}
-
-function openGenerateModal() {
-    const modal = document.getElementById('generateModal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    document.body.style.overflow = 'hidden'; // Prevent background scrolling
-}
-
-function closeGenerateModal() {
-    const modal = document.getElementById('generateModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    document.body.style.overflow = ''; // Restore scrolling
-}
-
-// Deactivate Modal Functions
-function showDeactivateModal(codeId, codeText) {
-    document.getElementById('deactivateCodeId').value = codeId;
-    document.getElementById('deactivateCodeDisplay').textContent = codeText;
-    const modal = document.getElementById('deactivateModal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeDeactivateModal() {
-    const modal = document.getElementById('deactivateModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    document.body.style.overflow = '';
-}
-
-function confirmDeactivate() {
-    document.getElementById('deactivateForm').submit();
-}
-
-// Reactivate Modal Functions
-function showReactivateModal(codeId, codeText) {
-    document.getElementById('reactivateCodeId').value = codeId;
-    document.getElementById('reactivateCodeDisplay').textContent = codeText;
-    const modal = document.getElementById('reactivateModal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeReactivateModal() {
-    const modal = document.getElementById('reactivateModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    document.body.style.overflow = '';
-}
-
-function confirmReactivate() {
-    document.getElementById('reactivateForm').submit();
-}
-
-// Close modal on escape key
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        closeGenerateModal();
-        closeDeactivateModal();
-        closeReactivateModal();
-    }
-});
-
-// Close modal when clicking outside
-document.getElementById('generateModal')?.addEventListener('click', function(event) {
-    if (event.target === this) {
-        closeGenerateModal();
-    }
-});
-
-document.getElementById('deactivateModal')?.addEventListener('click', function(event) {
-    if (event.target === this) {
-        closeDeactivateModal();
-    }
-});
-
-document.getElementById('reactivateModal')?.addEventListener('click', function(event) {
-    if (event.target === this) {
-        closeReactivateModal();
-    }
-});
-</script>
-
 <!-- Deactivate Confirmation Modal -->
-<div id="deactivateModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center" style="z-index: 9999;">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div class="p-6">
-            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
-                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
+<div id="deactivateModal"
+     class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true">
+    <div class="absolute inset-0 bg-black/60" onclick="closeDeactivateModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6">
+        <div class="text-center">
+            <div class="size-14 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="icon-[tabler--alert-triangle] size-7 text-error"></span>
             </div>
-            <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Deactivate Referral Code</h3>
-            <p class="text-sm text-gray-600 text-center mb-4">
+            <h3 class="text-lg font-bold mb-2">Deactivate Referral Code</h3>
+            <p class="text-sm text-base-content/70 mb-4">
                 Are you sure you want to deactivate this code?
             </p>
-            <div class="bg-gray-50 rounded-lg p-3 mb-4">
-                <p class="text-xs text-gray-500 mb-1">Code:</p>
-                <p id="deactivateCodeDisplay" class="text-lg font-mono font-bold text-gray-900"></p>
+            <div class="bg-base-200 rounded-lg p-3 mb-4 text-left">
+                <p class="text-xs text-base-content/60 mb-1">Code</p>
+                <p id="deactivateCodeDisplay" class="text-lg font-mono font-bold"></p>
             </div>
-            <p class="text-xs text-red-600 text-center mb-6">
+            <p class="text-xs text-error mb-6">
                 This code will no longer be usable by brokers.
             </p>
-            <div class="flex space-x-3">
-                <button type="button" 
+            <div class="flex gap-3">
+                <button type="button"
                         onclick="closeDeactivateModal()"
-                        class="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                        class="btn btn-ghost flex-1">
                     Cancel
                 </button>
-                <button type="button" 
+                <button type="button"
                         onclick="confirmDeactivate()"
-                        class="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700">
+                        class="btn btn-error flex-1">
                     Deactivate
                 </button>
             </div>
@@ -311,34 +324,36 @@ document.getElementById('reactivateModal')?.addEventListener('click', function(e
 </div>
 
 <!-- Reactivate Confirmation Modal -->
-<div id="reactivateModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center" style="z-index: 9999;">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div class="p-6">
-            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-green-100 rounded-full mb-4">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
+<div id="reactivateModal"
+     class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true">
+    <div class="absolute inset-0 bg-black/60" onclick="closeReactivateModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6">
+        <div class="text-center">
+            <div class="size-14 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="icon-[tabler--circle-check] size-7 text-success"></span>
             </div>
-            <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Reactivate Referral Code</h3>
-            <p class="text-sm text-gray-600 text-center mb-4">
+            <h3 class="text-lg font-bold mb-2">Reactivate Referral Code</h3>
+            <p class="text-sm text-base-content/70 mb-4">
                 Are you sure you want to reactivate this code?
             </p>
-            <div class="bg-gray-50 rounded-lg p-3 mb-4">
-                <p class="text-xs text-gray-500 mb-1">Code:</p>
-                <p id="reactivateCodeDisplay" class="text-lg font-mono font-bold text-gray-900"></p>
+            <div class="bg-base-200 rounded-lg p-3 mb-4 text-left">
+                <p class="text-xs text-base-content/60 mb-1">Code</p>
+                <p id="reactivateCodeDisplay" class="text-lg font-mono font-bold"></p>
             </div>
-            <p class="text-xs text-green-600 text-center mb-6">
+            <p class="text-xs text-success mb-6">
                 This code will become usable again by brokers.
             </p>
-            <div class="flex space-x-3">
-                <button type="button" 
+            <div class="flex gap-3">
+                <button type="button"
                         onclick="closeReactivateModal()"
-                        class="flex-1 px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                        class="btn btn-ghost flex-1">
                     Cancel
                 </button>
-                <button type="button" 
+                <button type="button"
                         onclick="confirmReactivate()"
-                        class="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700">
+                        class="btn btn-success flex-1">
                     Reactivate
                 </button>
             </div>
@@ -347,36 +362,117 @@ document.getElementById('reactivateModal')?.addEventListener('click', function(e
 </div>
 
 <!-- Hidden Forms -->
-<form method="POST" id="deactivateForm" style="display: none;">
+<form method="POST" id="deactivateForm" class="hidden">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token('deactivate_referral_code') }}">
     <input type="hidden" name="code_id" id="deactivateCodeId">
 </form>
 
-<form method="POST" id="reactivateForm" style="display: none;">
+<form method="POST" id="reactivateForm" class="hidden">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token('reactivate_referral_code') }}">
     <input type="hidden" name="code_id" id="reactivateCodeId">
 </form>
+{% endblock %}
 
-<script>
-// Update form actions dynamically
-function showDeactivateModal(codeId, codeText) {
-    document.getElementById('deactivateCodeId').value = codeId;
-    document.getElementById('deactivateCodeDisplay').textContent = codeText;
-    document.getElementById('deactivateForm').action = '{{ path('consignee_deactivate_code', {id: '__ID__'}) }}'.replace('__ID__', codeId);
-    const modal = document.getElementById('deactivateModal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    document.body.style.overflow = 'hidden';
-}
+{% block page_scripts %}
+    {{ parent() }}
+    {% include 'consignee/_onboarding_guide_scripts.html.twig' %}
+    <style>
+        #generateModal.guide-backdrop-hidden #generateModalBackdrop {
+            background-color: transparent !important;
+        }
+    </style>
+    <script>
+    function showToast(message, type) {
+        const container = document.getElementById('copyToastContainer');
+        if (!container) {
+            return;
+        }
 
-function showReactivateModal(codeId, codeText) {
-    document.getElementById('reactivateCodeId').value = codeId;
-    document.getElementById('reactivateCodeDisplay').textContent = codeText;
-    document.getElementById('reactivateForm').action = '{{ path('consignee_reactivate_code', {id: '__ID__'}) }}'.replace('__ID__', codeId);
-    const modal = document.getElementById('reactivateModal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    document.body.style.overflow = 'hidden';
-}
-</script>
+        const typeClass = type === 'error' ? 'alert-error' : 'alert-success';
+        const icon = type === 'error' ? 'icon-[tabler--alert-circle]' : 'icon-[tabler--check]';
+        const toast = document.createElement('div');
+        toast.className = 'alert ' + typeClass + ' shadow-lg pointer-events-auto';
+        toast.innerHTML = '<span class="' + icon + ' size-5"></span><span>' + message + '</span>';
+        container.appendChild(toast);
+
+        window.setTimeout(function () {
+            toast.remove();
+        }, 2500);
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function () {
+            showToast('Code copied to clipboard!', 'success');
+        }, function (err) {
+            console.error('Could not copy text: ', err);
+            showToast('Could not copy code', 'error');
+        });
+    }
+
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        if (!modal) {
+            return;
+        }
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        if (!modal) {
+            return;
+        }
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+    }
+
+    function openGenerateModal() {
+        openModal('generateModal');
+    }
+
+    function closeGenerateModal() {
+        closeModal('generateModal');
+    }
+
+    function showDeactivateModal(codeId, codeText) {
+        document.getElementById('deactivateCodeId').value = codeId;
+        document.getElementById('deactivateCodeDisplay').textContent = codeText;
+        document.getElementById('deactivateForm').action = '{{ path('consignee_deactivate_code', {id: '__ID__'}) }}'.replace('__ID__', codeId);
+        openModal('deactivateModal');
+    }
+
+    function closeDeactivateModal() {
+        closeModal('deactivateModal');
+    }
+
+    function confirmDeactivate() {
+        document.getElementById('deactivateForm').submit();
+    }
+
+    function showReactivateModal(codeId, codeText) {
+        document.getElementById('reactivateCodeId').value = codeId;
+        document.getElementById('reactivateCodeDisplay').textContent = codeText;
+        document.getElementById('reactivateForm').action = '{{ path('consignee_reactivate_code', {id: '__ID__'}) }}'.replace('__ID__', codeId);
+        openModal('reactivateModal');
+    }
+
+    function closeReactivateModal() {
+        closeModal('reactivateModal');
+    }
+
+    function confirmReactivate() {
+        document.getElementById('reactivateForm').submit();
+    }
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeGenerateModal();
+            closeDeactivateModal();
+            closeReactivateModal();
+        }
+    });
+    </script>
 {% endblock %}

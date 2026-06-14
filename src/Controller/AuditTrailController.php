@@ -128,6 +128,13 @@ class AuditTrailController extends AbstractController
         ]);
     }
 
+    #[Route('/edo', name: 'audit_trail_edo_search', methods: ['GET'])]
+    #[IsGranted('ROLE_SYSTEM_ADMIN')]
+    public function edoAuditSearch(): Response
+    {
+        return $this->render('audit/edo_trail.html.twig');
+    }
+
     #[Route('/export/manifest/{id}', name: 'audit_trail_export', methods: ['GET'])]
     #[IsGranted('ROLE_SYSTEM_ADMIN')]
     public function exportManifestAuditTrail(int $id, Request $request): Response

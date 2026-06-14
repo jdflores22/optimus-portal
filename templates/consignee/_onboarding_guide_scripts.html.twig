@@ -1,0 +1,34 @@
+{% if show_onboarding_guide|default(false) %}
+<script src="{{ asset('js/consignee-onboarding-guide.js') }}?v={{ 'now'|date('U') }}"></script>
+<script>
+    window.consigneeOnboardingGuideConfig = {
+        enabled: true,
+        steps: {{ onboarding_guide_steps|default([])|json_encode|raw }},
+        completeStepUrl: {{ path('consignee_guide_complete_step')|json_encode|raw }},
+        referralCodesUrl: {{ path('consignee_brokers')|json_encode|raw }},
+        manifestListUrl: {{ path('consignee_manifest_list')|json_encode|raw }},
+        dashboardUrl: {{ path('app_consignee_dashboard')|json_encode|raw }},
+        startAfterWelcome: {{ start_guide_after_welcome|default(false) ? 'true' : 'false' }}
+    };
+</script>
+{% if start_onboarding_guide|default(false) and not start_guide_after_welcome|default(false) %}
+<script>
+    window.addEventListener('load', function () {
+        const config = window.consigneeOnboardingGuideConfig;
+        if (!config || !config.enabled || !config.steps || config.steps.length === 0) {
+            return;
+        }
+
+        const guide = typeof initConsigneeOnboardingGuide === 'function'
+            ? initConsigneeOnboardingGuide(config)
+            : null;
+
+        if (guide) {
+            window.setTimeout(function () {
+                guide.start();
+            }, 400);
+        }
+    });
+</script>
+{% endif %}
+{% endif %}

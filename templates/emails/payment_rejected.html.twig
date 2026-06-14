@@ -15,7 +15,7 @@
         <div style="background-color: #f8d7da; padding: 15px; border-left: 4px solid #dc3545; margin: 20px 0;">
             <p><strong>Manifest Number:</strong> {{ manifest.manifestNumber }}</p>
             <p><strong>Payment Type:</strong> {{ payment.paymentType.value|replace({'_': ' '})|title }}</p>
-            <p><strong>Submitted Amount:</strong> ₱{{ payment.amount|number_format(2) }}</p>
+            <p><strong>Submitted Amount:</strong> {{ payment|format_payment }}</p>
             <p><strong>Rejection Reason:</strong> {{ reason }}</p>
         </div>
         

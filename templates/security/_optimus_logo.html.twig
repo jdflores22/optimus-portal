@@ -1,0 +1,6 @@
+{% include 'components/optimus_logo.html.twig' with {
+    size: variant == 'dark-panel' ? 'xl' : 'lg',
+    variant: variant == 'dark-panel' ? 'card' : 'plain',
+    show_tagline: true,
+    align: variant == 'dark-panel' ? 'start' : 'center',
+} only %}

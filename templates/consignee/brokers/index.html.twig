@@ -1,219 +1,228 @@
-{% extends 'base.html.twig' %}
-
-{% block title %}My Brokers - OPTIMUS{% endblock %}
-
-{% block body %}
-<div class="min-h-screen bg-base-200">
-    <!-- Header -->
-    <div class="bg-base-100 shadow-sm">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="py-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h1 class="text-2xl font-bold">My Brokers</h1>
-                        <p class="mt-1 text-sm text-base-content/70">Manage your approved brokers and their assigned manifests</p>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <div class="text-right">
-                            <p class="text-sm text-base-content/60">Total Brokers</p>
-                            <p class="text-2xl font-bold">{{ totalBrokers }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="card bg-base-100 shadow-sm">
-                <div class="card-body">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="avatar placeholder">
-                                <div class="w-12 h-12 bg-success/20 text-success rounded-lg">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-base-content/60">Active Brokers</p>
-                            <p class="text-2xl font-bold">{{ activeCount }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card bg-base-100 shadow-sm">
-                <div class="card-body">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="avatar placeholder">
-                                <div class="w-12 h-12 bg-error/20 text-error rounded-lg">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-base-content/60">Suspended Brokers</p>
-                            <p class="text-2xl font-bold">{{ suspendedCount }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Active Brokers -->
-        <div class="card bg-base-100 shadow-sm mb-6">
-            <div class="card-body">
-                <h2 class="card-title">Active Brokers</h2>
-                
-                {% if activeBrokers|length > 0 %}
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                        {% for brokerData in activeBrokers %}
-                            <div class="card card-compact bg-base-100 shadow hover:shadow-lg transition-all">
-                                <div class="card-body">
-                                    <div class="flex items-start justify-between mb-3">
-                                        <div class="flex items-center">
-                                            <div class="avatar placeholder">
-                                                <div class="w-10 h-10 bg-primary/20 text-primary rounded-full">
-                                                    <span class="font-semibold text-sm">
-                                                        {{ brokerData.broker.fullName|slice(0, 2)|upper }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div class="ml-3">
-                                                <h3 class="text-sm font-semibold">{{ brokerData.broker.fullName }}</h3>
-                                                <span class="badge badge-success badge-sm">Active</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="space-y-2 mb-3">
-                                        <div class="flex items-center text-sm">
-                                            <svg class="w-4 h-4 mr-2 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                                            </svg>
-                                            <a href="mailto:{{ brokerData.broker.email }}" class="link link-primary">
-                                                {{ brokerData.broker.email }}
-                                            </a>
-                                        </div>
-                                        <div class="flex items-center text-xs text-base-content/70">
-                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                            </svg>
-                                            {{ brokerData.manifestCount }} manifest(s) assigned
-                                        </div>
-                                        <div class="flex items-center text-xs text-base-content/70">
-                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                            </svg>
-                                            Linked since {{ brokerData.relationship.createdAt|date('M j, Y') }}
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="divider my-2"></div>
-                                    
-                                    <div class="text-xs text-base-content/60">
-                                        <strong>Contact:</strong> Click email above to send message
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="text-center py-12">
-                        <svg class="mx-auto h-12 w-12 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
-                        <h3 class="mt-2 text-sm font-medium">No active brokers</h3>
-                        <p class="mt-1 text-sm text-base-content/60">Use a referral code to link with a broker.</p>
-                        <div class="mt-6">
-                            <a href="{{ path('consignee_referral_codes') }}" class="btn btn-primary">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                                </svg>
-                                Add Broker
-                            </a>
-                        </div>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Suspended Brokers -->
-        {% if suspendedBrokers|length > 0 %}
-        <div class="card bg-base-100 shadow-sm">
-            <div class="card-body">
-                <div class="alert alert-error mb-4">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                    </svg>
-                    <div>
-                        <h3 class="font-bold">Suspended Brokers</h3>
-                        <div class="text-sm">These brokers are currently suspended and cannot be assigned to new manifests</div>
-                    </div>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {% for brokerData in suspendedBrokers %}
-                        <div class="card card-compact bg-error/5 shadow">
-                            <div class="card-body">
-                                <div class="flex items-start justify-between mb-3">
-                                    <div class="flex items-center">
-                                        <div class="avatar placeholder">
-                                            <div class="w-10 h-10 bg-error/20 text-error rounded-full">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                                                </svg>
-                                            </div>
-                                        </div>
-                                        <div class="ml-3">
-                                            <h3 class="text-sm font-semibold">{{ brokerData.broker.fullName }}</h3>
-                                            <span class="badge badge-error badge-sm">Suspended</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="space-y-2 mb-3">
-                                    <div class="flex items-center text-sm">
-                                        <svg class="w-4 h-4 mr-2 text-base-content/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                                        </svg>
-                                        <a href="mailto:{{ brokerData.broker.email }}" class="link link-primary">
-                                            {{ brokerData.broker.email }}
-                                        </a>
-                                    </div>
-                                    <div class="flex items-center text-xs text-base-content/70">
-                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                        </svg>
-                                        {{ brokerData.manifestCount }} manifest(s) assigned
-                                    </div>
-                                </div>
-                                
-                                {% if brokerData.manifestCount > 0 %}
-                                <div class="divider my-2"></div>
-                                <div class="alert alert-warning py-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    <span class="text-xs">Transfer manifests to another broker</span>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-        {% endif %}
-    </div>
-</div>
-{% endblock %}
+{% extends 'base.html.twig' %}
+
+{% block title %}My Brokers - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <div class="bg-base-100 shadow-sm">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-base-content">My Brokers</h1>
+                    <p class="text-sm text-base-content/60 mt-1">Manage linked brokers and referral codes</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-right hidden sm:block">
+                        <p class="text-xs text-base-content/60">Total Brokers</p>
+                        <p class="text-xl font-bold">{{ totalBrokers }}</p>
+                    </div>
+                    <button type="button"
+                            id="guide-generate-new-code"
+                            onclick="openGenerateModal()"
+                            class="btn btn-primary gap-2">
+                        <span class="icon-[tabler--plus] size-5"></span>
+                        Generate New Code
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success">
+                <span class="icon-[tabler--check] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-error">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <div class="flex items-center gap-4">
+                        <div class="avatar placeholder">
+                            <div class="size-12 bg-success/20 text-success rounded-lg flex items-center justify-center">
+                                <span class="icon-[tabler--circle-check] size-6"></span>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-base-content/60">Active Brokers</p>
+                            <p class="text-2xl font-bold">{{ activeCount }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body">
+                    <div class="flex items-center gap-4">
+                        <div class="avatar placeholder">
+                            <div class="size-12 bg-error/20 text-error rounded-lg flex items-center justify-center">
+                                <span class="icon-[tabler--alert-triangle] size-6"></span>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-base-content/60">Suspended Brokers</p>
+                            <p class="text-2xl font-bold">{{ suspendedCount }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% include 'consignee/referral_codes/_section.html.twig' %}
+
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Active Brokers</h2>
+
+                {% if activeBrokers|length > 0 %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                        {% for brokerData in activeBrokers %}
+                            <div class="card card-compact bg-base-100 shadow hover:shadow-lg transition-all">
+                                <div class="card-body">
+                                    <div class="flex items-start justify-between mb-3">
+                                        <div class="flex items-center">
+                                            <div class="avatar placeholder">
+                                                <div class="size-10 bg-primary/20 text-primary rounded-full flex items-center justify-center">
+                                                    <span class="font-semibold text-sm">
+                                                        {{ brokerData.broker.fullName|slice(0, 2)|upper }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="ml-3">
+                                                <h3 class="text-sm font-semibold">{{ brokerData.broker.fullName }}</h3>
+                                                <span class="badge badge-success badge-sm">Active</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-2 mb-3">
+                                        <div class="flex items-center text-sm">
+                                            <span class="icon-[tabler--mail] size-4 mr-2 text-base-content/60"></span>
+                                            <a href="mailto:{{ brokerData.broker.email }}" class="link link-primary">
+                                                {{ brokerData.broker.email }}
+                                            </a>
+                                        </div>
+                                        <div class="flex items-center text-xs text-base-content/70">
+                                            <span class="icon-[tabler--file-text] size-4 mr-2"></span>
+                                            {{ brokerData.manifestCount }} manifest(s) assigned
+                                        </div>
+                                        <div class="flex items-center text-xs text-base-content/70">
+                                            <span class="icon-[tabler--calendar] size-4 mr-2"></span>
+                                            Linked since {{ brokerData.relationship.createdAt|date('M j, Y') }}
+                                        </div>
+                                    </div>
+
+                                    <div class="divider my-2"></div>
+
+                                    <div class="text-xs text-base-content/60">
+                                        <strong>Contact:</strong> Click email above to send message
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <div class="size-16 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="icon-[tabler--users] size-8 text-base-content/40"></span>
+                        </div>
+                        <h3 class="text-sm font-medium">No active brokers</h3>
+                        <p class="mt-1 text-sm text-base-content/60">Generate a referral code and share it with a broker to link.</p>
+                        <div class="mt-6">
+                            <button type="button" onclick="openGenerateModal()" class="btn btn-primary gap-2">
+                                <span class="icon-[tabler--plus] size-5"></span>
+                                Generate Referral Code
+                            </button>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if suspendedBrokers|length > 0 %}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body">
+                <div class="alert alert-error mb-4">
+                    <span class="icon-[tabler--alert-triangle] size-5"></span>
+                    <div>
+                        <h3 class="font-bold">Suspended Brokers</h3>
+                        <div class="text-sm">These brokers are currently suspended and cannot be assigned to new manifests</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for brokerData in suspendedBrokers %}
+                        <div class="card card-compact bg-error/5 shadow">
+                            <div class="card-body">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div class="flex items-center">
+                                        <div class="avatar placeholder">
+                                            <div class="size-10 bg-error/20 text-error rounded-full flex items-center justify-center">
+                                                <span class="icon-[tabler--alert-triangle] size-5"></span>
+                                            </div>
+                                        </div>
+                                        <div class="ml-3">
+                                            <h3 class="text-sm font-semibold">{{ brokerData.broker.fullName }}</h3>
+                                            <span class="badge badge-error badge-sm">Suspended</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2 mb-3">
+                                    <div class="flex items-center text-sm">
+                                        <span class="icon-[tabler--mail] size-4 mr-2 text-base-content/60"></span>
+                                        <a href="mailto:{{ brokerData.broker.email }}" class="link link-primary">
+                                            {{ brokerData.broker.email }}
+                                        </a>
+                                    </div>
+                                    <div class="flex items-center text-xs text-base-content/70">
+                                        <span class="icon-[tabler--file-text] size-4 mr-2"></span>
+                                        {{ brokerData.manifestCount }} manifest(s) assigned
+                                    </div>
+                                </div>
+
+                                {% if brokerData.manifestCount > 0 %}
+                                <div class="divider my-2"></div>
+                                <div class="alert alert-warning py-2">
+                                    <span class="icon-[tabler--info-circle] size-4"></span>
+                                    <span class="text-xs">Transfer manifests to another broker</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div id="copyToastContainer" class="fixed top-20 end-4 z-[10020] space-y-2 pointer-events-none"></div>
+{% endblock %}
+
+{% block app_main_overlays %}
+    {% if show_onboarding_guide|default(false) %}
+        {% include 'consignee/_onboarding_guide_overlay.html.twig' %}
+    {% endif %}
+{% endblock %}
+
+{% block page_modals %}
+    {% include 'consignee/referral_codes/_modals.html.twig' %}
+{% endblock %}
+
+{% block page_scripts %}
+    {{ parent() }}
+    {% if show_onboarding_guide|default(false) %}
+        {% include 'consignee/_onboarding_guide_scripts.html.twig' %}
+    {% endif %}
+    {% include 'consignee/referral_codes/_scripts.html.twig' %}
+{% endblock %}

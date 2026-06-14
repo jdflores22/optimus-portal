@@ -1,227 +1,250 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 
-{% block title %}Edit Container Type - OPTIMUS{% endblock %}
+{% block title %}Edit Container Type — {{ containerType.name }} - OPTIMUS{% endblock %}
 
-{% block body %}
-<div class="container mx-auto px-4 py-6">
-    <!-- Header -->
-    <div class="mb-6">
-        <div class="flex items-center mb-2">
-            <a href="{{ path('admin_container_types_index') }}" class="text-blue-600 hover:text-blue-800 mr-2">
-                <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                </svg>
-            </a>
-            <h1 class="text-2xl font-bold text-gray-900">Edit Container Type</h1>
+{% block content %}
+<div class="space-y-6">
+<!-- Header -->
+    <div class="bg-base-100 shadow-sm">
+        <div class="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="min-w-0">
+                    <div class="breadcrumbs text-xs mb-1">
+                        <ul>
+                            <li><a href="{{ path('admin_container_types_index') }}">Container Types</a></li>
+                            <li>{{ containerType.name }}</li>
+                            <li>Edit</li>
+                        </ul>
+                    </div>
+                    <h1 class="text-xl sm:text-2xl font-bold text-base-content truncate">Edit Container Type</h1>
+                    <p class="text-sm text-base-content/60 mt-1">Update container type information and settings</p>
+                </div>
+                <a href="{{ path('admin_container_types_index') }}" class="btn btn-ghost btn-sm gap-2 w-full sm:w-auto">
+                    <span class="icon-[tabler--arrow-left] size-4"></span>
+                    Back to List
+                </a>
+            </div>
         </div>
-        <p class="text-sm text-gray-600">Update container type information</p>
     </div>
 
-    <!-- Flash Messages -->
-    {% for message in app.flashes('success') %}
-        <div class="mb-4 px-4 py-3 rounded-lg bg-green-100 text-green-800">
-            {{ message }}
-        </div>
-    {% endfor %}
-    {% for message in app.flashes('error') %}
-        <div class="mb-4 px-4 py-3 rounded-lg bg-red-100 text-red-800">
-            {{ message }}
-        </div>
-    {% endfor %}
-
-    <!-- Edit Form -->
-    <div class="bg-white shadow-md rounded-lg p-6 max-w-2xl">
-        <form id="containerTypeForm" method="POST" action="{{ path('admin_container_types_update', {id: containerType.id}) }}">
-            <div class="space-y-6">
-                <!-- Name -->
-                <div>
-                    <label for="containerTypeName" class="block text-sm font-medium text-gray-700 mb-2">
-                        Name <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" 
-                           id="containerTypeName" 
-                           name="name" 
-                           value="{{ containerType.name }}"
-                           required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                           placeholder="e.g., Dry Container">
-                    <p class="mt-1 text-sm text-gray-500">Enter the display name for this container type</p>
+    <div class="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+        <div class="max-w-2xl mx-auto">
+            {% for message in app.flashes('success') %}
+                <div class="alert alert-success mb-6">
+                    <span class="icon-[tabler--check] size-5"></span>
+                    <span>{{ message }}</span>
                 </div>
-
-                <!-- Code -->
-                <div>
-                    <label for="containerTypeCode" class="block text-sm font-medium text-gray-700 mb-2">
-                        Code <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" 
-                           id="containerTypeCode" 
-                           name="code" 
-                           value="{{ containerType.code }}"
-                           required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                           placeholder="e.g., DRY">
-                    <p class="mt-1 text-sm text-gray-500">Enter a unique code identifier (e.g., DRY, REEFER, OPEN_TOP)</p>
+            {% endfor %}
+            {% for message in app.flashes('error') %}
+                <div class="alert alert-error mb-6">
+                    <span class="icon-[tabler--alert-circle] size-5"></span>
+                    <span>{{ message }}</span>
                 </div>
+            {% endfor %}
 
-                <!-- Description -->
-                <div>
-                    <label for="containerTypeDescription" class="block text-sm font-medium text-gray-700 mb-2">
-                        Description
-                    </label>
-                    <textarea id="containerTypeDescription" 
-                              name="description" 
-                              rows="3"
-                              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              placeholder="e.g., Standard dry cargo container">{{ containerType.description }}</textarea>
-                    <p class="mt-1 text-sm text-gray-500">Optional detailed description of this container type</p>
-                </div>
-
-                <!-- Container Type Status Toggle -->
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-700">Container Type Status</p>
-                            <p class="text-xs text-gray-500 mt-1">Activate or deactivate this container type</p>
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-6 sm:p-8">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="size-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--box] size-6 text-primary"></span>
                         </div>
-                        <div class="flex items-center space-x-3">
-                            <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full {{ containerType.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}" id="statusBadge">
-                                {{ containerType.isActive ? 'Active' : 'Inactive' }}
-                            </span>
-                            <button type="button" 
-                                    onclick="toggleContainerTypeStatus()"
-                                    id="toggleStatusBtn"
-                                    class="px-4 py-2 {{ containerType.isActive ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-green-600 hover:bg-green-700' }} text-white text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors">
-                                {{ containerType.isActive ? 'Deactivate' : 'Activate' }}
+                        <div class="min-w-0">
+                            <h2 class="text-lg font-semibold text-base-content truncate">{{ containerType.name }}</h2>
+                            <div class="flex flex-wrap items-center gap-2 mt-1">
+                                <span class="badge badge-primary badge-sm font-mono">{{ containerType.code }}</span>
+                                <span class="badge badge-sm {{ containerType.isActive ? 'badge-success' : 'badge-error' }}" id="statusBadge">
+                                    {{ containerType.isActive ? 'Active' : 'Inactive' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="containerTypeForm" method="POST" action="{{ path('admin_container_types_update', {id: containerType.id}) }}" class="space-y-5">
+                        <div class="form-control">
+                            <label class="label py-1" for="containerTypeName">
+                                <span class="label-text font-medium">Name <span class="text-error">*</span></span>
+                            </label>
+                            <input type="text"
+                                   id="containerTypeName"
+                                   name="name"
+                                   value="{{ containerType.name }}"
+                                   required
+                                   class="input input-bordered w-full"
+                                   placeholder="e.g., Dry Container">
+                            <label class="label py-1">
+                                <span class="label-text-alt text-base-content/60">Display name for this container type</span>
+                            </label>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label py-1" for="containerTypeCode">
+                                <span class="label-text font-medium">Code <span class="text-error">*</span></span>
+                            </label>
+                            <input type="text"
+                                   id="containerTypeCode"
+                                   name="code"
+                                   value="{{ containerType.code }}"
+                                   required
+                                   class="input input-bordered w-full font-mono"
+                                   placeholder="e.g., DRY">
+                            <label class="label py-1">
+                                <span class="label-text-alt text-base-content/60">Unique identifier (e.g., DRY, REEFER, OPEN_TOP)</span>
+                            </label>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label py-1" for="containerTypeDescription">
+                                <span class="label-text font-medium">Description</span>
+                            </label>
+                            <textarea id="containerTypeDescription"
+                                      name="description"
+                                      rows="3"
+                                      class="textarea textarea-bordered w-full"
+                                      placeholder="e.g., Standard dry cargo container">{{ containerType.description }}</textarea>
+                            <label class="label py-1">
+                                <span class="label-text-alt text-base-content/60">Optional detailed description</span>
+                            </label>
+                        </div>
+
+                        <!-- Status Toggle -->
+                        <div class="bg-base-200/60 rounded-xl p-4 sm:p-5">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                <div>
+                                    <p class="text-sm font-medium text-base-content">Container Type Status</p>
+                                    <p class="text-xs text-base-content/60 mt-1">Activate or deactivate this container type</p>
+                                </div>
+                                <button type="button"
+                                        onclick="toggleContainerTypeStatus()"
+                                        id="toggleStatusBtn"
+                                        class="btn btn-sm {{ containerType.isActive ? 'btn-warning' : 'btn-success' }} gap-2 w-full sm:w-auto">
+                                    <span class="icon-[tabler--{{ containerType.isActive ? 'ban' : 'circle-check' }}] size-4"></span>
+                                    {{ containerType.isActive ? 'Deactivate' : 'Activate' }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Timestamps -->
+                        <div class="bg-base-200/60 rounded-xl p-4 sm:p-5">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <p class="text-base-content/60 flex items-center gap-1">
+                                        <span class="icon-[tabler--calendar-plus] size-4"></span>
+                                        Created
+                                    </p>
+                                    <p class="text-base-content font-medium mt-1">{{ containerType.createdAt|date('M d, Y H:i') }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-base-content/60 flex items-center gap-1">
+                                        <span class="icon-[tabler--calendar-event] size-4"></span>
+                                        Last Updated
+                                    </p>
+                                    <p class="text-base-content font-medium mt-1">{{ containerType.updatedAt|date('M d, Y H:i') }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
+                            <a href="{{ path('admin_container_types_index') }}" class="btn btn-ghost w-full sm:w-auto">
+                                Cancel
+                            </a>
+                            <button type="submit"
+                                    id="submitBtn"
+                                    class="btn btn-primary gap-2 w-full sm:w-auto">
+                                <span id="btnSpinner" class="loading loading-spinner loading-sm hidden"></span>
+                                <span id="btnText">Update Container Type</span>
                             </button>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Timestamps -->
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <p class="text-gray-500">Created</p>
-                            <p class="text-gray-900 font-medium">{{ containerType.createdAt|date('M d, Y H:i') }}</p>
-                        </div>
-                        <div>
-                            <p class="text-gray-500">Last Updated</p>
-                            <p class="text-gray-900 font-medium">{{ containerType.updatedAt|date('M d, Y H:i') }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-                    <a href="{{ path('admin_container_types_index') }}" 
-                       class="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors">
-                        Cancel
-                    </a>
-                    <button type="submit" 
-                            id="submitBtn"
-                            class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors inline-flex items-center">
-                        <span id="btnText">Update Container Type</span>
-                        <svg id="btnSpinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                    </button>
+                    </form>
                 </div>
             </div>
-        </form>
-    </div>
-</div>
+        </div>
+{% endblock %}
 
-<!-- Confirmation Modal -->
-<div id="confirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[9999]" style="display: none;">
-    <div class="flex items-center justify-center min-h-screen px-4">
-        <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3">
-                <div class="flex items-center mb-4">
-                    <div class="flex-shrink-0" id="confirmIcon">
-                        <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                        </svg>
-                    </div>
-                    <h3 class="ml-3 text-lg font-medium leading-6 text-gray-900" id="confirmTitle">Confirm Action</h3>
-                </div>
-                <p class="text-sm text-gray-500 mb-6" id="confirmMessage">Are you sure you want to proceed?</p>
-                <div class="flex justify-end space-x-3">
-                    <button type="button" 
-                            onclick="closeConfirmModal()" 
-                            class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
-                        Cancel
-                    </button>
-                    <button type="button" 
-                            id="confirmButton"
-                            onclick="confirmAction()" 
-                            class="px-4 py-2 text-white rounded-md focus:outline-none focus:ring-2">
-                        Confirm
-                    </button>
-                </div>
+{% block page_modals %}
+<div id="confirmModal"
+     class="hidden fixed inset-0 z-[10002] items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="confirmTitle">
+    <div class="absolute inset-0 bg-black/60" onclick="closeConfirmModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6" onclick="event.stopPropagation()">
+        <div class="text-center">
+            <div id="confirmIconWrap" class="size-14 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span id="confirmIcon" class="size-7"></span>
+            </div>
+            <h3 id="confirmTitle" class="text-lg font-bold mb-2">Confirm Action</h3>
+            <p id="confirmMessage" class="text-sm text-base-content/70 mb-6">Are you sure you want to proceed?</p>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeConfirmModal()" class="btn btn-ghost flex-1">Cancel</button>
+                <button type="button" id="confirmButton" onclick="confirmAction()" class="btn flex-1">Confirm</button>
             </div>
         </div>
     </div>
 </div>
 
+<div id="containerTypeToastContainer" class="fixed top-20 right-4 z-[10003] flex flex-col gap-2 w-full max-w-sm pointer-events-none"></div>
+{% endblock %}
+
+{% block page_scripts %}
 <script>
 let pendingAction = null;
 
-document.getElementById('containerTypeForm').addEventListener('submit', function(e) {
+document.getElementById('containerTypeForm').addEventListener('submit', function (e) {
     e.preventDefault();
-    
-    // Show confirmation modal for update
+
     document.getElementById('confirmTitle').textContent = 'Update Container Type';
     document.getElementById('confirmMessage').textContent = 'Are you sure you want to save these changes to the container type?';
-    
-    const icon = document.getElementById('confirmIcon');
-    const confirmBtn = document.getElementById('confirmButton');
-    
-    icon.innerHTML = `
-        <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-    `;
-    confirmBtn.className = 'px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500';
-    
+
+    setConfirmModalStyle('primary', 'icon-[tabler--device-floppy]', 'btn-primary', 'Save Changes');
+
     pendingAction = 'update';
-    const modal = document.getElementById('confirmModal');
-    modal.style.display = 'block';
-    modal.classList.remove('hidden');
+    openConfirmModal();
 });
 
 function toggleContainerTypeStatus() {
     const statusBadge = document.getElementById('statusBadge');
     const isActive = statusBadge.textContent.trim() === 'Active';
-    
-    const title = isActive ? 'Deactivate Container Type' : 'Activate Container Type';
-    const message = isActive 
-        ? 'Are you sure you want to deactivate this container type? It will no longer be available for selection in shipment forms.' 
+
+    document.getElementById('confirmTitle').textContent = isActive ? 'Deactivate Container Type' : 'Activate Container Type';
+    document.getElementById('confirmMessage').textContent = isActive
+        ? 'Are you sure you want to deactivate this container type? It will no longer be available for selection in shipment forms.'
         : 'Are you sure you want to activate this container type?';
-    
+
+    setConfirmModalStyle('warning', 'icon-[tabler--alert-triangle]', 'btn-warning', isActive ? 'Deactivate' : 'Activate');
+
+    pendingAction = 'toggle';
+    openConfirmModal();
+}
+
+function setConfirmModalStyle(iconBg, iconClass, btnClass, btnText) {
+    const iconWrap = document.getElementById('confirmIconWrap');
     const icon = document.getElementById('confirmIcon');
     const confirmBtn = document.getElementById('confirmButton');
-    
-    icon.innerHTML = `
-        <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-        </svg>
-    `;
-    confirmBtn.className = 'px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500';
-    
-    document.getElementById('confirmTitle').textContent = title;
-    document.getElementById('confirmMessage').textContent = message;
-    
-    pendingAction = 'toggle';
+
+    if (iconBg === 'primary') {
+        iconWrap.className = 'size-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4';
+        icon.className = iconClass + ' size-7 text-primary';
+    } else {
+        iconWrap.className = 'size-14 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-4';
+        icon.className = iconClass + ' size-7 text-warning';
+    }
+
+    confirmBtn.className = 'btn ' + btnClass + ' flex-1';
+    confirmBtn.textContent = btnText;
+}
+
+function openConfirmModal() {
     const modal = document.getElementById('confirmModal');
-    modal.style.display = 'block';
     modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
 }
 
 function closeConfirmModal() {
     const modal = document.getElementById('confirmModal');
-    modal.style.display = 'none';
     modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
     pendingAction = null;
 }
 
@@ -239,14 +262,11 @@ function submitForm() {
     const submitBtn = document.getElementById('submitBtn');
     const btnText = document.getElementById('btnText');
     const btnSpinner = document.getElementById('btnSpinner');
-    
-    // Disable button and show spinner
+
     submitBtn.disabled = true;
-    submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
     btnText.textContent = 'Updating...';
     btnSpinner.classList.remove('hidden');
-    
-    // Submit the form
+
     form.submit();
 }
 
@@ -254,109 +274,52 @@ function executeToggleStatus() {
     const containerTypeId = {{ containerType.id }};
     const statusBadge = document.getElementById('statusBadge');
     const toggleBtn = document.getElementById('toggleStatusBtn');
-    
-    // Disable button during request
+
     toggleBtn.disabled = true;
-    toggleBtn.classList.add('opacity-75', 'cursor-not-allowed');
-    
-    fetch(`/admin/container-types/${containerTypeId}/toggle-status`, {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Update badge and button
-            if (data.isActive) {
-                statusBadge.className = 'px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-green-100 text-green-800';
-                statusBadge.textContent = 'Active';
-                toggleBtn.className = 'px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors';
-                toggleBtn.textContent = 'Deactivate';
+
+    fetch('/admin/container-types/' + containerTypeId + '/toggle-status', { method: 'POST' })
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+            if (data.success) {
+                if (data.isActive) {
+                    statusBadge.className = 'badge badge-sm badge-success';
+                    statusBadge.textContent = 'Active';
+                    toggleBtn.className = 'btn btn-sm btn-warning gap-2 w-full sm:w-auto';
+                    toggleBtn.innerHTML = '<span class="icon-[tabler--ban] size-4"></span> Deactivate';
+                } else {
+                    statusBadge.className = 'badge badge-sm badge-error';
+                    statusBadge.textContent = 'Inactive';
+                    toggleBtn.className = 'btn btn-sm btn-success gap-2 w-full sm:w-auto';
+                    toggleBtn.innerHTML = '<span class="icon-[tabler--circle-check] size-4"></span> Activate';
+                }
+
+                showNotification(data.message, 'success');
             } else {
-                statusBadge.className = 'px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-red-100 text-red-800';
-                statusBadge.textContent = 'Inactive';
-                toggleBtn.className = 'px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors';
-                toggleBtn.textContent = 'Activate';
+                showNotification(data.message, 'error');
             }
-            
-            // Show success message
-            showMessage(data.message, 'success');
-        } else {
-            showMessage(data.message, 'error');
-        }
-        
-        // Re-enable button
-        toggleBtn.disabled = false;
-        toggleBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-    })
-    .catch(error => {
-        showMessage('Failed to update container type status', 'error');
-        toggleBtn.disabled = false;
-        toggleBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-    });
+
+            toggleBtn.disabled = false;
+        })
+        .catch(function () {
+            showNotification('Failed to update container type status', 'error');
+            toggleBtn.disabled = false;
+        });
 }
 
-function showMessage(message, type) {
-    // Create message element if it doesn't exist
-    let messageContainer = document.getElementById('messageContainer');
-    if (!messageContainer) {
-        messageContainer = document.createElement('div');
-        messageContainer.id = 'messageContainer';
-        messageContainer.className = 'fixed top-20 right-4 z-[9999]';
-        messageContainer.innerHTML = `
-            <div class="bg-white shadow-lg rounded-lg p-4 max-w-md min-w-[300px]">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0" id="messageIcon"></div>
-                    <div class="ml-3 flex-1">
-                        <p class="text-sm font-medium text-gray-900" id="messageText"></p>
-                    </div>
-                    <button onclick="closeMessage()" class="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-500">
-                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(messageContainer);
-    }
-    
-    const icon = document.getElementById('messageIcon');
-    const text = document.getElementById('messageText');
-    
-    if (type === 'success') {
-        icon.innerHTML = `
-            <svg class="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-        `;
-    } else {
-        icon.innerHTML = `
-            <svg class="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-        `;
-    }
-    
-    text.textContent = message;
-    messageContainer.classList.remove('hidden');
-    
-    setTimeout(() => {
-        messageContainer.classList.add('hidden');
+function showNotification(message, type) {
+    const container = document.getElementById('containerTypeToastContainer');
+    if (!container) return;
+
+    const typeClass = type === 'success' ? 'alert-success' : 'alert-error';
+    const icon = type === 'success' ? 'icon-[tabler--check]' : 'icon-[tabler--alert-circle]';
+    const toast = document.createElement('div');
+    toast.className = 'alert ' + typeClass + ' shadow-lg pointer-events-auto';
+    toast.innerHTML = '<span class="' + icon + ' size-5"></span><span>' + message + '</span>';
+    container.appendChild(toast);
+
+    window.setTimeout(function () {
+        toast.remove();
     }, 4000);
 }
-
-function closeMessage() {
-    const container = document.getElementById('messageContainer');
-    if (container) {
-        container.classList.add('hidden');
-    }
-}
-
-// Close modal when clicking outside
-document.getElementById('confirmModal').addEventListener('click', function(event) {
-    if (event.target === this) {
-        closeConfirmModal();
-    }
-});
 </script>
 {% endblock %}

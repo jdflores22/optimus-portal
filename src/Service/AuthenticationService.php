@@ -47,7 +47,7 @@ class AuthenticationService
             ->findOneBy(['email' => $email]);
 
         if (!$user) {
-            $this->activityLogService->logFailedLogin($email, $ipAddress);
+            $this->activityLogService->logFailedLogin($email, $ipAddress, null, 'Invalid credentials');
             throw new AuthenticationException('Invalid credentials');
         }
 
@@ -333,7 +333,12 @@ class AuthenticationService
             $this->entityManager->flush();
         }
 
-        $this->activityLogService->logAccessDenied($user, 'login', 'Invalid password');
+        $this->activityLogService->logFailedLogin(
+            $user->getEmail(),
+            $ipAddress,
+            $user,
+            'Invalid password'
+        );
     }
 
     /**

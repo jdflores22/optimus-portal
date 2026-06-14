@@ -1,0 +1,79 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Repositioning Requests - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <a href="{{ path(dashboardRoute) }}" class="text-sm text-base-content/60 hover:text-primary inline-flex items-center gap-1 mb-2">
+                <span class="icon-[tabler--arrow-left] size-4"></span> Dashboard
+            </a>
+            <h1 class="text-2xl font-bold text-base-content flex items-center gap-2">
+                <span class="icon-[tabler--truck-delivery] size-7 text-primary"></span>
+                Repositioning / Export Requests
+            </h1>
+            <p class="text-sm text-base-content/60 mt-1">CY-to-port container transfer requests — prioritized by dwell time (CAO 8-2019)</p>
+        </div>
+        <div class="flex gap-2">
+            {% if newRoute %}
+            <a href="{{ path(newRoute) }}" class="btn btn-primary gap-2">
+                <span class="icon-[tabler--plus] size-4"></span>
+                New Request
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if pendingCount > 0 %}
+    <div class="alert alert-warning">
+        <span class="icon-[tabler--clock] size-5"></span>
+        <span>{{ pendingCount }} request(s) pending review</span>
+    </div>
+    {% endif %}
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="table table-zebra">
+                <thead>
+                    <tr>
+                        <th>Request #</th>
+                        <th>Type</th>
+                        <th>From CY</th>
+                        <th>To Port</th>
+                        <th>Containers</th>
+                        <th>Status</th>
+                        <th>Requested</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <td class="font-mono font-semibold">{{ req.requestNumber }}</td>
+                        <td><span class="badge badge-outline">{{ req.requestType.label }}</span></td>
+                        <td>{{ req.sourceTerminal.name }}</td>
+                        <td>{{ req.destinationTerminal.name }}</td>
+                        <td>{{ req.containerCount }}</td>
+                        <td><span class="badge {{ req.status.badgeClass }}">{{ req.status.label }}</span></td>
+                        <td class="text-sm">{{ req.requestedAt|date('M j, Y H:i') }}</td>
+                        <td>
+                            <a href="{{ path(showRoute, {id: req.id}) }}" class="btn btn-ghost btn-xs">View</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-12 text-base-content/50">
+                            No repositioning requests yet.
+                            {% if newRoute %}
+                            <a href="{{ path(newRoute) }}" class="link link-primary">Create your first request</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

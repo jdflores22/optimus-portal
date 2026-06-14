@@ -8,13 +8,15 @@
        tabindex="-1">
     <div class="drawer-body px-2 pt-4 flex flex-col h-full overflow-y-auto">
 
-        {# Logo #}
-        <div class="flex items-center gap-3 px-3 pb-4">
-            <div class="size-9 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-                <span class="icon-[tabler--ship] size-5 text-primary-content"></span>
-            </div>
-            <span class="text-lg font-bold text-base-content">OPTIMUS</span>
-        </div>
+        {# Logo + brand #}
+        <a href="{{ path('app_home') }}" class="flex items-center gap-2.5 px-3 pb-4 hover:opacity-90 transition-opacity" aria-label="OPTIMUS home">
+            <img src="{{ asset('images/optimus.jpg') }}"
+                 alt=""
+                 class="h-10 w-auto max-w-[88px] object-contain shrink-0"
+                 loading="lazy"
+                 decoding="async">
+            <span class="font-bold text-lg text-base-content tracking-wide">OPTIMUS</span>
+        </a>
 
         {# Navigation #}
         <ul class="menu space-y-0.5 p-0 flex-1">
@@ -27,12 +29,17 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ path('admin_edo_release_queue') }}" class="{{ currentRoute starts with 'admin_edo_release' ? 'active' : '' }}">
+                    <a href="{{ path('admin_edo_release_queue') }}" class="{{ currentRoute starts with 'admin_edo_release_queue' ? 'active' : '' }}">
                         <span class="icon-[tabler--circle-check] size-5"></span>eDO Release Queue
                         {% set pendingCount = pending_edo_payment_count() %}
                         {% if pendingCount > 0 %}
                             <span class="badge badge-soft badge-error badge-sm ml-auto">{{ pendingCount }}</span>
                         {% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ path('admin_edo_release_revenue') }}" class="{{ currentRoute == 'admin_edo_release_revenue' ? 'active' : '' }}">
+                        <span class="icon-[tabler--currency-peso] size-5"></span>eDO Revenue
                     </a>
                 </li>
             {% elseif app.user.role.value == 'CONSIGNEE' %}
@@ -82,6 +89,12 @@
                         <span class="icon-[tabler--layout-dashboard] size-5"></span>Dashboard
                     </a>
                 </li>
+            {% elseif app.user.role.value == 'TRUCKER' %}
+                <li>
+                    <a href="{{ path('trucker_dashboard') }}" class="{{ currentRoute starts with 'trucker_dashboard' ? 'active' : '' }}">
+                        <span class="icon-[tabler--layout-dashboard] size-5"></span>Dashboard
+                    </a>
+                </li>
             {% endif %}
 
             {# Notifications - all roles #}
@@ -114,6 +127,7 @@
                     </a>
                 </li>
                 <li><a href="{{ path('app_admin_audit_logs') }}" class="{{ currentRoute starts with 'app_admin_audit_logs' ? 'active' : '' }}"><span class="icon-[tabler--clipboard-list] size-5"></span>Audit Logs</a></li>
+                <li><a href="{{ path('audit_trail_edo_search') }}" class="{{ currentRoute == 'audit_trail_edo_search' ? 'active' : '' }}"><span class="icon-[tabler--search] size-5"></span>eDO Audit Search</a></li>
                 <div class="divider text-base-content/50 py-4 after:border-0">Configuration</div>
                 <li><a href="{{ path('admin_shipping_lines_list') }}" class="{{ currentRoute starts with 'admin_shipping_lines' ? 'active' : '' }}"><span class="icon-[tabler--ship] size-5"></span>Shipping Lines</a></li>
                 <li><a href="{{ path('admin_terminals_index') }}" class="{{ currentRoute starts with 'admin_terminals' ? 'active' : '' }}"><span class="icon-[tabler--building] size-5"></span>Terminals</a></li>
@@ -121,13 +135,17 @@
                 <li><a href="{{ path('admin_container_sizes_index') }}" class="{{ currentRoute starts with 'admin_container_sizes' ? 'active' : '' }}"><span class="icon-[tabler--resize] size-5"></span>Container Sizes</a></li>
                 <li><a href="{{ path('admin_user_hierarchy_list') }}" class="{{ currentRoute starts with 'admin_user_hierarchy' ? 'active' : '' }}"><span class="icon-[tabler--hierarchy] size-5"></span>User Hierarchy</a></li>
                 <li><a href="{{ path('form_builder_list') }}" class="{{ currentRoute starts with 'form_builder' ? 'active' : '' }}"><span class="icon-[tabler--forms] size-5"></span>Form Builder</a></li>
+                <li><a href="{{ path('admin_payment_fee_config') }}" class="{{ currentRoute starts with 'admin_payment_fee_config' ? 'active' : '' }}"><span class="icon-[tabler--receipt-2] size-5"></span>Payment Fees</a></li>
+                <li><a href="{{ path('admin_cy_utilization_report') }}" class="{{ currentRoute starts with 'admin_cy_utilization' ? 'active' : '' }}"><span class="icon-[tabler--chart-bar] size-5"></span>CY Utilization</a></li>
+                <li><a href="{{ path('admin_port_utilization_report') }}" class="{{ currentRoute starts with 'admin_port_utilization' ? 'active' : '' }}"><span class="icon-[tabler--anchor] size-5"></span>Port Utilization</a></li>
+                <li><a href="{{ path('admin_notification_metrics') }}" class="{{ currentRoute starts with 'admin_notification_metrics' ? 'active' : '' }}"><span class="icon-[tabler--chart-dots] size-5"></span>Notification Metrics</a></li>
                 <li><a href="{{ path('admin_system_settings') }}" class="{{ currentRoute starts with 'admin_system_settings' ? 'active' : '' }}"><span class="icon-[tabler--settings] size-5"></span>System Settings</a></li>
 
             {% elseif app.user.role.value == 'CONSIGNEE' %}
                 <div class="divider text-base-content/50 py-4 after:border-0">My Account</div>
                 <li><a href="{{ path('accreditation_index') }}" class="{{ currentRoute starts with 'accreditation' ? 'active' : '' }}"><span class="icon-[tabler--id] size-5"></span>Accreditation</a></li>
                 <li><a href="{{ path('consignee_manifest_list') }}" class="{{ currentRoute starts with 'consignee_manifest' ? 'active' : '' }}"><span class="icon-[tabler--file-text] size-5"></span>My Manifests</a></li>
-                <li><a href="{{ path('consignee_brokers') }}" class="{{ currentRoute starts with 'consignee_brokers' ? 'active' : '' }}"><span class="icon-[tabler--users] size-5"></span>Brokers</a></li>
+                <li><a href="{{ path('consignee_brokers') }}" class="{{ currentRoute starts with 'consignee_brokers' or currentRoute starts with 'consignee_referral' or currentRoute starts with 'consignee_generate_code' or currentRoute starts with 'consignee_deactivate_code' or currentRoute starts with 'consignee_reactivate_code' ? 'active' : '' }}"><span class="icon-[tabler--users] size-5"></span>Brokers</a></li>
 
             {% elseif app.user.role.value == 'BROKER' %}
                 <div class="divider text-base-content/50 py-4 after:border-0">My Work</div>
@@ -152,8 +170,8 @@
                 <div class="divider text-base-content/50 py-4 after:border-0">Operations</div>
                 <li><a href="{{ path('manifest_workflow_list') }}" class="{{ currentRoute starts with 'manifest_workflow' ? 'active' : '' }}"><span class="icon-[tabler--file-text] size-5"></span>NOA & BL Workflow</a></li>
                 <li><a href="{{ path('app_container_inventory') }}" class="{{ currentRoute starts with 'app_container_inventory' ? 'active' : '' }}"><span class="icon-[tabler--box] size-5"></span>Container Inventory</a></li>
+                <li><a href="{{ path('app_shipping_admin_repositioning_index') }}" class="{{ currentRoute starts with 'app_shipping_admin_repositioning' ? 'active' : '' }}"><span class="icon-[tabler--truck-delivery] size-5"></span>Repositioning Requests</a></li>
                 <li><a href="{{ path('admin_user_hierarchy_list') }}" class="{{ currentRoute starts with 'admin_user_hierarchy' ? 'active' : '' }}"><span class="icon-[tabler--users] size-5"></span>My Team</a></li>
-                <li><a href="{{ path('payment_list') }}" class="{{ currentRoute starts with 'payment' ? 'active' : '' }}"><span class="icon-[tabler--cash] size-5"></span>System Payments</a></li>
                 <div class="divider text-base-content/50 py-4 after:border-0">Management</div>
                 <li><a href="{{ path('app_shipping_admin_consignees') }}" class="{{ currentRoute starts with 'app_shipping_admin_consignees' ? 'active' : '' }}"><span class="icon-[tabler--building] size-5"></span>Consignees</a></li>
                 <li><a href="{{ path('app_shipping_admin_brokers') }}" class="{{ currentRoute starts with 'app_shipping_admin_brokers' ? 'active' : '' }}"><span class="icon-[tabler--briefcase] size-5"></span>Brokers</a></li>
@@ -162,6 +180,7 @@
                 <div class="divider text-base-content/50 py-4 after:border-0">Operations</div>
                 <li><a href="{{ path('manifest_workflow_list') }}" class="{{ currentRoute starts with 'manifest_workflow' ? 'active' : '' }}"><span class="icon-[tabler--file-text] size-5"></span>NOA & BL Workflow</a></li>
                 <li><a href="{{ path('app_container_inventory') }}" class="{{ currentRoute starts with 'app_container_inventory' ? 'active' : '' }}"><span class="icon-[tabler--box] size-5"></span>Container Inventory</a></li>
+                <li><a href="{{ path('app_sl_staff_repositioning_index') }}" class="{{ currentRoute starts with 'app_sl_staff_repositioning' ? 'active' : '' }}"><span class="icon-[tabler--truck-delivery] size-5"></span>Repositioning Requests</a></li>
                 <li>
                     <a href="{{ path('sl_staff_edo_generation_list') }}" class="{{ currentRoute starts with 'sl_staff_edo_generation' ? 'active' : '' }}">
                         <span class="icon-[tabler--file-plus] size-5"></span>eDO Generation
@@ -182,9 +201,8 @@
 
             {% elseif app.user.role.value == 'ACCOUNTING' %}
                 <div class="divider text-base-content/50 py-4 after:border-0">Finance</div>
-                <li><a href="{{ path('payment_list') }}" class="{{ currentRoute starts with 'payment' ? 'active' : '' }}"><span class="icon-[tabler--cash] size-5"></span>Payments</a></li>
                 <li>
-                    <a href="{{ path('accounting_payment_dashboard') }}" class="{{ currentRoute starts with 'accounting_payment' ? 'active' : '' }}">
+                    <a href="{{ path('accounting_payment_final_list') }}" class="{{ currentRoute starts with 'accounting_payment' ? 'active' : '' }}">
                         <span class="icon-[tabler--circle-check] size-5"></span>Final Payment Validation
                         {% if pendingEdoPaymentsCount is defined and pendingEdoPaymentsCount > 0 %}
                             <span class="flex items-center justify-center size-5 rounded-full bg-warning/20 text-warning text-sm font-semibold">{{ pendingEdoPaymentsCount }}</span>
@@ -210,6 +228,12 @@
                 </li>
                 <div class="divider text-base-content/50 py-4 after:border-0">Operations</div>
                 <li><a href="{{ path('app_container_inventory') }}" class="{{ currentRoute starts with 'app_container_inventory' ? 'active' : '' }}"><span class="icon-[tabler--box] size-5"></span>Container Inventory</a></li>
+
+            {% elseif app.user.role.value == 'TRUCKER' %}
+                <div class="divider text-base-content/50 py-4 after:border-0">Operations</div>
+                <li><a href="{{ path('trucker_container_search') }}" class="{{ currentRoute starts with 'trucker_container_search' ? 'active' : '' }}"><span class="icon-[tabler--search] size-5"></span>Container Search</a></li>
+                <li><a href="{{ path('trucker_pre_advice_list') }}" class="{{ currentRoute starts with 'trucker_pre_advice' ? 'active' : '' }}"><span class="icon-[tabler--clipboard-list] size-5"></span>Pre-Advice Requests</a></li>
+                <li><a href="{{ path('trucker_photo_management') }}" class="{{ currentRoute == 'trucker_photo_management' ? 'active' : '' }}"><span class="icon-[tabler--camera] size-5"></span>Photo Management</a></li>
 
             {% elseif app.user.role.value == 'TERMINAL_TEAM' %}
                 <div class="divider text-base-content/50 py-4 after:border-0">Operations</div>

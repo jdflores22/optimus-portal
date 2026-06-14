@@ -18,11 +18,28 @@ class TerminalRepository extends ServiceEntityRepository
     }
 
     /**
+     * Find all active port/terminal locations (excludes container yards).
+     *
+     * @return Terminal[]
+     */
+    public function findActivePorts(): array
+    {
+        return $this->createQueryBuilder('t')
+            ->where('t.isActive = :active')
+            ->andWhere('t.type != :cy')
+            ->setParameter('active', true)
+            ->setParameter('cy', TerminalType::CY)
+            ->orderBy('t.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Find all active terminals
      */
     public function findActive(): array
     {
-        return $this->findBy(['isActive' => true]);
+        return $this->findBy(['isActive' => true], ['name' => 'ASC']);
     }
 
     /**

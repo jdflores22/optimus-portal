@@ -292,4 +292,16 @@ class ManifestService implements ManifestServiceInterface
         $this->workflowOrchestrator->transitionState($manifest, $newState, $actor);
         $this->entityManager->flush();
     }
+
+    public function recordNoaGeneratedWorkflow(Manifest $manifest, User $actor, ?string $reason = null): void
+    {
+        $this->workflowOrchestrator->recordNoaGeneratedWorkflow($manifest, $actor, $reason);
+        $this->entityManager->flush();
+    }
+
+    public function recordBlGeneratedWorkflow(Manifest $manifest, User $actor, ?string $reason = null): void
+    {
+        $this->workflowOrchestrator->recordBlGeneratedWorkflow($manifest, $actor, $reason);
+        $this->entityManager->flush();
+    }
 }

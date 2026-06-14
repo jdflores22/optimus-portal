@@ -10,6 +10,9 @@ use App\Service\UserService;
 use App\Service\ManifestBLDocumentGenerator;
 use App\Entity\Enum\UserRole;
 use App\Entity\Enum\WorkflowState;
+use App\Entity\NOA;
+use App\Entity\User;
+use App\Security\Voter\NOAVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -261,14 +264,17 @@ class ManifestWorkflowController extends AbstractController
                 }
                 
                 // Check if header contains expected columns
-                $requiredColumns = ['bl_number', 'vessel_number', 'eta', 'consignee_email', 'cy_location', 'containers'];
+                $requiredColumns = ['bl_number', 'vessel_number', 'eta', 'consignee_email', 'port_location', 'containers'];
                 $missingColumns = array_diff($requiredColumns, $firstLine);
-                
+
                 if (!empty($missingColumns)) {
-                    $this->addFlash('error', sprintf(
-                        'Invalid CSV format. Missing required columns: %s. Please use the template provided.',
-                        implode(', ', $missingColumns)
-                    ));
+                    $legacyCyColumn = in_array('cy_location', $firstLine, true) && !in_array('port_location', $firstLine, true);
+                    $this->addFlash('error', $legacyCyColumn
+                        ? 'The cy_location column has been replaced with port_location. Please download the updated CSV template.'
+                        : sprintf(
+                            'Invalid CSV format. Missing required columns: %s. Please use the template provided.',
+                            implode(', ', $missingColumns)
+                        ));
                     return $this->redirectToRoute('manifest_workflow_bulk_import');
                 }
             } catch (\Exception $e) {
@@ -581,7 +587,7 @@ class ManifestWorkflowController extends AbstractController
             'vessel_number' => trim($row[1]),
             'eta' => trim($row[2]),
             'consignee_email' => trim($row[3]),
-            'cy_location' => trim($row[4]),
+            'port_location' => trim($row[4]),
             'containers_raw' => trim($row[5])
         ];
 
@@ -598,7 +604,7 @@ class ManifestWorkflowController extends AbstractController
         // Create CSV content (NOA number is auto-generated, so not included)
         // Use terminal codes (name field) instead of full location
         $csv = [
-            ['bl_number', 'vessel_number', 'eta', 'consignee_email', 'cy_location', 'containers'],
+            ['bl_number', 'vessel_number', 'eta', 'consignee_email', 'port_location', 'containers'],
             ['BL-2024-001', 'VESSEL-001', '2024-12-31 14:30:00', 'consignee@example.com', 'ATI', 'CONT001|20|DRY|ATI|CONT002|40|REEFER|ICTSI'],
             ['BL-2024-002', 'VESSEL-002', '2024-12-31 16:00:00', 'consignee@example.com', 'ICTSI', 'CONT003|20|DRY|ICTSI'],
         ];
@@ -628,6 +634,8 @@ class ManifestWorkflowController extends AbstractController
         if (!$noa) {
             throw $this->createNotFoundException('NOA not found');
         }
+
+        $this->assertCanViewNoa($noa);
 
         // Find associated manifest if it exists
         $manifest = $this->entityManager->getRepository(\App\Entity\Manifest::class)
@@ -754,6 +762,8 @@ class ManifestWorkflowController extends AbstractController
             throw $this->createNotFoundException('NOA not found');
         }
 
+        $this->assertCanEditNoa($noa);
+
         // Get all consignees for dropdown
         $consignees = $this->entityManager->getRepository(\App\Entity\Consignee::class)
             ->createQueryBuilder('c')
@@ -785,13 +795,15 @@ class ManifestWorkflowController extends AbstractController
             return $this->redirectToRoute('manifest_workflow_list');
         }
 
+        $this->assertCanEditNoa($noa);
+
         // Store old values for change tracking
         $oldConsignee = $noa->getConsignee();
         $oldValues = [
             'blNumber' => $noa->getBlNumber(),
             'vesselNumber' => $noa->getVesselNumber(),
             'eta' => $noa->getEta(),
-            'cyLocation' => $noa->getCyLocation(),
+            'portLocation' => $noa->getPortLocation(),
             'consignee' => ($oldConsignee instanceof \App\Entity\Consignee) ? $oldConsignee->getBusinessName() : ($oldConsignee ? $oldConsignee->getEmail() : 'N/A'),
         ];
 
@@ -800,7 +812,7 @@ class ManifestWorkflowController extends AbstractController
             $noa->setBlNumber($request->request->get('blNumber'));
             $noa->setVesselNumber($request->request->get('vesselNumber'));
             $noa->setEta(new \DateTime($request->request->get('eta')));
-            $noa->setCyLocation($request->request->get('cyLocation'));
+            $noa->setPortLocation($request->request->get('portLocation') ?: null);
 
             // Update consignee
             $consigneeId = $request->request->get('consigneeId');
@@ -892,8 +904,8 @@ class ManifestWorkflowController extends AbstractController
             if ($oldValues['eta']->format('Y-m-d H:i') !== $noa->getEta()->format('Y-m-d H:i')) {
                 $changes[] = "ETA: {$oldValues['eta']->format('M j, Y H:i')} → {$noa->getEta()->format('M j, Y H:i')}";
             }
-            if ($oldValues['cyLocation'] !== $noa->getCyLocation()) {
-                $changes[] = "CY Location: {$oldValues['cyLocation']} → {$noa->getCyLocation()}";
+            if ($oldValues['portLocation'] !== $noa->getPortLocation()) {
+                $changes[] = "Port Location: {$oldValues['portLocation']} → {$noa->getPortLocation()}";
             }
             
             $newConsignee = $noa->getConsignee();
@@ -944,10 +956,12 @@ class ManifestWorkflowController extends AbstractController
             return $this->json(['success' => false, 'message' => 'NOA not found'], 404);
         }
 
+        $this->assertCanEditNoa($noa);
+
         $data = json_decode($request->getContent(), true);
         
         // Validate required fields
-        if (empty($data['blNumber']) || empty($data['vesselNumber']) || empty($data['eta']) || empty($data['cyLocation'])) {
+        if (empty($data['blNumber']) || empty($data['vesselNumber']) || empty($data['eta']) || empty($data['portLocation'])) {
             return $this->json(['success' => false, 'message' => 'All fields are required'], 400);
         }
 
@@ -956,7 +970,7 @@ class ManifestWorkflowController extends AbstractController
             'blNumber' => $noa->getBlNumber(),
             'vesselNumber' => $noa->getVesselNumber(),
             'eta' => $noa->getEta(),
-            'cyLocation' => $noa->getCyLocation(),
+            'portLocation' => $noa->getPortLocation(),
         ];
 
         try {
@@ -964,7 +978,7 @@ class ManifestWorkflowController extends AbstractController
             $noa->setBlNumber($data['blNumber']);
             $noa->setVesselNumber($data['vesselNumber']);
             $noa->setEta(new \DateTime($data['eta']));
-            $noa->setCyLocation($data['cyLocation']);
+            $noa->setPortLocation($data['portLocation']);
             
             $this->entityManager->flush();
 
@@ -979,8 +993,8 @@ class ManifestWorkflowController extends AbstractController
             if ($oldValues['eta']->format('Y-m-d H:i') !== (new \DateTime($data['eta']))->format('Y-m-d H:i')) {
                 $changes[] = "ETA: {$oldValues['eta']->format('M j, Y H:i')} → " . (new \DateTime($data['eta']))->format('M j, Y H:i');
             }
-            if ($oldValues['cyLocation'] !== $data['cyLocation']) {
-                $changes[] = "CY Location: {$oldValues['cyLocation']} → {$data['cyLocation']}";
+            if ($oldValues['portLocation'] !== $data['portLocation']) {
+                $changes[] = "Port Location: {$oldValues['portLocation']} → {$data['portLocation']}";
             }
 
             // Send notifications if there are changes
@@ -1129,6 +1143,12 @@ class ManifestWorkflowController extends AbstractController
             throw $this->createNotFoundException('Manifest not found');
         }
 
+        $this->denyAccessUnlessGranted('ROLE_SL_STAFF');
+        $user = $this->getUser();
+        if (!$user instanceof User || !$this->authorizationService->canViewManifest($manifest, $user)) {
+            throw $this->createAccessDeniedException('Access denied');
+        }
+
         // Get approved consignees for autocomplete
         $consignees = $this->userService->getApprovedConsignees();
         
@@ -1167,6 +1187,12 @@ class ManifestWorkflowController extends AbstractController
             throw $this->createNotFoundException('Manifest not found');
         }
 
+        $this->denyAccessUnlessGranted('ROLE_SL_STAFF');
+        $user = $this->getUser();
+        if (!$user instanceof User || !$this->authorizationService->canViewManifest($manifest, $user)) {
+            throw $this->createAccessDeniedException('Access denied');
+        }
+
         return $this->render('manifest_workflow/generate_noa.html.twig', [
             'manifest' => $manifest,
         ]);
@@ -1187,6 +1213,11 @@ class ManifestWorkflowController extends AbstractController
             throw $this->createNotFoundException('Manifest not found');
         }
 
+        $user = $this->getUser();
+        if (!$user instanceof User || !$this->authorizationService->canViewManifest($manifest, $user)) {
+            throw $this->createAccessDeniedException('Access denied');
+        }
+
         return $this->render('manifest_workflow/generate_billing.html.twig', [
             'manifest' => $manifest,
         ]);
@@ -1200,6 +1231,8 @@ class ManifestWorkflowController extends AbstractController
         if (!$noa) {
             throw $this->createNotFoundException('NOA not found');
         }
+
+        $this->assertCanViewNoa($noa);
 
         $pdfPath = $noa->getPdfPath();
         
@@ -1229,6 +1262,8 @@ class ManifestWorkflowController extends AbstractController
             throw $this->createNotFoundException('NOA not found');
         }
 
+        $this->assertCanEditNoa($noa);
+
         // Check if manifest already generated
         if ($noa->getManifestPdfPath()) {
             $this->addFlash('info', 'Manifest/BL has already been generated for this NOA');
@@ -1252,6 +1287,8 @@ class ManifestWorkflowController extends AbstractController
         if (!$noa) {
             throw $this->createNotFoundException('NOA not found');
         }
+
+        $this->assertCanEditNoa($noa);
 
         // Validate CSRF token
         $submittedToken = $request->request->get('_token');
@@ -1333,9 +1370,6 @@ class ManifestWorkflowController extends AbstractController
                 $manifest->setCreatedBy($this->getUser());
                 $manifest->setNoa($noa);
                 
-                // Set workflow state to BL_GENERATED (Step 2 complete - BL generated by shipping line)
-                $manifest->setWorkflowState(\App\Entity\Enum\WorkflowState::BL_GENERATED);
-                
                 // Persist manifest
                 $this->entityManager->persist($manifest);
                 error_log('Manifest record created with number: ' . $manifestNumber);
@@ -1343,6 +1377,14 @@ class ManifestWorkflowController extends AbstractController
                 // Persist the PDF path to database
                 $this->entityManager->flush();
                 error_log('PDF path and Manifest flushed to database');
+
+                /** @var User $actor */
+                $actor = $this->getUser();
+                $this->manifestService->recordBlGeneratedWorkflow(
+                    $manifest,
+                    $actor,
+                    'Manifest/BL PDF generated'
+                );
                 
                 // **IMPORTANT**: Link all containers from the NOA to this manifest
                 // This ensures brokers don't have to manually "Add" containers
@@ -1381,6 +1423,8 @@ class ManifestWorkflowController extends AbstractController
             throw $this->createNotFoundException('NOA not found');
         }
 
+        $this->assertCanViewNoa($noa);
+
         $pdfPath = $noa->getManifestPdfPath();
         
         if (!$pdfPath) {
@@ -1407,6 +1451,11 @@ class ManifestWorkflowController extends AbstractController
         
         if (!$manifest) {
             return $this->json(['error' => 'Manifest not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $user = $this->getUser();
+        if (!$user instanceof User || !$this->authorizationService->canViewManifest($manifest, $user)) {
+            throw $this->createAccessDeniedException('Access denied');
         }
 
         // Get the NOA associated with this manifest
@@ -1826,10 +1875,17 @@ class ManifestWorkflowController extends AbstractController
             
             $manifest->setCreatedBy($this->getUser());
             $manifest->setNoa($noa);
-            $manifest->setWorkflowState(\App\Entity\Enum\WorkflowState::BL_GENERATED);
             
             $this->entityManager->persist($manifest);
             $this->entityManager->flush();
+
+            /** @var User $actor */
+            $actor = $this->getUser();
+            $this->manifestService->recordBlGeneratedWorkflow(
+                $manifest,
+                $actor,
+                'Manifest/BL imported from bulk upload'
+            );
             
             // **IMPORTANT**: Link all containers from the NOA to this manifest
             // This ensures brokers don't have to manually "Add" containers
@@ -2089,10 +2145,17 @@ class ManifestWorkflowController extends AbstractController
                 
                 $manifest->setCreatedBy($this->getUser());
                 $manifest->setNoa($noa);
-                $manifest->setWorkflowState(\App\Entity\Enum\WorkflowState::BL_GENERATED);
                 
                 $this->entityManager->persist($manifest);
                 $this->entityManager->flush();
+
+                /** @var User $actor */
+                $actor = $this->getUser();
+                $this->manifestService->recordBlGeneratedWorkflow(
+                    $manifest,
+                    $actor,
+                    'Manifest/BL imported from bulk upload'
+                );
 
                 // Send notification to consignee about manifest creation
                 try {
@@ -2209,6 +2272,31 @@ class ManifestWorkflowController extends AbstractController
         }
         
         return $cleanMessage;
+    }
+
+    private function assertCanViewNoa(NOA $noa): void
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException('Access denied');
+        }
+
+        if ($this->isGranted(NOAVoter::VIEW, $noa)) {
+            return;
+        }
+
+        $manifest = $this->entityManager->getRepository(\App\Entity\Manifest::class)
+            ->findOneBy(['noa' => $noa]);
+        if ($manifest && $this->authorizationService->canViewManifest($manifest, $user)) {
+            return;
+        }
+
+        throw $this->createAccessDeniedException('Access denied');
+    }
+
+    private function assertCanEditNoa(NOA $noa): void
+    {
+        $this->denyAccessUnlessGranted(NOAVoter::EDIT, $noa);
     }
 }
 

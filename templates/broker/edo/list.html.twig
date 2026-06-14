@@ -136,7 +136,7 @@
                                             <span class="opacity-60">-</span>
                                         {% endif %}
                                     </td>
-                                    <td>₱{{ edo.feeAmount|number_format(2, '.', ',') }}</td>
+                                    <td>{{ edo.feeAmount|format_money('PHP') }}</td>
                                     <td>
                                         {% if currentPayment %}
                                             {{ currentPayment.createdAt|date('M j, Y, g:i A') }}
@@ -344,7 +344,7 @@
                                             <span class="badge badge-soft text-xs rounded-lg">Unknown</span>
                                         {% endif %}
                                     {% endif %}
-                                    <span class="text-sm font-semibold">₱{{ edo.feeAmount|number_format(2, '.', ',') }}</span>
+                                    <span class="text-sm font-semibold">{{ edo.feeAmount|format_money('PHP') }}</span>
                                 </div>
                                 <div class="text-sm opacity-60">
                                     Submitted: {% if currentPayment %}{{ currentPayment.createdAt|date('M j, Y, g:i A') }}{% else %}Not submitted{% endif %}

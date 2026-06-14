@@ -50,7 +50,7 @@ class StructuredLogger
         $this->auditLogger->info("Audit: {$action} on {$entityType}#{$entityId}", $context);
     }
 
-    public function logError(string $message, \Throwable $exception = null, array $context = []): void
+    public function logError(string $message, ?\Throwable $exception = null, array $context = []): void
     {
         $context = $this->enrichContext($context);
         

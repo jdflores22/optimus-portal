@@ -17,7 +17,7 @@ class ShippingLineTerminalAllocation
     #[ORM\Column(type: 'integer')]
     private int $id;
 
-    #[ORM\ManyToOne(targetEntity: StaffUser::class)]
+    #[ORM\ManyToOne(targetEntity: StaffUser::class, inversedBy: 'terminalAllocations')]
     #[ORM\JoinColumn(name: 'staff_user_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     private StaffUser $staffUser;
 

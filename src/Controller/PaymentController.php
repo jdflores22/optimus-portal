@@ -6,7 +6,6 @@ use App\Entity\Broker;
 use App\Entity\ShipmentRecord;
 use App\Entity\PaymentVerification;
 use App\Entity\User;
-use App\Entity\Enum\PaymentStatus;
 use App\Entity\Enum\UserRole;
 use App\Service\FileService;
 use App\Service\PaymentService;
@@ -32,99 +31,25 @@ class PaymentController extends AbstractController
     #[IsGranted('ROLE_BROKER')]
     public function submitPaymentProof(int $shipmentId, Request $request): Response
     {
-        $user = $this->getUser();
+        $this->addFlash(
+            'warning',
+            'Legacy shipment payment submission is no longer supported. Please use the manifest payment workflow.'
+        );
 
-        if (!$user instanceof Broker) {
-            return $this->redirectToRoute('app_error_access_denied');
-        }
-
-        // Get the shipment record
-        $shipment = $this->entityManager->getRepository(ShipmentRecord::class)->find($shipmentId);
-        
-        if (!$shipment) {
-            return $this->redirectToRoute('app_error_general', ['code' => 404]);
-        }
-
-        // Check if broker has access to this shipment
-        if (!$shipment->getAuthorizedBrokers()->contains($user)) {
-            throw $this->createAccessDeniedException('You do not have access to this shipment');
-        }
-
-        // Check if payment proof already exists
-        $existingPayment = $this->entityManager->getRepository(PaymentVerification::class)
-            ->findOneBy(['shipment' => $shipment, 'broker' => $user]);
-
-        if ($request->isMethod('POST')) {
-            $uploadedFile = $request->files->get('payment_proof');
-
-            if (!$uploadedFile || !$uploadedFile->isValid()) {
-                $this->addFlash('error', 'Please upload a valid payment proof file');
-                return $this->redirectToRoute('payment_submit', ['shipmentId' => $shipmentId]);
-            }
-
-            try {
-                // Upload the payment proof file
-                $storedFile = $this->fileService->uploadFile($uploadedFile, 'payment_proof', $user);
-
-                // Submit payment proof
-                $paymentVerification = $this->paymentService->submitPaymentProof($shipmentId, $user, $uploadedFile);
-
-                $this->addFlash('success', 'Payment proof submitted successfully!');
-                return $this->redirectToRoute('broker_shipment_detail', ['id' => $shipmentId]);
-            } catch (\Exception $e) {
-                $this->addFlash('error', 'Failed to submit payment proof: ' . $e->getMessage());
-            }
-        }
-
-        return $this->render('payment/submit.html.twig', [
-            'shipment' => $shipment,
-            'existingPayment' => $existingPayment
-        ]);
+        return $this->redirectToRoute('broker_dashboard');
     }
 
     #[Route('/verify/{paymentId}', name: 'payment_verify', methods: ['GET', 'POST'])]
     public function verifyPayment(int $paymentId, Request $request): Response
     {
         $user = $this->getUser();
-        
-        // Check if user has permission to access payment verification
-        if (!in_array($user->getRole()->value, ['ACCOUNTING', 'SYSTEM_ADMIN', 'SHIPPING_LINES_ADMIN'])) {
-            return $this->redirectToRoute('app_error_access_denied');
-        }
 
-        // Get the payment verification record
-        $payment = $this->entityManager->getRepository(PaymentVerification::class)->find($paymentId);
-        
-        if (!$payment) {
-            return $this->redirectToRoute('app_error_general', ['code' => 404]);
-        }
-
-        if ($request->isMethod('POST')) {
-            // Only ACCOUNTING role can actually verify/reject payments
-            if ($user->getRole()->value !== 'ACCOUNTING') {
-                return $this->redirectToRoute('app_error_access_denied');
-            }
-            
-            $action = $request->request->get('action');
-
-            try {
-                if ($action === 'verify') {
-                    $this->paymentService->verifyPayment($paymentId, $user);
-                    $this->addFlash('success', 'Payment verified successfully! EDO has been generated and sent via email to the broker and consignee.');
-                } elseif ($action === 'reject') {
-                    $this->paymentService->rejectPayment($paymentId, $user);
-                    $this->addFlash('success', 'Payment rejected.');
-                }
-
-                return $this->redirectToRoute('accounting_dashboard');
-            } catch (\Exception $e) {
-                $this->addFlash('error', 'Failed to process payment: ' . $e->getMessage());
-            }
-        }
-
-        return $this->render('payment/verify.html.twig', [
-            'payment' => $payment
-        ]);
+        return match ($user->getRole()) {
+            UserRole::ACCOUNTING => $this->redirectToRoute('accounting_payment_final_list'),
+            UserRole::SYSTEM_ADMIN => $this->redirectToRoute('app_admin_dashboard'),
+            UserRole::SHIPPING_LINES_ADMIN => $this->redirectToRoute('app_shipping_admin_dashboard'),
+            default => $this->redirectToRoute('app_error_access_denied'),
+        };
     }
 
     #[Route('/file/{fileId}/view', name: 'payment_file_view', methods: ['GET'], requirements: ['fileId' => '.+'])]
@@ -338,59 +263,16 @@ class PaymentController extends AbstractController
     }
 
     #[Route('/list', name: 'payment_list', methods: ['GET'])]
-    public function listPayments(Request $request): Response
+    public function listPayments(): Response
     {
         $user = $this->getUser();
-        
-        // Check if user has permission to access payment list
-        if (!in_array($user->getRole()->value, ['ACCOUNTING', 'SYSTEM_ADMIN', 'SHIPPING_LINES_ADMIN'])) {
-            return $this->redirectToRoute('app_error_access_denied');
-        }
 
-        // Get separate lists for each status
-        $pendingPayments = $this->entityManager->getRepository(PaymentVerification::class)
-            ->createQueryBuilder('p')
-            ->leftJoin('p.shipment', 's')
-            ->leftJoin('p.broker', 'b')
-            ->where('p.status = :status')
-            ->setParameter('status', PaymentStatus::PENDING_VALIDATION)
-            ->orderBy('p.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
-
-        $verifiedPayments = $this->entityManager->getRepository(PaymentVerification::class)
-            ->createQueryBuilder('p')
-            ->leftJoin('p.shipment', 's')
-            ->leftJoin('p.broker', 'b')
-            ->where('p.status = :status')
-            ->setParameter('status', PaymentStatus::VERIFIED)
-            ->orderBy('p.verifiedAt', 'DESC')
-            ->getQuery()
-            ->getResult();
-
-        $rejectedPayments = $this->entityManager->getRepository(PaymentVerification::class)
-            ->createQueryBuilder('p')
-            ->leftJoin('p.shipment', 's')
-            ->leftJoin('p.broker', 'b')
-            ->where('p.status = :status')
-            ->setParameter('status', PaymentStatus::REJECTED)
-            ->orderBy('p.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
-
-        // Get counts for each status
-        $statusCounts = [
-            'PENDING' => count($pendingPayments),
-            'VERIFIED' => count($verifiedPayments),
-            'REJECTED' => count($rejectedPayments)
-        ];
-
-        return $this->render('payment/list.html.twig', [
-            'pendingPayments' => $pendingPayments,
-            'verifiedPayments' => $verifiedPayments,
-            'rejectedPayments' => $rejectedPayments,
-            'statusCounts' => $statusCounts
-        ]);
+        return match ($user->getRole()) {
+            UserRole::ACCOUNTING => $this->redirectToRoute('accounting_payment_final_list'),
+            UserRole::SYSTEM_ADMIN => $this->redirectToRoute('app_admin_dashboard'),
+            UserRole::SHIPPING_LINES_ADMIN => $this->redirectToRoute('app_shipping_admin_dashboard'),
+            default => $this->redirectToRoute('app_error_access_denied'),
+        };
     }
 
     /**
@@ -432,7 +314,7 @@ class PaymentController extends AbstractController
             return $response;
         } catch (\Exception $e) {
             $this->addFlash('error', 'Unable to download EDO file. Please contact support.');
-            return $this->redirectToRoute('payment_verify', ['paymentId' => $paymentId]);
+            return $this->redirectToRoute('accounting_payment_final_list');
         }
     }
 
@@ -490,30 +372,6 @@ class PaymentController extends AbstractController
     #[IsGranted('ROLE_ACCOUNTING')]
     public function accountingDashboard(): Response
     {
-        // Get payment statistics
-        $pendingCount = $this->entityManager->getRepository(PaymentVerification::class)
-            ->count(['status' => PaymentStatus::PENDING_VALIDATION]);
-        
-        $verifiedCount = $this->entityManager->getRepository(PaymentVerification::class)
-            ->count(['status' => PaymentStatus::VERIFIED]);
-        
-        $rejectedCount = $this->entityManager->getRepository(PaymentVerification::class)
-            ->count(['status' => PaymentStatus::REJECTED]);
-
-        // Get recent pending payments
-        $recentPendingPayments = $this->entityManager->getRepository(PaymentVerification::class)
-            ->findBy(['status' => PaymentStatus::PENDING_VALIDATION], ['createdAt' => 'DESC'], 5);
-
-        // Get recent verified payments
-        $recentVerifiedPayments = $this->entityManager->getRepository(PaymentVerification::class)
-            ->findBy(['status' => PaymentStatus::VERIFIED], ['verifiedAt' => 'DESC'], 5);
-
-        return $this->render('payment/dashboard.html.twig', [
-            'pendingCount' => $pendingCount,
-            'verifiedCount' => $verifiedCount,
-            'rejectedCount' => $rejectedCount,
-            'recentPendingPayments' => $recentPendingPayments,
-            'recentVerifiedPayments' => $recentVerifiedPayments
-        ]);
+        return $this->redirectToRoute('accounting_payment_final_list');
     }
 }

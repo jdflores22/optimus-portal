@@ -101,7 +101,7 @@
                                     </td>
                                     <td>
                                         {% if request.detentionChargeAmount > 0 %}
-                                            <span class="font-semibold text-error">₱{{ request.detentionChargeAmount|number_format(2, '.', ',') }}</span>
+                                            <span class="font-semibold text-error">{{ request.detentionChargeAmount|format_money('PHP') }}</span>
                                         {% else %}
                                             <span class="text-base-content/60">No charges</span>
                                         {% endif %}
@@ -114,7 +114,7 @@
                                                 View eDO
                                             </a>
                                         {% elseif request.status.value == 'awaiting_payment' and request.detentionBilling %}
-                                            <a href="{{ path('broker_payment_submit', {billingId: request.detentionBilling.id}) }}" class="btn btn-error btn-sm rounded-lg gap-2">
+                                            <a href="{{ path('broker_edo_renewal_status', {id: request.id}) }}" class="btn btn-error btn-sm rounded-lg gap-2">
                                                 <span class="icon-[tabler--credit-card] size-4"></span>
                                                 Pay Now
                                             </a>
@@ -158,7 +158,7 @@
                                 
                                 <div class="flex flex-wrap items-center gap-2">
                                     {% if request.detentionChargeAmount > 0 %}
-                                        <span class="text-sm font-semibold text-error">₱{{ request.detentionChargeAmount|number_format(2, '.', ',') }}</span>
+                                        <span class="text-sm font-semibold text-error">{{ request.detentionChargeAmount|format_money('PHP') }}</span>
                                     {% else %}
                                         <span class="text-sm text-base-content/60">No charges</span>
                                     {% endif %}
@@ -175,7 +175,7 @@
                                             View eDO
                                         </a>
                                     {% elseif request.status.value == 'awaiting_payment' and request.detentionBilling %}
-                                        <a href="{{ path('broker_payment_submit', {billingId: request.detentionBilling.id}) }}" class="btn btn-error btn-sm flex-1">
+                                        <a href="{{ path('broker_edo_renewal_status', {id: request.id}) }}" class="btn btn-error btn-sm flex-1">
                                             <span class="icon-[tabler--credit-card] size-4"></span>
                                             Pay Now
                                         </a>

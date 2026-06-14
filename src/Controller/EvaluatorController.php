@@ -26,8 +26,25 @@ class EvaluatorController extends AbstractController
     #[Route('/dashboard', name: 'app_evaluator_dashboard')]
     public function dashboard(): Response
     {
-        // Get pending applications
+        // Get pending applications and split by review type
         $pendingApplications = $this->accreditationService->getPendingSubmissions();
+        $complianceRequiredApplications = $this->entityManager->getRepository(\App\Entity\AccreditationSubmission::class)
+            ->findBy(
+                ['status' => AccreditationStatus::COMPLIANCE_REQUIRED, 'evaluator' => $this->getUser()],
+                ['evaluatedAt' => 'DESC']
+            );
+
+        $newPendingApplications = [];
+        $compliedApplications = [];
+        foreach ($pendingApplications as $application) {
+            if ($application->getSubmittedData()['_resubmitted_after_compliance'] ?? false) {
+                $compliedApplications[] = $application;
+            } else {
+                $newPendingApplications[] = $application;
+            }
+        }
+
+        $reviewQueue = array_merge($compliedApplications, $newPendingApplications);
         
         // Get recently evaluated applications by this evaluator
         $recentlyEvaluated = $this->entityManager->getRepository(\App\Entity\AccreditationSubmission::class)
@@ -44,6 +61,9 @@ class EvaluatorController extends AbstractController
         // Calculate comprehensive statistics
         $stats = [
             'pending_applications' => count($pendingApplications),
+            'pending_new' => count($newPendingApplications),
+            'complied_resubmissions' => count($compliedApplications),
+            'compliance_required' => count($complianceRequiredApplications),
             'evaluated_today' => $this->entityManager->getRepository(\App\Entity\AccreditationSubmission::class)
                 ->createQueryBuilder('a')
                 ->select('COUNT(a.id)')
@@ -161,6 +181,10 @@ class EvaluatorController extends AbstractController
 
         return $this->render('dashboard/evaluator.html.twig', [
             'pendingApplications' => $pendingApplications,
+            'reviewQueue' => $reviewQueue,
+            'newPendingApplications' => $newPendingApplications,
+            'compliedApplications' => $compliedApplications,
+            'complianceRequiredApplications' => $complianceRequiredApplications,
             'recentlyEvaluated' => $recentlyEvaluated,
             'stats' => $stats,
             'chartData' => $chartData,

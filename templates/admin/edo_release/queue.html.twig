@@ -1,23 +1,39 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 
 {% block title %}eDO Release Queue - OPTIMUS{% endblock %}
 
-{% block body %}
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+        <li><a href="{{ path('app_admin_dashboard') }}">Admin</a></li>
+        <li>eDO Release Queue</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
 <div class="space-y-6">
     <!-- Header -->
     <div class="card">
         <div class="card-body">
-            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                 <div class="flex-1 min-w-0">
                     <h1 class="card-title text-xl sm:text-2xl">eDO Release Queue</h1>
                     <p class="text-sm sm:text-base text-base-content/70 mt-1">Review and release pending electronic delivery orders</p>
                 </div>
-                <a href="{{ path('admin_payment_fee_config') }}" 
-                   class="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto">
-                    <span class="icon-[tabler--settings] size-5"></span>
-                    <span class="hidden sm:inline">Configure Payment Fee</span>
-                    <span class="sm:hidden">Configure Fee</span>
-                </a>
+                <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                    <a href="{{ path('admin_edo_release_revenue') }}"
+                       class="btn btn-outline btn-sm sm:btn-md gap-2 flex-1 sm:flex-none">
+                        <span class="icon-[tabler--currency-peso] size-5"></span>
+                        Revenue
+                    </a>
+                    <a href="{{ path('admin_payment_fee_config') }}" 
+                       class="btn btn-primary btn-sm sm:btn-md gap-2 flex-1 sm:flex-none">
+                        <span class="icon-[tabler--settings] size-5"></span>
+                        <span class="hidden sm:inline">Configure Payment Fee</span>
+                        <span class="sm:hidden">Configure Fee</span>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -192,19 +208,19 @@
                                                 <span class="badge-icon icon-[tabler--clock]"></span>
                                                 Pending
                                             </span>
-                                            <div class="text-xs font-semibold mt-1">₱{{ payment.amount|number_format(2) }}</div>
+                                            <div class="text-xs font-semibold mt-1">{{ payment.amount|format_money('PHP') }}</div>
                                         {% elseif payment.status.value == 'verified' %}
                                             <span class="badge badge-success badge-soft">
                                                 <span class="badge-icon icon-[tabler--check]"></span>
                                                 Verified
                                             </span>
-                                            <div class="text-xs font-semibold mt-1">₱{{ payment.amount|number_format(2) }}</div>
+                                            <div class="text-xs font-semibold mt-1">{{ payment.amount|format_money('PHP') }}</div>
                                         {% elseif payment.status.value == 'rejected' %}
                                             <span class="badge badge-error badge-soft">
                                                 <span class="badge-icon icon-[tabler--x]"></span>
                                                 Rejected
                                             </span>
-                                            <div class="text-xs font-semibold mt-1">₱{{ payment.amount|number_format(2) }}</div>
+                                            <div class="text-xs font-semibold mt-1">{{ payment.amount|format_money('PHP') }}</div>
                                         {% endif %}
                                     {% else %}
                                         <span class="badge badge-soft">
@@ -364,7 +380,7 @@
                                 <div class="flex items-center gap-2">
                                     <span class="icon-[tabler--currency-peso] size-4 text-base-content/50"></span>
                                     <span class="text-base-content/70">Amount:</span>
-                                    <span class="font-bold">₱{{ payment.amount|number_format(2) }}</span>
+                                    <span class="font-bold">{{ payment.amount|format_money('PHP') }}</span>
                                 </div>
                             {% endif %}
                             
@@ -436,6 +452,12 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
 
-{% include 'admin/edo_release/_modals_and_scripts.html.twig' %}
+{% block page_modals %}
+{% include 'admin/edo_release/_modals.html.twig' %}
+{% endblock %}
+
+{% block page_scripts %}
+{% include 'admin/edo_release/_edo_release_scripts.html.twig' %}
 {% endblock %}

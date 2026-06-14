@@ -37,7 +37,7 @@ class AuditLog
     #[ORM\Column(type: 'datetime')]
     private \DateTimeInterface $timestamp;
 
-    #[ORM\ManyToOne(targetEntity: ElectronicDeliveryOrder::class, inversedBy: 'accessLogs')]
+    #[ORM\ManyToOne(targetEntity: ElectronicDeliveryOrder::class, inversedBy: 'relatedAuditLogs')]
     #[ORM\JoinColumn(name: 'related_edo_id', referencedColumnName: 'id', nullable: true)]
     private ?ElectronicDeliveryOrder $relatedEdo = null;
 
@@ -120,6 +120,12 @@ class AuditLog
     public function getTimestamp(): \DateTimeInterface
     {
         return $this->timestamp;
+    }
+
+    public function setTimestamp(\DateTimeInterface $timestamp): self
+    {
+        $this->timestamp = $timestamp;
+        return $this;
     }
 
     public function getRelatedEdo(): ?ElectronicDeliveryOrder

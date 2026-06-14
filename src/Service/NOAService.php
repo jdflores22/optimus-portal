@@ -10,7 +10,9 @@ use App\Entity\Consignee;
 use App\Entity\Container;
 use App\Entity\ContainerType;
 use App\Entity\ContainerSize;
+use App\Entity\Enum\TerminalType;
 use App\Entity\Enum\WorkflowState;
+use App\Entity\Terminal;
 use App\Entity\Enum\ContainerStatus;
 use App\Exception\NOAValidationException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -37,7 +39,7 @@ class NOAService implements NOAServiceInterface
         string $blNumber,
         string $vesselNumber,
         \DateTimeInterface $eta,
-        string $cyLocation,
+        string $portLocation,
         Consignee $consignee,
         array $containers,
         User $creator
@@ -49,8 +51,8 @@ class NOAService implements NOAServiceInterface
         if (empty($vesselNumber)) {
             throw new NOAValidationException('Vessel number is required');
         }
-        if (empty($cyLocation)) {
-            throw new NOAValidationException('CY location is required');
+        if (empty($portLocation)) {
+            throw new NOAValidationException('Port location is required');
         }
         if (empty($containers)) {
             throw new NOAValidationException('At least one container is required');
@@ -98,7 +100,7 @@ class NOAService implements NOAServiceInterface
         $noa->setBlNumber($blNumber);
         $noa->setVesselNumber($vesselNumber);
         $noa->setEta($eta);
-        $noa->setCyLocation($cyLocation);
+        $noa->setPortLocation($portLocation);
         $noa->setConsignee($consignee);
         $noa->setCreatedBy($creator);
 
@@ -429,7 +431,7 @@ class NOAService implements NOAServiceInterface
             'vessel_number' => trim($row[1]),
             'eta' => trim($row[2]),
             'consignee_email' => trim($row[3]),
-            'cy_location' => trim($row[4]),
+            'port_location' => trim($row[4]),
             'containers_raw' => trim($row[5])
         ];
 
@@ -446,20 +448,16 @@ class NOAService implements NOAServiceInterface
         if (empty($data['consignee_email'])) {
             throw new \Exception('Consignee email is required');
         }
-        if (empty($data['cy_location'])) {
-            throw new \Exception('CY location is required');
+        if (empty($data['port_location'])) {
+            throw new \Exception('Port location is required');
         }
         if (empty($data['containers_raw'])) {
             throw new \Exception('At least one container is required');
         }
 
-        // Validate CY location exists in terminals table (using terminal code)
-        $terminal = $this->entityManager->getRepository(\App\Entity\Terminal::class)
-            ->findOneBy(['code' => $data['cy_location'], 'isActive' => true]);
-        
-        if (!$terminal) {
-            throw new \Exception('Invalid CY code: ' . $data['cy_location'] . '. Terminal not found or inactive. Use terminal codes like: ATI, ICTSI, CY-A, ESAFE');
-        }
+        // Validate port location exists as an active discharge terminal (not a CY)
+        $portTerminal = $this->resolvePortTerminal($data['port_location']);
+        $data['port_terminal'] = $portTerminal;
 
         // Parse ETA
         try {
@@ -487,10 +485,33 @@ class NOAService implements NOAServiceInterface
         
         $data['consignee'] = $consignee;
 
-        // Parse containers (format: number|size|type|cy_location|number|size|type|cy_location...)
+        // Parse containers (format: number|size|type|port_code|...)
         $data['containers'] = $this->parseContainers($data['containers_raw']);
 
         return $data;
+    }
+
+    /**
+     * Resolve and validate a discharge port/terminal code (ATI, ICTSI — not CY yards).
+     */
+    private function resolvePortTerminal(string $code): Terminal
+    {
+        $terminal = $this->entityManager->getRepository(Terminal::class)
+            ->findOneBy(['code' => $code, 'isActive' => true]);
+
+        if (!$terminal) {
+            throw new \Exception(
+                'Invalid port code: ' . $code . '. Terminal not found or inactive. Use port codes like: ATI, ICTSI'
+            );
+        }
+
+        if ($terminal->getType() === TerminalType::CY) {
+            throw new \Exception(
+                'Invalid port location: ' . $code . '. Container Yard (CY) codes cannot be used as discharge ports. Use port codes like: ATI, ICTSI'
+            );
+        }
+
+        return $terminal;
     }
 
     private function parseContainers(string $containersRaw): array
@@ -498,7 +519,7 @@ class NOAService implements NOAServiceInterface
         $parts = explode('|', $containersRaw);
         
         if (count($parts) % 4 !== 0) {
-            throw new \Exception('Invalid container format. Each container needs 4 values: number|size|type|cy_code');
+            throw new \Exception('Invalid container format. Each container needs 4 values: number|size|type|port_code');
         }
 
         $containers = [];
@@ -506,7 +527,7 @@ class NOAService implements NOAServiceInterface
             $containerNumber = trim($parts[$i]);
             $sizeValue = trim($parts[$i + 1]);
             $typeValue = trim($parts[$i + 2]);
-            $cyCode = trim($parts[$i + 3]);
+            $portCode = trim($parts[$i + 3]);
 
             // Map simple size values (20, 40) to database codes (20FT, 40FT)
             $sizeCodeMap = [
@@ -532,20 +553,15 @@ class NOAService implements NOAServiceInterface
                 throw new \Exception("Invalid container type: {$typeValue}. Valid types: DRY, REEFER, OPEN_TOP, FLAT_RACK, TANK, HIGH_CUBE");
             }
 
-            // Validate container CY code exists (using terminal code field)
-            $terminal = $this->entityManager->getRepository(\App\Entity\Terminal::class)
-                ->findOneBy(['code' => $cyCode, 'isActive' => true]);
-            
-            if (!$terminal) {
-                throw new \Exception("Invalid container CY code: {$cyCode}. Terminal not found or inactive. Use terminal codes like: ATI, ICTSI, CY-A, ESAFE");
-            }
+            // Validate per-container discharge port code
+            $terminal = $this->resolvePortTerminal($portCode);
 
             $containers[] = [
                 'number' => $containerNumber,
                 'size' => $size,
                 'type' => $type,
-                'cy_code' => $cyCode, // Store the terminal code
-                'cy_location' => $terminal->getLocation() // Store the full location
+                'port_code' => $portCode,
+                'port_location' => $terminal->getLocation(),
             ];
         }
 
@@ -582,7 +598,7 @@ class NOAService implements NOAServiceInterface
         $noa->setBlNumber($data['bl_number']);
         $noa->setVesselNumber($data['vessel_number']);
         $noa->setEta($data['eta_parsed']);
-        $noa->setCyLocation($data['cy_location']);
+        $noa->setPortLocation($data['port_location']);
         $noa->setConsignee($data['consignee']);
         $noa->setCreatedBy($creator);
 
@@ -596,7 +612,7 @@ class NOAService implements NOAServiceInterface
             $container->setContainerType($containerData['type']);
             $container->setNoa($noa);
             $container->setStatus(ContainerStatus::PENDING);
-            $container->setCurrentLocation($containerData['cy_location']);
+            $container->setCurrentLocation($containerData['port_location']);
             $container->setExpectedReturnDate(new \DateTime('+30 days'));
             
             // Set shipping line from creator if available
@@ -605,24 +621,8 @@ class NOAService implements NOAServiceInterface
                 $container->setShippingLine($shippingLine);
             }
             
-            // Find and set CY allocation based on terminal code
-            $terminal = $this->entityManager->getRepository(\App\Entity\Terminal::class)
-                ->findOneBy(['code' => $containerData['cy_code'], 'isActive' => true]);
-            
-            if ($terminal && $container->getShippingLine()) {
-                // Find allocation for this shipping line and terminal
-                $allocation = $this->entityManager->getRepository(\App\Entity\ShippingLineTerminalAllocation::class)
-                    ->findOneBy([
-                        'shippingLine' => $container->getShippingLine(),
-                        'terminal' => $terminal
-                    ]);
-                
-                if ($allocation) {
-                    $container->setCyAllocation($allocation);
-                    $container->setAllocationStatus(\App\Entity\Enum\AllocationStatus::PRE_FORECAST);
-                }
-            }
-
+            // CY allocation is assigned later in the workflow when empty containers are routed to yards
+            // Port discharge location is captured via port_location on the NOA and container currentLocation
             $this->entityManager->persist($container);
         }
 

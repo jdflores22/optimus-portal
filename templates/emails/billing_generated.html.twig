@@ -23,7 +23,7 @@
             {% if container is defined %}
                 <p><strong>Container Number:</strong> {{ container.containerNumber }}</p>
             {% endif %}
-            <p><strong>Total Amount:</strong> ₱{{ billing.totalAmount|number_format(2) }}</p>
+            <p><strong>Total Amount:</strong> {{ billing|format_billing }}</p>
         </div>
         
         <h3 style="color: #2c3e50;">Itemized Charges:</h3>
@@ -35,32 +35,32 @@
             {% if billing.freightCharges is defined %}
                 <tr>
                     <td style="padding: 10px; border: 1px solid #ddd;">Freight Charges</td>
-                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">₱{{ billing.freightCharges|number_format(2) }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ billing|format_billing_charge(billing.freightCharges, billing.freightChargesUsd) }}</td>
                 </tr>
             {% endif %}
             {% if billing.thcCharges is defined %}
                 <tr>
                     <td style="padding: 10px; border: 1px solid #ddd;">Terminal Handling Charges (THC)</td>
-                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">₱{{ billing.thcCharges|number_format(2) }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ billing|format_billing_charge(billing.thcCharges, billing.thcChargesUsd) }}</td>
                 </tr>
             {% endif %}
             {% if billing.expiredDays is defined and billing.perDayRate is defined %}
                 <tr>
-                    <td style="padding: 10px; border: 1px solid #ddd;">eDO Expired Days ({{ billing.expiredDays }} days × ₱{{ billing.perDayRate|number_format(2) }})</td>
-                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">₱{{ billing.totalAmount|number_format(2) }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">eDO Expired Days ({{ billing.expiredDays }} days × {{ billing|format_billing_charge(billing.perDayRate, billing.perDayRateUsd ?? null) }})</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ billing|format_billing }}</td>
                 </tr>
             {% endif %}
             {% if billing.additionalCharges is defined %}
                 {% for charge in billing.additionalCharges %}
                 <tr>
                     <td style="padding: 10px; border: 1px solid #ddd;">{{ charge.description }}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">₱{{ charge.amount|number_format(2) }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ charge.amount|format_money(billing.originalCurrency) }}</td>
                 </tr>
                 {% endfor %}
             {% endif %}
             <tr style="background-color: #f8f9fa; font-weight: bold;">
                 <td style="padding: 10px; border: 1px solid #ddd;">TOTAL</td>
-                <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">₱{{ billing.totalAmount|number_format(2) }}</td>
+                <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ billing|format_billing }}</td>
             </tr>
         </table>
         

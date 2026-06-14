@@ -1,0 +1,195 @@
+{% extends 'layout/admin_base.html.twig' %}
+
+{% block title %}Port Utilization Report - OPTIMUS{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+{% endblock %}
+
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+        <li><a href="{{ path('app_admin_dashboard') }}">Admin</a></li>
+        <li>Reports</li>
+        <li>Port Utilization</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="alert alert-info max-w-3xl mx-auto">
+        <span class="icon-[tabler--anchor] size-5"></span>
+        <div class="text-sm">
+            <p class="font-semibold">Laden container discharge planning</p>
+            <p class="opacity-90 mt-1">This report uses <code>port_location</code> from NOAs to project inbound laden container volume per port/terminal within the selected ETA range.</p>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm border border-base-200 max-w-3xl mx-auto">
+        <div class="card-body gap-6">
+            <h1 class="text-xl font-semibold text-base-content">Port Utilization Report</h1>
+
+            <form id="reportFiltersForm">
+                <div class="grid grid-cols-1 sm:grid-cols-[minmax(8rem,10rem)_1fr] gap-x-6 gap-y-4 items-center">
+                    <label class="text-sm font-medium text-base-content/80" for="startDate">ETA From</label>
+                    <input type="date" id="startDate" name="start_date" value="{{ defaultStartDate }}" required
+                           class="input input-bordered w-full max-w-md">
+
+                    <label class="text-sm font-medium text-base-content/80" for="endDate">ETA To</label>
+                    <input type="date" id="endDate" name="end_date" value="{{ defaultEndDate }}" required
+                           class="input input-bordered w-full max-w-md">
+
+                    <label class="text-sm font-medium text-base-content/80" for="containerSizeFilter">Container Size</label>
+                    <select id="containerSizeFilter" name="container_size" class="select select-bordered w-full max-w-md">
+                        <option value="both">Both (20ft &amp; 40ft)</option>
+                        <option value="20ft">20ft Only</option>
+                        <option value="40ft">40ft Only</option>
+                    </select>
+
+                    <label class="text-sm font-medium text-base-content/80" for="shippingLineFilter">Shipping Line</label>
+                    <select id="shippingLineFilter" name="shipping_line_id" class="select select-bordered w-full max-w-md">
+                        <option value="">All Shipping Lines</option>
+                        {% for line in shippingLines %}
+                            <option value="{{ line.id }}">{{ line.brandName }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <label class="text-sm font-medium text-base-content/80" for="terminalFilter">Port / Terminal</label>
+                    <select id="terminalFilter" name="terminal_id" class="select select-bordered w-full max-w-md">
+                        <option value="">All Ports</option>
+                        {% for port in ports %}
+                            <option value="{{ port.id }}">{{ port.name }} ({{ port.code }})</option>
+                        {% endfor %}
+                    </select>
+
+                    <label class="text-sm font-medium text-base-content/80" for="sortBy">Sort By</label>
+                    <select id="sortBy" name="sort_by" class="select select-bordered w-full max-w-md">
+                        <option value="terminal">Port Name</option>
+                        <option value="utilization_teu">Utilization (TEU)</option>
+                        <option value="utilization_20ft">Volume (20ft)</option>
+                        <option value="utilization_40ft">Volume (40ft)</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-wrap gap-3 pt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <span class="icon-[tabler--anchor] size-4"></span>
+                        Generate Report
+                    </button>
+                    <button type="button" id="resetFilters" class="btn btn-neutral">Reset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="exportButtons" class="hidden flex flex-wrap gap-2 justify-end">
+        <button type="button" id="exportCsv" class="btn btn-outline btn-sm">
+            <span class="icon-[tabler--file-spreadsheet] size-4"></span> Export CSV
+        </button>
+        <button type="button" id="exportPdf" class="btn btn-outline btn-sm">
+            <span class="icon-[tabler--file-type-pdf] size-4"></span> Export PDF
+        </button>
+    </div>
+
+    <div id="emptyState" class="card bg-base-100 shadow-sm border border-base-200 border-dashed">
+        <div class="card-body items-center text-center py-12">
+            <span class="icon-[tabler--anchor] size-12 text-base-content/30"></span>
+            <p class="text-base-content/60 mt-2">Select an ETA range and click <strong>Generate Report</strong> to view projected port utilization.</p>
+        </div>
+    </div>
+
+    <div id="trendsCard" class="hidden card bg-base-100 shadow-sm border border-base-200">
+        <div class="card-body">
+            <h3 class="font-semibold text-lg">Projected Arrival Trends</h3>
+            <p class="text-sm text-base-content/60 mb-4">Cumulative projected TEU by vessel ETA</p>
+            <div id="utilizationTrendsChart" class="min-h-[350px]"></div>
+        </div>
+    </div>
+
+    <div id="breakdownCard" class="hidden card bg-base-100 shadow-sm border border-base-200">
+        <div class="card-body">
+            <h3 class="font-semibold text-lg">Volume Breakdown by Port</h3>
+            <p class="text-sm text-base-content/60 mb-4">Projected vs available capacity per port</p>
+            <div id="allocationBreakdownChart" class="min-h-[400px]"></div>
+        </div>
+    </div>
+
+    <div id="statusCard" class="hidden card bg-base-100 shadow-sm border border-base-200">
+        <div class="card-body">
+            <h3 class="font-semibold text-lg mb-4">Container Status Breakdown</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="card bg-warning/10 border border-warning/30">
+                    <div class="card-body">
+                        <span class="badge badge-warning badge-lg mb-2">Pre-Forecast</span>
+                        <p class="text-sm"><strong>Containers:</strong> <span id="preForecastCount">0</span></p>
+                        <p class="text-sm"><strong>TEU:</strong> <span id="preForecastTeu">0.0</span></p>
+                    </div>
+                </div>
+                <div class="card bg-info/10 border border-info/30">
+                    <div class="card-body">
+                        <span class="badge badge-info badge-lg mb-2">Allocated</span>
+                        <p class="text-sm"><strong>Containers:</strong> <span id="allocatedCount">0</span></p>
+                        <p class="text-sm"><strong>TEU:</strong> <span id="allocatedTeu">0.0</span></p>
+                    </div>
+                </div>
+                <div class="card bg-base-200/50 border border-base-300">
+                    <div class="card-body">
+                        <span class="badge badge-ghost badge-lg mb-2">Other / Pending</span>
+                        <p class="text-sm"><strong>Containers:</strong> <span id="pendingCount">0</span></p>
+                        <p class="text-sm"><strong>TEU:</strong> <span id="pendingTeu">0.0</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="locationCard" class="hidden card bg-base-100 shadow-sm border border-base-200">
+        <div class="card-body p-0">
+            <div class="p-4 sm:p-6 border-b border-base-200">
+                <h3 class="font-semibold text-lg">Utilization by Port</h3>
+                <p class="text-sm text-base-content/60">Projected laden container volume vs port daily capacity</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table table-zebra table-sm" id="utilizationTable">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" class="align-middle">Port</th>
+                            <th rowspan="2" class="align-middle">Code</th>
+                            <th rowspan="2" class="align-middle">Location</th>
+                            <th rowspan="2" class="align-middle">Shipping Line</th>
+                            <th colspan="3" class="text-center bg-base-200">TEU Projection</th>
+                            <th colspan="2" class="text-center bg-info/20">20ft</th>
+                            <th colspan="2" class="text-center bg-warning/20">40ft</th>
+                        </tr>
+                        <tr>
+                            <th class="bg-base-200">Capacity</th>
+                            <th class="bg-base-200">Projected</th>
+                            <th class="bg-base-200">Util %</th>
+                            <th class="bg-info/20">Count</th>
+                            <th class="bg-info/20">—</th>
+                            <th class="bg-warning/20">Count</th>
+                            <th class="bg-warning/20">—</th>
+                        </tr>
+                    </thead>
+                    <tbody id="utilizationTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="loadingOverlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-base-300/50 backdrop-blur-sm">
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body items-center gap-4">
+            <span class="loading loading-spinner loading-lg text-primary"></span>
+            <p class="text-base-content/70">Generating report…</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ asset('js/port-utilization-report.js') }}"></script>
+{% endblock %}

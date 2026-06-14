@@ -1,0 +1,21 @@
+{% if form.status.value == 'ACTIVE' %}
+    <span class="badge badge-success badge-sm gap-1">
+        <span class="icon-[tabler--circle-check] size-3"></span>
+        Active
+    </span>
+{% elseif form.status.value == 'INACTIVE' %}
+    <span class="badge badge-warning badge-sm gap-1">
+        <span class="icon-[tabler--circle-x] size-3"></span>
+        Inactive
+    </span>
+{% elseif form.status.value == 'PUBLISHED' %}
+    <span class="badge badge-info badge-sm gap-1">
+        <span class="icon-[tabler--cloud-upload] size-3"></span>
+        Published
+    </span>
+{% else %}
+    <span class="badge badge-ghost badge-sm gap-1">
+        <span class="icon-[tabler--clock] size-3"></span>
+        Draft
+    </span>
+{% endif %}

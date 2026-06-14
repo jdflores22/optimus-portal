@@ -31,6 +31,9 @@ module.exports = {
     'bg-green-200', 'text-green-900',
     'bg-green-300', 'text-green-900',
     'bg-red-100', 'text-red-800',
+    // FlyonUI stepper block
+    'text-bg-soft-neutral',
+    'min-h-7.5', 'min-w-7.5', 'size-7.5',
   ],
   theme: {
     extend: {

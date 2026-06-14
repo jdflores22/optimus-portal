@@ -2,172 +2,161 @@
 
 {% block title %}Role Permissions - {{ shipping_line.brandName }}{% endblock %}
 
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+        <li><a href="{{ path('app_admin_dashboard') }}">Admin</a></li>
+        <li><a href="{{ path('admin_shipping_lines_list') }}">Shipping Lines</a></li>
+        <li><a href="{{ path('admin_shipping_line_configuration_index', {id: shipping_line.id}) }}">{{ shipping_line.brandName }}</a></li>
+        <li>Role Permissions</li>
+    </ul>
+</div>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-user-shield"></i>
-                        Role Permissions - {{ shipping_line.brandName }}
-                    </h3>
-                    <div class="card-tools">
-                        <a href="{{ path('admin_shipping_line_configuration_index', {id: shipping_line.id}) }}" 
-                           class="btn btn-secondary btn-sm">
-                            <i class="fas fa-arrow-left"></i> Back to Configuration
-                        </a>
-                    </div>
-                </div>
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                <span class="icon-[tabler--user-shield] size-6"></span>
+                Role Permissions
+            </h1>
+            <p class="text-sm text-base-content/70 mt-1">{{ shipping_line.brandName }}</p>
+        </div>
+        <a href="{{ path('admin_shipping_line_configuration_index', {id: shipping_line.id}) }}"
+           class="btn btn-ghost btn-sm self-start">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back to Configuration
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {% for role in configurable_roles %}
+            {% set roleConfig = null %}
+            {% for config in role_permissions %}
+                {% if config.role == role %}
+                    {% set roleConfig = config %}
+                {% endif %}
+            {% endfor %}
+
+            <div class="card bg-base-100 shadow-sm h-full">
                 <div class="card-body">
-                    <div class="row">
-                        {% for role in configurable_roles %}
-                            {% set roleConfig = null %}
-                            {% for config in role_permissions %}
-                                {% if config.role == role %}
-                                    {% set roleConfig = config %}
-                                {% endif %}
-                            {% endfor %}
-                            
-                            <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card h-100">
-                                    <div class="card-header d-flex justify-content-between align-items-center">
-                                        <h5 class="mb-0">{{ role.value|replace({'_': ' '})|title }}</h5>
-                                        {% if roleConfig %}
-                                            <span class="badge badge-success">Configured</span>
-                                        {% else %}
-                                            <span class="badge badge-secondary">Default</span>
-                                        {% endif %}
-                                    </div>
-                                    <div class="card-body">
-                                        {% if roleConfig %}
-                                            <p class="text-muted">
-                                                <strong>Permissions:</strong> {{ roleConfig.permissions|length }}
-                                                {% if roleConfig.inheritFromParent %}
-                                                    <br><small class="text-info">+ Inherited permissions</small>
-                                                {% endif %}
-                                            </p>
-                                            <p class="text-muted">
-                                                <strong>Last Updated:</strong><br>
-                                                {{ roleConfig.updatedAt|date('Y-m-d H:i') }}
-                                            </p>
-                                            {% if roleConfig.restrictions %}
-                                                <p class="text-warning">
-                                                    <i class="fas fa-exclamation-triangle"></i>
-                                                    Has restrictions
-                                                </p>
-                                            {% endif %}
-                                        {% else %}
-                                            {% set defaultPermissions = [] %}
-                                            {% for permission in available_permissions %}
-                                                {% if permission starts with 'user.' and role.value == 'SHIPPING_LINES_ADMIN' %}
-                                                    {% set defaultPermissions = defaultPermissions|merge([permission]) %}
-                                                {% endif %}
-                                            {% endfor %}
-                                            <p class="text-muted">
-                                                Using default permissions
-                                            </p>
-                                        {% endif %}
-                                    </div>
-                                    <div class="card-footer">
-                                        <div class="btn-group w-100">
-                                            <a href="{{ path('admin_role_permissions_configure', {id: shipping_line.id, role: role.value}) }}" 
-                                               class="btn btn-primary btn-sm">
-                                                <i class="fas fa-cog"></i> Configure
-                                            </a>
-                                            {% if roleConfig %}
-                                                <button type="button" class="btn btn-warning btn-sm" 
-                                                        onclick="resetRolePermissions('{{ role.value }}')">
-                                                    <i class="fas fa-undo"></i> Reset
-                                                </button>
-                                                <button type="button" class="btn btn-danger btn-sm" 
-                                                        onclick="deleteRolePermissions('{{ role.value }}')">
-                                                    <i class="fas fa-trash"></i> Delete
-                                                </button>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
+                    <div class="flex items-start justify-between gap-2 mb-3">
+                        <h2 class="font-semibold">{{ role.value|replace({'_': ' '})|title }}</h2>
+                        {% if roleConfig %}
+                            <span class="badge badge-success badge-soft badge-sm shrink-0">Configured</span>
+                        {% else %}
+                            <span class="badge badge-ghost badge-sm shrink-0">Default</span>
+                        {% endif %}
                     </div>
 
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5>Available Permissions</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        {% set permissionGroups = {} %}
-                                        {% for permission in available_permissions %}
-                                            {% set category = permission|split('.')|first %}
-                                            {% if permissionGroups[category] is not defined %}
-                                                {% set permissionGroups = permissionGroups|merge({(category): []}) %}
-                                            {% endif %}
-                                            {% set permissionGroups = permissionGroups|merge({(category): permissionGroups[category]|merge([permission])}) %}
-                                        {% endfor %}
-
-                                        {% for category, permissions in permissionGroups %}
-                                            <div class="col-md-3 mb-3">
-                                                <h6 class="text-uppercase text-muted">{{ category|title }}</h6>
-                                                <ul class="list-unstyled">
-                                                    {% for permission in permissions %}
-                                                        <li>
-                                                            <small class="text-muted">{{ permission }}</small>
-                                                        </li>
-                                                    {% endfor %}
-                                                </ul>
-                                            </div>
-                                        {% endfor %}
-                                    </div>
-                                </div>
+                    {% if roleConfig %}
+                        <p class="text-sm text-base-content/70">
+                            <span class="font-medium">{{ roleConfig.permissions|length }}</span> permissions
+                            {% if roleConfig.inheritFromParent %}
+                                <span class="text-info">+ inherited</span>
+                            {% endif %}
+                        </p>
+                        <p class="text-xs text-base-content/60 mt-2">
+                            Updated {{ roleConfig.updatedAt|date('M j, Y g:i A') }}
+                        </p>
+                        {% if roleConfig.restrictions %}
+                            <div class="alert alert-warning py-2 mt-3 text-xs">
+                                <span class="icon-[tabler--alert-triangle] size-4"></span>
+                                Has restrictions
                             </div>
-                        </div>
+                        {% endif %}
+                    {% else %}
+                        <p class="text-sm text-base-content/70">Using system default permissions.</p>
+                    {% endif %}
+
+                    <div class="card-actions justify-start mt-4 flex-wrap gap-2">
+                        <a href="{{ path('admin_role_permissions_configure', {id: shipping_line.id, role: role.value}) }}"
+                           class="btn btn-primary btn-sm">
+                            <span class="icon-[tabler--settings] size-4"></span>
+                            Configure
+                        </a>
+                        {% if roleConfig %}
+                            <button type="button"
+                                    class="btn btn-warning btn-soft btn-sm"
+                                    onclick="resetRolePermissions('{{ role.value|e('js') }}')">
+                                Reset
+                            </button>
+                            <button type="button"
+                                    class="btn btn-error btn-soft btn-sm"
+                                    onclick="deleteRolePermissions('{{ role.value|e('js') }}')">
+                                Delete
+                            </button>
+                        {% endif %}
                     </div>
                 </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h3 class="card-title text-lg mb-4">Available Permissions</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {% set permissionGroups = {} %}
+                {% for permission in available_permissions %}
+                    {% set category = permission|split('.')|first %}
+                    {% if permissionGroups[category] is not defined %}
+                        {% set permissionGroups = permissionGroups|merge({(category): []}) %}
+                    {% endif %}
+                    {% set permissionGroups = permissionGroups|merge({(category): permissionGroups[category]|merge([permission])}) %}
+                {% endfor %}
+
+                {% for category, permissions in permissionGroups %}
+                    <div>
+                        <h4 class="text-xs font-semibold uppercase text-base-content/50 mb-2">{{ category|title }}</h4>
+                        <ul class="space-y-1">
+                            {% for permission in permissions %}
+                                <li class="text-xs text-base-content/70 font-mono">{{ permission }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endfor %}
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
 
-{% block javascripts %}
-{{ parent() }}
+{% block page_scripts %}
 <script>
+const resetRoleUrlTemplate = {{ path('admin_role_permissions_reset', {id: shipping_line.id, role: '__ROLE__'})|json_encode|raw }};
+const deleteRoleUrlTemplate = {{ path('admin_role_permissions_delete', {id: shipping_line.id, role: '__ROLE__'})|json_encode|raw }};
+const resetToken = {{ csrf_token('reset_permissions')|json_encode|raw }};
+const deleteToken = {{ csrf_token('delete_permissions')|json_encode|raw }};
+
+function submitRoleAction(url, token) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url;
+
+    const tokenInput = document.createElement('input');
+    tokenInput.type = 'hidden';
+    tokenInput.name = '_token';
+    tokenInput.value = token;
+    form.appendChild(tokenInput);
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
 function resetRolePermissions(role) {
-    if (confirm('Are you sure you want to reset permissions for ' + role + ' to defaults?')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/admin/role-permissions/${shipping_line.id}/reset/${role}`;
-        
-        const tokenInput = document.createElement('input');
-        tokenInput.type = 'hidden';
-        tokenInput.name = '_token';
-        tokenInput.value = '{{ csrf_token('reset_permissions') }}';
-        form.appendChild(tokenInput);
-        
-        document.body.appendChild(form);
-        form.submit();
+    if (!confirm('Reset permissions for ' + role + ' to defaults?')) {
+        return;
     }
+    submitRoleAction(resetRoleUrlTemplate.replace('__ROLE__', encodeURIComponent(role)), resetToken);
 }
 
 function deleteRolePermissions(role) {
-    if (confirm('Are you sure you want to delete custom permissions for ' + role + '? This will revert to default permissions.')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/admin/role-permissions/${shipping_line.id}/delete/${role}`;
-        
-        const tokenInput = document.createElement('input');
-        tokenInput.type = 'hidden';
-        tokenInput.name = '_token';
-        tokenInput.value = '{{ csrf_token('delete_permissions') }}';
-        form.appendChild(tokenInput);
-        
-        document.body.appendChild(form);
-        form.submit();
+    if (!confirm('Delete custom permissions for ' + role + '? This reverts to defaults.')) {
+        return;
     }
+    submitRoleAction(deleteRoleUrlTemplate.replace('__ROLE__', encodeURIComponent(role)), deleteToken);
 }
 </script>
 {% endblock %}

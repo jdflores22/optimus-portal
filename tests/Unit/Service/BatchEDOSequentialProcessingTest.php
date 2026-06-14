@@ -389,7 +389,7 @@ class BatchEDOSequentialProcessingTest extends TestCase
         $idProperty->setAccessible(true);
         $idProperty->setValue($noa, $id);
         
-        $noa->setCyLocation("CY Location {$id}");
+        $noa->setPortLocation("CY Location {$id}");
         
         return $noa;
     }

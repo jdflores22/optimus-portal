@@ -2,115 +2,112 @@
 
 {% block title %}Create Configuration - {{ shipping_line.brandName }}{% endblock %}
 
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+        <li><a href="{{ path('app_admin_dashboard') }}">Admin</a></li>
+        <li><a href="{{ path('admin_shipping_lines_list') }}">Shipping Lines</a></li>
+        <li><a href="{{ path('admin_shipping_line_configuration_index', {id: shipping_line.id}) }}">{{ shipping_line.brandName }}</a></li>
+        <li>Create Configuration</li>
+    </ul>
+</div>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-plus"></i>
-                        Create Configuration - {{ shipping_line.brandName }}
-                    </h3>
-                    <div class="card-tools">
-                        <a href="{{ path('admin_shipping_line_configuration_index', {id: shipping_line.id}) }}" 
-                           class="btn btn-secondary btn-sm">
-                            <i class="fas fa-arrow-left"></i> Back to Configurations
-                        </a>
+<div class="card bg-base-100 shadow-sm">
+    <div class="card-body">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+                <h1 class="card-title text-xl sm:text-2xl">
+                    <span class="icon-[tabler--plus] size-6"></span>
+                    Create Configuration
+                </h1>
+                <p class="text-sm text-base-content/70 mt-1">{{ shipping_line.brandName }}</p>
+            </div>
+            <a href="{{ path('admin_shipping_line_configuration_index', {id: shipping_line.id}) }}"
+               class="btn btn-ghost btn-sm">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
+            </a>
+        </div>
+
+        <form method="POST" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-control">
+                    <label for="config_key" class="label py-1">
+                        <span class="label-text font-medium">Configuration Key <span class="text-error">*</span></span>
+                    </label>
+                    <input type="text"
+                           id="config_key"
+                           name="config_key"
+                           required
+                           class="input input-bordered w-full"
+                           placeholder="portal_theme">
+                    <label class="label py-1">
+                        <span class="label-text-alt">e.g. portal_theme, notification_settings</span>
+                    </label>
+                </div>
+                <div class="form-control">
+                    <label for="description" class="label py-1">
+                        <span class="label-text font-medium">Description</span>
+                    </label>
+                    <input type="text"
+                           id="description"
+                           name="description"
+                           class="input input-bordered w-full"
+                           placeholder="Optional description">
+                </div>
+            </div>
+
+            <div class="form-control">
+                <label for="config_value" class="label py-1">
+                    <span class="label-text font-medium">Configuration Value (JSON) <span class="text-error">*</span></span>
+                </label>
+                <textarea id="config_value"
+                          name="config_value"
+                          rows="12"
+                          required
+                          class="textarea textarea-bordered font-mono text-sm w-full"
+                          placeholder='{"primaryColor": "#007bff"}'></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="card bg-base-200">
+                    <div class="card-body p-4">
+                        <h3 class="font-semibold text-sm mb-3">Templates</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-sm btn-soft" onclick="loadTemplate('portal_theme')">Portal Theme</button>
+                            <button type="button" class="btn btn-sm btn-soft" onclick="loadTemplate('notification_settings')">Notifications</button>
+                            <button type="button" class="btn btn-sm btn-soft" onclick="loadTemplate('security_settings')">Security</button>
+                            <button type="button" class="btn btn-sm btn-soft" onclick="loadTemplate('feature_flags')">Feature Flags</button>
+                        </div>
                     </div>
                 </div>
-                <form method="POST">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="config_key">Configuration Key <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="config_key" name="config_key" required>
-                                    <small class="form-text text-muted">
-                                        Use a descriptive key like 'portal_theme', 'notification_settings', etc.
-                                    </small>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="description">Description</label>
-                                    <input type="text" class="form-control" id="description" name="description">
-                                    <small class="form-text text-muted">
-                                        Optional description of what this configuration controls.
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="config_value">Configuration Value (JSON) <span class="text-danger">*</span></label>
-                            <textarea class="form-control" id="config_value" name="config_value" rows="10" required></textarea>
-                            <small class="form-text text-muted">
-                                Enter the configuration as valid JSON. Example: {"primaryColor": "#007bff", "secondaryColor": "#6c757d"}
-                            </small>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5>Common Configuration Templates</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="btn-group-vertical w-100">
-                                            <button type="button" class="btn btn-outline-primary btn-sm" 
-                                                    onclick="loadTemplate('portal_theme')">
-                                                Portal Theme
-                                            </button>
-                                            <button type="button" class="btn btn-outline-primary btn-sm" 
-                                                    onclick="loadTemplate('notification_settings')">
-                                                Notification Settings
-                                            </button>
-                                            <button type="button" class="btn btn-outline-primary btn-sm" 
-                                                    onclick="loadTemplate('security_settings')">
-                                                Security Settings
-                                            </button>
-                                            <button type="button" class="btn btn-outline-primary btn-sm" 
-                                                    onclick="loadTemplate('feature_flags')">
-                                                Feature Flags
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h5>JSON Validation</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div id="json-validation" class="alert alert-info">
-                                            <i class="fas fa-info-circle"></i>
-                                            Enter JSON to validate
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                <div class="card bg-base-200">
+                    <div class="card-body p-4">
+                        <h3 class="font-semibold text-sm mb-3">JSON Validation</h3>
+                        <div id="json-validation" class="alert alert-info text-sm">
+                            <span class="icon-[tabler--info-circle] size-4"></span>
+                            Enter JSON to validate
                         </div>
                     </div>
-                    <div class="card-footer">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Create Configuration
-                        </button>
-                        <a href="{{ path('admin_shipping_line_configuration_index', {id: shipping_line.id}) }}" 
-                           class="btn btn-secondary">
-                            Cancel
-                        </a>
-                    </div>
-                </form>
+                </div>
             </div>
-        </div>
+
+            <div class="flex flex-wrap gap-2 pt-2">
+                <button type="submit" class="btn btn-primary">
+                    <span class="icon-[tabler--device-floppy] size-4"></span>
+                    Create Configuration
+                </button>
+                <a href="{{ path('admin_shipping_line_configuration_index', {id: shipping_line.id}) }}"
+                   class="btn btn-ghost">Cancel</a>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}
 
-{% block javascripts %}
-{{ parent() }}
+{% block page_scripts %}
 <script>
 const templates = {
     portal_theme: {
@@ -150,31 +147,32 @@ const templates = {
 
 function loadTemplate(templateName) {
     const template = templates[templateName];
-    if (template) {
-        document.getElementById('config_key').value = template.key;
-        document.getElementById('config_value').value = JSON.stringify(template.value, null, 2);
-        validateJson();
+    if (!template) {
+        return;
     }
+    document.getElementById('config_key').value = template.key;
+    document.getElementById('config_value').value = JSON.stringify(template.value, null, 2);
+    validateJson();
 }
 
 function validateJson() {
     const textarea = document.getElementById('config_value');
     const validation = document.getElementById('json-validation');
-    
+
     try {
         const value = textarea.value.trim();
         if (!value) {
-            validation.className = 'alert alert-info';
-            validation.innerHTML = '<i class="fas fa-info-circle"></i> Enter JSON to validate';
+            validation.className = 'alert alert-info text-sm';
+            validation.innerHTML = '<span class="icon-[tabler--info-circle] size-4"></span> Enter JSON to validate';
             return;
         }
-        
+
         JSON.parse(value);
-        validation.className = 'alert alert-success';
-        validation.innerHTML = '<i class="fas fa-check-circle"></i> Valid JSON';
+        validation.className = 'alert alert-success text-sm';
+        validation.innerHTML = '<span class="icon-[tabler--circle-check] size-4"></span> Valid JSON';
     } catch (e) {
-        validation.className = 'alert alert-danger';
-        validation.innerHTML = '<i class="fas fa-exclamation-circle"></i> Invalid JSON: ' + e.message;
+        validation.className = 'alert alert-error text-sm';
+        validation.innerHTML = '<span class="icon-[tabler--alert-circle] size-4"></span> Invalid JSON: ' + e.message;
     }
 }
 

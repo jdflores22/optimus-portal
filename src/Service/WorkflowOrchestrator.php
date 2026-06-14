@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Entity\Manifest;
 use App\Entity\User;
 use App\Entity\WorkflowStateHistory;
+use App\Entity\Enum\EDOStatus;
 use App\Entity\Enum\WorkflowState;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -100,6 +101,144 @@ class WorkflowOrchestrator
             'manifest_id' => $manifest->getId(),
             'new_state' => $newState->value
         ]);
+    }
+
+    /**
+     * Transition manifest to EDO_RELEASED when every eDO on the manifest is released.
+     */
+    public function transitionToEdoReleasedWhenComplete(
+        Manifest $manifest,
+        User $actor,
+        ?string $reason = null
+    ): bool {
+        if ($manifest->getWorkflowState() === WorkflowState::EDO_RELEASED) {
+            return false;
+        }
+
+        if (!$this->allEdosReleased($manifest)) {
+            return false;
+        }
+
+        if (!$manifest->canTransitionTo(WorkflowState::EDO_RELEASED)) {
+            $this->logger->warning('Cannot transition manifest to edo_released', [
+                'manifest_id' => $manifest->getId(),
+                'current_state' => $manifest->getWorkflowState()->value,
+            ]);
+
+            return false;
+        }
+
+        $this->transitionState(
+            $manifest,
+            WorkflowState::EDO_RELEASED,
+            $actor,
+            $reason ?? 'All eDOs released'
+        );
+
+        $manifest->markAsCompleted($actor);
+
+        return true;
+    }
+
+    private function allEdosReleased(Manifest $manifest): bool
+    {
+        $edos = $manifest->getEdos();
+        if ($edos->isEmpty()) {
+            return false;
+        }
+
+        foreach ($edos as $edo) {
+            if ($edo->getStatus() !== EDOStatus::RELEASED) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Transition manifest to EDO_GENERATED when batch generation completes (idempotent).
+     */
+    public function transitionToEdoGeneratedIfNeeded(
+        Manifest $manifest,
+        User $actor,
+        ?string $reason = null
+    ): void {
+        if ($manifest->getWorkflowState() === WorkflowState::EDO_GENERATED
+            || $manifest->getWorkflowState() === WorkflowState::EDO_RELEASED) {
+            return;
+        }
+
+        if (!$manifest->canTransitionTo(WorkflowState::EDO_GENERATED)) {
+            throw new \InvalidArgumentException(sprintf(
+                'Cannot transition manifest %d from %s to edo_generated',
+                $manifest->getId(),
+                $manifest->getWorkflowState()->value
+            ));
+        }
+
+        $this->transitionState(
+            $manifest,
+            WorkflowState::EDO_GENERATED,
+            $actor,
+            $reason ?? 'Batch eDO generation'
+        );
+    }
+
+    /**
+     * Record workflow history when a new manifest is linked from NOA generation.
+     */
+    public function recordNoaGeneratedWorkflow(
+        Manifest $manifest,
+        User $actor,
+        ?string $reason = null
+    ): void {
+        if ($manifest->getWorkflowState() !== WorkflowState::MANIFEST_UPLOADED) {
+            return;
+        }
+
+        if (!$manifest->canTransitionTo(WorkflowState::NOA_GENERATED)) {
+            return;
+        }
+
+        $this->transitionState(
+            $manifest,
+            WorkflowState::NOA_GENERATED,
+            $actor,
+            $reason ?? 'NOA generated and linked to manifest'
+        );
+    }
+
+    /**
+     * Record workflow history when manifest/BL PDF is generated from an NOA.
+     */
+    public function recordBlGeneratedWorkflow(
+        Manifest $manifest,
+        User $actor,
+        ?string $reason = null
+    ): void {
+        if (in_array($manifest->getWorkflowState(), [WorkflowState::BL_GENERATED, WorkflowState::EDO_RELEASED], true)) {
+            return;
+        }
+
+        if ($manifest->getWorkflowState() === WorkflowState::MANIFEST_UPLOADED
+            && $manifest->canTransitionTo(WorkflowState::NOA_GENERATED)) {
+            $this->transitionState(
+                $manifest,
+                WorkflowState::NOA_GENERATED,
+                $actor,
+                'NOA linked to manifest'
+            );
+        }
+
+        if ($manifest->canTransitionTo(WorkflowState::BL_GENERATED)) {
+            $this->transitionState(
+                $manifest,
+                WorkflowState::BL_GENERATED,
+                $actor,
+                $reason ?? 'Manifest/BL generated'
+            );
+        }
     }
 
     /**
@@ -203,6 +342,7 @@ class WorkflowOrchestrator
             ->where('wsh.manifest = :manifest')
             ->setParameter('manifest', $manifest)
             ->orderBy('wsh.createdAt', 'DESC')
+            ->addOrderBy('wsh.id', 'DESC')
             ->getQuery()
             ->getResult();
     }

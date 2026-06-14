@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\PaymentFeeConfigurationRepository;
+use App\Util\DecimalString;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: PaymentFeeConfigurationRepository::class)]
@@ -22,7 +23,7 @@ class PaymentFeeConfiguration
     private string $feeType;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
-    private float $amount;
+    private string $amount = '0.00';
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
@@ -32,7 +33,7 @@ class PaymentFeeConfiguration
     private \DateTimeInterface $configuredAt;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
-    private ?float $previousAmount = null;
+    private ?string $previousAmount = null;
 
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     private bool $isActive = false;
@@ -63,12 +64,12 @@ class PaymentFeeConfiguration
 
     public function getAmount(): float
     {
-        return $this->amount;
+        return DecimalString::toFloatOrZero($this->amount);
     }
 
     public function setAmount(float $amount): self
     {
-        $this->amount = $amount;
+        $this->amount = DecimalString::fromFloat($amount) ?? '0.00';
         return $this;
     }
 
@@ -96,12 +97,12 @@ class PaymentFeeConfiguration
 
     public function getPreviousAmount(): ?float
     {
-        return $this->previousAmount;
+        return DecimalString::toFloat($this->previousAmount);
     }
 
     public function setPreviousAmount(?float $previousAmount): self
     {
-        $this->previousAmount = $previousAmount;
+        $this->previousAmount = DecimalString::fromFloat($previousAmount);
         return $this;
     }
 

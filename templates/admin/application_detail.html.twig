@@ -1,739 +1,656 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout/admin_base.html.twig' %}
 
 {% block title %}Application Review - OPTIMUS{% endblock %}
+{% block admin_breadcrumbs %}
+<div class="breadcrumbs text-sm mb-2">
+    <ul>
+                                <li><a href="{{ path('app_admin_dashboard') }}">Admin</a></li>
+                                <li><a href="{{ path('app_admin_approved_accreditations') }}">Accreditations</a></li>
+                                <li>Application #{{ submission.id }}</li>
+                            </ul>
+</div>
+{% endblock %}
 
-{% block body %}
-<div class="min-h-screen bg-meta-gray">
-    <!-- Top Navigation -->
-    <nav class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <span class="text-2xl font-bold text-meta-blue">OPTIMUS</span>
-                    <span class="ml-4 text-gray-600">Application Review</span>
-                </div>
-                <div class="flex items-center">
-                    <a href="{{ path('app_admin_dashboard') }}" class="text-sm text-meta-blue hover:text-blue-700">
-                        ← Back to Dashboard
-                    </a>
+{% block content %}
+<div class="space-y-6">
+<div class="space-y-5 sm:space-y-6 max-w-5xl mx-auto">
+
+        {# Header #}
+        <div class="bg-base-100 shadow-sm rounded-xl">
+            <div class="p-4 sm:p-6">
+                <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    <div class="min-w-0">
+                        <div class="flex items-start gap-4">
+                            <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                <span class="icon-[tabler--file-description] size-6 text-primary"></span>
+                            </div>
+                            <div class="min-w-0">
+                                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">Application #{{ submission.id }}</h1>
+                                <p class="text-sm text-base-content/60 mt-1">
+                                    Submitted {{ submission.submittedAt|date('F d, Y \\a\\t g:i A') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 shrink-0">
+                        {% set statusBadge = 'badge-ghost' %}
+                        {% if submission.status.value == 'APPROVED' %}
+                            {% set statusBadge = 'badge-success' %}
+                        {% elseif submission.status.value in ['DENIED', 'REJECTED'] %}
+                            {% set statusBadge = 'badge-error' %}
+                        {% elseif submission.status.value == 'PENDING' %}
+                            {% set statusBadge = 'badge-warning' %}
+                        {% elseif submission.status.value == 'COMPLIANCE_REQUIRED' %}
+                            {% set statusBadge = 'badge-warning' %}
+                        {% else %}
+                            {% set statusBadge = 'badge-info' %}
+                        {% endif %}
+                        <span class="badge {{ statusBadge }} badge-lg">{{ submission.status.value|replace({'_': ' '})|title }}</span>
+                        <a href="{{ path('app_admin_dashboard') }}" class="btn btn-ghost btn-sm gap-2">
+                            <span class="icon-[tabler--arrow-left] size-4"></span>
+                            Dashboard
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
-    </nav>
 
-    <!-- Main Content -->
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Flash Messages -->
+        {# Flash messages #}
         {% for message in app.flashes('success') %}
-            <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg">
-                {{ message }}
+            <div class="alert alert-success">
+                <span class="icon-[tabler--circle-check] size-5"></span>
+                <span>{{ message }}</span>
             </div>
         {% endfor %}
         {% for message in app.flashes('error') %}
-            <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg">
-                {{ message }}
+            <div class="alert alert-error">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <span>{{ message }}</span>
             </div>
         {% endfor %}
 
-        <!-- Application Header -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900">Application #{{ submission.id }}</h1>
-                    <p class="mt-1 text-sm text-gray-600">
-                        Submitted on {{ submission.submittedAt|date('F d, Y \\a\\t g:i A') }}
-                    </p>
+        {# Applicant information #}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                <div class="flex items-center gap-2">
+                    <span class="icon-[tabler--user] size-5 text-base-content/70"></span>
+                    <h2 class="card-title text-base sm:text-lg">Applicant Information</h2>
                 </div>
-                <span class="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                    {{ submission.status.value }}
-                </span>
             </div>
-        </div>
-
-        <!-- Applicant Information -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">Applicant Information</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="space-y-1">
-                    <label class="block text-sm font-medium text-gray-700">Email Address</label>
-                    <p class="text-sm text-gray-900">{{ submission.applicant.email }}</p>
-                </div>
-                <div class="space-y-1">
-                    <label class="block text-sm font-medium text-gray-700">User Role</label>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {{ submission.applicant.role.value }}
-                    </span>
-                </div>
-                {% if submission.applicant.role.value == 'BROKER' %}
-                    <div class="space-y-1">
-                        <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                        <p class="text-sm text-gray-900">{{ submission.applicant.fullName }}</p>
+            <div class="card-body p-4 sm:p-6 pt-3 sm:pt-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    <div class="form-control">
+                        <label class="label py-1"><span class="label-text font-medium text-base-content/70">Email Address</span></label>
+                        <p class="text-sm text-base-content">{{ submission.applicant.email }}</p>
                     </div>
-                {% elseif submission.applicant.role.value == 'CONSIGNEE' %}
-                    <div class="space-y-1">
-                        <label class="block text-sm font-medium text-gray-700">Business Name</label>
-                        <p class="text-sm text-gray-900">{{ submission.applicant.businessName }}</p>
+                    <div class="form-control">
+                        <label class="label py-1"><span class="label-text font-medium text-base-content/70">User Role</span></label>
+                        {% set roleBadge = submission.applicant.role.value == 'BROKER' ? 'badge-primary' : (submission.applicant.role.value == 'CONSIGNEE' ? 'badge-secondary' : 'badge-ghost') %}
+                        <span class="badge {{ roleBadge }} badge-soft w-fit">{{ submission.applicant.role.value|replace({'_': ' '})|title }}</span>
                     </div>
-                {% endif %}
-                {% if submission.applicant.linkedBroker is defined and submission.applicant.linkedBroker %}
-                    <div class="space-y-1">
-                        <label class="block text-sm font-medium text-gray-700">Linked Broker</label>
-                        <p class="text-sm text-gray-900">{{ submission.applicant.linkedBroker.fullName }}</p>
+                    {% if submission.applicant.role.value == 'BROKER' %}
+                        <div class="form-control">
+                            <label class="label py-1"><span class="label-text font-medium text-base-content/70">Full Name</span></label>
+                            <p class="text-sm text-base-content">{{ submission.applicant.fullName }}</p>
+                        </div>
+                    {% elseif submission.applicant.role.value == 'CONSIGNEE' %}
+                        <div class="form-control">
+                            <label class="label py-1"><span class="label-text font-medium text-base-content/70">Business Name</span></label>
+                            <p class="text-sm text-base-content">{{ submission.applicant.businessName }}</p>
+                        </div>
+                    {% endif %}
+                    {% if submission.applicant.linkedBroker is defined and submission.applicant.linkedBroker %}
+                        <div class="form-control">
+                            <label class="label py-1"><span class="label-text font-medium text-base-content/70">Linked Broker</span></label>
+                            <p class="text-sm text-base-content">{{ submission.applicant.linkedBroker.fullName }}</p>
+                        </div>
+                    {% endif %}
+                    <div class="form-control">
+                        <label class="label py-1"><span class="label-text font-medium text-base-content/70">Account Status</span></label>
+                        {% set acctBadge = submission.applicant.status.value == 'APPROVED' ? 'badge-success' : (submission.applicant.status.value == 'PENDING' ? 'badge-warning' : 'badge-error') %}
+                        <span class="badge {{ acctBadge }} badge-soft w-fit">{{ submission.applicant.status.value|title }}</span>
                     </div>
-                {% endif %}
-                <div class="space-y-1">
-                    <label class="block text-sm font-medium text-gray-700">Account Status</label>
-                    {% set statusColor = submission.applicant.status.value == 'APPROVED' ? 'bg-green-100 text-green-800' : 
-                                        submission.applicant.status.value == 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 
-                                        'bg-red-100 text-red-800' %}
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ statusColor }}">
-                        {{ submission.applicant.status.value }}
-                    </span>
-                </div>
-                <div class="space-y-1">
-                    <label class="block text-sm font-medium text-gray-700">Account Created</label>
-                    <p class="text-sm text-gray-900">{{ submission.applicant.createdAt|date('M d, Y') }}</p>
+                    <div class="form-control">
+                        <label class="label py-1"><span class="label-text font-medium text-base-content/70">Account Created</span></label>
+                        <p class="text-sm text-base-content">{{ submission.applicant.createdAt|date('M d, Y') }}</p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Application Details -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">Application Details</h2>
-            {% if submission.submittedData and submission.formConfig %}
-                {% set formFields = submission.formConfig.fields.fields %}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {% for key, value in submission.submittedData %}
-                        {% if key != '_files' and key != '_csrf_token' %}
-                            {% set fieldLabel = key|replace({'_': ' '})|title %}
-                            {% set fieldType = 'text' %}
-                            
-                            {# Find the proper label and type from form configuration #}
-                            {% for field in formFields %}
-                                {% if field.id == key %}
-                                    {% set fieldLabel = field.label %}
-                                    {% set fieldType = field.type %}
-                                {% endif %}
-                            {% endfor %}
-                            
-                            <div class="space-y-1">
-                                <label class="block text-sm font-medium text-gray-700">
-                                    {{ fieldLabel }}
-                                </label>
-                                
-                                {% if fieldType == 'checkbox' %}
-                                    <!-- Handle checkbox fields -->
-                                    {% set fieldConfig = null %}
-                                    {% for field in formFields %}
-                                        {% if field.id == key %}
-                                            {% set fieldConfig = field %}
+        {# Application details #}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                <div class="flex items-center gap-2">
+                    <span class="icon-[tabler--clipboard-list] size-5 text-base-content/70"></span>
+                    <h2 class="card-title text-base sm:text-lg">Application Details</h2>
+                </div>
+            </div>
+            <div class="card-body p-4 sm:p-6 pt-3 sm:pt-4">
+                {% if submission.submittedData and submission.formConfig %}
+                    {% set formFields = submission.formConfig.fields.fields %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                        {% for key, value in submission.submittedData %}
+                            {% if key != '_files' and key != '_csrf_token' %}
+                                {% set fieldLabel = key|replace({'_': ' '})|title %}
+                                {% set fieldType = 'text' %}
+                                {% for field in formFields %}
+                                    {% if field.id == key %}
+                                        {% set fieldLabel = field.label %}
+                                        {% set fieldType = field.type %}
+                                    {% endif %}
+                                {% endfor %}
+
+                                <div class="form-control">
+                                    <label class="label py-1"><span class="label-text font-medium text-base-content/70">{{ fieldLabel }}</span></label>
+
+                                    {% if fieldType == 'checkbox' %}
+                                        {% set fieldConfig = null %}
+                                        {% for field in formFields %}
+                                            {% if field.id == key %}
+                                                {% set fieldConfig = field %}
+                                            {% endif %}
+                                        {% endfor %}
+
+                                        {% if fieldConfig and fieldConfig.validation is defined and fieldConfig.validation.options is defined %}
+                                            {% if value is iterable and value is not same as(value|join('')) %}
+                                                <div class="flex flex-wrap gap-2">
+                                                    {% for optionValue, optionLabel in fieldConfig.validation.options %}
+                                                        {% if optionValue in value %}
+                                                            <span class="badge badge-primary badge-soft">{{ optionLabel }}</span>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            {% else %}
+                                                <p class="text-sm text-base-content/50 italic">No options selected</p>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if value == '1' or value == 1 or value == true %}
+                                                <span class="badge badge-success badge-soft gap-1 w-fit">
+                                                    <span class="icon-[tabler--check] size-3.5"></span>
+                                                    Accepted
+                                                </span>
+                                            {% else %}
+                                                <span class="badge badge-error badge-soft gap-1 w-fit">
+                                                    <span class="icon-[tabler--x] size-3.5"></span>
+                                                    Not Accepted
+                                                </span>
+                                            {% endif %}
                                         {% endif %}
-                                    {% endfor %}
-                                    
-                                    {# Check if this is actually a checkbox group (has multiple options) #}
-                                    {% if fieldConfig and fieldConfig.validation is defined and fieldConfig.validation.options is defined %}
-                                        <!-- This is a checkbox group with multiple options - show only selected items -->
+                                    {% elseif fieldType == 'checkbox_group' %}
                                         {% if value is iterable and value is not same as(value|join('')) %}
                                             <div class="flex flex-wrap gap-2">
-                                                {% for optionValue, optionLabel in fieldConfig.validation.options %}
-                                                    {% if optionValue in value %}
-                                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                                                            {{ optionLabel }}
-                                                        </span>
-                                                    {% endif %}
+                                                {% for item in value %}
+                                                    <span class="badge badge-primary badge-soft">{{ item }}</span>
                                                 {% endfor %}
                                             </div>
                                         {% else %}
-                                            <span class="text-sm text-gray-500 italic">No options selected</span>
+                                            <p class="text-sm text-base-content/50 italic">No options selected</p>
                                         {% endif %}
-                                    {% else %}
-                                        <!-- Single checkbox -->
-                                        {% if value == '1' or value == 1 or value == true %}
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
-                                                <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                                </svg>
-                                                Accepted
-                                            </span>
-                                        {% else %}
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 border border-red-200">
-                                                <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                                                </svg>
-                                                Not Accepted
-                                            </span>
-                                        {% endif %}
-                                    {% endif %}
-                                {% elseif fieldType == 'checkbox_group' %}
-                                    <!-- Handle checkbox group fields - show only selected items -->
-                                    {% if value is iterable and value is not same as(value|join('')) %}
+                                    {% elseif fieldType == 'select' and value is iterable and value is not same as(value|join('')) %}
                                         <div class="flex flex-wrap gap-2">
                                             {% for item in value %}
-                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                                                    {{ item }}
-                                                </span>
+                                                <span class="badge badge-secondary badge-soft">{{ item }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    {% elseif value is iterable and value is not same as(value|join('')) %}
+                                        <div class="flex flex-wrap gap-2">
+                                            {% for item in value %}
+                                                <span class="badge badge-ghost">{{ item }}</span>
                                             {% endfor %}
                                         </div>
                                     {% else %}
-                                        <span class="text-sm text-gray-500 italic">No options selected</span>
+                                        <div class="bg-base-200 rounded-lg p-3 border border-base-300">
+                                            <p class="text-sm text-base-content">{{ value }}</p>
+                                        </div>
                                     {% endif %}
-                                {% elseif fieldType == 'select' and value is iterable and value is not same as(value|join('')) %}
-                                    <!-- Handle multi-select fields -->
-                                    <div class="flex flex-wrap gap-2">
-                                        {% for item in value %}
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                                                {{ item }}
-                                            </span>
-                                        {% endfor %}
-                                    </div>
-                                {% elseif value is iterable and value is not same as(value|join('')) %}
-                                    <!-- Handle other array fields -->
-                                    <div class="flex flex-wrap gap-2">
-                                        {% for item in value %}
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                                {{ item }}
-                                            </span>
-                                        {% endfor %}
-                                    </div>
-                                {% else %}
-                                    <!-- Handle regular text fields -->
-                                    <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                                        <p class="text-sm text-gray-900">{{ value }}</p>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p class="text-sm text-gray-500">No form data available</p>
-            {% endif %}
-        </div>
-        <!-- Evaluator Information (if evaluated) -->
-        {% if submission.evaluator and submission.evaluatedAt %}
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-                <h2 class="text-xl font-semibold text-gray-900 mb-4">Evaluator Information</h2>
-                <div class="flex items-center space-x-4">
-                    <div class="flex-shrink-0">
-                        <div class="h-12 w-12 {{ avatar_colors(submission.evaluator) }} rounded-full flex items-center justify-center">
-                            <span class="text-lg font-medium">
-                                {{ submission.evaluator.email|slice(0, 2)|upper }}
-                            </span>
-                        </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
                     </div>
-                    <div class="flex-1">
-                        <p class="text-lg font-medium text-gray-900">{{ submission.evaluator.email }}</p>
-                        <p class="text-sm text-gray-600">Evaluated on {{ submission.evaluatedAt|date('F d, Y \\a\\t g:i A') }}</p>
-                        {% if submission.denialReason %}
-                            <div class="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                <p class="text-sm font-medium text-gray-700">Evaluation Comments:</p>
-                                <p class="text-sm text-gray-600 mt-1">{{ submission.denialReason }}</p>
-                            </div>
-                        {% endif %}
+                {% else %}
+                    <p class="text-sm text-base-content/50">No form data available</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Evaluator information #}
+        {% if submission.evaluator and submission.evaluatedAt %}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--user-check] size-5 text-base-content/70"></span>
+                        <h2 class="card-title text-base sm:text-lg">Evaluator Information</h2>
+                    </div>
+                </div>
+                <div class="card-body p-4 sm:p-6 pt-3 sm:pt-4">
+                    <div class="flex items-start gap-4">
+                        <div class="size-12 rounded-full {{ avatar_colors(submission.evaluator) }} flex items-center justify-center shrink-0">
+                            <span class="text-sm font-semibold">{{ submission.evaluator.email|slice(0, 2)|upper }}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-base font-semibold text-base-content">{{ submission.evaluator.email }}</p>
+                            <p class="text-sm text-base-content/60 mt-1">Evaluated {{ submission.evaluatedAt|date('F d, Y \\a\\t g:i A') }}</p>
+                            {% if submission.denialReason %}
+                                <div class="mt-4 alert alert-info">
+                                    <span class="icon-[tabler--message] size-5 shrink-0"></span>
+                                    <div>
+                                        <p class="text-sm font-medium">Evaluation Comments</p>
+                                        <p class="text-sm mt-1">{{ submission.denialReason }}</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
         {% endif %}
 
-        <!-- Supporting Documents -->
+        {# Supporting documents #}
         {% if submission.submittedData._files is defined and submission.submittedData._files|length > 0 %}
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">Supporting Documents</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {% for fieldName, fileId in submission.submittedData._files %}
-                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <div class="flex items-start space-x-3">
-                            <div class="flex-shrink-0">
-                                <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-900 mb-1">
-                                    {% set documentName = '' %}
-                                    {% if fieldName == 'broker_license_document' %}
-                                        {% set documentName = 'Broker License Document' %}
-                                    {% elseif fieldName == 'company_registration' %}
-                                        {% set documentName = 'Company Registration Certificate' %}
-                                    {% elseif fieldName == 'representative_id' %}
-                                        {% set documentName = 'Representative ID Document' %}
-                                    {% elseif fieldName == 'financial_guarantee' %}
-                                        {% set documentName = 'Financial Guarantee Document' %}
-                                    {% elseif fieldName == 'professional_indemnity' %}
-                                        {% set documentName = 'Professional Indemnity Insurance' %}
-                                    {% elseif fieldName == 'business_license' %}
-                                        {% set documentName = 'Business License Document' %}
-                                    {% elseif fieldName == 'insurance_certificate' %}
-                                        {% set documentName = 'Insurance Certificate' %}
-                                    {% else %}
-                                        {% set documentName = fieldName|title %}
-                                    {% endif %}
-                                    {{ documentName }}
-                                </p>
-                                <p class="text-xs text-gray-500 mb-3">Document ID: {{ fileId }}</p>
-                                <div class="flex space-x-2">
-                                    <button type="button" data-file-id="{{ fileId }}" data-document-name="{{ documentName }}" 
-                                            class="view-document-btn text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition-colors">
-                                        View
-                                    </button>
-                                    <a href="{{ path('app_admin_file_download', {fileId: fileId}) }}" 
-                                       class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200 transition-colors">
-                                        Download
-                                    </a>
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--files] size-5 text-base-content/70"></span>
+                        <h2 class="card-title text-base sm:text-lg">Supporting Documents</h2>
+                    </div>
+                </div>
+                <div class="card-body p-4 sm:p-6 pt-3 sm:pt-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {% for fieldName, fileId in submission.submittedData._files %}
+                            {% set documentName = '' %}
+                            {% if fieldName == 'broker_license_document' %}
+                                {% set documentName = 'Broker License Document' %}
+                            {% elseif fieldName == 'company_registration' %}
+                                {% set documentName = 'Company Registration Certificate' %}
+                            {% elseif fieldName == 'representative_id' %}
+                                {% set documentName = 'Representative ID Document' %}
+                            {% elseif fieldName == 'financial_guarantee' %}
+                                {% set documentName = 'Financial Guarantee Document' %}
+                            {% elseif fieldName == 'professional_indemnity' %}
+                                {% set documentName = 'Professional Indemnity Insurance' %}
+                            {% elseif fieldName == 'business_license' %}
+                                {% set documentName = 'Business License Document' %}
+                            {% elseif fieldName == 'insurance_certificate' %}
+                                {% set documentName = 'Insurance Certificate' %}
+                            {% else %}
+                                {% set documentName = fieldName|title %}
+                            {% endif %}
+
+                            <div class="card bg-base-200 border border-base-300 hover:shadow-md transition-shadow">
+                                <div class="card-body p-4">
+                                    <div class="flex items-start gap-3">
+                                        <div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                            <span class="icon-[tabler--file-text] size-5 text-primary"></span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium text-base-content">{{ documentName }}</p>
+                                            <p class="text-xs text-base-content/50 mt-1">ID: {{ fileId }}</p>
+                                            <div class="flex flex-wrap gap-2 mt-3">
+                                                <button type="button"
+                                                        class="view-document-btn btn btn-outline btn-primary btn-xs gap-1"
+                                                        data-file-id="{{ fileId }}"
+                                                        data-document-name="{{ documentName }}">
+                                                    <span class="icon-[tabler--eye] size-3.5"></span>
+                                                    View
+                                                </button>
+                                                <a href="{{ path('app_admin_file_download', {fileId: fileId}) }}"
+                                                   class="btn btn-ghost btn-xs gap-1">
+                                                    <span class="icon-[tabler--download] size-3.5"></span>
+                                                    Download
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        {% endfor %}
                     </div>
-                {% endfor %}
+                </div>
             </div>
-        </div>
         {% endif %}
 
-        <!-- Final Decision Form or Status -->
+        {# Final decision form or status #}
         {% if submission.status.value == 'APPROVED' and submission.evaluator and not submission.finalApprover %}
-            <!-- Show final decision form only for evaluator-approved applications that haven't been finally decided -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 class="text-xl font-semibold text-gray-900 mb-4">Final Decision</h2>
-                <form method="POST" action="{{ path('app_admin_approve', {id: submission.id}) }}" id="finalApprovalForm">
-                    <!-- CSRF Token (hidden for security) -->
-                    <input type="hidden" name="_token" value="{{ csrf_token('admin_approve') }}">
-                    
-                    <div class="mb-4">
-                        <label for="decision" class="block text-sm font-medium text-gray-700 mb-2">
-                            Decision <span class="text-red-500">*</span>
-                        </label>
-                        <select id="decision" name="decision" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Select a decision...</option>
-                            <option value="approve">Approve - Grant full system access</option>
-                            <option value="deny">Deny - Reject application</option>
-                        </select>
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--gavel] size-5 text-base-content/70"></span>
+                        <h2 class="card-title text-base sm:text-lg">Final Decision</h2>
                     </div>
+                </div>
+                <div class="card-body p-4 sm:p-6 pt-3 sm:pt-4">
+                    <form method="POST" action="{{ path('app_admin_approve', {id: submission.id}) }}" id="finalApprovalForm" class="space-y-4">
+                        <input type="hidden" name="_token" value="{{ csrf_token('admin_approve') }}">
 
-                    <div class="mb-6">
-                        <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">
-                            Reason / Comments
-                        </label>
-                        <textarea id="reason" name="reason" rows="4"
-                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                  placeholder="Provide reason for denial or additional comments..."></textarea>
-                        <p class="mt-1 text-xs text-gray-500">Required for denials</p>
-                    </div>
+                        <div class="form-control">
+                            <label class="label py-1" for="decision">
+                                <span class="label-text font-medium">Decision <span class="text-error">*</span></span>
+                            </label>
+                            <select id="decision" name="decision" required class="select select-bordered w-full">
+                                <option value="">Select a decision...</option>
+                                <option value="approve">Approve — Grant full system access</option>
+                                <option value="deny">Deny — Reject application</option>
+                            </select>
+                        </div>
 
-                    <div class="flex space-x-4">
-                        <button type="submit" id="submitBtn"
-                                class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed">
-                            <span id="submitText">Submit Final Decision</span>
-                            <span id="loadingText" class="hidden">Processing...</span>
-                        </button>
-                        <a href="{{ path('app_admin_dashboard') }}"
-                           class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium text-center">
-                            Cancel
-                        </a>
-                    </div>
-                </form>
+                        <div class="form-control">
+                            <label class="label py-1" for="reason">
+                                <span class="label-text font-medium">Reason / Comments</span>
+                            </label>
+                            <textarea id="reason" name="reason" rows="4"
+                                      class="textarea textarea-bordered w-full"
+                                      placeholder="Provide reason for denial or additional comments..."></textarea>
+                            <label class="label py-1"><span class="label-text-alt">Required for denials</span></label>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                            <button type="submit" id="submitBtn" class="btn btn-primary flex-1 gap-2">
+                                <span id="submitText">Submit Final Decision</span>
+                                <span id="loadingText" class="hidden gap-2 items-center">
+                                    <span class="loading loading-spinner loading-sm"></span>
+                                    Processing...
+                                </span>
+                            </button>
+                            <a href="{{ path('app_admin_dashboard') }}" class="btn btn-ghost flex-1">Cancel</a>
+                        </div>
+                    </form>
+                </div>
             </div>
         {% elseif submission.finalApprover %}
-            <!-- Show final decision status for applications that have been finally decided -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 class="text-xl font-semibold text-gray-900 mb-4">Final Decision</h2>
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <div class="flex items-center space-x-3">
-                        {% if submission.applicant.status.value == 'APPROVED' %}
-                            <div class="flex-shrink-0">
-                                <div class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
-                                    <svg class="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-green-800">Application Finally Approved</p>
-                                <p class="text-sm text-green-600">Full system access granted</p>
-                            </div>
-                        {% else %}
-                            <div class="flex-shrink-0">
-                                <div class="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
-                                    <svg class="h-5 w-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-red-800">Application Finally Denied</p>
-                                <p class="text-sm text-red-600">Application has been rejected</p>
-                            </div>
-                        {% endif %}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--gavel] size-5 text-base-content/70"></span>
+                        <h2 class="card-title text-base sm:text-lg">Final Decision</h2>
                     </div>
-                    
-                    <div class="mt-4 pt-4 border-t border-gray-200">
-                        <div class="flex items-center space-x-3">
-                            <div class="flex-shrink-0">
-                                <div class="h-10 w-10 {{ avatar_colors(submission.finalApprover) }} rounded-full flex items-center justify-center">
-                                    <span class="text-sm font-medium">
-                                        {{ submission.finalApprover.email|slice(0, 2)|upper }}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-sm font-medium text-gray-900">Final decision by {{ submission.finalApprover.email }}</p>
-                                {% if submission.approvedAt %}
-                                    <p class="text-xs text-gray-500">{{ submission.approvedAt|date('F d, Y \\a\\t g:i A') }}</p>
-                                {% endif %}
+                </div>
+                <div class="card-body p-4 sm:p-6 pt-3 sm:pt-4 space-y-4">
+                    {% if submission.applicant.status.value == 'APPROVED' %}
+                        <div class="alert alert-success">
+                            <span class="icon-[tabler--circle-check] size-5"></span>
+                            <div>
+                                <p class="font-medium">Application Finally Approved</p>
+                                <p class="text-sm opacity-80">Full system access granted</p>
                             </div>
                         </div>
-                    </div>
-                    
-                    {% if submission.denialReason %}
-                        <div class="mt-4 p-3 bg-white rounded border">
-                            <p class="text-sm font-medium text-gray-700 mb-1">Final Decision Comments:</p>
-                            <p class="text-sm text-gray-600">{{ submission.denialReason }}</p>
+                    {% else %}
+                        <div class="alert alert-error">
+                            <span class="icon-[tabler--x] size-5"></span>
+                            <div>
+                                <p class="font-medium">Application Finally Denied</p>
+                                <p class="text-sm opacity-80">Application has been rejected</p>
+                            </div>
                         </div>
                     {% endif %}
-                </div>
-                
-                <div class="mt-6 flex space-x-4">
-                    <a href="{{ path('app_admin_dashboard') }}"
-                       class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-                        ← Back to Dashboard
-                    </a>
-                    <a href="{{ path('app_admin_approved_accreditations') }}"
-                       class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
-                        View All Approved Accreditations
-                    </a>
+
+                    <div class="flex items-center gap-3 p-4 bg-base-200 rounded-xl">
+                        <div class="size-10 rounded-full {{ avatar_colors(submission.finalApprover) }} flex items-center justify-center shrink-0">
+                            <span class="text-sm font-semibold">{{ submission.finalApprover.email|slice(0, 2)|upper }}</span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-base-content">Final decision by {{ submission.finalApprover.email }}</p>
+                            {% if submission.approvedAt %}
+                                <p class="text-xs text-base-content/50 mt-0.5">{{ submission.approvedAt|date('F d, Y \\a\\t g:i A') }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if submission.denialReason %}
+                        <div class="bg-base-200 rounded-lg p-4 border border-base-300">
+                            <p class="text-sm font-medium text-base-content mb-1">Final Decision Comments</p>
+                            <p class="text-sm text-base-content/70">{{ submission.denialReason }}</p>
+                        </div>
+                    {% endif %}
+
+                    <div class="flex flex-wrap gap-2 pt-2">
+                        <a href="{{ path('app_admin_dashboard') }}" class="btn btn-ghost btn-sm gap-2">
+                            <span class="icon-[tabler--arrow-left] size-4"></span>
+                            Back to Dashboard
+                        </a>
+                        <a href="{{ path('app_admin_approved_accreditations') }}" class="btn btn-success btn-sm gap-2">
+                            <span class="icon-[tabler--circle-check] size-4"></span>
+                            View Approved Accreditations
+                        </a>
+                    </div>
                 </div>
             </div>
         {% else %}
-            <!-- Show workflow status for other applications -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 class="text-xl font-semibold text-gray-900 mb-4">Application Status</h2>
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <div class="flex items-center space-x-3">
-                        {% if submission.status.value == 'PENDING' %}
-                            <div class="flex-shrink-0">
-                                <div class="h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center">
-                                    <svg class="h-5 w-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-yellow-800">Awaiting Evaluator Review</p>
-                                <p class="text-sm text-yellow-600">This application must be evaluated before final approval</p>
-                            </div>
-                        {% elseif submission.status.value == 'DENIED' %}
-                            <div class="flex-shrink-0">
-                                <div class="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
-                                    <svg class="h-5 w-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-red-800">Application Denied</p>
-                                <p class="text-sm text-red-600">This application has been rejected</p>
-                            </div>
-                        {% else %}
-                            <div class="flex-shrink-0">
-                                <div class="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                    <svg class="h-5 w-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-gray-800">{{ submission.status.value|title }}</p>
-                                <p class="text-sm text-gray-600">Current application status</p>
-                            </div>
-                        {% endif %}
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-header px-4 sm:px-6 pt-4 sm:pt-5 pb-0">
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--info-circle] size-5 text-base-content/70"></span>
+                        <h2 class="card-title text-base sm:text-lg">Application Status</h2>
                     </div>
-                    
-                    {% if submission.denialReason %}
-                        <div class="mt-4 p-3 bg-white rounded border">
-                            <p class="text-sm font-medium text-gray-700 mb-1">Comments:</p>
-                            <p class="text-sm text-gray-600">{{ submission.denialReason }}</p>
+                </div>
+                <div class="card-body p-4 sm:p-6 pt-3 sm:pt-4 space-y-4">
+                    {% if submission.status.value == 'PENDING' %}
+                        <div class="alert alert-warning">
+                            <span class="icon-[tabler--clock] size-5"></span>
+                            <div>
+                                <p class="font-medium">Awaiting Evaluator Review</p>
+                                <p class="text-sm opacity-80">This application must be evaluated before final approval</p>
+                            </div>
+                        </div>
+                    {% elseif submission.status.value == 'DENIED' %}
+                        <div class="alert alert-error">
+                            <span class="icon-[tabler--x] size-5"></span>
+                            <div>
+                                <p class="font-medium">Application Denied</p>
+                                <p class="text-sm opacity-80">This application has been rejected</p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <span class="icon-[tabler--info-circle] size-5"></span>
+                            <div>
+                                <p class="font-medium">{{ submission.status.value|replace({'_': ' '})|title }}</p>
+                                <p class="text-sm opacity-80">Current application status</p>
+                            </div>
                         </div>
                     {% endif %}
-                </div>
-                
-                <div class="mt-6">
-                    <a href="{{ path('app_admin_dashboard') }}"
-                       class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-                        ← Back to Dashboard
+
+                    {% if submission.denialReason %}
+                        <div class="bg-base-200 rounded-lg p-4 border border-base-300">
+                            <p class="text-sm font-medium text-base-content mb-1">Comments</p>
+                            <p class="text-sm text-base-content/70">{{ submission.denialReason }}</p>
+                        </div>
+                    {% endif %}
+
+                    <a href="{{ path('app_admin_dashboard') }}" class="btn btn-ghost btn-sm gap-2 w-fit">
+                        <span class="icon-[tabler--arrow-left] size-4"></span>
+                        Back to Dashboard
                     </a>
                 </div>
             </div>
         {% endif %}
+{% endblock %}
 
-        <!-- Document Modal -->
-        <div id="documentModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center p-4">
-            <div class="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
-                <!-- Modal Header -->
-                <div class="flex items-center justify-between p-6 border-b border-gray-200">
-                    <h3 class="text-lg font-medium text-gray-900" id="modalTitle">Document Viewer</h3>
-                    <button type="button" id="closeModalBtn" class="text-gray-400 hover:text-gray-600 transition-colors">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                </div>
-                
-                <!-- Modal Body -->
-                <div class="flex-1 p-6 overflow-auto">
-                    <div id="documentContent" class="flex items-center justify-center min-h-[400px]">
-                        <div class="text-center">
-                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                            <p class="mt-2 text-gray-600">Loading document...</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Modal Footer -->
-                <div class="flex items-center justify-end p-6 border-t border-gray-200 space-x-3">
-                    <a id="downloadLink" href="#" target="_blank" 
-                       class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                        Download
-                    </a>
-                    <button type="button" id="closeModalFooterBtn" 
-                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors font-medium">
-                        Close
-                    </button>
+{% block page_modals %}
+<div id="appDocumentModal"
+     class="hidden fixed inset-0 z-[999999] items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="appDocumentModalTitle">
+    <div class="absolute inset-0 bg-black/60" data-app-doc-dismiss></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col z-10" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-base-300 shrink-0">
+            <h3 id="appDocumentModalTitle" class="font-semibold text-base text-base-content">Document Viewer</h3>
+            <button type="button" data-app-doc-dismiss class="btn btn-ghost btn-sm btn-circle">
+                <span class="icon-[tabler--x] size-4"></span>
+            </button>
+        </div>
+        <div class="flex-1 p-5 overflow-auto min-h-0">
+            <div id="appDocumentContent" class="flex items-center justify-center min-h-[400px]">
+                <div class="text-center">
+                    <span class="loading loading-spinner loading-lg text-primary"></span>
+                    <p class="mt-3 text-sm text-base-content/60">Loading document...</p>
                 </div>
             </div>
         </div>
-
-        <script>
-        // Document modal functions
-        function viewDocument(fileId, documentName) {
-            const modal = document.getElementById('documentModal');
-            const modalTitle = document.getElementById('modalTitle');
-            const documentContent = document.getElementById('documentContent');
-            const downloadLink = document.getElementById('downloadLink');
-            
-            // Set modal title
-            modalTitle.textContent = documentName;
-            
-            // Set download link
-            downloadLink.href = `/admin/file/${fileId}`;
-            
-            // Show modal
-            modal.classList.remove('hidden');
-            
-            // Reset content to loading state
-            documentContent.innerHTML = `
-                <div class="text-center">
-                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p class="mt-2 text-gray-600">Loading document...</p>
-                </div>
-            `;
-            
-            // Load document content
-            fetch(`/admin/file/${fileId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Document not found');
-                    }
-                    return response.blob();
-                })
-                .then(blob => {
-                    const url = URL.createObjectURL(blob);
-                    const contentType = blob.type;
-                    
-                    console.log('Document loaded:', {
-                        fileId: fileId,
-                        documentName: documentName,
-                        contentType: contentType,
-                        blobSize: blob.size
-                    });
-                    
-                    // Check if it's an image
-                    if (contentType.startsWith('image/')) {
-                        console.log('Loading as image');
-                        createImageElement(url, documentName);
-                    } 
-                    // Check if it's a PDF (multiple ways to detect)
-                    else if (contentType === 'application/pdf' || 
-                             contentType.includes('pdf') || 
-                             documentName.toLowerCase().endsWith('.pdf')) {
-                        console.log('Loading as PDF');
-                        createPdfElement(url);
-                    } 
-                    // If no content type is detected but filename suggests PDF
-                    else if (documentName.toLowerCase().endsWith('.pdf')) {
-                        console.log('Loading as PDF based on filename');
-                        createPdfElement(url);
-                    }
-                    // If no content type but filename suggests image
-                    else if (documentName.toLowerCase().match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)) {
-                        console.log('Loading as image based on filename');
-                        createImageElement(url, documentName);
-                    }
-                    else {
-                        console.log('Unsupported format:', contentType);
-                        showUnsupportedFormat();
-                    }
-                })
-                .catch(error => {
-                    console.error('Document loading error:', error);
-                    showDocumentError(error.message);
-                });
-        }
-        
-        function showDocumentError(message) {
-            const documentContent = document.getElementById('documentContent');
-            documentContent.innerHTML = `
-                <div class="text-center py-8">
-                    <svg class="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <p class="text-red-600 mb-2">Error loading document</p>
-                    <p class="text-sm text-gray-500">${message}</p>
-                    <p class="text-sm text-gray-500 mt-2">Please try downloading the document instead.</p>
-                </div>
-            `;
-        }
-        
-        function showUnsupportedFormat() {
-            const documentContent = document.getElementById('documentContent');
-            documentContent.innerHTML = `
-                <div class="text-center py-8">
-                    <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    <p class="text-gray-600 mb-4">Preview not available for this file type</p>
-                    <p class="text-sm text-gray-500">Click download to view the document</p>
-                </div>
-            `;
-        }
-        
-        function createImageElement(url, documentName) {
-            const documentContent = document.getElementById('documentContent');
-            const container = document.createElement('div');
-            container.className = 'flex items-center justify-center w-full h-full';
-            
-            const img = document.createElement('img');
-            img.src = url;
-            img.alt = documentName;
-            img.className = 'max-w-full max-h-[500px] object-contain rounded-lg shadow-lg';
-            img.style.maxHeight = '500px';
-            
-            img.onload = function() {
-                documentContent.innerHTML = '';
-                container.appendChild(img);
-                documentContent.appendChild(container);
-            };
-            
-            img.onerror = function() {
-                showDocumentError('Failed to load image');
-            };
-        }
-        
-        function createPdfElement(url) {
-            const documentContent = document.getElementById('documentContent');
-            const container = document.createElement('div');
-            container.className = 'w-full h-full';
-            
-            const iframe = document.createElement('iframe');
-            iframe.src = url;
-            iframe.className = 'w-full border rounded-lg';
-            iframe.style.height = '500px';
-            iframe.style.minHeight = '500px';
-            
-            // Clear loading state immediately and show iframe
-            documentContent.innerHTML = '';
-            container.appendChild(iframe);
-            documentContent.appendChild(container);
-            
-            // Add a timeout fallback in case onload doesn't fire
-            setTimeout(() => {
-                console.log('PDF iframe should be loaded by now');
-            }, 2000);
-            
-            iframe.onerror = function() {
-                console.error('PDF iframe failed to load');
-                showDocumentError('Failed to load PDF');
-            };
-        }
-        
-        function closeModal() {
-            const modal = document.getElementById('documentModal');
-            modal.classList.add('hidden');
-            
-            // Clean up any object URLs
-            const iframe = modal.querySelector('iframe');
-            const img = modal.querySelector('img');
-            if (iframe && iframe.src.startsWith('blob:')) {
-                URL.revokeObjectURL(iframe.src);
-            }
-            if (img && img.src.startsWith('blob:')) {
-                URL.revokeObjectURL(img.src);
-            }
-        }
-        
-        // Initialize event listeners when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            // View document buttons
-            document.querySelectorAll('.view-document-btn').forEach(button => {
-                button.addEventListener('click', function() {
-                    const fileId = this.getAttribute('data-file-id');
-                    const documentName = this.getAttribute('data-document-name');
-                    viewDocument(fileId, documentName);
-                });
-            });
-            
-            // Close modal buttons
-            document.getElementById('closeModalBtn').addEventListener('click', closeModal);
-            document.getElementById('closeModalFooterBtn').addEventListener('click', closeModal);
-            
-            // Close modal when clicking outside
-            document.getElementById('documentModal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeModal();
-                }
-            });
-            
-            // Close modal with Escape key
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    const modal = document.getElementById('documentModal');
-                    if (!modal.classList.contains('hidden')) {
-                        closeModal();
-                    }
-                }
-            });
-
-            // Final approval form handling (only if form exists)
-            const finalApprovalForm = document.getElementById('finalApprovalForm');
-            if (finalApprovalForm) {
-                finalApprovalForm.addEventListener('submit', function(e) {
-                    const decision = document.getElementById('decision').value;
-                    const reason = document.getElementById('reason').value.trim();
-                    const submitBtn = document.getElementById('submitBtn');
-                    const submitText = document.getElementById('submitText');
-                    const loadingText = document.getElementById('loadingText');
-                    
-                    // Validate required reason for denials
-                    if (decision === 'deny' && !reason) {
-                        e.preventDefault();
-                        alert('Please provide a reason for denial.');
-                        return false;
-                    }
-                    
-                    // Show loading state
-                    submitBtn.disabled = true;
-                    submitText.classList.add('hidden');
-                    loadingText.classList.remove('hidden');
-                    
-                    // Re-enable button after 10 seconds as fallback
-                    setTimeout(function() {
-                        submitBtn.disabled = false;
-                        submitText.classList.remove('hidden');
-                        loadingText.classList.add('hidden');
-                    }, 10000);
-                });
-            }
-        });
-        </script>
+        <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-base-300 shrink-0">
+            <a id="appDocumentDownloadLink" href="#" target="_blank" class="btn btn-primary btn-sm gap-2">
+                <span class="icon-[tabler--download] size-4"></span>
+                Download
+            </a>
+            <button type="button" data-app-doc-dismiss class="btn btn-ghost btn-sm">Close</button>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+(function () {
+    const modal = document.getElementById('appDocumentModal');
+    const modalTitle = document.getElementById('appDocumentModalTitle');
+    const documentContent = document.getElementById('appDocumentContent');
+    const downloadLink = document.getElementById('appDocumentDownloadLink');
+
+    function openDocumentModal() {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeDocumentModal() {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+
+        const iframe = modal.querySelector('iframe');
+        const img = modal.querySelector('img');
+        if (iframe && iframe.src.startsWith('blob:')) URL.revokeObjectURL(iframe.src);
+        if (img && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+    }
+
+    function showDocumentError(message) {
+        documentContent.innerHTML = `
+            <div class="text-center py-8">
+                <span class="icon-[tabler--alert-circle] size-16 text-error/60 block mx-auto mb-4"></span>
+                <p class="text-error font-medium mb-2">Error loading document</p>
+                <p class="text-sm text-base-content/60">${message}</p>
+                <p class="text-sm text-base-content/50 mt-2">Please try downloading the document instead.</p>
+            </div>`;
+    }
+
+    function showUnsupportedFormat() {
+        documentContent.innerHTML = `
+            <div class="text-center py-8">
+                <span class="icon-[tabler--file-off] size-16 text-base-content/30 block mx-auto mb-4"></span>
+                <p class="text-base-content/70 font-medium mb-2">Preview not available for this file type</p>
+                <p class="text-sm text-base-content/50">Click download to view the document</p>
+            </div>`;
+    }
+
+    function createImageElement(url, documentName) {
+        const container = document.createElement('div');
+        container.className = 'flex items-center justify-center w-full h-full';
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = documentName;
+        img.className = 'max-w-full max-h-[500px] object-contain rounded-lg shadow-lg';
+        img.onload = function () {
+            documentContent.innerHTML = '';
+            container.appendChild(img);
+            documentContent.appendChild(container);
+        };
+        img.onerror = function () { showDocumentError('Failed to load image'); };
+    }
+
+    function createPdfElement(url) {
+        const container = document.createElement('div');
+        container.className = 'w-full h-full';
+        const iframe = document.createElement('iframe');
+        iframe.src = url;
+        iframe.className = 'w-full border border-base-300 rounded-lg';
+        iframe.style.height = '500px';
+        iframe.style.minHeight = '500px';
+        documentContent.innerHTML = '';
+        container.appendChild(iframe);
+        documentContent.appendChild(container);
+        iframe.onerror = function () { showDocumentError('Failed to load PDF'); };
+    }
+
+    function viewDocument(fileId, documentName) {
+        modalTitle.textContent = documentName;
+        downloadLink.href = `/admin/file/${fileId}`;
+        openDocumentModal();
+
+        documentContent.innerHTML = `
+            <div class="text-center">
+                <span class="loading loading-spinner loading-lg text-primary"></span>
+                <p class="mt-3 text-sm text-base-content/60">Loading document...</p>
+            </div>`;
+
+        fetch(`/admin/file/${fileId}`)
+            .then(function (response) {
+                if (!response.ok) throw new Error('Document not found');
+                return response.blob();
+            })
+            .then(function (blob) {
+                const url = URL.createObjectURL(blob);
+                const contentType = blob.type;
+
+                if (contentType.startsWith('image/') || documentName.toLowerCase().match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)) {
+                    createImageElement(url, documentName);
+                } else if (contentType === 'application/pdf' || contentType.includes('pdf') || documentName.toLowerCase().endsWith('.pdf')) {
+                    createPdfElement(url);
+                } else {
+                    showUnsupportedFormat();
+                }
+            })
+            .catch(function (error) {
+                showDocumentError(error.message);
+            });
+    }
+
+    document.querySelectorAll('[data-app-doc-dismiss]').forEach(function (el) {
+        el.addEventListener('click', closeDocumentModal);
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+            closeDocumentModal();
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.view-document-btn').forEach(function (button) {
+            button.addEventListener('click', function () {
+                viewDocument(this.getAttribute('data-file-id'), this.getAttribute('data-document-name'));
+            });
+        });
+
+        const finalApprovalForm = document.getElementById('finalApprovalForm');
+        if (finalApprovalForm) {
+            finalApprovalForm.addEventListener('submit', function (e) {
+                const decision = document.getElementById('decision').value;
+                const reason = document.getElementById('reason').value.trim();
+                const submitBtn = document.getElementById('submitBtn');
+                const submitText = document.getElementById('submitText');
+                const loadingText = document.getElementById('loadingText');
+
+                if (decision === 'deny' && !reason) {
+                    e.preventDefault();
+                    alert('Please provide a reason for denial.');
+                    return false;
+                }
+
+                submitBtn.disabled = true;
+                submitText.classList.add('hidden');
+                loadingText.classList.remove('hidden');
+                loadingText.classList.add('inline-flex');
+
+                setTimeout(function () {
+                    submitBtn.disabled = false;
+                    submitText.classList.remove('hidden');
+                    loadingText.classList.add('hidden');
+                    loadingText.classList.remove('inline-flex');
+                }, 10000);
+            });
+        }
+    });
+})();
+</script>
 {% endblock %}

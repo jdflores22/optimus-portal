@@ -18,21 +18,108 @@ use Psr\Log\LoggerInterface;
 class NotificationService
 {
     public function __construct(
-        private ?EntityManagerInterface $entityManager = null,
-        private ?InAppNotificationService $inAppNotificationService = null,
-        private ?LoggerInterface $logger = null
+        private EntityManagerInterface $entityManager,
+        private InAppNotificationService $inAppNotificationService,
+        private EmailNotificationService $emailNotificationService,
+        private LoggerInterface $logger
     ) {
-        // Stub implementation with optional dependencies
     }
 
     public function sendAccreditationStatusChange(User $user, AccreditationStatus $status, ?string $message = null): void
     {
-        // Stub implementation - in production this would send actual notifications
+        [$title, $body] = $this->buildAccreditationNotificationContent($status, $message);
+
+        try {
+            $this->inAppNotificationService->createNotification(
+                $user,
+                $title,
+                $body,
+                'accreditation_status',
+                ['accreditation_status' => $status->value]
+            );
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to send in-app accreditation notification', [
+                'user_id' => $user->getId(),
+                'status' => $status->value,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        try {
+            $this->emailNotificationService->sendAccreditationStatusChange($user, $status, $message);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to send accreditation email notification', [
+                'user_id' => $user->getId(),
+                'status' => $status->value,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function sendBrokerLinkageNotification($broker, $consignee): void
     {
-        // Stub implementation - in production this would send actual notifications
+        $brokerName = method_exists($broker, 'getFullName') ? $broker->getFullName() : $broker->getEmail();
+        $consigneeName = method_exists($consignee, 'getBusinessName') ? $consignee->getBusinessName() : $consignee->getEmail();
+
+        try {
+            $this->inAppNotificationService->createNotification(
+                $consignee,
+                'Broker Linked to Your Account',
+                sprintf('%s has been linked as your customs broker on OPTIMUS.', $brokerName),
+                'broker_linked',
+                ['broker_id' => $broker->getId()]
+            );
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to notify consignee of broker linkage', [
+                'consignee_id' => $consignee->getId(),
+                'broker_id' => $broker->getId(),
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        try {
+            $this->inAppNotificationService->createNotification(
+                $broker,
+                'Consignee Account Linked',
+                sprintf('You are now linked to consignee %s.', $consigneeName),
+                'consignee_linked',
+                ['consignee_id' => $consignee->getId()]
+            );
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to notify broker of consignee linkage', [
+                'consignee_id' => $consignee->getId(),
+                'broker_id' => $broker->getId(),
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    private function buildAccreditationNotificationContent(AccreditationStatus $status, ?string $message): array
+    {
+        return match ($status) {
+            AccreditationStatus::APPROVED => [
+                'Accreditation Approved',
+                'Your accreditation application has been approved. You now have full access to the OPTIMUS portal.',
+            ],
+            AccreditationStatus::DENIED, AccreditationStatus::REJECTED => [
+                'Accreditation Not Approved',
+                'Your accreditation application was not approved.'
+                    . ($message ? ' Reason: ' . $message : ''),
+            ],
+            AccreditationStatus::COMPLIANCE_REQUIRED => [
+                'Compliance Documents Required',
+                'Additional compliance documents are required for your accreditation application.'
+                    . ($message ? ' Details: ' . $message : ''),
+            ],
+            default => [
+                'Accreditation Status Updated',
+                'Your accreditation status is now ' . $status->value . '.'
+                    . ($message ? ' ' . $message : ''),
+            ],
+        };
     }
 
     public function sendAccountLockNotification(User $user): void
