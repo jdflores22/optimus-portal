@@ -36,4 +36,14 @@ class CityRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    public function findByProvinceId(int $provinceId): array
+    {
+        return $this->createQueryBuilder('c')
+            ->where('c.province = :provinceId')
+            ->setParameter('provinceId', $provinceId)
+            ->orderBy('c.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

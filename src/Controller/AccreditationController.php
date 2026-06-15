@@ -8,6 +8,7 @@ use App\Entity\Enum\AccreditationStatus;
 use App\Entity\Enum\AccountStatus;
 use App\Entity\Enum\FormType;
 use App\Entity\Enum\UserRole;
+use App\Form\FormFieldTypes;
 use App\Service\AccreditationWorkflowService;
 use App\Service\BrokerRelationshipService;
 use App\Service\DynamicFormRenderer;
@@ -153,7 +154,7 @@ class AccreditationController extends AbstractController
             $csrfToken = new CsrfToken('accreditation_submit', $request->request->get('_csrf_token'));
             if (!$this->csrfTokenManager->isTokenValid($csrfToken)) {
                 $this->addFlash('error', 'Invalid security token. Please try again.');
-                return $this->redirectToRoute('accreditation_submit');
+                return $this->redirectToRoute('accreditation_submit', ['shippingLineId' => $shippingLineId]);
             }
 
             $formData = $request->request->all();
@@ -162,6 +163,20 @@ class AccreditationController extends AbstractController
             // Process file uploads
             $processedFiles = [];
             foreach ($uploadedFiles as $fieldName => $file) {
+                if (is_array($file)) {
+                    $ids = [];
+                    foreach ($file as $uploaded) {
+                        if ($uploaded && $uploaded->isValid()) {
+                            $storedFile = $this->fileService->uploadFile($uploaded, 'accreditation', $user);
+                            $ids[] = $storedFile->getFileId();
+                        }
+                    }
+                    if ($ids !== []) {
+                        $processedFiles[$fieldName] = $ids;
+                    }
+                    continue;
+                }
+
                 if ($file && $file->isValid()) {
                     try {
                         $storedFile = $this->fileService->uploadFile($file, 'accreditation', $user);
@@ -178,34 +193,62 @@ class AccreditationController extends AbstractController
                 }
             }
 
-            // Validate the submission using dynamic form validation
-            $errors = [];
-            
-            // Get form fields for validation
             $formFields = $formConfig->getFields()['fields'] ?? [];
-            
+            $validationResult = $this->formRenderer->validateSubmission($formConfig, $formData);
+            $errors = $validationResult['errors'];
+
             foreach ($formFields as $field) {
                 $fieldId = $field['id'];
                 $fieldLabel = $field['label'];
                 $isRequired = $field['required'] ?? false;
                 $fieldType = $field['type'];
-                
-                if ($isRequired) {
-                    if ($fieldType === 'file') {
-                        // Check if file was uploaded and processed
-                        if (!isset($processedFiles[$fieldId])) {
-                            $errors[$fieldId] = $fieldLabel . ' is required';
+                $validation = $field['validation'] ?? [];
+
+                if (!$this->formRenderer->isFieldVisible($field, $formData)) {
+                    continue;
+                }
+
+                if (!FormFieldTypes::isFileType($fieldType)) {
+                    continue;
+                }
+
+                if ($fieldType === 'multi_file') {
+                    $files = $uploadedFiles[$fieldId] ?? [];
+                    if (!is_array($files)) {
+                        $files = $files ? [$files] : [];
+                    }
+                    if ($isRequired && !isset($processedFiles[$fieldId])) {
+                        $errors[$fieldId] = $fieldLabel . ' is required';
+                        continue;
+                    }
+                    foreach ($files as $uploaded) {
+                        if ($uploaded && $uploaded->isValid()) {
+                            $allowedTypes = $validation['allowedTypes'] ?? ['pdf', 'jpg', 'jpeg', 'png'];
+                            $maxSize = $validation['maxSize'] ?? (10 * 1024 * 1024);
+                            $fileValidation = $this->fileService->validateFile($uploaded, $allowedTypes, $maxSize);
+                            if (!$fileValidation['isValid']) {
+                                $errors[$fieldId] = $fileValidation['error'] ?? ($fieldLabel . ' is invalid');
+                                break;
+                            }
                         }
-                    } elseif ($fieldType === 'checkbox') {
-                        // For checkboxes, check if the value is set and not empty
-                        if (empty($formData[$fieldId])) {
-                            $errors[$fieldId] = 'This field is required';
-                        }
-                    } else {
-                        // For other field types, check if value exists and is not empty
-                        if (empty($formData[$fieldId])) {
-                            $errors[$fieldId] = $fieldLabel . ' is required';
-                        }
+                    }
+                    continue;
+                }
+
+                $file = $uploadedFiles[$fieldId] ?? null;
+
+                if ($isRequired && !isset($processedFiles[$fieldId])) {
+                    $errors[$fieldId] = $fieldLabel . ' is required';
+                    continue;
+                }
+
+                if ($file && $file->isValid()) {
+                    $allowedTypes = $validation['allowedTypes'] ?? ['pdf', 'jpg', 'jpeg', 'png'];
+                    $maxSize = $validation['maxSize'] ?? (10 * 1024 * 1024);
+                    $fileValidation = $this->fileService->validateFile($file, $allowedTypes, $maxSize);
+
+                    if (!$fileValidation['isValid']) {
+                        $errors[$fieldId] = $fileValidation['error'] ?? ($fieldLabel . ' is invalid');
                     }
                 }
             }

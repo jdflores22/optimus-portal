@@ -110,17 +110,13 @@
             </div>
         </div>
 
-        {# CY Locations #}
-        <div class="card bg-base-100 shadow-md">
-            <div class="card-body p-5 sm:p-6">
-                <h2 class="card-title text-base text-base-content mb-1">
-                    <span class="icon-[tabler--map-pin] size-5 text-primary"></span>
-                    CY Empty Return Locations
-                </h2>
-                <p class="text-sm text-base-content/60 mb-4">View real-time capacity utilization. CY locations are assigned per container below.</p>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="cyLocationsGrid"></div>
-            </div>
-        </div>
+        {# CY Locations — container yards only (excludes port/terminals) #}
+        {% include 'dashboard/_cy_location_cards.html.twig' with {
+            cyLocations: cyLocations|default([]),
+            interactive: true,
+            showSectionHeader: false,
+            showFooterAlert: false
+        } %}
 
         {# Containers #}
         <div class="card bg-base-100 shadow-md">

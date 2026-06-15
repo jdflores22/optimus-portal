@@ -183,14 +183,11 @@ class RepositioningRequestService
         $request->setReviewedAt(new \DateTime());
         $request->setReviewedBy($reviewer);
 
-        $portCode = $request->getDestinationTerminal()->getCode();
+        $destinationPort = $request->getDestinationTerminal();
 
         foreach ($request->getItems() as $item) {
             $container = $item->getContainer();
-            $noa = $container->getNoa();
-            if ($noa !== null) {
-                $noa->setPortLocation($portCode);
-            }
+            $this->assignContainerPortDestination($container, $destinationPort);
             $this->containerStatusService->changeStatus(
                 $container,
                 ContainerStatus::IN_TRANSIT,
@@ -227,8 +224,10 @@ class RepositioningRequestService
         }
 
         foreach ($request->getItems() as $item) {
+            $container = $item->getContainer();
+            $this->assignContainerPortDestination($container, $request->getDestinationTerminal());
             $this->containerStatusService->changeStatus(
-                $item->getContainer(),
+                $container,
                 ContainerStatus::AT_TERMINAL,
                 $completedBy,
                 'Arrived at port via ' . $request->getRequestNumber()
@@ -241,6 +240,85 @@ class RepositioningRequestService
         $this->em->flush();
 
         $this->notifyRequester($request, 'Completed', 'Containers have arrived at ' . $request->getDestinationTerminal()->getName() . '.');
+    }
+
+    /**
+     * Outbound (CY → port) summary from repositioning/export requests for dashboard.
+     *
+     * @return array<string, mixed>
+     */
+    public function buildOutboundSummary(ShippingLine $shippingLine): array
+    {
+        $requests = $this->requestRepo->findForShippingLine($shippingLine);
+
+        $pendingCount = 0;
+        $inTransitCount = 0;
+        $pending20 = 0;
+        $pending40 = 0;
+        $inTransit20 = 0;
+        $inTransit40 = 0;
+        $pendingRequests = 0;
+        $inTransitRequests = 0;
+        $byPort = [];
+
+        foreach ($requests as $request) {
+            $status = $request->getStatus();
+            if (!in_array($status, [RepositioningRequestStatus::PENDING, RepositioningRequestStatus::IN_TRANSIT], true)) {
+                continue;
+            }
+
+            $dest = $request->getDestinationTerminal();
+            $portCode = $dest->getCode();
+            if (!isset($byPort[$portCode])) {
+                $byPort[$portCode] = [
+                    'code' => $portCode,
+                    'name' => $dest->getName(),
+                    'pending_count' => 0,
+                    'in_transit_count' => 0,
+                    'count_20ft' => 0,
+                    'count_40ft' => 0,
+                ];
+            }
+
+            if ($status === RepositioningRequestStatus::PENDING) {
+                $pendingRequests++;
+            } else {
+                $inTransitRequests++;
+            }
+
+            foreach ($request->getItems() as $item) {
+                $container = $item->getContainer();
+                $teu = $container->getContainerSize()->getTeuValue();
+                $is20 = $teu <= 1.0;
+
+                if ($status === RepositioningRequestStatus::PENDING) {
+                    $pendingCount++;
+                    $byPort[$portCode]['pending_count']++;
+                    $is20 ? $pending20++ : $pending40++;
+                } else {
+                    $inTransitCount++;
+                    $byPort[$portCode]['in_transit_count']++;
+                    $is20 ? $inTransit20++ : $inTransit40++;
+                }
+
+                $is20 ? $byPort[$portCode]['count_20ft']++ : $byPort[$portCode]['count_40ft']++;
+            }
+        }
+
+        usort($byPort, fn (array $a, array $b) => ($b['pending_count'] + $b['in_transit_count']) <=> ($a['pending_count'] + $a['in_transit_count']));
+
+        return [
+            'pending_count' => $pendingCount,
+            'in_transit_count' => $inTransitCount,
+            'total_active' => $pendingCount + $inTransitCount,
+            'pending_20ft' => $pending20,
+            'pending_40ft' => $pending40,
+            'in_transit_20ft' => $inTransit20,
+            'in_transit_40ft' => $inTransit40,
+            'pending_requests' => $pendingRequests,
+            'in_transit_requests' => $inTransitRequests,
+            'by_port' => array_values($byPort),
+        ];
     }
 
     /**
@@ -267,6 +345,17 @@ class RepositioningRequestService
     public function getPortTerminals(): array
     {
         return $this->terminalRepository->findActivePorts();
+    }
+
+    private function assignContainerPortDestination(Container $container, Terminal $port): void
+    {
+        $portCode = $port->getCode();
+        $container->setCurrentLocation($portCode);
+
+        $noa = $container->getNoa();
+        if ($noa !== null) {
+            $noa->setPortLocation($portCode);
+        }
     }
 
     /** @return int[] */

@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}New Repositioning Request - OPTIMUS{% endblock %}
+{% block title %}{{ pageTitle|default('New Repositioning Request') }} - OPTIMUS{% endblock %}
 
 {% block body %}
 <div class="space-y-6 max-w-6xl mx-auto">
@@ -8,10 +8,9 @@
         <a href="{{ path(indexRoute) }}" class="text-sm text-base-content/60 hover:text-primary inline-flex items-center gap-1 mb-2">
             <span class="icon-[tabler--arrow-left] size-4"></span> Back to requests
         </a>
-        <h1 class="text-2xl font-bold text-base-content">New Export / Repositioning Request</h1>
+        <h1 class="text-2xl font-bold text-base-content">{{ pageTitle|default('New Export / Repositioning Request') }}</h1>
         <p class="text-sm text-base-content/60 mt-1">
-            Submit a request letter to move containers from a Container Yard to a Port/Terminal.
-            Containers are listed by <strong>highest dwell time first</strong> (CAO 8-2019 customs compliance).
+            {{ pageSubtitle|default('Submit a request letter to move containers from a Container Yard to a Port/Terminal. Containers are listed by highest dwell time first (CAO 8-2019 customs compliance).') }}
         </p>
     </div>
 

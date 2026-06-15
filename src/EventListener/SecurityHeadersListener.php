@@ -45,19 +45,19 @@ class SecurityHeadersListener
             // More permissive CSP for file viewing
             $csp = "default-src 'self'; " .
                    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " .
-                   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " .
-                   "img-src 'self' data: blob:; " .
+                   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; " .
+                   "img-src 'self' data: blob: https://cdn.jsdelivr.net https://*.tile.openstreetmap.org; " .
                    "font-src 'self' https://fonts.gstatic.com; " .
                    "connect-src 'self' https://cdn.jsdelivr.net; " .
                    "frame-src 'self' blob:; " .
                    "object-src 'none'; " .
                    "frame-ancestors 'self'"; // Allow same-origin framing
         } else {
-            // Restrictive CSP for regular pages - allow Chart.js and ApexCharts CDN
+            // Restrictive CSP for regular pages - allow Chart.js, ApexCharts, and Leaflet CDN
             $csp = "default-src 'self'; " .
                    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " .
-                   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " .
-                   "img-src 'self' data: blob:; " .
+                   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; " .
+                   "img-src 'self' data: blob: https://cdn.jsdelivr.net https://*.tile.openstreetmap.org; " .
                    "font-src 'self' https://fonts.gstatic.com; " .
                    "connect-src 'self' https://cdn.jsdelivr.net; " .
                    "frame-src 'self' blob:; " .

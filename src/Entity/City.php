@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\CityRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: CityRepository::class)]
@@ -24,11 +26,19 @@ class City
     #[ORM\JoinColumn(nullable: false)]
     private Region $region;
 
+    #[ORM\ManyToOne(targetEntity: Province::class, inversedBy: 'cities')]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Province $province = null;
+
+    #[ORM\OneToMany(mappedBy: 'city', targetEntity: Barangay::class)]
+    private Collection $barangays;
+
     #[ORM\Column(type: 'datetime')]
     private \DateTime $createdAt;
 
     public function __construct()
     {
+        $this->barangays = new ArrayCollection();
         $this->createdAt = new \DateTime();
     }
 
@@ -67,6 +77,45 @@ class City
     public function setRegion(?Region $region): self
     {
         $this->region = $region;
+        return $this;
+    }
+
+    public function getProvince(): ?Province
+    {
+        return $this->province;
+    }
+
+    public function setProvince(?Province $province): self
+    {
+        $this->province = $province;
+
+        return $this;
+    }
+
+    /** @return Collection<int, Barangay> */
+    public function getBarangays(): Collection
+    {
+        return $this->barangays;
+    }
+
+    public function addBarangay(Barangay $barangay): self
+    {
+        if (!$this->barangays->contains($barangay)) {
+            $this->barangays[] = $barangay;
+            $barangay->setCity($this);
+        }
+
+        return $this;
+    }
+
+    public function removeBarangay(Barangay $barangay): self
+    {
+        if ($this->barangays->removeElement($barangay)) {
+            if ($barangay->getCity() === $this) {
+                $barangay->setCity(null);
+            }
+        }
+
         return $this;
     }
 

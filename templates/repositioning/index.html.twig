@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Repositioning Requests - OPTIMUS{% endblock %}
+{% block title %}{{ pageTitle|default('Repositioning Requests') }} - OPTIMUS{% endblock %}
 
 {% block body %}
 <div class="space-y-6">
@@ -11,15 +11,15 @@
             </a>
             <h1 class="text-2xl font-bold text-base-content flex items-center gap-2">
                 <span class="icon-[tabler--truck-delivery] size-7 text-primary"></span>
-                Repositioning / Export Requests
+                {{ pageTitle|default('Repositioning / Export Requests') }}
             </h1>
-            <p class="text-sm text-base-content/60 mt-1">CY-to-port container transfer requests — prioritized by dwell time (CAO 8-2019)</p>
+            <p class="text-sm text-base-content/60 mt-1">{{ pageSubtitle|default('CY-to-port container transfer requests — prioritized by dwell time (CAO 8-2019)') }}</p>
         </div>
         <div class="flex gap-2">
             {% if newRoute %}
             <a href="{{ path(newRoute) }}" class="btn btn-primary gap-2">
                 <span class="icon-[tabler--plus] size-4"></span>
-                New Request
+                New Outbound Request
             </a>
             {% endif %}
         </div>

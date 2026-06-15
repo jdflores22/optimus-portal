@@ -25,12 +25,16 @@ class Region
     #[ORM\OneToMany(mappedBy: 'region', targetEntity: City::class)]
     private Collection $cities;
 
+    #[ORM\OneToMany(mappedBy: 'region', targetEntity: Province::class)]
+    private Collection $provinces;
+
     #[ORM\Column(type: 'datetime')]
     private \DateTime $createdAt;
 
     public function __construct()
     {
         $this->cities = new ArrayCollection();
+        $this->provinces = new ArrayCollection();
         $this->createdAt = new \DateTime();
     }
 
@@ -81,6 +85,33 @@ class Region
         if ($this->cities->removeElement($city)) {
             if ($city->getRegion() === $this) {
                 $city->setRegion(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /** @return Collection<int, Province> */
+    public function getProvinces(): Collection
+    {
+        return $this->provinces;
+    }
+
+    public function addProvince(Province $province): self
+    {
+        if (!$this->provinces->contains($province)) {
+            $this->provinces[] = $province;
+            $province->setRegion($this);
+        }
+
+        return $this;
+    }
+
+    public function removeProvince(Province $province): self
+    {
+        if ($this->provinces->removeElement($province)) {
+            if ($province->getRegion() === $this) {
+                $province->setRegion(null);
             }
         }
 

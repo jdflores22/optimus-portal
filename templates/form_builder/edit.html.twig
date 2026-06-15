@@ -3,15 +3,36 @@
 {% block title %}Edit Form — {{ form.name }} - OPTIMUS{% endblock %}
 
 {% block body %}
-{% set fieldTemplates = {
-    'text': { icon: 'icon-[tabler--forms]', name: 'Text Input' },
-    'number': { icon: 'icon-[tabler--hash]', name: 'Number' },
-    'date': { icon: 'icon-[tabler--calendar]', name: 'Date' },
-    'file': { icon: 'icon-[tabler--upload]', name: 'File Upload' },
-    'dropdown': { icon: 'icon-[tabler--selector]', name: 'Dropdown' },
-    'checkbox': { icon: 'icon-[tabler--checkbox]', name: 'Checkbox' },
-    'radio': { icon: 'icon-[tabler--circle-dot]', name: 'Radio Button' }
-} %}
+{% set fieldTemplateGroups = fieldTemplateGroups|default({
+    'Basic Inputs': {
+        'text': { icon: 'icon-[tabler--forms]', name: 'Text Input' },
+        'textarea': { icon: 'icon-[tabler--align-left]', name: 'Text Area' },
+        'number': { icon: 'icon-[tabler--hash]', name: 'Number' },
+        'email': { icon: 'icon-[tabler--mail]', name: 'Email' },
+        'phone': { icon: 'icon-[tabler--phone]', name: 'Phone Number' },
+        'date': { icon: 'icon-[tabler--calendar]', name: 'Date' },
+        'url': { icon: 'icon-[tabler--link]', name: 'URL' },
+        'currency': { icon: 'icon-[tabler--currency-peso]', name: 'Currency' }
+    },
+    'Documents & Compliance': {
+        'file': { icon: 'icon-[tabler--upload]', name: 'File Upload' },
+        'image': { icon: 'icon-[tabler--photo]', name: 'Image Upload' },
+        'multi_file': { icon: 'icon-[tabler--files]', name: 'Multiple File Upload' },
+        'signature': { icon: 'icon-[tabler--signature]', name: 'Digital Signature' }
+    },
+    'Choice Fields': {
+        'dropdown': { icon: 'icon-[tabler--selector]', name: 'Dropdown' },
+        'multi_select': { icon: 'icon-[tabler--list-check]', name: 'Multi Select' },
+        'checkbox': { icon: 'icon-[tabler--checkbox]', name: 'Checkbox' },
+        'radio': { icon: 'icon-[tabler--circle-dot]', name: 'Radio Button' },
+        'toggle': { icon: 'icon-[tabler--toggle-right]', name: 'Toggle Switch' },
+        'terms': { icon: 'icon-[tabler--file-check]', name: 'Terms & Declaration' }
+    },
+    'Location': {
+        'geolocation': { icon: 'icon-[tabler--map-pin]', name: 'Geotag Location' },
+        'address': { icon: 'icon-[tabler--map-2]', name: 'Address Picker' }
+    }
+}) %}
 
 <div class="min-h-screen bg-base-200">
     <div class="bg-base-100 shadow-sm">
@@ -70,17 +91,25 @@
                 <div class="card bg-base-100 shadow-sm xl:sticky xl:top-24">
                     <div class="card-body p-5">
                         <h3 class="font-semibold text-base-content mb-4">1. Field Templates</h3>
-                        <div class="space-y-2">
-                            {% for fieldType, template in fieldTemplates %}
-                                <button type="button"
-                                        class="field-template w-full text-left rounded-xl bg-base-200/50 hover:bg-primary/10 px-4 py-3 transition-colors group"
-                                        data-field-type="{{ fieldType }}"
-                                        data-field-name="{{ template.name }}">
-                                    <div class="flex items-center gap-3">
-                                        <span class="{{ template.icon }} size-5 text-base-content/50 group-hover:text-primary"></span>
-                                        <span class="text-sm font-medium text-base-content">{{ template.name }}</span>
+                        <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+                            {% for groupName, templates in fieldTemplateGroups %}
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50 mb-2">{{ groupName }}</p>
+                                    <div class="space-y-2">
+                                        {% for fieldType, template in templates %}
+                                            <button type="button"
+                                                    class="field-template w-full text-left rounded-xl bg-base-200/50 hover:bg-primary/10 px-4 py-3 transition-colors group"
+                                                    data-field-type="{{ fieldType }}"
+                                                    data-field-name="{{ template.name }}"
+                                                    {% if template.preset is defined %}data-field-preset="{{ template.preset|json_encode|e('html_attr') }}"{% endif %}>
+                                                <div class="flex items-center gap-3">
+                                                    <span class="{{ template.icon }} size-5 text-base-content/50 group-hover:text-primary"></span>
+                                                    <span class="text-sm font-medium text-base-content">{{ template.name }}</span>
+                                                </div>
+                                            </button>
+                                        {% endfor %}
                                     </div>
-                                </button>
+                                </div>
                             {% endfor %}
                         </div>
                     </div>
@@ -227,6 +256,18 @@
     let currentFields = {{ form.fields.fields|json_encode|raw }};
     let isEditing = false;
     let editingFieldId = null;
+    let currentEditingFieldData = null;
+
+    function escapeHtml(value) {
+        if (value === null || value === undefined) {
+            return '';
+        }
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
 
     function openModal(id) {
         const modal = document.getElementById(id);
@@ -322,7 +363,22 @@
 
     document.querySelectorAll('.field-template').forEach(function (button) {
         button.addEventListener('click', function () {
-            showFieldProperties(false, this.dataset.fieldType, this.dataset.fieldName);
+            let preset = null;
+            if (this.dataset.fieldPreset) {
+                try {
+                    preset = JSON.parse(this.dataset.fieldPreset);
+                } catch (e) {
+                    preset = null;
+                }
+            }
+            showFieldProperties(false, this.dataset.fieldType, this.dataset.fieldName, preset ? {
+                id: '',
+                label: this.dataset.fieldName,
+                type: this.dataset.fieldType,
+                required: false,
+                validation: preset.validation || {},
+                placeholder: preset.placeholder || ''
+            } : null);
         });
     });
 
@@ -345,6 +401,7 @@
         if (editing === undefined) editing = false;
         isEditing = editing;
         editingFieldId = fieldData ? fieldData.id : null;
+        currentEditingFieldData = fieldData || null;
 
         const propertiesContent = document.getElementById('field-editor-content');
         const formHTML = `
@@ -418,34 +475,84 @@
         `;
         isEditing = false;
         editingFieldId = null;
+        currentEditingFieldData = null;
+    }
+
+    function buildCommonFieldOptions(fd) {
+        const val = fd?.validation || {};
+        const showWhen = val.showWhen || {};
+        const otherFields = currentFields.filter(function (f) {
+            return !editingFieldId || f.id !== editingFieldId;
+        });
+        const fieldOptions = otherFields.map(function (f) {
+            const selected = showWhen.field === f.id ? 'selected' : '';
+            return '<option value="' + escapeHtml(f.id) + '" ' + selected + '>' + escapeHtml(f.label) + '</option>';
+        }).join('');
+
+        return `
+            <div class="divider my-2"></div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Dynamic rules</p>
+            <div class="form-control mt-2">
+                <label class="label py-1" for="field-show-when-field"><span class="label-text text-sm">Show only when</span></label>
+                <select id="field-show-when-field" class="select select-bordered select-sm w-full">
+                    <option value="">Always visible</option>
+                    ${fieldOptions}
+                </select>
+                <input type="text" id="field-show-when-value" class="input input-bordered input-sm w-full mt-2" placeholder="Value equals..." value="${escapeHtml(showWhen.value || '')}">
+                <p class="text-xs text-base-content/50 mt-1">Example: Company Type = Corporation</p>
+            </div>
+            <label class="flex items-center gap-3 cursor-pointer mt-3">
+                <input type="checkbox" id="field-unique" class="checkbox checkbox-sm checkbox-primary" ${val.unique ? 'checked' : ''}>
+                <span class="text-sm">Unique value validation (TIN, SEC, license)</span>
+            </label>
+        `;
+    }
+
+    function saveCommonFieldOptions(fieldData) {
+        const whenField = document.getElementById('field-show-when-field')?.value;
+        const whenValue = document.getElementById('field-show-when-value')?.value.trim();
+        if (whenField && whenValue !== '') {
+            fieldData.validation.showWhen = { field: whenField, operator: 'equals', value: whenValue };
+        } else {
+            delete fieldData.validation.showWhen;
+        }
+        if (document.getElementById('field-unique')?.checked) {
+            fieldData.validation.unique = true;
+        } else {
+            delete fieldData.validation.unique;
+        }
     }
 
     function updateFieldTypeOptions() {
         const fieldType = document.getElementById('field-type').value;
         const optionsContainer = document.getElementById('field-type-options');
+        const fd = currentEditingFieldData || {};
+        const val = fd.validation || {};
+        const maxLength = val.maxLength ?? val.maxlength ?? '';
         let optionsHTML = '';
 
         switch (fieldType) {
             case 'dropdown':
             case 'radio':
+                const existingOptions = val.options
+                    ? Object.values(val.options)
+                    : (Array.isArray(fd.options) ? fd.options : ['Option 1', 'Option 2']);
+                const optionsMarkup = existingOptions.map(function (option, index) {
+                    return `
+                            <div class="flex items-center gap-2">
+                                <input type="text" value="${escapeHtml(option)}" placeholder="Option ${index + 1}" class="input input-bordered input-sm flex-1">
+                                <button type="button" class="btn btn-text btn-circle btn-sm text-error remove-option">
+                                    <span class="icon-[tabler--trash] size-4"></span>
+                                </button>
+                            </div>`;
+                }).join('');
                 optionsHTML = `
                     <div>
                         <label class="label py-1">
                             <span class="label-text font-medium">Options <span class="text-error">*</span></span>
                         </label>
                         <div id="field-options-list" class="space-y-2">
-                            <div class="flex items-center gap-2">
-                                <input type="text" placeholder="Option 1" class="input input-bordered input-sm flex-1">
-                                <button type="button" class="btn btn-text btn-circle btn-sm text-error remove-option">
-                                    <span class="icon-[tabler--trash] size-4"></span>
-                                </button>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <input type="text" placeholder="Option 2" class="input input-bordered input-sm flex-1">
-                                <button type="button" class="btn btn-text btn-circle btn-sm text-error remove-option">
-                                    <span class="icon-[tabler--trash] size-4"></span>
-                                </button>
-                            </div>
+                            ${optionsMarkup}
                         </div>
                         <button type="button" id="add-option" class="btn btn-ghost btn-xs mt-2 gap-1">
                             <span class="icon-[tabler--plus] size-3"></span>
@@ -455,18 +562,79 @@
                 `;
                 break;
             case 'text':
+            case 'textarea':
+            case 'email':
+            case 'phone':
+            case 'url':
+                const detectedLengthMode = (function () {
+                    if (val.lengthMode) {
+                        return val.lengthMode;
+                    }
+                    const minLen = val.minLength ?? val.minlength;
+                    const maxLen = val.maxLength ?? val.maxlength;
+                    if (minLen && maxLen && minLen !== maxLen) {
+                        return 'range';
+                    }
+                    if (maxLen && !minLen) {
+                        return 'exact';
+                    }
+                    if (minLen && maxLen && minLen === maxLen) {
+                        return 'exact';
+                    }
+                    if (maxLen) {
+                        return 'max';
+                    }
+                    if (minLen) {
+                        return 'min';
+                    }
+                    return 'none';
+                })();
+                const exactLen = detectedLengthMode === 'exact'
+                    ? (val.maxLength ?? val.maxlength ?? val.minLength ?? val.minlength ?? '')
+                    : '';
+                const maxOnlyLen = detectedLengthMode === 'max'
+                    ? (val.maxLength ?? val.maxlength ?? '')
+                    : '';
+                const rangeMin = detectedLengthMode === 'range'
+                    ? (val.minLength ?? val.minlength ?? '')
+                    : '';
+                const rangeMax = detectedLengthMode === 'range'
+                    ? (val.maxLength ?? val.maxlength ?? '')
+                    : '';
                 optionsHTML = `
                     <div class="form-control">
                         <label class="label py-1" for="field-placeholder">
                             <span class="label-text">Placeholder Text</span>
                         </label>
-                        <input type="text" id="field-placeholder" class="input input-bordered w-full" placeholder="Enter placeholder text">
+                        <input type="text" id="field-placeholder" class="input input-bordered w-full" placeholder="Enter placeholder text" value="${escapeHtml(fd.placeholder || '')}">
                     </div>
                     <div class="form-control">
-                        <label class="label py-1" for="field-maxlength">
-                            <span class="label-text">Maximum Length</span>
-                        </label>
-                        <input type="number" id="field-maxlength" class="input input-bordered w-full" placeholder="e.g., 255">
+                        <span class="label-text font-medium mb-2 block">Character Length</span>
+                        <div class="space-y-2 text-sm">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="field-length-mode" value="exact" class="radio radio-primary radio-sm" ${detectedLengthMode === 'exact' ? 'checked' : ''}>
+                                <span>Exactly</span>
+                                <input type="number" id="field-length-exact" class="input input-bordered input-sm w-24" min="1" placeholder="11" value="${escapeHtml(exactLen)}">
+                                <span class="text-base-content/60">characters</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="field-length-mode" value="max" class="radio radio-primary radio-sm" ${detectedLengthMode === 'max' ? 'checked' : ''}>
+                                <span>Up to</span>
+                                <input type="number" id="field-length-max" class="input input-bordered input-sm w-24" min="1" placeholder="255" value="${escapeHtml(maxOnlyLen)}">
+                                <span class="text-base-content/60">characters</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="field-length-mode" value="range" class="radio radio-primary radio-sm" ${detectedLengthMode === 'range' ? 'checked' : ''}>
+                                <span>Between</span>
+                                <input type="number" id="field-length-min" class="input input-bordered input-sm w-20" min="1" placeholder="Min" value="${escapeHtml(rangeMin)}">
+                                <span class="text-base-content/60">and</span>
+                                <input type="number" id="field-length-max" class="input input-bordered input-sm w-20" min="1" placeholder="Max" value="${escapeHtml(rangeMax)}">
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="field-length-mode" value="none" class="radio radio-primary radio-sm" ${detectedLengthMode === 'none' ? 'checked' : ''}>
+                                <span>No length limit</span>
+                            </label>
+                        </div>
                     </div>
                 `;
                 break;
@@ -476,35 +644,88 @@
                         <label class="label py-1" for="field-min">
                             <span class="label-text">Minimum Value</span>
                         </label>
-                        <input type="number" id="field-min" class="input input-bordered w-full" placeholder="e.g., 0">
+                        <input type="number" id="field-min" class="input input-bordered w-full" placeholder="e.g., 0" value="${escapeHtml(val.min ?? '')}">
                     </div>
                     <div class="form-control">
                         <label class="label py-1" for="field-max">
                             <span class="label-text">Maximum Value</span>
                         </label>
-                        <input type="number" id="field-max" class="input input-bordered w-full" placeholder="e.g., 100">
+                        <input type="number" id="field-max" class="input input-bordered w-full" placeholder="e.g., 100" value="${escapeHtml(val.max ?? '')}">
                     </div>
                 `;
                 break;
             case 'file':
+            case 'image':
+            case 'multi_file':
+            case 'signature':
+                const defaultAccept = fieldType === 'image' || fieldType === 'signature'
+                    ? 'jpg,jpeg,png,webp'
+                    : 'pdf,jpg,jpeg,png';
+                const acceptTypes = val.allowedTypes
+                    ? val.allowedTypes.join(',')
+                    : defaultAccept;
+                const maxSizeMb = val.maxSize ? Math.round(val.maxSize / (1024 * 1024)) : (fieldType === 'signature' ? 2 : 10);
                 optionsHTML = `
                     <div class="form-control">
-                        <label class="label py-1" for="field-accept">
-                            <span class="label-text">Accepted File Types</span>
-                        </label>
-                        <input type="text" id="field-accept" class="input input-bordered w-full" placeholder="e.g., .pdf,.doc,.docx">
+                        <label class="label py-1" for="field-accept"><span class="label-text">Accepted File Types</span></label>
+                        <input type="text" id="field-accept" class="input input-bordered w-full" placeholder="pdf,jpg,png" value="${escapeHtml(acceptTypes)}">
                     </div>
                     <div class="form-control">
-                        <label class="label py-1" for="field-maxsize">
-                            <span class="label-text">Maximum File Size (MB)</span>
+                        <label class="label py-1" for="field-maxsize"><span class="label-text">Maximum File Size (MB)</span></label>
+                        <input type="number" id="field-maxsize" class="input input-bordered w-full" value="${escapeHtml(maxSizeMb)}">
+                    </div>
+                    ${fieldType === 'multi_file' ? `<div class="form-control"><label class="label py-1" for="field-maxfiles"><span class="label-text">Maximum Files</span></label><input type="number" id="field-maxfiles" class="input input-bordered w-full" min="2" max="20" value="${escapeHtml(val.maxFiles ?? 5)}"></div>` : ''}
+                    <label class="flex items-center gap-3 cursor-pointer mt-2">
+                        <input type="checkbox" id="field-preview" class="checkbox checkbox-sm checkbox-primary" ${val.preview !== false ? 'checked' : ''}>
+                        <span class="text-sm">Enable preview before submit</span>
+                    </label>
+                `;
+                break;
+            case 'toggle':
+                optionsHTML = '<p class="text-xs text-base-content/60">Boolean on/off switch.</p>';
+                break;
+            case 'terms':
+                optionsHTML = `<div class="form-control"><label class="label py-1" for="field-declaration"><span class="label-text">Declaration Text</span></label><textarea id="field-declaration" rows="4" class="textarea textarea-bordered w-full">${escapeHtml(val.declaration || 'I certify that the information provided is true and correct, and I agree to the terms and conditions of this accreditation application.')}</textarea></div>`;
+                break;
+            case 'address':
+                optionsHTML = '<div class="alert alert-info py-3"><span class="text-xs">Region, Province, City/Municipality, and Barangay use the location database.</span></div>';
+                break;
+            case 'multi_select':
+                const msOptions = val.options ? Object.values(val.options) : ['Option 1', 'Option 2'];
+                optionsHTML = `<div><label class="label py-1"><span class="label-text font-medium">Options</span></label><div id="field-options-list" class="space-y-2">${msOptions.map(function (o, i) { return '<div class="flex items-center gap-2"><input type="text" value="' + escapeHtml(o) + '" class="input input-bordered input-sm flex-1"></div>'; }).join('')}</div><button type="button" id="add-option" class="btn btn-ghost btn-xs mt-2 gap-1"><span class="icon-[tabler--plus] size-3"></span> Add Option</button></div>`;
+                break;
+            case 'currency':
+                optionsHTML = `<div class="form-control"><label class="label py-1" for="field-min"><span class="label-text">Minimum Amount</span></label><input type="number" step="0.01" id="field-min" class="input input-bordered w-full" value="${escapeHtml(val.min ?? '0')}"></div><div class="form-control"><label class="label py-1" for="field-max"><span class="label-text">Maximum Amount</span></label><input type="number" step="0.01" id="field-max" class="input input-bordered w-full" value="${escapeHtml(val.max ?? '')}"></div>`;
+                break;
+            case 'geolocation':
+                optionsHTML = `
+                    <div class="alert alert-info py-3">
+                        <span class="icon-[tabler--info-circle] size-4"></span>
+                        <span class="text-xs">Applicants pick their business location on a map. Latitude and longitude are saved automatically.</span>
+                    </div>
+                    <div class="form-control">
+                        <label class="label py-1" for="field-default-lat">
+                            <span class="label-text">Default Latitude</span>
                         </label>
-                        <input type="number" id="field-maxsize" class="input input-bordered w-full" placeholder="e.g., 10">
+                        <input type="number" step="any" id="field-default-lat" class="input input-bordered w-full" placeholder="14.5995" value="${escapeHtml(val.defaultLat ?? '14.5995')}">
+                    </div>
+                    <div class="form-control">
+                        <label class="label py-1" for="field-default-lng">
+                            <span class="label-text">Default Longitude</span>
+                        </label>
+                        <input type="number" step="any" id="field-default-lng" class="input input-bordered w-full" placeholder="120.9842" value="${escapeHtml(val.defaultLng ?? '120.9842')}">
+                    </div>
+                    <div class="form-control">
+                        <label class="label py-1" for="field-default-zoom">
+                            <span class="label-text">Default Map Zoom</span>
+                        </label>
+                        <input type="number" id="field-default-zoom" class="input input-bordered w-full" placeholder="13" min="1" max="18" value="${escapeHtml(val.defaultZoom ?? '13')}">
                     </div>
                 `;
                 break;
         }
 
-        optionsContainer.innerHTML = optionsHTML;
+        optionsContainer.innerHTML = optionsHTML + buildCommonFieldOptions(fd);
 
         const addOptionBtn = document.getElementById('add-option');
         if (addOptionBtn) {
@@ -555,43 +776,167 @@
         saveText.textContent = isEditing ? 'Updating...' : 'Adding...';
         saveButton.disabled = true;
 
+        const existingField = isEditing
+            ? currentFields.find(function (f) { return f.id === editingFieldId; })
+            : null;
+        const typeChanged = existingField && existingField.type !== type;
+
         const fieldData = {
-            id: isEditing ? editingFieldId : 'field_' + Date.now(),
+            id: existingField ? existingField.id : 'field_' + Date.now(),
             label: label,
             type: type,
             required: required,
-            order: isEditing ? currentFields.find(function (f) { return f.id === editingFieldId; }).order : getNextFieldOrder(),
-            validation: {}
+            order: existingField ? existingField.order : getNextFieldOrder(),
+            validation: typeChanged ? {} : Object.assign({}, existingField?.validation || {})
         };
+
+        if (existingField?.placeholder) {
+            fieldData.placeholder = existingField.placeholder;
+        }
 
         switch (type) {
             case 'text':
-                const placeholder = document.getElementById('field-placeholder')?.value;
-                const maxlength = document.getElementById('field-maxlength')?.value;
-                if (placeholder) fieldData.placeholder = placeholder;
-                if (maxlength) fieldData.validation.maxlength = parseInt(maxlength);
+            case 'textarea':
+            case 'email':
+            case 'phone':
+            case 'url':
+                const placeholder = document.getElementById('field-placeholder')?.value.trim();
+                const lengthModeInput = document.querySelector('input[name="field-length-mode"]:checked');
+                const lengthMode = lengthModeInput ? lengthModeInput.value : 'none';
+
+                delete fieldData.validation.lengthMode;
+                delete fieldData.validation.minLength;
+                delete fieldData.validation.maxLength;
+                delete fieldData.validation.minlength;
+                delete fieldData.validation.maxlength;
+
+                if (placeholder) {
+                    fieldData.placeholder = placeholder;
+                } else {
+                    delete fieldData.placeholder;
+                }
+
+                if (lengthMode === 'exact') {
+                    const exactLen = parseInt(document.getElementById('field-length-exact')?.value || '', 10);
+                    if (exactLen > 0) {
+                        fieldData.validation.lengthMode = 'exact';
+                        fieldData.validation.minLength = exactLen;
+                        fieldData.validation.maxLength = exactLen;
+                    }
+                } else if (lengthMode === 'max') {
+                    const maxLen = parseInt(document.getElementById('field-length-max')?.value || '', 10);
+                    if (maxLen > 0) {
+                        fieldData.validation.lengthMode = 'max';
+                        fieldData.validation.maxLength = maxLen;
+                    }
+                } else if (lengthMode === 'range') {
+                    const rangeMinVal = document.getElementById('field-length-min')?.value;
+                    const rangeMaxVal = document.getElementById('field-length-max')?.value;
+                    if (rangeMinVal !== '' || rangeMaxVal !== '') {
+                        fieldData.validation.lengthMode = 'range';
+                        if (rangeMinVal !== '') {
+                            fieldData.validation.minLength = parseInt(rangeMinVal, 10);
+                        }
+                        if (rangeMaxVal !== '') {
+                            fieldData.validation.maxLength = parseInt(rangeMaxVal, 10);
+                        }
+                    }
+                }
                 break;
             case 'number':
+            case 'currency':
                 const min = document.getElementById('field-min')?.value;
                 const max = document.getElementById('field-max')?.value;
-                if (min) fieldData.validation.min = parseInt(min);
-                if (max) fieldData.validation.max = parseInt(max);
+                if (min !== '') {
+                    fieldData.validation.min = parseFloat(min);
+                } else {
+                    delete fieldData.validation.min;
+                }
+                if (max !== '') {
+                    fieldData.validation.max = parseFloat(max);
+                } else {
+                    delete fieldData.validation.max;
+                }
                 break;
             case 'file':
-                const accept = document.getElementById('field-accept')?.value;
+            case 'image':
+            case 'multi_file':
+            case 'signature':
+                const accept = document.getElementById('field-accept')?.value.trim();
                 const maxsize = document.getElementById('field-maxsize')?.value;
-                if (accept) fieldData.validation.accept = accept;
-                if (maxsize) fieldData.validation.maxsize = parseInt(maxsize);
+                const maxfiles = document.getElementById('field-maxfiles')?.value;
+                const enablePreview = document.getElementById('field-preview')?.checked;
+                delete fieldData.validation.accept;
+                delete fieldData.validation.maxsize;
+                if (accept) {
+                    fieldData.validation.allowedTypes = accept
+                        .split(',')
+                        .map(function (item) { return item.trim().replace(/^\./, '').toLowerCase(); })
+                        .filter(function (item) { return item !== ''; });
+                } else {
+                    delete fieldData.validation.allowedTypes;
+                }
+                if (maxsize) {
+                    fieldData.validation.maxSize = parseInt(maxsize, 10) * 1024 * 1024;
+                } else {
+                    delete fieldData.validation.maxSize;
+                }
+                if (type === 'multi_file' && maxfiles) {
+                    fieldData.validation.maxFiles = parseInt(maxfiles, 10);
+                } else {
+                    delete fieldData.validation.maxFiles;
+                }
+                fieldData.validation.preview = !!enablePreview;
+                break;
+            case 'terms':
+                const declaration = document.getElementById('field-declaration')?.value.trim();
+                if (declaration) {
+                    fieldData.validation.declaration = declaration;
+                } else {
+                    delete fieldData.validation.declaration;
+                }
+                break;
+            case 'toggle':
+            case 'address':
                 break;
             case 'dropdown':
             case 'radio':
+            case 'multi_select':
                 const optionInputs = document.querySelectorAll('#field-options-list input');
                 const options = Array.from(optionInputs).map(function (input) { return input.value.trim(); }).filter(function (value) { return value !== ''; });
+                delete fieldData.options;
                 if (options.length > 0) {
-                    fieldData.options = options;
+                    fieldData.validation.options = options.reduce(function (acc, option, index) {
+                        acc['option_' + (index + 1)] = option;
+                        return acc;
+                    }, {});
+                } else {
+                    delete fieldData.validation.options;
+                }
+                break;
+            case 'geolocation':
+                const defaultLat = document.getElementById('field-default-lat')?.value;
+                const defaultLng = document.getElementById('field-default-lng')?.value;
+                const defaultZoom = document.getElementById('field-default-zoom')?.value;
+                if (defaultLat !== '') {
+                    fieldData.validation.defaultLat = parseFloat(defaultLat);
+                } else {
+                    delete fieldData.validation.defaultLat;
+                }
+                if (defaultLng !== '') {
+                    fieldData.validation.defaultLng = parseFloat(defaultLng);
+                } else {
+                    delete fieldData.validation.defaultLng;
+                }
+                if (defaultZoom !== '') {
+                    fieldData.validation.defaultZoom = parseInt(defaultZoom, 10);
+                } else {
+                    delete fieldData.validation.defaultZoom;
                 }
                 break;
         }
+
+        saveCommonFieldOptions(fieldData);
 
         if (isEditing) {
             const fieldIndex = currentFields.findIndex(function (f) { return f.id === editingFieldId; });
@@ -932,10 +1277,27 @@
 
         switch (field.type) {
             case 'text':
+            case 'email':
+            case 'phone':
+            case 'url':
                 return `
                     <div class="form-control">
                         <label class="label py-1"><span class="label-text">${field.label} ${requiredMark}</span></label>
-                        <input type="text" class="input input-bordered w-full" disabled>
+                        <input type="${field.type === 'phone' ? 'tel' : field.type}" class="input input-bordered w-full" disabled placeholder="${escapeHtml(field.placeholder || '')}" maxlength="${field.validation?.maxLength ?? field.validation?.maxlength ?? ''}">
+                    </div>
+                `;
+            case 'textarea':
+                return `
+                    <div class="form-control">
+                        <label class="label py-1"><span class="label-text">${field.label} ${requiredMark}</span></label>
+                        <textarea class="textarea textarea-bordered w-full" disabled placeholder="${escapeHtml(field.placeholder || '')}"></textarea>
+                    </div>
+                `;
+            case 'currency':
+                return `
+                    <div class="form-control">
+                        <label class="label py-1"><span class="label-text">${field.label} ${requiredMark}</span></label>
+                        <label class="input input-bordered w-full flex items-center gap-2"><span>₱</span><input type="number" class="grow bg-transparent" disabled step="0.01"></label>
                     </div>
                 `;
             case 'number':
@@ -953,10 +1315,13 @@
                     </div>
                 `;
             case 'file':
+            case 'image':
+            case 'multi_file':
+            case 'signature':
                 return `
                     <div class="form-control">
                         <label class="label py-1"><span class="label-text">${field.label} ${requiredMark}</span></label>
-                        <input type="file" class="file-input file-input-bordered w-full" disabled>
+                        <input type="file" class="file-input file-input-bordered w-full" disabled ${field.type === 'image' || field.type === 'signature' ? 'accept="image/*"' : ''} ${field.type === 'multi_file' ? 'multiple' : ''}>
                     </div>
                 `;
             case 'dropdown':
@@ -986,6 +1351,49 @@
                                 <input type="radio" name="${field.id}" class="radio radio-primary" disabled>
                                 <span class="text-sm">Option 2</span>
                             </label>
+                        </div>
+                    </div>
+                `;
+            case 'multi_select':
+                return `
+                    <div class="form-control">
+                        <label class="label py-1"><span class="label-text">${field.label} ${requiredMark}</span></label>
+                        <select class="select select-bordered w-full" disabled multiple size="3"><option>Option 1</option><option>Option 2</option></select>
+                    </div>
+                `;
+            case 'toggle':
+                return `
+                    <label class="flex items-center justify-between gap-4">
+                        <span class="text-sm">${field.label} ${requiredMark}</span>
+                        <input type="checkbox" class="toggle toggle-primary" disabled>
+                    </label>
+                `;
+            case 'terms':
+                return `
+                    <label class="flex items-start gap-3">
+                        <input type="checkbox" class="checkbox checkbox-primary mt-1" disabled>
+                        <span class="text-sm text-base-content/70">${escapeHtml(field.validation?.declaration || 'Terms and declaration')}</span>
+                    </label>
+                `;
+            case 'address':
+                return `
+                    <div class="form-control">
+                        <label class="label py-1"><span class="label-text">${field.label} ${requiredMark}</span></label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <select class="select select-bordered select-sm" disabled><option>Region</option></select>
+                            <select class="select select-bordered select-sm" disabled><option>Province</option></select>
+                            <select class="select select-bordered select-sm" disabled><option>City</option></select>
+                            <select class="select select-bordered select-sm" disabled><option>Barangay</option></select>
+                        </div>
+                    </div>
+                `;
+            case 'geolocation':
+                return `
+                    <div class="form-control">
+                        <label class="label py-1"><span class="label-text">${field.label} ${requiredMark}</span></label>
+                        <div class="rounded-xl border border-base-content/10 bg-base-200/50 h-40 flex items-center justify-center text-sm text-base-content/50">
+                            <span class="icon-[tabler--map-pin] size-5 mr-2"></span>
+                            Map location picker
                         </div>
                     </div>
                 `;

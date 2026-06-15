@@ -711,18 +711,6 @@
 
                                     <!-- Workflow Timeline -->
                                     <div class="mt-6 pt-6 border-t border-base-content/10">
-                                        <div class="flex items-center justify-between mb-4">
-                                            <h4 class="text-sm font-medium text-base-content">Workflow Timeline</h4>
-                                            {% if currentStep >= 7 %}
-                                                <span class="badge badge-success badge-sm gap-1">
-                                                    <span class="icon-[tabler--circle-check] size-3"></span>
-                                                    Complete
-                                                </span>
-                                            {% else %}
-                                                <span class="text-xs text-base-content/40">{{ currentStep }}/7</span>
-                                            {% endif %}
-                                        </div>
-                                        
                                         {% if manifest %}
                                             {% set state = manifest.workflowState %}
                                             {% set currentStep = 0 %}
@@ -734,8 +722,10 @@
                                                 {% set currentStep = 3 %}
                                             {% elseif state.value == 'billing_generated' %}
                                                 {% set currentStep = 4 %}
-                                            {% elseif state.value == 'payment_submitted' or state.value == 'payment_verified' %}
+                                            {% elseif state.value == 'payment_submitted' %}
                                                 {% set currentStep = 5 %}
+                                            {% elseif state.value == 'payment_verified' %}
+                                                {% set currentStep = 6 %}
                                             {% elseif state.value == 'edo_generated' %}
                                                 {% set currentStep = 6 %}
                                             {% elseif state.value == 'edo_released' %}
@@ -744,6 +734,18 @@
                                         {% else %}
                                             {% set currentStep = 1 %}
                                         {% endif %}
+
+                                        <div class="flex items-center justify-between mb-4">
+                                            <h4 class="text-sm font-medium text-base-content">Workflow Timeline</h4>
+                                            {% if currentStep >= 7 %}
+                                                <span class="badge badge-success badge-sm gap-1">
+                                                    <span class="icon-[tabler--circle-check] size-3"></span>
+                                                    Complete
+                                                </span>
+                                            {% else %}
+                                                <span class="text-xs text-base-content/40">Step {{ currentStep }} of 7</span>
+                                            {% endif %}
+                                        </div>
                                         
                                         <ul class="timeline timeline-vertical timeline-compact">
                                             <!-- Step 1: NOA Created -->
@@ -812,7 +814,7 @@
                                                 <hr class="{% if currentStep > 4 %}bg-success{% endif %}" />
                                             </li>
 
-                                            <!-- Step 5: Payment Verified -->
+                                            <!-- Step 5: Submit Payment -->
                                             <li>
                                                 <hr class="{% if currentStep > 4 %}bg-success{% endif %}" />
                                                 <div class="timeline-middle">
@@ -821,17 +823,21 @@
                                                     </span>
                                                 </div>
                                                 <div class="timeline-end">
-                                                    <div class="text-xs font-medium text-base-content">Payment Verified</div>
+                                                    <div class="text-xs font-medium text-base-content">Submit Payment</div>
                                                     <div class="text-xs text-base-content/60">
-                                                        {% if currentStep >= 5 and manifest %}
+                                                        {% if manifest and (state.value == 'payment_verified' or currentStep >= 6) %}
                                                             {% set verifiedPayment = null %}
                                                             {% for p in manifest.payments %}
                                                                 {% if p.paymentType.value == 'final_payment' and p.status.value == 'verified' %}
                                                                     {% set verifiedPayment = p %}
                                                                 {% endif %}
                                                             {% endfor %}
-                                                            {% if verifiedPayment and verifiedPayment.validatedAt %}{{ verifiedPayment.validatedAt|date('M j, Y') }}{% else %}Completed{% endif %}
-                                                        {% else %}Pending{% endif %}
+                                                            Verified{% if verifiedPayment and verifiedPayment.validatedAt %} · {{ verifiedPayment.validatedAt|date('M j, Y') }}{% endif %}
+                                                        {% elseif manifest and state.value == 'payment_submitted' %}
+                                                            Submitted · awaiting verification
+                                                        {% else %}
+                                                            Pending
+                                                        {% endif %}
                                                     </div>
                                                 </div>
                                                 <hr class="{% if currentStep > 5 %}bg-success{% endif %}" />

@@ -103,6 +103,7 @@
                                   action="{{ path('accreditation_submit', {shippingLineId: shippingLine.id}) }}"
                                   enctype="multipart/form-data"
                                   id="accreditationSubmitForm"
+                                  data-dynamic-form="true"
                                   class="space-y-6">
 
                                 {% for field in sortedFields %}
@@ -124,7 +125,7 @@
                                     <a href="{{ path('accreditation_index') }}" class="btn btn-ghost w-full sm:w-auto">
                                         Cancel
                                     </a>
-                                    <button type="submit" id="submitBtn" class="btn btn-primary gap-2 w-full sm:w-auto">
+                                    <button type="button" id="submitBtn" class="btn btn-primary gap-2 w-full sm:w-auto">
                                         <span id="submitLoading" class="loading loading-spinner loading-sm hidden"></span>
                                         <span class="icon-[tabler--send] size-4" id="submitIcon"></span>
                                         <span id="submitText">Submit Application</span>
@@ -170,6 +171,10 @@
                             </li>
                             <li class="flex items-start gap-3">
                                 <span class="icon-[tabler--circle-check] size-4 text-success shrink-0 mt-0.5"></span>
+                                <span>Pin your business location on the map if a geotag field is included</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="icon-[tabler--circle-check] size-4 text-success shrink-0 mt-0.5"></span>
                                 <span>Double-check company name and registration details</span>
                             </li>
                         </ul>
@@ -196,7 +201,69 @@
 </div>
 {% endblock %}
 
+{% block page_modals %}
+{# Validation errors modal #}
+<div id="validationErrorsModal" class="hidden fixed inset-0 z-[10001] items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="validationErrorsTitle">
+    <div class="absolute inset-0 bg-black/60" data-close-modal="validationErrorsModal"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg z-10 max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+            <h3 id="validationErrorsTitle" class="font-bold text-lg flex items-center gap-2">
+                <span class="icon-[tabler--alert-circle] size-5 text-error"></span>
+                Please fix the following
+            </h3>
+            <p class="py-2 text-sm text-base-content/70">Some required fields are missing or invalid. Review the items below and try again.</p>
+            <ul id="validationErrorsList" class="mt-3 space-y-2 text-sm list-none"></ul>
+            <div class="flex justify-end mt-6">
+                <button type="button" class="btn btn-primary" data-close-modal="validationErrorsModal">Review form</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Submit confirmation modal #}
+<div id="submitConfirmModal" class="hidden fixed inset-0 z-[10001] items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="submitConfirmTitle">
+    <div class="absolute inset-0 bg-black/60" data-close-modal="submitConfirmModal"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg z-10">
+        <div class="p-6">
+            <h3 id="submitConfirmTitle" class="font-bold text-lg flex items-center gap-2">
+                <span class="icon-[tabler--send] size-5 text-primary"></span>
+                Submit application?
+            </h3>
+            <p class="py-3 text-sm text-base-content/70">
+                You are about to submit your accreditation application
+                {% if shippingLine is defined and shippingLine %}for <strong>{{ shippingLine.brandName }}</strong>{% endif %}.
+                Please confirm that all information and documents are correct.
+            </p>
+            <div class="rounded-xl bg-base-200 p-4 text-sm space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-base-content/60">Required fields completed</span>
+                    <span id="confirmProgressLabel" class="font-medium">—</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-base-content/60">Documents attached</span>
+                    <span id="confirmFileCount" class="font-medium">—</span>
+                </div>
+            </div>
+            <p class="text-xs text-base-content/50 mt-3">After submission, our evaluation team will review your application. You'll be notified by email.</p>
+            <div class="flex justify-end gap-2 mt-6">
+                <button type="button" class="btn btn-ghost" id="cancelConfirmBtn">Go back</button>
+                <button type="button" id="confirmSubmitBtn" class="btn btn-primary gap-1">
+                    <span class="icon-[tabler--check] size-4"></span>
+                    Yes, submit
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
 {% block page_scripts %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="{{ asset('js/form-geolocation.js') }}"></script>
+<script src="{{ asset('js/form-address-picker.js') }}"></script>
+<script src="{{ asset('js/form-file-preview.js') }}"></script>
+<script src="{{ asset('js/form-conditional.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('accreditationSubmitForm');
@@ -207,33 +274,71 @@ document.addEventListener('DOMContentLoaded', function () {
     const progressBar = document.getElementById('fieldProgressBar');
     const progressLabel = document.getElementById('fieldProgressLabel');
 
+    function isFileFieldType(fieldType) {
+        return ['file', 'image', 'multi_file', 'signature'].indexOf(fieldType) !== -1;
+    }
+
+    function isBlockVisible(block) {
+        return block && !block.classList.contains('hidden');
+    }
+
     function updateProgress() {
         if (!form || !progressBar) {
             return;
         }
 
-        const requiredFields = form.querySelectorAll('[data-required="true"]');
+        const requiredBlocks = form.querySelectorAll('[data-field-block][data-field-required="1"]');
         let filled = 0;
 
-        requiredFields.forEach(function (field) {
-            if (field.type === 'checkbox') {
-                const group = form.querySelectorAll('[name="' + field.name + '"]');
-                if (Array.from(group).some(function (cb) { return cb.checked; })) {
-                    filled++;
-                }
+        requiredBlocks.forEach(function (block) {
+            if (!isBlockVisible(block)) {
                 return;
             }
 
-            if (field.type === 'file') {
-                if (field.files && field.files.length > 0) {
-                    filled++;
-                }
+            const fieldType = block.dataset.fieldType;
+            const fieldId = block.dataset.fieldId;
+
+            if (isFileFieldType(fieldType)) {
+                const input = block.querySelector('[data-file-input]');
+                if (input?.files?.length > 0) filled++;
                 return;
             }
 
-            if (field.value && field.value.trim() !== '') {
-                filled++;
+            if (fieldType === 'geolocation') {
+                const lat = block.querySelector('.geolocation-lat')?.value?.trim() || '';
+                const lng = block.querySelector('.geolocation-lng')?.value?.trim() || '';
+                if (lat !== '' && lng !== '') filled++;
+                return;
             }
+
+            if (fieldType === 'address') {
+                const region = block.querySelector('.address-region')?.value || '';
+                const province = block.querySelector('.address-province')?.value || '';
+                const city = block.querySelector('.address-city')?.value || '';
+                const barangay = block.querySelector('.address-barangay')?.value || '';
+                if (region && province && city && barangay) filled++;
+                return;
+            }
+
+            if (fieldType === 'multi_select') {
+                const select = block.querySelector('select[multiple]');
+                if (select && select.selectedOptions.length > 0) filled++;
+                return;
+            }
+
+            if (fieldType === 'radio') {
+                if (block.querySelector('input[type="radio"]:checked')) filled++;
+                return;
+            }
+
+            if (fieldType === 'checkbox' || fieldType === 'toggle' || fieldType === 'terms') {
+                const checkboxes = block.querySelectorAll('input[type="checkbox"]');
+                if (Array.from(checkboxes).some(function (cb) { return cb.checked; })) filled++;
+                return;
+            }
+
+            const input = block.querySelector('#field_' + fieldId) || block.querySelector('[name="' + fieldId + '"]');
+            if (input?.value?.trim()) filled++;
         });
 
         progressBar.value = filled;
@@ -283,33 +388,403 @@ document.addEventListener('DOMContentLoaded', function () {
     form?.querySelectorAll('input:not([type="file"]), select, textarea').forEach(function (el) {
         el.addEventListener('input', updateProgress);
         el.addEventListener('change', updateProgress);
+        el.addEventListener('blur', function () {
+            const block = el.closest('[data-field-block]');
+            if (!block) return;
+            const fieldErrors = validateFieldBlock(block);
+            if (fieldErrors.length > 0) {
+                showInlineFieldError(block, fieldErrors[0].message);
+            } else {
+                showInlineFieldError(block, null);
+                block.classList.remove('bg-error/5', 'ring-1', 'ring-error/30');
+                block.querySelectorAll('.input-error, .textarea-error, .select-error').forEach(function (input) {
+                    input.classList.remove('input-error', 'textarea-error', 'select-error');
+                });
+            }
+        });
     });
 
     updateProgress();
 
-    if (form && submitBtn) {
-        form.addEventListener('submit', function (e) {
-            const fileInputs = form.querySelectorAll('input[type="file"][required]');
-            const missingFiles = [];
+    if (window.FormConditional && form) {
+        window.FormConditional.initForm(form);
+    }
+    if (window.FormFilePreview) {
+        window.FormFilePreview.initAll(form);
+    }
+    if (window.FormAddressPicker) {
+        window.FormAddressPicker.initAll(form);
+    }
+    form?.addEventListener('conditionalchange', updateProgress);
 
-            fileInputs.forEach(function (input) {
-                if (input.files.length === 0) {
-                    missingFiles.push(input.getAttribute('data-field-label') || input.name);
-                }
+    const validationModal = document.getElementById('validationErrorsModal');
+    const validationList = document.getElementById('validationErrorsList');
+    const confirmModal = document.getElementById('submitConfirmModal');
+    const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+    const cancelConfirmBtn = document.getElementById('cancelConfirmBtn');
+    let pendingSubmit = false;
+
+    function openOverlayModal(modalEl) {
+        if (!modalEl) return;
+        modalEl.classList.remove('hidden');
+        modalEl.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeOverlayModal(modalEl) {
+        if (!modalEl) return;
+        modalEl.classList.add('hidden');
+        modalEl.classList.remove('flex');
+        if (!document.querySelector('#validationErrorsModal:not(.hidden), #submitConfirmModal:not(.hidden)')) {
+            document.body.classList.remove('overflow-hidden');
+        }
+    }
+
+    document.querySelectorAll('[data-close-modal]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            closeOverlayModal(document.getElementById(el.getAttribute('data-close-modal')));
+        });
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        if (validationModal && !validationModal.classList.contains('hidden')) {
+            closeOverlayModal(validationModal);
+        } else if (confirmModal && !confirmModal.classList.contains('hidden')) {
+            closeOverlayModal(confirmModal);
+        }
+    });
+
+    function resolveLengthConstraints(block) {
+        const mode = block.dataset.lengthMode || '';
+        let min = block.dataset.minLength ? parseInt(block.dataset.minLength, 10) : null;
+        let max = block.dataset.maxLength ? parseInt(block.dataset.maxLength, 10) : null;
+
+        if (mode === 'exact') {
+            const len = max ?? min;
+            return { min: len, max: len };
+        }
+        if (mode === 'max') {
+            return { min: min, max: max };
+        }
+        if (mode === 'range' || mode === 'min') {
+            return { min: min, max: max };
+        }
+        if (min !== null && max !== null) {
+            return { min: min, max: max };
+        }
+        if (max !== null && min === null) {
+            return { min: max, max: max };
+        }
+        if (min !== null) {
+            return { min: min, max: null };
+        }
+        return { min: null, max: null };
+    }
+
+    function showInlineFieldError(block, message) {
+        const inline = block?.querySelector('.field-inline-error');
+        if (!inline) return;
+        const textEl = inline.querySelector('.label-text-alt');
+        if (message) {
+            inline.classList.remove('hidden');
+            if (textEl) textEl.textContent = message;
+            markFieldError(block);
+        } else {
+            inline.classList.add('hidden');
+            if (textEl) textEl.textContent = '';
+        }
+    }
+
+    function clearInlineFieldErrors() {
+        form?.querySelectorAll('.field-inline-error').forEach(function (el) {
+            el.classList.add('hidden');
+            const textEl = el.querySelector('.label-text-alt');
+            if (textEl) textEl.textContent = '';
+        });
+    }
+
+    function clearFieldErrors() {
+        clearInlineFieldErrors();
+        form?.querySelectorAll('[data-field-block]').forEach(function (block) {
+            block.classList.remove('bg-error/5', 'ring-1', 'ring-error/30');
+            block.querySelectorAll('.input-error, .textarea-error, .select-error').forEach(function (el) {
+                el.classList.remove('input-error', 'textarea-error', 'select-error');
             });
+        });
+    }
 
-            if (missingFiles.length > 0) {
-                e.preventDefault();
-                alert('Please upload: ' + missingFiles.join(', '));
-                return false;
+    function markFieldError(block) {
+        if (!block) return;
+        block.classList.add('bg-error/5', 'ring-1', 'ring-error/30');
+        block.querySelectorAll('.input').forEach(function (el) { el.classList.add('input-error'); });
+        block.querySelectorAll('.textarea').forEach(function (el) { el.classList.add('textarea-error'); });
+        block.querySelectorAll('.select').forEach(function (el) { el.classList.add('select-error'); });
+    }
+
+    function showValidationErrors(errors) {
+        if (!validationList || !validationModal) return;
+        validationList.innerHTML = '';
+        errors.forEach(function (err) {
+            const li = document.createElement('li');
+            li.className = 'flex items-start gap-2 rounded-lg bg-error/5 px-3 py-2';
+            li.innerHTML = '<span class="icon-[tabler--point-filled] size-3 text-error shrink-0 mt-1"></span><span>' + err.message + '</span>';
+            validationList.appendChild(li);
+            if (err.block) {
+                markFieldError(err.block);
             }
+        });
+        openOverlayModal(validationModal);
+    }
 
-            submitBtn.disabled = true;
+    function validateFieldBlock(block) {
+        const errors = [];
+        if (!isBlockVisible(block)) {
+            return errors;
+        }
+
+        const fieldId = block.dataset.fieldId;
+        const fieldType = block.dataset.fieldType;
+        const fieldLabel = block.dataset.fieldLabel || fieldId;
+        const isRequired = block.dataset.fieldRequired === '1';
+
+        if (isFileFieldType(fieldType)) {
+            const input = block.querySelector('[data-file-input]');
+            if (isRequired && input && (!input.files || input.files.length === 0)) {
+                errors.push({ message: fieldLabel + ' is required', block: block });
+                return errors;
+            }
+            if (input?.files?.length > 0) {
+                const maxSize = parseInt(block.dataset.maxSize || String(10 * 1024 * 1024), 10);
+                Array.from(input.files).forEach(function (file) {
+                    if (file.size > maxSize) {
+                        const maxMb = (maxSize / (1024 * 1024)).toFixed(1);
+                        errors.push({ message: fieldLabel + ' must not exceed ' + maxMb + ' MB', block: block });
+                    }
+                    if (input.accept) {
+                        const allowed = input.accept.split(',').map(function (a) { return a.trim().replace(/^\./, '').toLowerCase(); }).filter(Boolean);
+                        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+                        if (allowed.length > 0 && !allowed.includes(ext)) {
+                            errors.push({ message: fieldLabel + ': file type .' + ext.toUpperCase() + ' is not allowed', block: block });
+                        }
+                    }
+                });
+            }
+            return errors;
+        }
+
+        if (fieldType === 'address') {
+            const region = block.querySelector('.address-region')?.value || '';
+            const province = block.querySelector('.address-province')?.value || '';
+            const city = block.querySelector('.address-city')?.value || '';
+            const barangay = block.querySelector('.address-barangay')?.value || '';
+            if (isRequired && (!region || !province || !city || !barangay)) {
+                errors.push({ message: fieldLabel + ' requires region, province, city, and barangay', block: block });
+            }
+            return errors;
+        }
+
+        if (fieldType === 'multi_select') {
+            const select = block.querySelector('select[multiple]');
+            if (isRequired && (!select || select.selectedOptions.length === 0)) {
+                errors.push({ message: fieldLabel + ' is required', block: block });
+            }
+            return errors;
+        }
+
+        if (fieldType === 'geolocation') {
+            const lat = block.querySelector('.geolocation-lat')?.value?.trim() || '';
+            const lng = block.querySelector('.geolocation-lng')?.value?.trim() || '';
+            if (isRequired && (lat === '' || lng === '')) {
+                errors.push({ message: fieldLabel + ' requires a map location', block: block });
+                return errors;
+            }
+            if (lat !== '' && lng !== '') {
+                const latN = parseFloat(lat);
+                const lngN = parseFloat(lng);
+                if (!Number.isFinite(latN) || !Number.isFinite(lngN) || latN < -90 || latN > 90 || lngN < -180 || lngN > 180) {
+                    errors.push({ message: fieldLabel + ' has invalid coordinates', block: block });
+                }
+            }
+            return errors;
+        }
+
+        if (fieldType === 'checkbox' || fieldType === 'toggle' || fieldType === 'terms') {
+            const checkboxes = block.querySelectorAll('input[type="checkbox"]');
+            if (isRequired && checkboxes.length > 0) {
+                const anyChecked = Array.from(checkboxes).some(function (cb) { return cb.checked; });
+                if (!anyChecked) {
+                    errors.push({ message: fieldLabel + ' is required', block: block });
+                }
+            }
+            return errors;
+        }
+
+        if (fieldType === 'radio') {
+            const checked = block.querySelector('input[type="radio"]:checked');
+            if (isRequired && !checked) {
+                errors.push({ message: fieldLabel + ' is required', block: block });
+            }
+            return errors;
+        }
+
+        const input = block.querySelector('#field_' + fieldId) || block.querySelector('[name="' + fieldId + '"]');
+        const value = input ? (input.value || '').trim() : '';
+
+        if (isRequired && value === '') {
+            errors.push({ message: fieldLabel + ' is required', block: block });
+            return errors;
+        }
+
+        if (value === '') {
+            return errors;
+        }
+
+        if (fieldType === 'phone') {
+            const phonePattern = /^\+?[0-9]{10,15}$/;
+            if (!phonePattern.test(value)) {
+                errors.push({ message: fieldLabel + ' must be a valid phone number', block: block });
+            }
+        }
+
+        if (fieldType === 'url') {
+            try {
+                const url = new URL(value);
+                if (!['http:', 'https:'].includes(url.protocol)) {
+                    throw new Error('invalid');
+                }
+            } catch (e) {
+                errors.push({ message: fieldLabel + ' must be a valid URL', block: block });
+            }
+        }
+
+        if (fieldType === 'email') {
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(value)) {
+                errors.push({ message: fieldLabel + ' must be a valid email address', block: block });
+            }
+        }
+
+        if (fieldType === 'number' || fieldType === 'currency') {
+            const num = parseFloat(value);
+            if (!Number.isFinite(num)) {
+                errors.push({ message: fieldLabel + ' must be a valid number', block: block });
+            } else {
+                if (block.dataset.min !== undefined && num < parseFloat(block.dataset.min)) {
+                    errors.push({ message: fieldLabel + ' must be at least ' + block.dataset.min, block: block });
+                }
+                if (block.dataset.max !== undefined && num > parseFloat(block.dataset.max)) {
+                    errors.push({ message: fieldLabel + ' must not exceed ' + block.dataset.max, block: block });
+                }
+            }
+        }
+
+        const lengthRules = resolveLengthConstraints(block);
+        if (lengthRules.max !== null && value.length > lengthRules.max) {
+            errors.push({ message: fieldLabel + ' must not exceed ' + lengthRules.max + ' characters', block: block });
+        }
+        if (lengthRules.min !== null && value.length < lengthRules.min) {
+            const exactMessage = lengthRules.min === lengthRules.max
+                ? fieldLabel + ' must be exactly ' + lengthRules.min + ' characters'
+                : fieldLabel + ' must be at least ' + lengthRules.min + ' characters';
+            errors.push({ message: exactMessage, block: block });
+        }
+
+        if (block.dataset.pattern) {
+            try {
+                const regex = new RegExp(block.dataset.pattern);
+                if (!regex.test(value)) {
+                    errors.push({
+                        message: block.dataset.validationMessage || (fieldLabel + ' format is invalid'),
+                        block: block
+                    });
+                }
+            } catch (e) {
+                // ignore invalid pattern
+            }
+        }
+
+        return errors;
+    }
+
+    function validateForm() {
+        clearFieldErrors();
+        const allErrors = [];
+        form?.querySelectorAll('[data-field-block]').forEach(function (block) {
+            validateFieldBlock(block).forEach(function (err) {
+                allErrors.push(err);
+            });
+        });
+        return allErrors;
+    }
+
+    function setSubmittingState(isSubmitting) {
+        if (!submitBtn) return;
+        submitBtn.disabled = isSubmitting;
+        if (isSubmitting) {
             submitText.textContent = 'Submitting...';
             submitLoading?.classList.remove('hidden');
             submitIcon?.classList.add('hidden');
+        } else {
+            submitText.textContent = 'Submit Application';
+            submitLoading?.classList.add('hidden');
+            submitIcon?.classList.remove('hidden');
+        }
+    }
+
+    function openConfirmModal() {
+        const requiredTotal = form?.querySelectorAll('[data-field-block][data-field-required="1"]').length || 0;
+        const fileCount = form?.querySelectorAll('[data-file-input]').length
+            ? Array.from(form.querySelectorAll('[data-file-input]')).filter(function (i) { return i.files && i.files.length > 0; }).length
+            : 0;
+        const progressLabel = document.getElementById('confirmProgressLabel');
+        const fileCountEl = document.getElementById('confirmFileCount');
+
+        if (progressLabel && progressBar) {
+            progressLabel.textContent = progressBar.value + ' / ' + requiredTotal;
+        }
+        if (fileCountEl) {
+            fileCountEl.textContent = String(fileCount);
+        }
+        openOverlayModal(confirmModal);
+    }
+
+    if (form && submitBtn) {
+        submitBtn.addEventListener('click', function () {
+            if (pendingSubmit) return;
+
+            const errors = validateForm();
+            if (errors.length > 0) {
+                showValidationErrors(errors);
+                return;
+            }
+
+            openConfirmModal();
+        });
+
+        confirmSubmitBtn?.addEventListener('click', function () {
+            pendingSubmit = true;
+            closeOverlayModal(confirmModal);
+            setSubmittingState(true);
+            form.submit();
+        });
+
+        cancelConfirmBtn?.addEventListener('click', function () {
+            closeOverlayModal(confirmModal);
         });
     }
+
+    {% if errors|default([])|length > 0 %}
+    const serverErrors = [
+        {% for fieldId, error in errors %}
+        { message: {{ error|json_encode|raw }}, block: form?.querySelector('[data-field-id="{{ fieldId|e('js') }}"]') } },
+        {% endfor %}
+    ].filter(function (e) { return e.message; });
+
+    if (serverErrors.length > 0) {
+        showValidationErrors(serverErrors);
+    }
+    {% endif %}
 });
 </script>
 {% endblock %}

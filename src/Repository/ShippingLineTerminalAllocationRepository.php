@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\ShippingLineTerminalAllocation;
+use App\Entity\Enum\TerminalType;
 use App\Entity\ShippingLine;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -27,12 +28,22 @@ class ShippingLineTerminalAllocationRepository extends ServiceEntityRepository
      */
     public function findByShippingLineWithRelations(ShippingLine $shippingLine): array
     {
+        return $this->findCyAllocationsByShippingLine($shippingLine);
+    }
+
+    /**
+     * CY-type allocations only — excludes port/terminals (ATI, ICTSI).
+     */
+    public function findCyAllocationsByShippingLine(ShippingLine $shippingLine): array
+    {
         return $this->createQueryBuilder('slta')
             ->select('slta', 't', 'sl')
             ->leftJoin('slta.terminal', 't')
             ->leftJoin('slta.shippingLine', 'sl')
             ->where('slta.shippingLine = :shippingLine')
+            ->andWhere('t.type = :cyType')
             ->setParameter('shippingLine', $shippingLine)
+            ->setParameter('cyType', TerminalType::CY)
             ->getQuery()
             ->getResult();
     }

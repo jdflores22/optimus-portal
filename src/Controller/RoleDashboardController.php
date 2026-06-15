@@ -18,6 +18,7 @@ use App\Entity\TerminalSlot;
 use App\Service\AccreditationWorkflowService;
 use App\Service\BrokerRelationshipService;
 use App\Service\ConsigneeOnboardingGuideService;
+use App\Service\RepositioningRequestService;
 use App\Service\SlStaffDashboardLocationService;
 use App\Service\WorkspaceService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -36,6 +37,7 @@ class RoleDashboardController extends AbstractController
         private BrokerRelationshipService $brokerRelationshipService,
         private ConsigneeOnboardingGuideService $consigneeOnboardingGuideService,
         private SlStaffDashboardLocationService $slStaffDashboardLocationService,
+        private RepositioningRequestService $repositioningRequestService,
     ) {
     }
 
@@ -939,9 +941,18 @@ class RoleDashboardController extends AbstractController
 
         $portLocationsData = [];
         $cyLocationsData = [];
+        $locationSummary = ['port' => [], 'cy' => []];
+        $outboundSummary = [
+            'pending_count' => 0,
+            'in_transit_count' => 0,
+            'total_active' => 0,
+            'by_port' => [],
+        ];
         if ($shippingLine) {
             $portLocationsData = $this->slStaffDashboardLocationService->buildPortTerminalLocations($shippingLine);
             $cyLocationsData = $this->slStaffDashboardLocationService->buildCyEmptyReturnLocations($shippingLine);
+            $locationSummary = $this->slStaffDashboardLocationService->buildLocationSummary($shippingLine);
+            $outboundSummary = $this->repositioningRequestService->buildOutboundSummary($shippingLine);
         }
         
         $response = $this->render('dashboard/shipping_admin.html.twig', [
@@ -952,6 +963,8 @@ class RoleDashboardController extends AbstractController
             'chartData' => $chartData,
             'portLocations' => $portLocationsData,
             'cyLocations' => $cyLocationsData,
+            'locationSummary' => $locationSummary,
+            'outboundSummary' => $outboundSummary,
         ]);
 
         // Prevent browser caching

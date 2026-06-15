@@ -70,6 +70,8 @@ class RepositioningRequestController extends AbstractController
             'canReview' => false,
             'newRoute' => 'app_shipping_admin_repositioning_new',
             'showRoute' => 'app_shipping_admin_repositioning_show',
+            'pageTitle' => 'Outbound / Export Requests',
+            'pageSubtitle' => 'CY-to-port outbound container transfers — prioritized by dwell time (CAO 8-2019)',
         ]);
     }
 
@@ -149,6 +151,8 @@ class RepositioningRequestController extends AbstractController
             'dashboardRoute' => $dashboardRoute,
             'indexRoute' => $indexRoute,
             'formAction' => 'app_shipping_admin_repositioning_new',
+            'pageTitle' => 'New Outbound Request',
+            'pageSubtitle' => 'Select CY containers for export/repositioning to port — highest dwell time first (CAO 8-2019)',
         ]);
     }
 

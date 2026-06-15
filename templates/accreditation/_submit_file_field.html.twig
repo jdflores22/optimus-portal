@@ -1,0 +1,32 @@
+{% set allowedTypes = field.validation.allowedTypes|default(['pdf', 'jpg', 'jpeg', 'png']) %}
+{% set enablePreview = field.validation.preview|default(false) %}
+{% set isMultiple = field.type == 'multi_file' %}
+{% set acceptTypes = allowedTypes|join(',.') %}
+{% set fileIcon = field.type in ['image', 'signature'] ? 'photo' : 'cloud-upload' %}
+
+<input type="file"
+       name="{{ fieldId }}{{ isMultiple ? '[]' : '' }}"
+       id="field_{{ fieldId }}"
+       class="hidden"
+       data-file-input
+       data-field-label="{{ field.label }}"
+       {% if enablePreview %}data-enable-preview="true"{% endif %}
+       {% if isMultiple %}multiple{% endif %}
+       accept="{% for t in allowedTypes %}.{{ t }}{% if not loop.last %},{% endif %}{% endfor %}"
+       {{ isRequired ? 'required data-required=true' : '' }}>
+<div class="border border-dashed border-base-content/15 rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+     data-file-zone="field_{{ fieldId }}"
+     data-file-trigger="field_{{ fieldId }}">
+    <span class="icon-[tabler--{{ fileIcon }}] size-10 text-base-content/40 mx-auto"></span>
+    <p class="mt-3 text-sm font-medium" data-file-label="field_{{ fieldId }}">
+        {% if field.type == 'signature' %}Draw or upload your signature{% else %}Click to upload or drag and drop{% endif %}
+    </p>
+    <p class="text-xs text-base-content/60 mt-1">
+        Allowed: {{ allowedTypes|join(', ')|upper }}
+        {% if isMultiple and field.validation.maxFiles is defined %} · Max {{ field.validation.maxFiles }} files{% endif %}
+    </p>
+    <p class="text-sm text-success font-medium mt-2 hidden" data-file-name="field_{{ fieldId }}"></p>
+</div>
+{% if enablePreview %}
+    <div class="mt-3 hidden" data-file-preview="field_{{ fieldId }}"></div>
+{% endif %}

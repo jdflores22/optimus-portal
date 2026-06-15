@@ -175,7 +175,7 @@ class FormConfiguration
      *     [
      *       "id" => "field_uuid",
      *       "label" => "Field Label",
-     *       "type" => "text|number|date|file|dropdown|checkbox|radio",
+     *       "type" => "text|number|date|file|dropdown|checkbox|radio|geolocation",
      *       "required" => true|false,
      *       "validation" => [...],
      *       "order" => 1
@@ -189,7 +189,7 @@ class FormConfiguration
             throw new \InvalidArgumentException('Fields must contain a "fields" array');
         }
 
-        $allowedTypes = ['text', 'number', 'date', 'file', 'dropdown', 'checkbox', 'radio'];
+        $allowedTypes = \App\Form\FormFieldTypes::ALL;
 
         foreach ($fields['fields'] as $field) {
             if (!is_array($field)) {

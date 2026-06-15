@@ -8,6 +8,7 @@ use App\Service\NOAService;
 use App\Service\BillingService;
 use App\Service\UserService;
 use App\Service\ManifestBLDocumentGenerator;
+use App\Service\SlStaffDashboardLocationService;
 use App\Entity\Enum\UserRole;
 use App\Entity\Enum\WorkflowState;
 use App\Entity\NOA;
@@ -31,6 +32,7 @@ class ManifestWorkflowController extends AbstractController
         private UserService $userService,
         private EntityManagerInterface $entityManager,
         private ManifestBLDocumentGenerator $manifestBLGenerator,
+        private SlStaffDashboardLocationService $slStaffDashboardLocationService,
         private \App\Service\InAppNotificationService $notificationService,
         private \App\Service\ManifestNotificationService $manifestNotificationService,
         private \App\Service\AuditService $auditService
@@ -67,13 +69,16 @@ class ManifestWorkflowController extends AbstractController
         $stats = [
             'total' => count($allNoas),
             'noa_generated' => 0,
+            'noa_only' => 0,
+            'noa_created' => 0,
             'bl_generated' => 0,
             'bl_uploaded' => 0,
             'billing_generated' => 0,
+            'payment_submitted' => 0,
             'payment_verified' => 0,
             'edo_generated' => 0,
             'edo_released' => 0,
-            'noa_only' => 0,
+            'edo_step' => 0,
         ];
         
         foreach ($allNoas as $noa) {
@@ -84,13 +89,16 @@ class ManifestWorkflowController extends AbstractController
                 $statusValue = $manifest->getWorkflowState()->value;
                 if (isset($stats[$statusValue])) {
                     $stats[$statusValue]++;
-                } else {
-                    $stats[$statusValue] = 1;
+                }
+                if (in_array($statusValue, ['payment_verified', 'edo_generated'], true)) {
+                    $stats['edo_step']++;
                 }
             } else {
                 $stats['noa_only']++;
             }
         }
+
+        $stats['noa_created'] = $stats['noa_only'] + $stats['noa_generated'];
 
         // Build query for FILTERED NOAs for the table
         $qb = $this->entityManager->getRepository(\App\Entity\NOA::class)
@@ -124,10 +132,17 @@ class ManifestWorkflowController extends AbstractController
         // Apply status filter
         if ($status) {
             if ($status === 'noa_only') {
-                // Filter for NOAs without manifests
                 $qb->andWhere('m.id IS NULL');
+            } elseif ($status === 'noa_created') {
+                $qb->andWhere('m.id IS NULL OR m.workflowState = :noaGenerated')
+                   ->setParameter('noaGenerated', WorkflowState::NOA_GENERATED);
+            } elseif ($status === 'edo_step') {
+                $qb->andWhere('m.workflowState IN (:edoStates)')
+                   ->setParameter('edoStates', [
+                       WorkflowState::PAYMENT_VERIFIED,
+                       WorkflowState::EDO_GENERATED,
+                   ]);
             } else {
-                // Filter by manifest workflow state
                 $qb->andWhere('m.workflowState = :status')
                    ->setParameter('status', $status);
             }
@@ -199,8 +214,17 @@ class ManifestWorkflowController extends AbstractController
             return $this->redirectToRoute('manifest_workflow_list');
         }
 
-        // Simply render the NOA creation page
-        return $this->render('manifest_workflow/upload.html.twig');
+        $cyLocations = [];
+        $user = $this->getUser();
+        if ($user instanceof \App\Entity\StaffUser && $user->getShippingLineScope()) {
+            $cyLocations = $this->slStaffDashboardLocationService->buildCyEmptyReturnLocations(
+                $user->getShippingLineScope()
+            );
+        }
+
+        return $this->render('manifest_workflow/upload.html.twig', [
+            'cyLocations' => $cyLocations,
+        ]);
     }
 
     #[Route('/bulk-import', name: 'manifest_workflow_bulk_import', methods: ['GET', 'POST'])]
@@ -1369,6 +1393,8 @@ class ManifestWorkflowController extends AbstractController
                 
                 $manifest->setCreatedBy($this->getUser());
                 $manifest->setNoa($noa);
+                // NOA already exists — manifest starts at NOA Generated before BL transition
+                $manifest->setWorkflowState(WorkflowState::NOA_GENERATED);
                 
                 // Persist manifest
                 $this->entityManager->persist($manifest);

@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\FormConfiguration;
+use App\Form\FormFieldTypes;
 use App\Entity\AccreditationSubmission;
 use App\Entity\Enum\FormType;
 use App\Service\FormBuilderService;
@@ -98,11 +99,13 @@ class FormBuilderController extends AbstractController
             return $this->redirectToRoute('form_builder_list');
         }
 
-        $fieldTypes = ['text', 'number', 'date', 'file', 'dropdown', 'checkbox', 'radio'];
+        $fieldTypes = FormFieldTypes::ALL;
+        $fieldTemplateGroups = FormFieldTypes::templateGroups();
 
         return $this->render('form_builder/edit.html.twig', [
             'form' => $form,
             'fieldTypes' => $fieldTypes,
+            'fieldTemplateGroups' => $fieldTemplateGroups,
         ]);
     }
 

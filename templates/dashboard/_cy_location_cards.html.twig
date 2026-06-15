@@ -1,0 +1,180 @@
+{# CY empty-return location cards — shared by dashboards and NOA create #}
+{% set isInteractive = interactive|default(false) %}
+{% set showFooter = showFooterAlert|default(not isInteractive) %}
+{% set showHeader = showSectionHeader|default(not isInteractive) %}
+
+{% if cyLocations is defined and cyLocations|length > 0 %}
+    {% if isInteractive %}
+    <div class="card bg-base-100 shadow-md">
+        <div class="card-body p-5 sm:p-6">
+            <h2 class="card-title text-base text-base-content mb-1">
+                <span class="icon-[tabler--building-warehouse] size-5 text-primary"></span>
+                CY Empty Return Locations
+            </h2>
+            <p class="text-sm text-base-content/60 mb-4">Container yards only — port/terminals (ATI, ICTSI) are excluded. Assign a CY per container below.</p>
+    {% elseif showHeader %}
+    <div class="card bg-base-100 shadow-sm mb-8">
+        <div class="px-6 py-4 flex flex-wrap justify-between items-center gap-3 border-b border-base-200 bg-base-200/30 rounded-t-box">
+            <div>
+                <h3 class="text-lg font-medium text-base-content flex items-center gap-2">
+                    <span class="icon-[tabler--building-warehouse] size-5 text-base-content"></span>
+                    CY Empty Return Locations
+                </h3>
+                <p class="text-sm text-base-content/60">Container yard capacity for empty returns — CY type only, excludes port/terminals (ATI, ICTSI)</p>
+            </div>
+            <span class="badge badge-neutral badge-lg">{{ cyLocations|length }} CY</span>
+        </div>
+        <div class="p-6">
+    {% endif %}
+
+    <div id="cyLocationsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for location in cyLocations %}
+        <div class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 cy-card"
+             data-allocation-id="{{ location.allocation.id }}"
+             data-total-teu="{{ location.total_teu_capacity }}"
+             data-allocated-teu="{{ location.allocated_teu }}"
+             data-pre-forecast-teu="{{ location.pre_forecast_teu }}"
+             data-available-teu="{{ location.available_teu }}"
+             data-capacity-20ft="{{ location.capacity_20ft }}"
+             data-allocated-20ft="{{ location.allocated_20ft }}"
+             data-pre-forecast-20ft="{{ location.pre_forecast_20ft }}"
+             data-capacity-40ft="{{ location.capacity_40ft }}"
+             data-allocated-40ft="{{ location.allocated_40ft }}"
+             data-pre-forecast-40ft="{{ location.pre_forecast_40ft }}">
+            <div class="card-body p-5">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <div class="w-12 h-12 bg-base-content/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <span class="icon-[tabler--building-warehouse] size-6 text-base-content"></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-bold text-base text-base-content truncate">{{ location.terminal.name }}</h4>
+                            <span class="badge badge-neutral badge-xs mt-0.5">CONTAINER YARD</span>
+                            <p class="text-xs text-base-content/60 truncate mt-1">
+                                {% if location.terminal.region %}
+                                    {{ location.terminal.region.name }}{% if location.terminal.city %}, {{ location.terminal.city.name }}{% endif %}
+                                {% else %}
+                                    {{ location.terminal.location }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% set overallUtil = location.utilization_percent|default(0) %}
+                    <span class="badge badge-sm ml-2 flex-shrink-0 cy-status-badge
+                        {{ overallUtil >= 90 ? 'badge-error' : (overallUtil >= 70 ? 'badge-warning' : 'badge-success') }}">
+                        {{ overallUtil >= 90 ? 'At Capacity' : (overallUtil >= 70 ? 'Near Capacity' : 'Available') }}
+                    </span>
+                </div>
+
+                {% for size, label in {'20ft': '20ft', '40ft': '40ft'} %}
+                {% set util = attribute(location, 'utilization_' ~ size) %}
+                <div class="{{ not loop.last ? 'mb-4' : '' }}">
+                    <div class="flex items-center justify-between mb-3">
+                        <h5 class="text-sm font-bold text-base-content">{{ label }} Containers</h5>
+                        <span class="badge badge-neutral badge-sm">{{ label }}</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-3 mb-3">
+                        <div class="text-center">
+                            <div class="flex items-center justify-center mb-1">
+                                <span class="icon-[tabler--box] size-4 text-base-content/40"></span>
+                            </div>
+                            <p class="text-xs text-base-content/60 mb-1">Capacity</p>
+                            <p class="text-lg font-bold text-base-content cy-capacity-{{ size }}">{{ attribute(location, 'capacity_' ~ size) }}</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="flex items-center justify-center mb-1">
+                                <span class="icon-[tabler--box-multiple] size-4 text-info"></span>
+                            </div>
+                            <p class="text-xs text-base-content/60 mb-1">Allocated</p>
+                            <p class="text-lg font-bold text-info cy-allocated-{{ size }}">{{ attribute(location, 'allocated_' ~ size) }}</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="flex items-center justify-center mb-1">
+                                <span class="icon-[tabler--clock] size-4 text-warning"></span>
+                            </div>
+                            <p class="text-xs text-base-content/60 mb-1">Pre-Forecast</p>
+                            <p class="text-lg font-bold text-warning cy-pre-forecast-{{ size }}">{{ attribute(location, 'pre_forecast_' ~ size) }}</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="flex items-center justify-center mb-1">
+                                <span class="icon-[tabler--circle-check] size-4 text-success"></span>
+                            </div>
+                            <p class="text-xs text-base-content/60 mb-1">Available</p>
+                            <p class="text-lg font-bold text-success cy-available-{{ size }}">{{ attribute(location, 'available_' ~ size) }}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs text-base-content/60 flex items-center gap-1">
+                                <span class="icon-[tabler--chart-bar] size-3"></span>
+                                Utilization
+                            </span>
+                            <span class="text-sm font-bold text-base-content cy-utilization-percent-{{ size }}">{{ util }}%</span>
+                        </div>
+                        <div class="w-full bg-base-300 rounded-full h-2.5">
+                            <div class="h-2.5 rounded-full transition-all cy-utilization-bar-{{ size }}
+                                {{ util >= 90 ? 'bg-error' : (util >= 70 ? 'bg-warning' : 'bg-success') }}"
+                                 style="width: {{ util > 100 ? 100 : util }}%"></div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% if not isInteractive and repositioningNewRoute is defined %}
+                <a href="{{ path(repositioningNewRoute, {cy: location.terminal.id}) }}" class="btn btn-sm btn-outline w-full gap-1 mt-2">
+                    <span class="icon-[tabler--truck-delivery] size-4"></span>
+                    Request Export / Repo
+                </a>
+                {% endif %}
+
+                {% if not isInteractive and showDetailedStackLink is defined and showDetailedStackLink %}
+                    {% set totalContainers = location.capacity_20ft + location.capacity_40ft %}
+                    {% if totalContainers > 0 %}
+                    <a href="{{ path('app_detailed_stack_view', {depotId: location.terminal.name}) }}"
+                       class="btn btn-primary btn-sm w-full gap-2 mt-2">
+                        <span class="icon-[tabler--file-description] size-4"></span>
+                        View Detailed Stack
+                    </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if showFooter %}
+        <div class="mt-6 alert alert-info">
+            <span class="icon-[tabler--info-circle] size-5"></span>
+            <div>
+                <p class="font-semibold">Container Yard (CY) Capacity</p>
+                <p class="text-sm">
+                    These are your allocated <strong>container yards</strong> for empty container returns.
+                    <strong>Allocated</strong> = physically at the yard;
+                    <strong>Pre-Forecast</strong> = announced but not yet arrived.
+                    Port/terminal locations (ATI, ICTSI) are not shown here.
+                </p>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if isInteractive %}
+        </div>
+    </div>
+    {% elseif showHeader %}
+        </div>
+    </div>
+    {% endif %}
+{% elseif isInteractive %}
+    <div class="card bg-base-100 shadow-md">
+        <div class="card-body p-5 sm:p-6">
+            <h2 class="card-title text-base text-base-content mb-1">
+                <span class="icon-[tabler--map-pin] size-5 text-primary"></span>
+                CY Empty Return Locations
+            </h2>
+            <p class="text-sm text-base-content/60 mb-4">Container yards only — port/terminals are excluded.</p>
+            <div id="cyLocationsGrid">
+                <p class="text-sm text-base-content/50">No CY allocations available for your shipping line.</p>
+            </div>
+        </div>
+    </div>
+{% endif %}

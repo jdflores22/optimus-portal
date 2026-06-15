@@ -6,6 +6,7 @@ use App\Entity\Container;
 use App\Entity\ContainerType;
 use App\Entity\ContainerSize;
 use App\Entity\Consignee;
+use App\Entity\Enum\TerminalType;
 use App\Entity\ShippingLineTerminalAllocation;
 use App\Exception\AllocationLockedException;
 use App\Exception\InsufficientCapacityException;
@@ -132,7 +133,9 @@ class ContainerMetadataController extends AbstractController
                 ->leftJoin('alloc.terminal', 'terminal')
                 ->leftJoin('alloc.shippingLine', 'sl')
                 ->where('alloc.shippingLine = :shippingLine')
-                ->setParameter('shippingLine', $shippingLine);
+                ->andWhere('terminal.type = :cyType')
+                ->setParameter('shippingLine', $shippingLine)
+                ->setParameter('cyType', TerminalType::CY);
             
             $allocations = $qb->getQuery()->getResult();
 

@@ -193,6 +193,16 @@
                                                 <span class="badge badge-secondary badge-soft">{{ item }}</span>
                                             {% endfor %}
                                         </div>
+                                    {% elseif fieldType == 'geolocation' and value is iterable %}
+                                        <div class="space-y-2">
+                                            <div id="review_map_{{ key }}"
+                                                 class="w-full h-56 rounded-lg border border-base-300 overflow-hidden z-0"
+                                                 data-lat="{{ value.latitude|default('14.5995') }}"
+                                                 data-lng="{{ value.longitude|default('120.9842') }}"></div>
+                                            <p class="text-sm text-base-content/70">
+                                                {{ value.latitude|default('—') }}, {{ value.longitude|default('—') }}
+                                            </p>
+                                        </div>
                                     {% elseif value is iterable and value is not same as(value|join('')) %}
                                         <div class="flex flex-wrap gap-2">
                                             {% for item in value %}
@@ -500,6 +510,33 @@
 {% endblock %}
 
 {% block page_scripts %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof L !== 'undefined') {
+        delete L.Icon.Default.prototype._getIconUrl;
+        L.Icon.Default.mergeOptions({
+            iconRetinaUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+            iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png',
+            shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-shadow.png',
+        });
+    }
+    document.querySelectorAll('[id^="review_map_"]').forEach(function (el) {
+        if (typeof L === 'undefined') return;
+        const lat = parseFloat(el.dataset.lat || '14.5995');
+        const lng = parseFloat(el.dataset.lng || '120.9842');
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+        const map = L.map(el, { scrollWheelZoom: false }).setView([lat, lng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+        L.marker([lat, lng]).addTo(map);
+        setTimeout(function () { map.invalidateSize(); }, 200);
+    });
+});
+</script>
 <script>
 (function () {
     const modal = document.getElementById('appDocumentModal');

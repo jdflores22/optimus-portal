@@ -5,8 +5,9 @@ namespace App\Service;
 use App\Entity\Container;
 use App\Entity\Enum\AllocationStatus;
 use App\Entity\Enum\ContainerStatus;
+use App\Entity\Enum\RepositioningRequestStatus;
 use App\Entity\Enum\TerminalType;
-use App\Entity\NOA;
+use App\Entity\RepositioningRequestItem;
 use App\Entity\ShippingLine;
 use App\Entity\ShippingLineTerminalAllocation;
 use App\Entity\Terminal;
@@ -80,6 +81,164 @@ class SlStaffDashboardLocationService
         return $locations;
     }
 
+    /**
+     * Aggregated Port vs CY counts for dashboard summary cards.
+     *
+     * @return array{port: array<string, int|float>, cy: array<string, int|float>}
+     */
+    public function buildLocationSummary(ShippingLine $shippingLine): array
+    {
+        $ports = $this->buildPortTerminalLocations($shippingLine);
+        $cys = $this->buildCyEmptyReturnLocations($shippingLine);
+
+        $portProjectedTeu = 0.0;
+        $portCapacity = 0.0;
+        $atPortByTerminal = [];
+        $inboundByTerminal = [];
+        $outboundByTerminal = [];
+        foreach ($ports as $port) {
+            $portProjectedTeu += $port['projected_teu'];
+            $portCapacity += $port['total_teu_capacity'];
+            if ($port['inbound_count'] > 0) {
+                $inboundByTerminal[] = [
+                    'code' => $port['terminal']->getCode(),
+                    'name' => $port['terminal']->getName(),
+                    'count' => $port['inbound_count'],
+                    'count_20ft' => $port['inbound_20ft'],
+                    'count_40ft' => $port['inbound_40ft'],
+                ];
+            }
+            if ($port['transfer_from_cy_count'] > 0) {
+                $outboundByTerminal[] = [
+                    'code' => $port['terminal']->getCode(),
+                    'name' => $port['terminal']->getName(),
+                    'count' => $port['transfer_from_cy_count'],
+                    'reposition_count' => $port['transfer_reposition_count'],
+                    'count_20ft' => $port['transfer_from_cy_20ft'],
+                    'count_40ft' => $port['transfer_from_cy_40ft'],
+                ];
+            }
+            if ($port['at_port_count'] > 0) {
+                $atPortByTerminal[] = [
+                    'code' => $port['terminal']->getCode(),
+                    'name' => $port['terminal']->getName(),
+                    'count' => $port['at_port_count'],
+                    'import_count' => $port['at_port_import_count'],
+                    'reposition_count' => $port['at_port_reposition_count'],
+                    'count_20ft' => $port['at_port_20ft'],
+                    'count_40ft' => $port['at_port_40ft'],
+                ];
+            }
+        }
+
+        $cyUsedTeu = 0.0;
+        $cyCapacity = 0.0;
+        $cyAllocated = 0;
+        $cyPreForecast = 0;
+        $cyAllocated20 = 0;
+        $cyAllocated40 = 0;
+        $cyPreForecast20 = 0;
+        $cyPreForecast40 = 0;
+        $allocatedByCy = [];
+        $preForecastByCy = [];
+        $capacityByCy = [];
+        foreach ($cys as $cy) {
+            $cyUsedTeu += $cy['used_teu'];
+            $cyCapacity += $cy['total_teu_capacity'];
+            $cyAllocated += $cy['allocated_20ft'] + $cy['allocated_40ft'];
+            $cyPreForecast += $cy['pre_forecast_20ft'] + $cy['pre_forecast_40ft'];
+            $cyAllocated20 += $cy['allocated_20ft'];
+            $cyAllocated40 += $cy['allocated_40ft'];
+            $cyPreForecast20 += $cy['pre_forecast_20ft'];
+            $cyPreForecast40 += $cy['pre_forecast_40ft'];
+
+            $terminal = $cy['terminal'];
+            $allocCount = $cy['allocated_20ft'] + $cy['allocated_40ft'];
+            if ($allocCount > 0) {
+                $allocatedByCy[] = [
+                    'code' => $terminal->getCode(),
+                    'name' => $terminal->getName(),
+                    'location_type' => 'CY',
+                    'count' => $allocCount,
+                    'count_20ft' => $cy['allocated_20ft'],
+                    'count_40ft' => $cy['allocated_40ft'],
+                ];
+            }
+
+            $preForecastCount = $cy['pre_forecast_20ft'] + $cy['pre_forecast_40ft'];
+            if ($preForecastCount > 0) {
+                $preForecastByCy[] = [
+                    'code' => $terminal->getCode(),
+                    'name' => $terminal->getName(),
+                    'location_type' => 'CY',
+                    'count' => $preForecastCount,
+                    'count_20ft' => $cy['pre_forecast_20ft'],
+                    'count_40ft' => $cy['pre_forecast_40ft'],
+                ];
+            }
+
+            if ($cy['total_teu_capacity'] > 0 || $cy['used_teu'] > 0) {
+                $capacityByCy[] = [
+                    'code' => $terminal->getCode(),
+                    'name' => $terminal->getName(),
+                    'location_type' => 'CY',
+                    'used_teu' => $cy['used_teu'],
+                    'total_capacity' => $cy['total_teu_capacity'],
+                    'utilization_percent' => $cy['utilization_percent'],
+                    'allocated_20ft' => $cy['allocated_20ft'],
+                    'allocated_40ft' => $cy['allocated_40ft'],
+                    'pre_forecast_20ft' => $cy['pre_forecast_20ft'],
+                    'pre_forecast_40ft' => $cy['pre_forecast_40ft'],
+                ];
+            }
+        }
+
+        return [
+            'port' => [
+                'location_count' => count($ports),
+                'inbound_count' => (int) array_sum(array_column($ports, 'inbound_count')),
+                'inbound_20ft' => (int) array_sum(array_column($ports, 'inbound_20ft')),
+                'inbound_40ft' => (int) array_sum(array_column($ports, 'inbound_40ft')),
+                'inbound_by_terminal' => $inboundByTerminal,
+                'at_port_count' => (int) array_sum(array_column($ports, 'at_port_count')),
+                'at_port_import_count' => (int) array_sum(array_column($ports, 'at_port_import_count')),
+                'at_port_reposition_count' => (int) array_sum(array_column($ports, 'at_port_reposition_count')),
+                'at_port_20ft' => (int) array_sum(array_column($ports, 'at_port_20ft')),
+                'at_port_40ft' => (int) array_sum(array_column($ports, 'at_port_40ft')),
+                'at_port_by_terminal' => $atPortByTerminal,
+                'outbound_count' => (int) array_sum(array_column($ports, 'transfer_from_cy_count')),
+                'outbound_20ft' => (int) array_sum(array_column($ports, 'transfer_from_cy_20ft')),
+                'outbound_40ft' => (int) array_sum(array_column($ports, 'transfer_from_cy_40ft')),
+                'outbound_reposition_count' => (int) array_sum(array_column($ports, 'transfer_reposition_count')),
+                'outbound_by_terminal' => $outboundByTerminal,
+                'container_count' => (int) array_sum(array_column($ports, 'container_count')),
+                'projected_teu' => $portProjectedTeu,
+                'total_capacity' => $portCapacity,
+                'utilization_percent' => $portCapacity > 0
+                    ? round(($portProjectedTeu / $portCapacity) * 100, 1)
+                    : 0.0,
+            ],
+            'cy' => [
+                'location_type' => 'CY',
+                'location_count' => count($cys),
+                'allocated_count' => $cyAllocated,
+                'allocated_20ft' => $cyAllocated20,
+                'allocated_40ft' => $cyAllocated40,
+                'allocated_by_yard' => $allocatedByCy,
+                'pre_forecast_count' => $cyPreForecast,
+                'pre_forecast_20ft' => $cyPreForecast20,
+                'pre_forecast_40ft' => $cyPreForecast40,
+                'pre_forecast_by_yard' => $preForecastByCy,
+                'used_teu' => $cyUsedTeu,
+                'total_capacity' => $cyCapacity,
+                'utilization_percent' => $cyCapacity > 0
+                    ? round(($cyUsedTeu / $cyCapacity) * 100, 1)
+                    : 0.0,
+                'capacity_by_yard' => $capacityByCy,
+            ],
+        ];
+    }
+
     private function buildCyLocationMetrics(
         ShippingLineTerminalAllocation $allocation,
         ShippingLine $shippingLine,
@@ -126,19 +285,27 @@ class SlStaffDashboardLocationService
 
     private function buildPortLocationMetrics(Terminal $port, ShippingLine $shippingLine): array
     {
-        $portCode = $port->getCode();
         $dailyCapacity = $port->getDailyCapacity();
 
-        $inbound20 = $this->countPortContainers($portCode, $shippingLine, 'inbound', 1.0);
-        $inbound40 = $this->countPortContainers($portCode, $shippingLine, 'inbound', 2.0);
-        $atPort20 = $this->countPortContainers($portCode, $shippingLine, 'at_port', 1.0);
-        $atPort40 = $this->countPortContainers($portCode, $shippingLine, 'at_port', 2.0);
-        $transfer20 = $this->countPortContainers($portCode, $shippingLine, 'transfer_from_cy', 1.0);
-        $transfer40 = $this->countPortContainers($portCode, $shippingLine, 'transfer_from_cy', 2.0);
+        $inbound20 = $this->countPortContainers($port, $shippingLine, 'inbound', 1.0);
+        $inbound40 = $this->countPortContainers($port, $shippingLine, 'inbound', 2.0);
+        $atPort20 = $this->countPortContainers($port, $shippingLine, 'at_port', 1.0);
+        $atPort40 = $this->countPortContainers($port, $shippingLine, 'at_port', 2.0);
+        $atPortImport20 = $this->countPortContainers($port, $shippingLine, 'at_port_import', 1.0);
+        $atPortImport40 = $this->countPortContainers($port, $shippingLine, 'at_port_import', 2.0);
+        $atPortReposition20 = $this->countPortContainers($port, $shippingLine, 'at_port_reposition', 1.0);
+        $atPortReposition40 = $this->countPortContainers($port, $shippingLine, 'at_port_reposition', 2.0);
+        $transfer20 = $this->countPortContainers($port, $shippingLine, 'transfer_from_cy', 1.0);
+        $transfer40 = $this->countPortContainers($port, $shippingLine, 'transfer_from_cy', 2.0);
+        $transferReposition20 = $this->countPortContainers($port, $shippingLine, 'transfer_reposition', 1.0);
+        $transferReposition40 = $this->countPortContainers($port, $shippingLine, 'transfer_reposition', 2.0);
 
         $inboundCount = $inbound20 + $inbound40;
         $atPortCount = $atPort20 + $atPort40;
+        $atPortImportCount = $atPortImport20 + $atPortImport40;
+        $atPortRepositionCount = $atPortReposition20 + $atPortReposition40;
         $transferCount = $transfer20 + $transfer40;
+        $transferRepositionCount = $transferReposition20 + $transferReposition40;
         $containerCount = $inboundCount + $atPortCount + $transferCount;
 
         $projectedTeu = $inbound20 + ($inbound40 * 2) + $atPort20 + ($atPort40 * 2) + $transfer20 + ($transfer40 * 2);
@@ -150,7 +317,10 @@ class SlStaffDashboardLocationService
             'total_teu_capacity' => $dailyCapacity,
             'inbound_count' => $inboundCount,
             'at_port_count' => $atPortCount,
+            'at_port_import_count' => $atPortImportCount,
+            'at_port_reposition_count' => $atPortRepositionCount,
             'transfer_from_cy_count' => $transferCount,
+            'transfer_reposition_count' => $transferRepositionCount,
             'container_count' => $containerCount,
             'projected_teu' => $projectedTeu,
             'available_teu' => max(0, $dailyCapacity - $projectedTeu),
@@ -176,41 +346,98 @@ class SlStaffDashboardLocationService
         ];
     }
 
+    /**
+     * @return list<string>
+     */
+    private function getPortLocationIdentifiers(Terminal $port): array
+    {
+        return array_values(array_filter(array_unique([
+            $port->getCode(),
+            $port->getName(),
+            $port->getLocation(),
+        ])));
+    }
+
     private function countPortContainers(
-        string $portCode,
+        Terminal $port,
         ShippingLine $shippingLine,
         string $bucket,
         float $teuValue,
     ): int {
+        $portIds = $this->getPortLocationIdentifiers($port);
+
         $qb = $this->entityManager->getRepository(Container::class)
             ->createQueryBuilder('c')
-            ->select('COUNT(c.id)')
-            ->join('c.noa', 'noa')
+            ->select('COUNT(DISTINCT c.id)')
+            ->leftJoin('c.noa', 'noa')
             ->join('c.containerSize', 'cs')
+            ->leftJoin(RepositioningRequestItem::class, 'rri', 'WITH', 'rri.container = c')
+            ->leftJoin('rri.request', 'rr')
             ->where('c.shippingLine = :shippingLine')
-            ->andWhere('noa.portLocation = :portCode')
             ->andWhere('cs.teuValue = :teuValue')
             ->setParameter('shippingLine', $shippingLine)
-            ->setParameter('portCode', $portCode)
             ->setParameter('teuValue', $teuValue);
 
         match ($bucket) {
-            'inbound' => $qb->andWhere('c.status = :status')
+            'inbound' => $qb
+                ->andWhere('c.status = :status')
+                ->andWhere('noa.portLocation IN (:portIds)')
                 ->andWhere('noa.eta >= :today')
                 ->setParameter('status', ContainerStatus::PENDING)
+                ->setParameter('portIds', $portIds)
                 ->setParameter('today', new \DateTime('today')),
-            'at_port' => $qb->andWhere('c.status = :status')
-                ->setParameter('status', ContainerStatus::AT_TERMINAL),
+            'at_port' => $qb
+                ->andWhere('c.status = :status')
+                ->andWhere(
+                    'noa.portLocation IN (:portIds) OR (rr.destinationTerminal = :port AND rr.status = :repoCompleted)'
+                )
+                ->setParameter('status', ContainerStatus::AT_TERMINAL)
+                ->setParameter('portIds', $portIds)
+                ->setParameter('port', $port)
+                ->setParameter('repoCompleted', RepositioningRequestStatus::COMPLETED),
+            'at_port_import' => $qb
+                ->andWhere('c.status = :status')
+                ->andWhere('noa.portLocation IN (:portIds)')
+                ->andWhere(
+                    'NOT EXISTS (
+                        SELECT 1 FROM App\Entity\RepositioningRequestItem ri2
+                        JOIN ri2.request r2
+                        WHERE ri2.container = c
+                        AND r2.destinationTerminal = :port
+                        AND r2.status = :repoCompleted
+                    )'
+                )
+                ->setParameter('status', ContainerStatus::AT_TERMINAL)
+                ->setParameter('portIds', $portIds)
+                ->setParameter('port', $port)
+                ->setParameter('repoCompleted', RepositioningRequestStatus::COMPLETED),
+            'at_port_reposition' => $qb
+                ->andWhere('c.status = :status')
+                ->andWhere('rr.destinationTerminal = :port')
+                ->andWhere('rr.status = :repoCompleted')
+                ->setParameter('status', ContainerStatus::AT_TERMINAL)
+                ->setParameter('port', $port)
+                ->setParameter('repoCompleted', RepositioningRequestStatus::COMPLETED),
             'transfer_from_cy' => $qb
-                ->join('c.cyAllocation', 'cyAlloc')
-                ->join('cyAlloc.terminal', 'cyTerminal')
-                ->andWhere('cyTerminal.type = :cyType')
-                ->andWhere('c.status IN (:transferStatuses)')
-                ->setParameter('cyType', TerminalType::CY)
-                ->setParameter('transferStatuses', [
-                    ContainerStatus::IN_TRANSIT,
-                    ContainerStatus::AVAILABLE_FOR_RETURN,
-                ]),
+                ->leftJoin('c.cyAllocation', 'cyAlloc')
+                ->leftJoin('cyAlloc.terminal', 'cyTerminal')
+                ->andWhere('c.status = :status')
+                ->andWhere(
+                    '(rr.destinationTerminal = :port AND rr.status = :repoInTransit)
+                     OR (noa.portLocation IN (:portIds) AND cyTerminal.type = :cyType)'
+                )
+                ->setParameter('status', ContainerStatus::IN_TRANSIT)
+                ->setParameter('portIds', $portIds)
+                ->setParameter('port', $port)
+                ->setParameter('repoInTransit', RepositioningRequestStatus::IN_TRANSIT)
+                ->setParameter('cyType', TerminalType::CY),
+            'transfer_reposition' => $qb
+                ->andWhere('c.status = :status')
+                ->andWhere('rr.destinationTerminal = :port')
+                ->andWhere('rr.status = :repoInTransit')
+                ->setParameter('status', ContainerStatus::IN_TRANSIT)
+                ->setParameter('port', $port)
+                ->setParameter('repoInTransit', RepositioningRequestStatus::IN_TRANSIT),
             default => null,
         };
 

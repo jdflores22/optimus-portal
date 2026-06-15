@@ -271,7 +271,7 @@ class FormBuilderService
      */
     private function validateFieldDefinition(array $fieldDefinition): void
     {
-        $allowedTypes = ['text', 'number', 'date', 'file', 'dropdown', 'checkbox', 'radio'];
+        $allowedTypes = \App\Form\FormFieldTypes::ALL;
 
         if (!isset($fieldDefinition['id']) || !is_string($fieldDefinition['id'])) {
             throw new \InvalidArgumentException('Field must have a string "id"');
@@ -282,7 +282,7 @@ class FormBuilderService
         }
 
         if (!isset($fieldDefinition['type']) || !in_array($fieldDefinition['type'], $allowedTypes)) {
-            throw new \InvalidArgumentException('Field must have a valid "type" (text, number, date, file, dropdown, checkbox, radio)');
+            throw new \InvalidArgumentException('Field must have a valid "type" (text, number, date, file, dropdown, checkbox, radio, geolocation)');
         }
 
         if (!isset($fieldDefinition['required']) || !is_bool($fieldDefinition['required'])) {

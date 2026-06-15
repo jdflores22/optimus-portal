@@ -44,12 +44,18 @@ function loadCYAllocations() {
         .then(response => response.json())
         .then(data => {
             cyAllocations = data.allocations || [];
-            renderCYCards();
+            const hasServerCards = document.querySelector('#cyLocationsGrid .cy-card');
+            if (!hasServerCards && cyAllocations.length > 0) {
+                renderCYCards();
+            }
         })
         .catch(error => {
             console.error('Error loading CY allocations:', error);
-            document.getElementById('cyLocationsGrid').innerHTML = 
-                '<p class="text-sm text-error col-span-full">Failed to load CY locations. Please refresh the page.</p>';
+            const grid = document.getElementById('cyLocationsGrid');
+            if (grid && !grid.querySelector('.cy-card')) {
+                grid.innerHTML =
+                    '<p class="text-sm text-error col-span-full">Failed to load CY locations. Please refresh the page.</p>';
+            }
         });
 }
 
@@ -405,10 +411,35 @@ function removeContainer(index) {
     }
 }
 
+function updateSizeMetrics(card, allocation, size, pendingCount) {
+    const capacity = allocation[`capacity_${size}`] || 0;
+    const allocated = allocation[`allocated_${size}`] || 0;
+    const preForecast = allocation[`pre_forecast_${size}`] || 0;
+    const used = allocated + preForecast + pendingCount;
+    const available = Math.max(0, capacity - used);
+    const util = capacity > 0 ? (used / capacity) * 100 : 0;
+
+    const availableEl = card.querySelector(`.cy-available-${size}`);
+    if (availableEl) availableEl.textContent = available;
+
+    const percentEl = card.querySelector(`.cy-utilization-percent-${size}`);
+    if (percentEl) percentEl.textContent = `${util.toFixed(1)}%`;
+
+    const barEl = card.querySelector(`.cy-utilization-bar-${size}`);
+    if (barEl) {
+        barEl.style.width = `${Math.min(util, 100)}%`;
+        barEl.className = `h-2.5 rounded-full transition-all cy-utilization-bar-${size} ${
+            util >= 90 ? 'bg-error' : (util >= 70 ? 'bg-warning' : 'bg-success')
+        }`;
+    }
+
+    return util;
+}
+
 function updateCYAllocation() {
     const containerRows = document.querySelectorAll('.container-row');
     
-    // Calculate utilization per CY allocation
+    // Calculate pending containers per CY allocation by size
     const allocationUtilization = {};
     
     containerRows.forEach(row => {
@@ -425,50 +456,32 @@ function updateCYAllocation() {
             const teuValue = parseFloat(selectedSizeOption.dataset.teu);
             
             if (!allocationUtilization[allocationId]) {
-                allocationUtilization[allocationId] = {
-                    used: 0,
-                    allocation: cyAllocations.find(a => a.id == allocationId)
-                };
+                allocationUtilization[allocationId] = { used20: 0, used40: 0 };
             }
             
-            allocationUtilization[allocationId].used += teuValue;
+            if (teuValue >= 2) {
+                allocationUtilization[allocationId].used40 += 1;
+            } else {
+                allocationUtilization[allocationId].used20 += 1;
+            }
         }
     });
     
-    // Update CY grid cards with real-time utilization
+    // Update CY cards with projected utilization
     cyAllocations.forEach(allocation => {
         const card = document.querySelector(`[data-allocation-id="${allocation.id}"]`);
         if (!card) return;
         
-        // Calculate new utilization including pending containers
-        const pendingTeu = allocationUtilization[allocation.id]?.used || 0;
-        const newAllocated = allocation.allocated_teu + pendingTeu;
-        const newAvailable = allocation.total_teu_capacity - newAllocated;
-        const utilizationPercent = (newAllocated / allocation.total_teu_capacity) * 100;
+        const pending = allocationUtilization[allocation.id] || { used20: 0, used40: 0 };
+        const util20 = updateSizeMetrics(card, allocation, '20ft', pending.used20);
+        const util40 = updateSizeMetrics(card, allocation, '40ft', pending.used40);
+        const overallUtil = Math.max(util20, util40);
+        const status = getCYStatus(overallUtil);
 
-        const status = getCYStatus(utilizationPercent);
-
-        // Update card border via inline style
-        card.style.borderColor = `oklch(var(${status.cssVar})/.3)`;
-
-        // Update status badge
-        const statusBadge = card.querySelector('.badge');
+        const statusBadge = card.querySelector('.cy-status-badge');
         if (statusBadge) {
-            statusBadge.className = `badge badge-${status.type} badge-sm`;
+            statusBadge.className = `badge badge-sm ml-2 flex-shrink-0 cy-status-badge badge-${status.type}`;
             statusBadge.textContent = status.label;
-        }
-
-        // Update utilization percentage
-        const utilizationPercentDisplay = card.querySelector('.cy-utilization-percent');
-        if (utilizationPercentDisplay) {
-            utilizationPercentDisplay.textContent = `${utilizationPercent.toFixed(1)}%`;
-        }
-
-        // Update utilization bar
-        const utilizationBar = card.querySelector('.cy-utilization-bar');
-        if (utilizationBar) {
-            utilizationBar.style.width = `${Math.min(utilizationPercent, 100)}%`;
-            utilizationBar.style.background = `oklch(var(${status.cssVar}))`;
         }
     });
     

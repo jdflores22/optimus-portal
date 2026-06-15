@@ -1,0 +1,56 @@
+{% set addressValue = fieldValue is iterable ? fieldValue : {} %}
+{% set provinceId = addressValue.province_id|default(addressValue.province|default('')) %}
+{% set barangayId = addressValue.barangay_id|default('') %}
+<div class="form-address-picker space-y-3"
+     data-field-id="{{ fieldId }}">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="form-control">
+            <label class="label py-1"><span class="label-text text-xs font-medium">Region</span></label>
+            <select name="{{ fieldId }}[region_id]"
+                    class="select select-bordered w-full address-region {{ fieldHasError ? 'select-error' : '' }}"
+                    data-selected="{{ addressValue.region_id|default('') }}"
+                    {{ isRequired ? 'required data-required=true' : '' }}>
+                <option value="">Select region</option>
+            </select>
+            <input type="hidden" name="{{ fieldId }}[region_name]" class="address-region-name" value="{{ addressValue.region_name|default('') }}">
+        </div>
+        <div class="form-control">
+            <label class="label py-1"><span class="label-text text-xs font-medium">Province</span></label>
+            <select name="{{ fieldId }}[province_id]"
+                    class="select select-bordered w-full address-province {{ fieldHasError ? 'select-error' : '' }}"
+                    data-selected="{{ provinceId }}"
+                    {{ isRequired ? 'required data-required=true' : '' }}>
+                <option value="">Select region first</option>
+            </select>
+            <input type="hidden" name="{{ fieldId }}[province_name]" class="address-province-name" value="{{ addressValue.province_name|default(addressValue.province|default('')) }}">
+        </div>
+        <div class="form-control">
+            <label class="label py-1"><span class="label-text text-xs font-medium">City / Municipality</span></label>
+            <select name="{{ fieldId }}[city_id]"
+                    class="select select-bordered w-full address-city {{ fieldHasError ? 'select-error' : '' }}"
+                    data-selected="{{ addressValue.city_id|default('') }}"
+                    {{ isRequired ? 'required data-required=true' : '' }}>
+                <option value="">Select province first</option>
+            </select>
+            <input type="hidden" name="{{ fieldId }}[city_name]" class="address-city-name" value="{{ addressValue.city_name|default('') }}">
+        </div>
+        <div class="form-control">
+            <label class="label py-1"><span class="label-text text-xs font-medium">Barangay</span></label>
+            <select name="{{ fieldId }}[barangay_id]"
+                    class="select select-bordered w-full address-barangay {{ fieldHasError ? 'select-error' : '' }}"
+                    data-selected="{{ barangayId }}"
+                    {{ isRequired ? 'required data-required=true' : '' }}>
+                <option value="">Select city first</option>
+            </select>
+            <input type="hidden" name="{{ fieldId }}[barangay_name]" class="address-barangay-name" value="{{ addressValue.barangay_name|default(addressValue.barangay|default('')) }}">
+        </div>
+    </div>
+    <div class="form-control">
+        <label class="label py-1"><span class="label-text text-xs font-medium">Street / Building (optional)</span></label>
+        <input type="text"
+               name="{{ fieldId }}[street]"
+               class="input input-bordered w-full address-street"
+               value="{{ addressValue.street|default('') }}"
+               placeholder="Street, unit, or building">
+    </div>
+</div>

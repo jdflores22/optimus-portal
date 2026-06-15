@@ -63,6 +63,10 @@ class DynamicFormRenderer
             $isRequired = $field['required'] ?? false;
             $validation = $field['validation'] ?? [];
 
+            if (!$this->shouldShowField($field, $data)) {
+                continue;
+            }
+
             // Check if required field is present
             if ($isRequired && (!isset($data[$fieldId]) || $this->isEmpty($data[$fieldId]))) {
                 $errors[$fieldId] = "{$fieldLabel} is required";
@@ -136,6 +140,9 @@ class DynamicFormRenderer
                 break;
             case 'radio':
                 $html .= $this->renderRadioField($field);
+                break;
+            case 'geolocation':
+                $html .= $this->renderGeolocationField($field);
                 break;
             default:
                 $html .= '<p class="text-error text-sm">Unknown field type</p>';
@@ -240,6 +247,43 @@ class DynamicFormRenderer
     }
 
     /**
+     * Render a geolocation map picker field
+     */
+    private function renderGeolocationField(array $field): string
+    {
+        $fieldId = htmlspecialchars($field['id']);
+        $required = $field['required'] ? 'required' : '';
+        $validation = $field['validation'] ?? [];
+        $defaultLat = $validation['defaultLat'] ?? 14.5995;
+        $defaultLng = $validation['defaultLng'] ?? 120.9842;
+        $defaultZoom = $validation['defaultZoom'] ?? 13;
+
+        return <<<HTML
+<div class="form-geolocation-picker space-y-3"
+     data-field-id="{$fieldId}"
+     data-default-lat="{$defaultLat}"
+     data-default-lng="{$defaultLng}"
+     data-default-zoom="{$defaultZoom}">
+    <p class="text-xs text-base-content/60">Click the map or drag the pin to set a location.</p>
+    <div id="map_{$fieldId}" class="geolocation-map w-full h-72 rounded-xl border border-base-content/15 overflow-hidden z-0"></div>
+    <div class="flex flex-wrap items-center gap-2">
+        <button type="button" class="btn btn-sm btn-outline gap-1 geolocation-use-gps">
+            <span class="icon-[tabler--current-location] size-4"></span>
+            Use my location
+        </button>
+        <span class="text-xs text-base-content/50 geolocation-coords-display">No location selected yet</span>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <input type="text" name="{$fieldId}[latitude]" id="field_{$fieldId}_lat"
+               class="input input-bordered input-sm w-full geolocation-lat" readonly {$required}>
+        <input type="text" name="{$fieldId}[longitude]" id="field_{$fieldId}_lng"
+               class="input input-bordered input-sm w-full geolocation-lng" readonly {$required}>
+    </div>
+</div>
+HTML;
+    }
+
+    /**
      * Render a radio button field
      */
     private function renderRadioField(array $field): string
@@ -276,11 +320,30 @@ class DynamicFormRenderer
         if (is_string($value)) {
             return trim($value) === '';
         }
-        
+
         if (is_array($value)) {
+            if (isset($value['latitude']) || isset($value['longitude'])) {
+                $lat = trim((string) ($value['latitude'] ?? ''));
+                $lng = trim((string) ($value['longitude'] ?? ''));
+
+                return $lat === '' || $lng === '';
+            }
+
+            if (isset($value['region_id']) || isset($value['city_id']) || isset($value['province_id']) || isset($value['barangay_id']) || isset($value['barangay'])) {
+                $hasProvince = !empty($value['province_id'])
+                    || trim((string) ($value['province_name'] ?? $value['province'] ?? '')) !== '';
+                $hasBarangay = !empty($value['barangay_id'])
+                    || trim((string) ($value['barangay_name'] ?? $value['barangay'] ?? '')) !== '';
+
+                return empty($value['region_id'])
+                    || !$hasProvince
+                    || empty($value['city_id'])
+                    || !$hasBarangay;
+            }
+
             return empty($value);
         }
-        
+
         return $value === null || $value === '';
     }
 
@@ -291,24 +354,145 @@ class DynamicFormRenderer
     {
         switch ($type) {
             case 'text':
-                $errors = $this->validationService->validateTextInput($value, 255, false);
-                return !empty($errors) ? $errors[0] : null;
-                
+                if (!is_string($value)) {
+                    return "{$label} must be text";
+                }
+                if (strlen($value) > 255) {
+                    return "{$label} must not exceed 255 characters";
+                }
+                break;
+
+            case 'textarea':
+                if (!is_string($value)) {
+                    return "{$label} must be text";
+                }
+                break;
+
+            case 'email':
+                if (!is_string($value) || !filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                    return "{$label} must be a valid email address";
+                }
+                break;
+
             case 'number':
-                $errors = $this->validationService->validateNumericInput($value, null, null, false);
-                return !empty($errors) ? $errors[0] : null;
-            
+                if (!is_numeric($value)) {
+                    return "{$label} must be a valid number";
+                }
+                break;
+
             case 'date':
-                $errors = $this->validationService->validateDateInput($value, false);
-                return !empty($errors) ? $errors[0] : null;
-            
+                if (!is_string($value) || !$this->isValidDate($value)) {
+                    return "{$label} must be a valid date";
+                }
+                break;
+
             case 'file':
-                // File validation is typically handled separately with uploaded files
-                // This would check if a file was uploaded
+            case 'image':
+            case 'multi_file':
+            case 'signature':
+                // File validation is handled separately with uploaded files
+                break;
+
+            case 'phone':
+                if (!is_string($value) || !preg_match('/^\+?[0-9]{10,15}$/', $value)) {
+                    return $validation['message'] ?? "{$label} must be a valid phone number";
+                }
+                break;
+
+            case 'url':
+                if (!is_string($value) || !filter_var($value, FILTER_VALIDATE_URL)) {
+                    return $validation['message'] ?? "{$label} must be a valid URL";
+                }
+                break;
+
+            case 'currency':
+                if (!is_numeric($value)) {
+                    return "{$label} must be a valid amount";
+                }
+                break;
+
+            case 'address':
+                if (!is_array($value)) {
+                    return "{$label} must include a complete address";
+                }
+                $hasProvince = !empty($value['province_id'])
+                    || trim((string) ($value['province_name'] ?? $value['province'] ?? '')) !== '';
+                $hasBarangay = !empty($value['barangay_id'])
+                    || trim((string) ($value['barangay_name'] ?? $value['barangay'] ?? '')) !== '';
+                if (empty($value['region_id']) || !$hasProvince || empty($value['city_id']) || !$hasBarangay) {
+                    return "{$label} requires region, province, city, and barangay";
+                }
+                break;
+
+            case 'terms':
+            case 'toggle':
+                break;
+
+            case 'geolocation':
+                if (!is_array($value)) {
+                    return "{$label} must include latitude and longitude";
+                }
+                $lat = $value['latitude'] ?? null;
+                $lng = $value['longitude'] ?? null;
+                if ($lat === null || $lng === null || trim((string) $lat) === '' || trim((string) $lng) === '') {
+                    return "{$label} requires a map location";
+                }
+                if (!$this->isValidGeolocation((float) $lat, (float) $lng)) {
+                    return "{$label} has invalid coordinates";
+                }
                 break;
         }
         
         return null;
+    }
+
+    /**
+     * Evaluate showWhen conditional visibility (mirrors client-side FormConditional).
+     */
+    public function isFieldVisible(array $field, array $data): bool
+    {
+        return $this->shouldShowField($field, $data);
+    }
+
+    /**
+     * Evaluate showWhen conditional visibility (mirrors client-side FormConditional).
+     */
+    private function shouldShowField(array $field, array $data): bool
+    {
+        $rule = $field['validation']['showWhen'] ?? null;
+        if (!is_array($rule) || empty($rule['field'])) {
+            return true;
+        }
+
+        $current = $this->resolveConditionalFieldValue($data[$rule['field']] ?? '');
+        $expected = (string) ($rule['value'] ?? '');
+        $operator = $rule['operator'] ?? 'equals';
+
+        return match ($operator) {
+            'equals' => $current === $expected,
+            'not_equals' => $current !== $expected,
+            'contains' => str_contains($current, $expected),
+            default => true,
+        };
+    }
+
+    private function resolveConditionalFieldValue(mixed $value): string
+    {
+        if (is_array($value)) {
+            if (isset($value['latitude']) || isset($value['longitude'])) {
+                return trim((string) ($value['latitude'] ?? '')) . '|' . trim((string) ($value['longitude'] ?? ''));
+            }
+            if (isset($value['region_id']) || isset($value['city_id'])) {
+                return trim((string) ($value['region_id'] ?? '')) . '|'
+                    . trim((string) ($value['province_id'] ?? '')) . '|'
+                    . trim((string) ($value['city_id'] ?? '')) . '|'
+                    . trim((string) ($value['barangay_id'] ?? ''));
+            }
+
+            return implode(',', array_map('strval', $value));
+        }
+
+        return trim((string) $value);
     }
 
     /**
@@ -324,17 +508,21 @@ class DynamicFormRenderer
             }
         }
 
-        // Min length validation
-        if (isset($validation['minLength']) && is_string($value)) {
-            if (strlen($value) < $validation['minLength']) {
-                return "{$label} must be at least {$validation['minLength']} characters";
+        // Max length validation (supports legacy lowercase key from older form builder saves)
+        [$minLength, $maxLength] = $this->resolveStringLengthConstraints($validation);
+        if ($maxLength !== null && is_string($value)) {
+            if (strlen($value) > $maxLength) {
+                return "{$label} must not exceed {$maxLength} characters";
             }
         }
 
-        // Max length validation
-        if (isset($validation['maxLength']) && is_string($value)) {
-            if (strlen($value) > $validation['maxLength']) {
-                return "{$label} must not exceed {$validation['maxLength']} characters";
+        // Min length validation
+        if ($minLength !== null && is_string($value)) {
+            if (strlen($value) < $minLength) {
+                if ($minLength === $maxLength) {
+                    return "{$label} must be exactly {$minLength} characters";
+                }
+                return "{$label} must be at least {$minLength} characters";
             }
         }
 
@@ -361,6 +549,61 @@ class DynamicFormRenderer
         }
 
         return null;
+    }
+
+    /**
+     * Resolve min/max string length from validation rules (including legacy max-only as exact).
+     *
+     * @return array{0: ?int, 1: ?int}
+     */
+    private function resolveStringLengthConstraints(array $validation): array
+    {
+        $min = isset($validation['minLength']) ? (int) $validation['minLength']
+            : (isset($validation['minlength']) ? (int) $validation['minlength'] : null);
+        $max = isset($validation['maxLength']) ? (int) $validation['maxLength']
+            : (isset($validation['maxlength']) ? (int) $validation['maxlength'] : null);
+        $mode = $validation['lengthMode'] ?? null;
+
+        if ($mode === 'exact') {
+            $len = $max ?? $min ?? 0;
+
+            return [$len > 0 ? $len : null, $len > 0 ? $len : null];
+        }
+
+        if ($mode === 'max') {
+            return [$min, $max];
+        }
+
+        if ($mode === 'range') {
+            return [$min, $max];
+        }
+
+        if ($mode === 'min') {
+            return [$min, null];
+        }
+
+        if ($min !== null && $max !== null) {
+            return [$min, $max];
+        }
+
+        // Legacy: maxLength-only from form builder meant exact character count
+        if ($max !== null && $min === null) {
+            return [$max, $max];
+        }
+
+        if ($min !== null) {
+            return [$min, null];
+        }
+
+        return [null, null];
+    }
+
+    /**
+     * Check if latitude/longitude are within valid ranges
+     */
+    private function isValidGeolocation(float $lat, float $lng): bool
+    {
+        return $lat >= -90 && $lat <= 90 && $lng >= -180 && $lng <= 180;
     }
 
     /**

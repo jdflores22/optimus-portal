@@ -1,18 +1,69 @@
 {% set fieldId = field.id %}
 {% set isRequired = field.required|default(false) %}
 {% set fieldValue = submittedData[fieldId] is defined ? submittedData[fieldId] : '' %}
+{% set maxLength = field.validation.maxLength|default(field.validation.maxlength|default(null)) %}
+{% set minLength = field.validation.minLength|default(field.validation.minlength|default(null)) %}
+{% set lengthMode = field.validation.lengthMode|default(null) %}
+{% set effectiveMin = minLength %}
+{% set effectiveMax = maxLength %}
+{% if lengthMode == 'exact' or (maxLength and not minLength and lengthMode != 'max') %}
+    {% set effectiveMin = maxLength %}
+    {% set effectiveMax = maxLength %}
+{% elseif minLength and maxLength and minLength == maxLength %}
+    {% set effectiveMin = minLength %}
+    {% set effectiveMax = maxLength %}
+{% endif %}
+{% set lengthHint = null %}
+{% if field.validation.message is not defined %}
+    {% if effectiveMin and effectiveMax and effectiveMin == effectiveMax %}
+        {% set lengthHint = 'Must be exactly ' ~ effectiveMin ~ ' characters' %}
+    {% elseif effectiveMin and effectiveMax %}
+        {% set lengthHint = 'Must be ' ~ effectiveMin ~ ' to ' ~ effectiveMax ~ ' characters' %}
+    {% elseif effectiveMax %}
+        {% set lengthHint = 'Up to ' ~ effectiveMax ~ ' characters' %}
+    {% elseif effectiveMin %}
+        {% set lengthHint = 'At least ' ~ effectiveMin ~ ' characters' %}
+    {% endif %}
+{% endif %}
 {% set fieldIcon = {
     'text': 'icon-[tabler--forms]',
     'number': 'icon-[tabler--hash]',
     'file': 'icon-[tabler--upload]',
+    'image': 'icon-[tabler--photo]',
+    'multi_file': 'icon-[tabler--files]',
+    'signature': 'icon-[tabler--signature]',
     'dropdown': 'icon-[tabler--selector]',
+    'multi_select': 'icon-[tabler--list-check]',
     'checkbox': 'icon-[tabler--checkbox]',
+    'radio': 'icon-[tabler--circle-dot]',
+    'toggle': 'icon-[tabler--toggle-right]',
+    'terms': 'icon-[tabler--file-check]',
     'textarea': 'icon-[tabler--align-left]',
     'email': 'icon-[tabler--mail]',
-    'date': 'icon-[tabler--calendar]'
+    'phone': 'icon-[tabler--phone]',
+    'url': 'icon-[tabler--link]',
+    'currency': 'icon-[tabler--currency-peso]',
+    'date': 'icon-[tabler--calendar]',
+    'geolocation': 'icon-[tabler--map-pin]',
+    'address': 'icon-[tabler--map-2]'
 }[field.type|default('text')] ?? 'icon-[tabler--forms]' %}
+{% set isFileType = field.type in ['file', 'image', 'multi_file', 'signature'] %}
 
-<div class="rounded-xl p-4 sm:p-5 {{ fieldHasError ? 'bg-error/5 ring-1 ring-error/30' : 'bg-base-200/50' }}" data-field-block>
+<div class="rounded-xl p-4 sm:p-5 {{ fieldHasError ? 'bg-error/5 ring-1 ring-error/30' : 'bg-base-200/50' }}"
+     data-field-block
+     data-field-id="{{ fieldId }}"
+     data-field-type="{{ field.type|default('text') }}"
+     data-field-label="{{ field.label }}"
+     data-field-required="{{ isRequired ? '1' : '0' }}"
+     {% if lengthMode %}data-length-mode="{{ lengthMode }}"{% endif %}
+     {% if effectiveMin %}data-min-length="{{ effectiveMin }}"{% endif %}
+     {% if effectiveMax %}data-max-length="{{ effectiveMax }}"{% endif %}
+     {% if field.validation.min is defined %}data-min="{{ field.validation.min }}"{% endif %}
+     {% if field.validation.max is defined %}data-max="{{ field.validation.max }}"{% endif %}
+     {% if field.validation.pattern is defined %}data-pattern="{{ field.validation.pattern }}"{% endif %}
+     {% if field.validation.message is defined %}data-validation-message="{{ field.validation.message }}"{% endif %}
+     {% if isFileType and field.validation.maxSize is defined %}data-max-size="{{ field.validation.maxSize }}"{% endif %}
+     {% if field.validation.showWhen is defined %}data-show-when="{{ field.validation.showWhen|json_encode|e('html_attr') }}"{% endif %}>
     <div class="flex items-start gap-3 mb-4">
         <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
             <span class="{{ fieldIcon }} size-4 text-primary"></span>
@@ -27,6 +78,8 @@
             </div>
             {% if field.validation.message is defined %}
                 <p class="text-xs text-base-content/60 mt-1">{{ field.validation.message }}</p>
+            {% elseif lengthHint %}
+                <p class="text-xs text-base-content/60 mt-1">{{ lengthHint }}</p>
             {% endif %}
         </div>
     </div>
@@ -38,7 +91,45 @@
                    id="field_{{ fieldId }}"
                    class="input input-bordered w-full {{ fieldHasError ? 'input-error' : '' }}"
                    value="{{ fieldValue }}"
+                   {% if field.placeholder|default('') %}placeholder="{{ field.placeholder }}"{% endif %}
+                   {% if effectiveMin %}minlength="{{ effectiveMin }}"{% endif %}
+                   {% if effectiveMax %}maxlength="{{ effectiveMax }}"{% endif %}
                    {{ isRequired ? 'required data-required=true' : '' }}>
+
+        {% elseif field.type == 'phone' %}
+            <input type="tel"
+                   name="{{ fieldId }}"
+                   id="field_{{ fieldId }}"
+                   class="input input-bordered w-full {{ fieldHasError ? 'input-error' : '' }}"
+                   value="{{ fieldValue }}"
+                   {% if field.placeholder|default('') %}placeholder="{{ field.placeholder }}"{% else %}placeholder="+63 9XX XXX XXXX"{% endif %}
+                   {% if effectiveMin %}minlength="{{ effectiveMin }}"{% endif %}
+                   {% if effectiveMax %}maxlength="{{ effectiveMax }}"{% endif %}
+                   {{ isRequired ? 'required data-required=true' : '' }}>
+
+        {% elseif field.type == 'url' %}
+            <input type="url"
+                   name="{{ fieldId }}"
+                   id="field_{{ fieldId }}"
+                   class="input input-bordered w-full {{ fieldHasError ? 'input-error' : '' }}"
+                   value="{{ fieldValue }}"
+                   placeholder="{{ field.placeholder|default('https://example.com') }}"
+                   {{ isRequired ? 'required data-required=true' : '' }}>
+
+        {% elseif field.type == 'currency' %}
+            <label class="input input-bordered w-full flex items-center gap-2 {{ fieldHasError ? 'input-error' : '' }}">
+                <span class="text-base-content/60">₱</span>
+                <input type="number"
+                       name="{{ fieldId }}"
+                       id="field_{{ fieldId }}"
+                       class="grow bg-transparent outline-none"
+                       value="{{ fieldValue }}"
+                       step="0.01"
+                       min="0"
+                       {{ field.validation.min is defined ? 'min="' ~ field.validation.min ~ '"' : '' }}
+                       {{ field.validation.max is defined ? 'max="' ~ field.validation.max ~ '"' : '' }}
+                       {{ isRequired ? 'required data-required=true' : '' }}>
+            </label>
 
         {% elseif field.type == 'number' %}
             <input type="number"
@@ -63,31 +154,13 @@
                       id="field_{{ fieldId }}"
                       rows="4"
                       class="textarea textarea-bordered w-full {{ fieldHasError ? 'textarea-error' : '' }}"
+                      {% if field.placeholder|default('') %}placeholder="{{ field.placeholder }}"{% endif %}
+                      {% if effectiveMin %}minlength="{{ effectiveMin }}"{% endif %}
+                      {% if effectiveMax %}maxlength="{{ effectiveMax }}"{% endif %}
                       {{ isRequired ? 'required data-required=true' : '' }}>{{ fieldValue }}</textarea>
 
-        {% elseif field.type == 'file' %}
-            <input type="file"
-                   name="{{ fieldId }}"
-                   id="field_{{ fieldId }}"
-                   class="hidden"
-                   data-file-input
-                   data-field-label="{{ field.label }}"
-                   {{ field.validation.allowedTypes is defined ? 'accept=".' ~ field.validation.allowedTypes|join(',.') ~ '"' : '' }}
-                   {{ isRequired ? 'required data-required=true' : '' }}>
-            <div class="border border-dashed border-base-content/15 rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
-                 data-file-zone="field_{{ fieldId }}"
-                 data-file-trigger="field_{{ fieldId }}">
-                <span class="icon-[tabler--cloud-upload] size-10 text-base-content/40 mx-auto"></span>
-                <p class="mt-3 text-sm font-medium" data-file-label="field_{{ fieldId }}">Click to upload or drag and drop</p>
-                <p class="text-xs text-base-content/60 mt-1">
-                    {% if field.validation.allowedTypes is defined %}
-                        Allowed: {{ field.validation.allowedTypes|join(', ')|upper }}
-                    {% else %}
-                        PDF, JPG, or PNG
-                    {% endif %}
-                </p>
-                <p class="text-sm text-success font-medium mt-2 hidden" data-file-name="field_{{ fieldId }}"></p>
-            </div>
+        {% elseif isFileType %}
+            {% include 'accreditation/_submit_file_field.html.twig' %}
 
         {% elseif field.type == 'dropdown' %}
             <select name="{{ fieldId }}"
@@ -100,6 +173,21 @@
                         <option value="{{ option_value }}" {{ (fieldValue == option_value) ? 'selected' : '' }}>
                             {{ option_label }}
                         </option>
+                    {% endfor %}
+                {% endif %}
+            </select>
+
+        {% elseif field.type == 'multi_select' %}
+            <select name="{{ fieldId }}[]"
+                    id="field_{{ fieldId }}"
+                    class="select select-bordered w-full {{ fieldHasError ? 'select-error' : '' }}"
+                    multiple
+                    size="4"
+                    {{ isRequired ? 'data-required=true' : '' }}>
+                {% if field.validation.options is defined %}
+                    {% for option_value, option_label in field.validation.options %}
+                        {% set is_selected = submittedData[fieldId] is defined and submittedData[fieldId] is iterable and option_value in submittedData[fieldId] %}
+                        <option value="{{ option_value }}" {{ is_selected ? 'selected' : '' }}>{{ option_label }}</option>
                     {% endfor %}
                 {% endif %}
             </select>
@@ -134,6 +222,107 @@
                 </label>
             {% endif %}
 
+        {% elseif field.type == 'toggle' %}
+            <label class="flex items-center justify-between gap-4 cursor-pointer rounded-lg bg-base-100 px-4 py-3">
+                <span class="text-sm">{{ field.label }}</span>
+                <input type="checkbox"
+                       name="{{ fieldId }}"
+                       id="field_{{ fieldId }}"
+                       value="1"
+                       class="toggle toggle-primary"
+                       {{ (fieldValue) ? 'checked' : '' }}
+                       {{ isRequired ? 'required data-required=true' : '' }}>
+            </label>
+
+        {% elseif field.type == 'terms' %}
+            <label class="flex items-start gap-3 cursor-pointer rounded-lg bg-base-100 px-4 py-3">
+                <input type="checkbox"
+                       name="{{ fieldId }}"
+                       id="field_{{ fieldId }}"
+                       value="1"
+                       class="checkbox checkbox-primary mt-1"
+                       {{ (fieldValue) ? 'checked' : '' }}
+                       {{ isRequired ? 'required data-required=true' : '' }}>
+                <span class="text-sm text-base-content/80">
+                    {{ field.validation.declaration|default('I agree to the terms and conditions of this application.') }}
+                </span>
+            </label>
+
+        {% elseif field.type == 'radio' %}
+            <div class="space-y-3">
+                {% if field.validation.options is defined %}
+                    {% for option_value, option_label in field.validation.options %}
+                        <label class="flex items-center gap-3 cursor-pointer rounded-lg bg-base-100 px-4 py-3">
+                            <input type="radio"
+                                   name="{{ fieldId }}"
+                                   value="{{ option_value }}"
+                                   class="radio radio-primary"
+                                   {{ (fieldValue == option_value) ? 'checked' : '' }}
+                                   {{ isRequired ? 'required data-required=true' : '' }}>
+                            <span class="text-sm">{{ option_label }}</span>
+                        </label>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+        {% elseif field.type == 'address' %}
+            {% include 'accreditation/_submit_address_field.html.twig' %}
+
+        {% elseif field.type == 'geolocation' %}
+            {% set geoValue = fieldValue is iterable ? fieldValue : {} %}
+            {% set geoLat = geoValue.latitude|default(field.validation.defaultLat|default(14.5995)) %}
+            {% set geoLng = geoValue.longitude|default(field.validation.defaultLng|default(120.9842)) %}
+            {% set geoZoom = field.validation.defaultZoom|default(13) %}
+            <div class="form-geolocation-picker space-y-3"
+                 data-field-id="{{ fieldId }}"
+                 data-default-lat="{{ geoLat }}"
+                 data-default-lng="{{ geoLng }}"
+                 data-default-zoom="{{ geoZoom }}">
+                <p class="text-xs text-base-content/60">
+                    Click the map or drag the pin to set your business location. You can also use your current GPS position.
+                </p>
+                <div id="map_{{ fieldId }}"
+                     class="geolocation-map w-full h-72 rounded-xl border border-base-content/15 overflow-hidden z-0"></div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline gap-1 geolocation-use-gps">
+                        <span class="icon-[tabler--current-location] size-4"></span>
+                        Use my location
+                    </button>
+                    <span class="text-xs text-base-content/50 geolocation-coords-display">
+                        {% if geoValue.latitude is defined and geoValue.longitude is defined %}
+                            {{ geoValue.latitude }}, {{ geoValue.longitude }}
+                        {% else %}
+                            No location selected yet
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="form-control">
+                        <label class="label py-1" for="field_{{ fieldId }}_lat">
+                            <span class="label-text text-xs font-medium">Latitude</span>
+                        </label>
+                        <input type="text"
+                               name="{{ fieldId }}[latitude]"
+                               id="field_{{ fieldId }}_lat"
+                               class="input input-bordered input-sm w-full geolocation-lat {{ fieldHasError ? 'input-error' : '' }}"
+                               value="{{ geoValue.latitude|default('') }}"
+                               readonly
+                               {{ isRequired ? 'required data-required=true' : '' }}>
+                    </div>
+                    <div class="form-control">
+                        <label class="label py-1" for="field_{{ fieldId }}_lng">
+                            <span class="label-text text-xs font-medium">Longitude</span>
+                        </label>
+                        <input type="text"
+                               name="{{ fieldId }}[longitude]"
+                               id="field_{{ fieldId }}_lng"
+                               class="input input-bordered input-sm w-full geolocation-lng {{ fieldHasError ? 'input-error' : '' }}"
+                               value="{{ geoValue.longitude|default('') }}"
+                               readonly>
+                    </div>
+                </div>
+            </div>
+
         {% else %}
             <input type="text"
                    name="{{ fieldId }}"
@@ -148,5 +337,8 @@
                 <span class="label-text-alt text-error">{{ fieldError }}</span>
             </label>
         {% endif %}
+        <label class="label py-0 field-inline-error hidden">
+            <span class="label-text-alt text-error"></span>
+        </label>
     </div>
 </div>

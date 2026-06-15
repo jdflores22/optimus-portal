@@ -198,6 +198,7 @@ class ContainerStatusService
         $validTransitions = [
             ContainerStatus::AVAILABLE_FOR_RETURN->value => [
                 ContainerStatus::PA_APPROVED->value,
+                ContainerStatus::IN_TRANSIT->value,
                 ContainerStatus::ALERT->value,
                 ContainerStatus::MAINTENANCE->value
             ],
