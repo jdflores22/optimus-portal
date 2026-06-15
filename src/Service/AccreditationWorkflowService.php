@@ -94,6 +94,7 @@ class AccreditationWorkflowService
                 if ($status === AccreditationStatus::COMPLIANCE_REQUIRED) {
                     $submissionData['_resubmitted_after_compliance'] = true;
                 }
+                unset($submissionData[ComplianceRequestService::STORAGE_KEY]);
                 $existingSubmission->setSubmittedData($submissionData);
                 $existingSubmission->setStatus(AccreditationStatus::PENDING);
                 $existingSubmission->setEvaluator(null);
@@ -191,18 +192,22 @@ class AccreditationWorkflowService
      * @param int $submissionId The submission ID
      * @param User $evaluator The evaluator
      * @param AccreditationStatus $status The new status
-     * @param string|null $reason Optional reason for denial/rejection
+     * @param string|null $reason Optional reason for denial/rejection/compliance
+     * @param list<string> $complianceFieldIds Fields that must be corrected (compliance only)
+     * @param array<string, string> $complianceFieldNotes Per-field notes for applicant
      * @throws \InvalidArgumentException If submission not found or invalid status
      */
     public function evaluateApplication(
         int $submissionId,
         User $evaluator,
         AccreditationStatus $status,
-        ?string $reason = null
+        ?string $reason = null,
+        array $complianceFieldIds = [],
+        array $complianceFieldNotes = []
     ): void {
         $submission = null;
         
-        $this->dbTransactionService->executeInTransactionWithRetry(function() use ($submissionId, $evaluator, $status, $reason, &$submission) {
+        $this->dbTransactionService->executeInTransactionWithRetry(function() use ($submissionId, $evaluator, $status, $reason, $complianceFieldIds, $complianceFieldNotes, &$submission) {
             $submission = $this->entityManager->getRepository(AccreditationSubmission::class)
                 ->find($submissionId);
 
@@ -241,6 +246,23 @@ class AccreditationWorkflowService
                 $submission->setDenialReason($reason);
             }
 
+            if ($status === AccreditationStatus::COMPLIANCE_REQUIRED) {
+                $complianceRequest = ComplianceRequestService::build(
+                    $complianceFieldIds,
+                    $complianceFieldNotes,
+                    $reason
+                );
+                $submittedData = ComplianceRequestService::applyToSubmissionData(
+                    $submission->getSubmittedData(),
+                    $complianceRequest
+                );
+                $submission->setSubmittedData($submittedData);
+
+                if (!$reason && $complianceFieldIds !== []) {
+                    $submission->setDenialReason('Please correct the selected application fields.');
+                }
+            }
+
             // Flush will be handled by the transaction service
             $this->entityManager->flush();
 
@@ -255,7 +277,8 @@ class AccreditationWorkflowService
                         'from' => AccreditationStatus::PENDING->value,
                         'to' => $status->value
                     ],
-                    'reason' => $reason
+                    'reason' => $reason,
+                    'compliance_field_ids' => $complianceFieldIds,
                 ]
             );
         }, "evaluate_application_{$submissionId}");
@@ -263,11 +286,16 @@ class AccreditationWorkflowService
         // Send notification to applicant (asynchronously to avoid blocking the request)
         if ($submission) {
             try {
+                $complianceFields = $status === AccreditationStatus::COMPLIANCE_REQUIRED
+                    ? ComplianceRequestService::resolveFields($submission, $submission->getFormConfig())
+                    : [];
+
                 // Set a short timeout for email sending to avoid blocking the web request
                 $this->notificationService->sendAccreditationStatusChange(
                     $submission->getApplicant(),
                     $status,
-                    $reason
+                    $reason,
+                    $complianceFields
                 );
             } catch (\Exception $e) {
                 // Log notification failure but don't fail the evaluation

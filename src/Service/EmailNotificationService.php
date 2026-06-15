@@ -594,7 +594,7 @@ class EmailNotificationService
     /**
      * Send accreditation status change email to applicant
      */
-    public function sendAccreditationStatusChange(User $user, AccreditationStatus $status, ?string $reason = null): void
+    public function sendAccreditationStatusChange(User $user, AccreditationStatus $status, ?string $reason = null, array $complianceFields = []): void
     {
         [$template, $subject] = match ($status) {
             AccreditationStatus::APPROVED => ['emails/accreditation_approved.html.twig', 'Accreditation Approved - OPTIMUS Portal'],
@@ -609,6 +609,7 @@ class EmailNotificationService
             'user' => $user,
             'status' => $status,
             'reason' => $reason,
+            'complianceFields' => $complianceFields,
             'businessName' => $businessName,
             'loginUrl' => $this->urlGenerator->generate('app_login', [], UrlGeneratorInterface::ABSOLUTE_URL),
             'accreditationUrl' => $this->urlGenerator->generate('accreditation_index', [], UrlGeneratorInterface::ABSOLUTE_URL),

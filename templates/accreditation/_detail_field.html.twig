@@ -1,0 +1,244 @@
+{% set fieldId = field.id %}
+{% set fieldType = field.type|default('text') %}
+{% set fieldValue = submittedData[fieldId]|default(null) %}
+{% set uploadedFiles = submittedData._files|default({}) %}
+{% set fileId = uploadedFiles[fieldId]|default(null) %}
+{% set isFileType = fieldType in ['file', 'image', 'multi_file', 'signature'] %}
+
+{% if fieldType == 'section_heading' %}
+    {% set subtitle = field.validation.subtitle|default('') %}
+    <div class="col-span-full pt-2">
+        <h3 class="text-lg font-bold text-base-content">{{ field.label }}</h3>
+        {% if subtitle %}
+            <p class="text-sm text-base-content/60 mt-1">{{ subtitle }}</p>
+        {% endif %}
+        <div class="border-b border-base-content/15 mt-3"></div>
+    </div>
+
+{% elseif fieldType == 'divider' %}
+    <div class="col-span-full py-1">
+        {% if field.label|default('') %}
+            <div class="divider my-2 text-base-content/50 text-sm">{{ field.label }}</div>
+        {% else %}
+            <hr class="border-base-content/15 my-4">
+        {% endif %}
+    </div>
+
+{% else %}
+    <div class="application-field-card rounded-xl p-4 sm:p-5 {{ isFileType ? 'md:col-span-2' : '' }} {{ complianceFlagged and complianceFocusMode|default(false) ? 'bg-warning/5 ring-2 ring-warning/30 border-l-4 border-warning' : (complianceFlagged ? 'bg-warning/5 ring-1 ring-warning/30' : 'bg-base-200/50') }}"
+         {% if complianceFlagged %}id="compliance-detail-{{ fieldId }}"{% endif %}
+         data-field-id="{{ fieldId }}">
+        <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-2 flex items-center gap-2 flex-wrap">
+            {{ field.label }}
+            {% if complianceFlagged %}
+                <span class="badge badge-warning badge-sm">Needs correction</span>
+            {% endif %}
+        </p>
+
+        {% if complianceFlagged and complianceNote|default('') %}
+            <div class="mb-3 rounded-lg bg-warning/10 border border-warning/20 px-3 py-2">
+                <p class="text-xs font-medium text-warning flex items-start gap-1.5">
+                    <span class="icon-[tabler--message-circle] size-3.5 shrink-0 mt-0.5"></span>
+                    <span>{{ complianceNote }}</span>
+                </p>
+            </div>
+        {% endif %}
+
+        {% if isFileType %}
+            {% if fieldType == 'multi_file' and fileId is iterable %}
+                <div class="space-y-2">
+                    {% for singleFileId in fileId %}
+                        <div class="flex items-center justify-between gap-3 p-3 bg-base-100 rounded-lg">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <span class="icon-[tabler--file-text] size-5 text-primary shrink-0"></span>
+                                <span class="text-sm font-medium truncate">{{ field.label }} ({{ loop.index }})</span>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                            <button type="button"
+                                    class="view-document-btn btn btn-primary btn-sm gap-1 shrink-0"
+                                    data-file-id="{{ singleFileId }}"
+                                    data-document-name="{{ field.label }}">
+                                <span class="icon-[tabler--eye] size-4"></span>
+                                View
+                            </button>
+                            {% if showFileDownload|default(false) %}
+                                <a href="{{ path('accreditation_file_download', {fileId: singleFileId}) }}"
+                                   class="btn btn-ghost btn-sm gap-1 shrink-0"
+                                   target="_blank"
+                                   rel="noopener">
+                                    <span class="icon-[tabler--download] size-4"></span>
+                                    Download
+                                </a>
+                            {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% elseif fileId %}
+                <div class="flex items-center justify-between gap-3 p-3 bg-base-100 rounded-lg">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <span class="icon-[tabler--file-text] size-5 text-primary shrink-0"></span>
+                        <span class="text-sm font-medium truncate">{{ field.label }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button type="button"
+                                class="view-document-btn btn btn-primary btn-sm gap-1"
+                                data-file-id="{{ fileId }}"
+                                data-document-name="{{ field.label }}">
+                            <span class="icon-[tabler--eye] size-4"></span>
+                            View
+                        </button>
+                        {% if showFileDownload|default(false) %}
+                            <a href="{{ path('accreditation_file_download', {fileId: fileId}) }}"
+                               class="btn btn-ghost btn-sm gap-1"
+                               target="_blank"
+                               rel="noopener">
+                                <span class="icon-[tabler--download] size-4"></span>
+                                Download
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <p class="text-sm text-base-content/50 italic">No file uploaded</p>
+            {% endif %}
+
+        {% elseif fieldType == 'address' and fieldValue is iterable %}
+            {% set addr = fieldValue %}
+            <div class="text-sm text-base-content space-y-0.5">
+                {% if addr.street|default('') %}<p>{{ addr.street }}</p>{% endif %}
+                <p>
+                    {%- if addr.barangay_name|default('') %}{{ addr.barangay_name }}{% endif -%}
+                    {%- if addr.city_name|default('') %}{% if addr.barangay_name|default('') %}, {% endif %}{{ addr.city_name }}{% endif -%}
+                    {%- if addr.province_name|default('') %}{% if addr.city_name|default('') or addr.barangay_name|default('') %}, {% endif %}{{ addr.province_name }}{% endif -%}
+                    {%- if addr.region_name|default('') %}{% if addr.province_name|default('') or addr.city_name|default('') or addr.barangay_name|default('') %}, {% endif %}{{ addr.region_name }}{% endif -%}
+                </p>
+                {% if not addr.street|default('') and not addr.barangay_name|default('') and not addr.city_name|default('') and not addr.province_name|default('') and not addr.region_name|default('') %}
+                    <p class="text-base-content/50 italic">Not provided</p>
+                {% endif %}
+            </div>
+
+        {% elseif fieldType == 'geolocation' and fieldValue is iterable %}
+            {% set lat = fieldValue.latitude|default('') %}
+            {% set lng = fieldValue.longitude|default('') %}
+            {% if lat and lng %}
+                <p class="text-sm text-base-content font-medium">{{ lat }}, {{ lng }}</p>
+                <a href="https://www.google.com/maps?q={{ lat }},{{ lng }}"
+                   target="_blank"
+                   rel="noopener"
+                   class="btn btn-ghost btn-xs gap-1 mt-2">
+                    <span class="icon-[tabler--map-pin] size-3.5"></span>
+                    Open in Maps
+                </a>
+            {% else %}
+                <p class="text-sm text-base-content/50 italic">No location provided</p>
+            {% endif %}
+
+        {% elseif fieldType == 'checkbox' %}
+            {% if field.validation.options is defined and fieldValue is iterable %}
+                <div class="flex flex-wrap gap-2">
+                    {% for option_value, option_label in field.validation.options %}
+                        {% if option_value in fieldValue %}
+                            <span class="badge badge-primary badge-soft">{{ option_label }}</span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% elseif fieldValue == '1' or fieldValue == 1 or fieldValue == true %}
+                <span class="badge badge-success badge-soft gap-1">
+                    <span class="icon-[tabler--check] size-3.5"></span>
+                    Yes
+                </span>
+            {% else %}
+                <span class="badge badge-ghost badge-soft gap-1">
+                    <span class="icon-[tabler--x] size-3.5"></span>
+                    No
+                </span>
+            {% endif %}
+
+        {% elseif fieldType in ['toggle', 'terms'] %}
+            {% if fieldValue == '1' or fieldValue == 1 or fieldValue == true %}
+                <span class="badge badge-success badge-soft gap-1">
+                    <span class="icon-[tabler--check] size-3.5"></span>
+                    Yes
+                </span>
+            {% else %}
+                <span class="badge badge-ghost badge-soft gap-1">
+                    <span class="icon-[tabler--x] size-3.5"></span>
+                    No
+                </span>
+            {% endif %}
+
+        {% elseif fieldType == 'multi_select' and fieldValue is iterable %}
+            <div class="flex flex-wrap gap-2">
+                {% for item in fieldValue %}
+                    <span class="badge badge-primary badge-soft">{{ item }}</span>
+                {% endfor %}
+            </div>
+
+        {% elseif fieldType == 'dropdown' or fieldType == 'radio' %}
+            {% set displayValue = fieldValue %}
+            {% if field.validation.options is defined %}
+                {% for option_value, option_label in field.validation.options %}
+                    {% if option_value == fieldValue %}
+                        {% set displayValue = option_label %}
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+            <p class="text-sm text-base-content font-medium">{{ displayValue ?: 'Not provided' }}</p>
+
+        {% elseif fieldType == 'currency' and fieldValue is not empty %}
+            <p class="text-sm text-base-content font-medium">₱{{ fieldValue|number_format(2, '.', ',') }}</p>
+
+        {% elseif fieldType == 'email' and fieldValue %}
+            <a href="mailto:{{ fieldValue }}" class="text-sm link link-primary">{{ fieldValue }}</a>
+
+        {% elseif fieldType == 'phone' and fieldValue %}
+            <a href="tel:{{ fieldValue }}" class="text-sm link link-primary">{{ fieldValue }}</a>
+
+        {% elseif fieldType == 'url' and fieldValue %}
+            <a href="{{ fieldValue }}" target="_blank" rel="noopener" class="text-sm link link-primary inline-flex items-center gap-1">
+                {{ fieldValue }}
+                <span class="icon-[tabler--external-link] size-3"></span>
+            </a>
+
+        {% elseif fieldType == 'date' and fieldValue %}
+            <p class="text-sm text-base-content font-medium">{{ fieldValue|date('F j, Y') }}</p>
+
+        {% elseif fieldValue is iterable and fieldValue is not same as(fieldValue|join('')) %}
+            <div class="flex flex-wrap gap-2">
+                {% for item in fieldValue %}
+                    <span class="badge badge-ghost badge-sm">{{ item }}</span>
+                {% endfor %}
+            </div>
+
+        {% elseif fieldValue is not empty %}
+            {% if fieldValue|length > 120 %}
+                <div class="text-sm text-base-content bg-base-100 rounded-lg p-3 whitespace-pre-wrap">{{ fieldValue }}</div>
+            {% else %}
+                <p class="text-sm text-base-content font-medium">{{ fieldValue }}</p>
+            {% endif %}
+
+        {% else %}
+            <p class="text-sm text-base-content/50 italic">Not provided</p>
+        {% endif %}
+
+        {% if showCompliancePicker|default(false) %}
+            <div class="compliance-field-controls hidden mt-4 pt-3 border-t border-warning/20">
+                <label class="flex items-center gap-2.5 cursor-pointer">
+                    <input type="checkbox"
+                           name="compliance_fields[]"
+                           value="{{ fieldId }}"
+                           form="evaluationForm"
+                           class="checkbox checkbox-warning checkbox-sm compliance-field-checkbox">
+                    <span class="text-sm font-medium text-warning">Requires correction</span>
+                </label>
+                <input type="text"
+                       name="compliance_field_notes[{{ fieldId }}]"
+                       form="evaluationForm"
+                       class="compliance-field-note input input-bordered input-sm w-full mt-2"
+                       placeholder="Optional note for applicant (e.g. upload clearer scan)"
+                       disabled>
+            </div>
+        {% endif %}
+    </div>
+{% endif %}

@@ -30,7 +30,8 @@ class BarangayRepository extends ServiceEntityRepository
     public function findByCityId(int $cityId): array
     {
         return $this->createQueryBuilder('b')
-            ->where('b.city = :cityId')
+            ->innerJoin('b.city', 'c')
+            ->where('c.id = :cityId')
             ->setParameter('cityId', $cityId)
             ->orderBy('b.name', 'ASC')
             ->getQuery()

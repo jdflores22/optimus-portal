@@ -30,6 +30,25 @@
         hiddenInput.value = select.selectedOptions[0]?.textContent?.trim() || '';
     }
 
+    function dispatchAddressChange(container) {
+        container.dispatchEvent(new CustomEvent('addresschange', { bubbles: true }));
+    }
+
+    function fetchJson(url) {
+        return fetch(url, {
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        }).then(function (response) {
+            if (!response.ok) {
+                throw new Error('Request failed (' + response.status + ')');
+            }
+            return response.json();
+        });
+    }
+
     function initPicker(container) {
         if (!container || container.dataset.addressInitialized === 'true') {
             return;
@@ -39,7 +58,6 @@
         const provinceSelect = container.querySelector('.address-province');
         const citySelect = container.querySelector('.address-city');
         const barangaySelect = container.querySelector('.address-barangay');
-        const streetInput = container.querySelector('.address-street');
 
         if (!regionSelect || !provinceSelect || !citySelect || !barangaySelect) {
             return;
@@ -55,11 +73,81 @@
         setSelectLoading(citySelect, 'Select province first');
         setSelectLoading(barangaySelect, 'Select city first');
 
-        fetch('/api/locations/regions')
-            .then(function (r) { return r.json(); })
+        function loadProvinces(regionId, select, selectedProvince, onLoaded) {
+            if (!regionId) {
+                setSelectLoading(select, 'Select region first');
+                return;
+            }
+
+            setSelectLoading(select, 'Loading provinces...');
+            fetchJson('/api/locations/provinces/' + encodeURIComponent(regionId))
+                .then(function (data) {
+                    if (!data.success || !data.provinces) {
+                        setSelectLoading(select, 'No provinces found');
+                        return;
+                    }
+                    fillSelect(select, data.provinces, 'Select province', selectedProvince || '');
+                    syncHiddenName(select, provinceNameInput);
+                    if (typeof onLoaded === 'function') {
+                        onLoaded();
+                    }
+                })
+                .catch(function () {
+                    setSelectLoading(select, 'Error loading provinces');
+                });
+        }
+
+        function loadCities(provinceId, select, selectedCity, onLoaded) {
+            if (!provinceId) {
+                setSelectLoading(select, 'Select province first');
+                return;
+            }
+
+            setSelectLoading(select, 'Loading cities...');
+            fetchJson('/api/locations/cities/by-province/' + encodeURIComponent(provinceId))
+                .then(function (data) {
+                    if (!data.success || !data.cities) {
+                        setSelectLoading(select, 'No cities found');
+                        return;
+                    }
+                    fillSelect(select, data.cities, 'Select city / municipality', selectedCity || '');
+                    syncHiddenName(select, cityNameInput);
+                    if (typeof onLoaded === 'function') {
+                        onLoaded();
+                    }
+                })
+                .catch(function () {
+                    setSelectLoading(select, 'Error loading cities');
+                });
+        }
+
+        function loadBarangays(cityId, select, selectedBarangay) {
+            if (!cityId) {
+                setSelectLoading(select, 'Select city first');
+                return;
+            }
+
+            setSelectLoading(select, 'Loading barangays...');
+            fetchJson('/api/locations/barangays/' + encodeURIComponent(cityId))
+                .then(function (data) {
+                    if (!data.success || !data.barangays || data.barangays.length === 0) {
+                        setSelectLoading(select, 'No barangays found');
+                        return;
+                    }
+                    fillSelect(select, data.barangays, 'Select barangay', selectedBarangay || '');
+                    syncHiddenName(select, barangayNameInput);
+                    dispatchAddressChange(container);
+                })
+                .catch(function () {
+                    setSelectLoading(select, 'Error loading barangays');
+                });
+        }
+
+        fetchJson('/api/locations/regions')
             .then(function (data) {
                 if (!data.success || !data.regions) {
                     setSelectLoading(regionSelect, 'Unable to load regions');
+                    container.dataset.addressInitialized = 'false';
                     return;
                 }
 
@@ -85,6 +173,7 @@
             })
             .catch(function () {
                 setSelectLoading(regionSelect, 'Error loading regions');
+                container.dataset.addressInitialized = 'false';
             });
 
         regionSelect.addEventListener('change', function () {
@@ -98,6 +187,7 @@
                 if (provinceNameInput) provinceNameInput.value = '';
                 if (cityNameInput) cityNameInput.value = '';
                 if (barangayNameInput) barangayNameInput.value = '';
+                dispatchAddressChange(container);
                 return;
             }
 
@@ -107,6 +197,7 @@
             if (provinceNameInput) provinceNameInput.value = '';
             if (cityNameInput) cityNameInput.value = '';
             if (barangayNameInput) barangayNameInput.value = '';
+            dispatchAddressChange(container);
         });
 
         provinceSelect.addEventListener('change', function () {
@@ -118,6 +209,7 @@
                 setSelectLoading(barangaySelect, 'Select city first');
                 if (cityNameInput) cityNameInput.value = '';
                 if (barangayNameInput) barangayNameInput.value = '';
+                dispatchAddressChange(container);
                 return;
             }
 
@@ -125,6 +217,7 @@
             setSelectLoading(barangaySelect, 'Select city first');
             if (cityNameInput) cityNameInput.value = '';
             if (barangayNameInput) barangayNameInput.value = '';
+            dispatchAddressChange(container);
         });
 
         citySelect.addEventListener('change', function () {
@@ -134,72 +227,19 @@
             if (!cityId) {
                 setSelectLoading(barangaySelect, 'Select city first');
                 if (barangayNameInput) barangayNameInput.value = '';
+                dispatchAddressChange(container);
                 return;
             }
 
+            if (barangayNameInput) barangayNameInput.value = '';
             loadBarangays(cityId, barangaySelect);
+            dispatchAddressChange(container);
         });
 
         barangaySelect.addEventListener('change', function () {
             syncHiddenName(barangaySelect, barangayNameInput);
+            dispatchAddressChange(container);
         });
-
-        function loadProvinces(regionId, select, selectedProvince, onLoaded) {
-            setSelectLoading(select, 'Loading provinces...');
-            fetch('/api/locations/provinces/' + regionId)
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    if (!data.success || !data.provinces) {
-                        setSelectLoading(select, 'No provinces found');
-                        return;
-                    }
-                    fillSelect(select, data.provinces, 'Select province', selectedProvince || '');
-                    syncHiddenName(select, provinceNameInput);
-                    if (typeof onLoaded === 'function') {
-                        onLoaded();
-                    }
-                })
-                .catch(function () {
-                    setSelectLoading(select, 'Error loading provinces');
-                });
-        }
-
-        function loadCities(provinceId, select, selectedCity, onLoaded) {
-            setSelectLoading(select, 'Loading cities...');
-            fetch('/api/locations/cities/by-province/' + provinceId)
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    if (!data.success || !data.cities) {
-                        setSelectLoading(select, 'No cities found');
-                        return;
-                    }
-                    fillSelect(select, data.cities, 'Select city / municipality', selectedCity || '');
-                    syncHiddenName(select, cityNameInput);
-                    if (typeof onLoaded === 'function') {
-                        onLoaded();
-                    }
-                })
-                .catch(function () {
-                    setSelectLoading(select, 'Error loading cities');
-                });
-        }
-
-        function loadBarangays(cityId, select, selectedBarangay) {
-            setSelectLoading(select, 'Loading barangays...');
-            fetch('/api/locations/barangays/' + cityId)
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    if (!data.success || !data.barangays || data.barangays.length === 0) {
-                        setSelectLoading(select, 'No barangays found');
-                        return;
-                    }
-                    fillSelect(select, data.barangays, 'Select barangay', selectedBarangay || '');
-                    syncHiddenName(select, barangayNameInput);
-                })
-                .catch(function () {
-                    setSelectLoading(select, 'Error loading barangays');
-                });
-        }
 
         container.dataset.addressInitialized = 'true';
     }
@@ -208,9 +248,15 @@
         (root || document).querySelectorAll('.form-address-picker').forEach(initPicker);
     }
 
-    window.FormAddressPicker = { initAll: initAll, initPicker: initPicker };
+    function resetAll(root) {
+        (root || document).querySelectorAll('.form-address-picker').forEach(function (container) {
+            delete container.dataset.addressInitialized;
+        });
+    }
 
-    document.addEventListener('DOMContentLoaded', function () {
-        initAll(document);
-    });
+    window.FormAddressPicker = {
+        initAll: initAll,
+        initPicker: initPicker,
+        resetAll: resetAll,
+    };
 })();

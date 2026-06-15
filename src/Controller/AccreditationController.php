@@ -11,11 +11,13 @@ use App\Entity\Enum\UserRole;
 use App\Form\FormFieldTypes;
 use App\Service\AccreditationWorkflowService;
 use App\Service\BrokerRelationshipService;
+use App\Service\ComplianceRequestService;
 use App\Service\DynamicFormRenderer;
 use App\Service\FileService;
 use App\Service\FormBuilderService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -73,7 +75,10 @@ class AccreditationController extends AbstractController
             $shippingLineData[] = [
                 'entity' => $shippingLine,
                 'submission' => $submission,
-                'status' => $status
+                'status' => $status,
+                'complianceFields' => $submission && $submission->getStatus() === AccreditationStatus::COMPLIANCE_REQUIRED
+                    ? ComplianceRequestService::resolveFields($submission, $submission->getFormConfig())
+                    : [],
             ];
         }
 
@@ -101,7 +106,10 @@ class AccreditationController extends AbstractController
 
         return $this->render('accreditation/detail.html.twig', [
             'submission' => $submission,
-            'user' => $user
+            'user' => $user,
+            'complianceFieldsToCorrect' => $submission->getStatus() === AccreditationStatus::COMPLIANCE_REQUIRED
+                ? ComplianceRequestService::resolveFields($submission, $submission->getFormConfig())
+                : [],
         ]);
     }
 
@@ -158,6 +166,8 @@ class AccreditationController extends AbstractController
             }
 
             $formData = $request->request->all();
+            unset($formData['_csrf_token'], $formData['_token']);
+            $formData = $this->mergeRetainedComplianceFormData($formData, $existingSubmission);
             $uploadedFiles = $request->files->all();
 
             // Process file uploads
@@ -183,15 +193,19 @@ class AccreditationController extends AbstractController
                         $processedFiles[$fieldName] = $storedFile->getFileId();
                     } catch (\Exception $e) {
                         $this->addFlash('error', 'File upload failed: ' . $e->getMessage());
-                        return $this->render('accreditation/submit.html.twig', [
-                            'formConfig' => $formConfig,
-                            'shippingLine' => $shippingLine,
-                            'errors' => ['file_upload' => $e->getMessage()],
-                            'submittedData' => $formData
-                        ]);
+                        return $this->render('accreditation/submit.html.twig', $this->submitViewParams(
+                            $formConfig,
+                            $shippingLine,
+                            $existingSubmission,
+                            ['file_upload' => $e->getMessage()],
+                            $formData
+                        ));
                     }
                 }
             }
+
+            $newlyUploadedFieldIds = array_keys($processedFiles);
+            $processedFiles = $this->mergeRetainedComplianceFiles($processedFiles, $existingSubmission);
 
             $formFields = $formConfig->getFields()['fields'] ?? [];
             $validationResult = $this->formRenderer->validateSubmission($formConfig, $formData);
@@ -218,7 +232,14 @@ class AccreditationController extends AbstractController
                         $files = $files ? [$files] : [];
                     }
                     if ($isRequired && !isset($processedFiles[$fieldId])) {
-                        $errors[$fieldId] = $fieldLabel . ' is required';
+                        $uploadError = null;
+                        foreach ($files as $uploaded) {
+                            $uploadError = $this->describeUploadError($uploaded);
+                            if ($uploadError !== null) {
+                                break;
+                            }
+                        }
+                        $errors[$fieldId] = $uploadError ?? ($fieldLabel . ' is required');
                         continue;
                     }
                     foreach ($files as $uploaded) {
@@ -238,7 +259,8 @@ class AccreditationController extends AbstractController
                 $file = $uploadedFiles[$fieldId] ?? null;
 
                 if ($isRequired && !isset($processedFiles[$fieldId])) {
-                    $errors[$fieldId] = $fieldLabel . ' is required';
+                    $uploadError = $this->describeUploadError($uploadedFiles[$fieldId] ?? null);
+                    $errors[$fieldId] = $uploadError ?? ($fieldLabel . ' is required');
                     continue;
                 }
 
@@ -253,38 +275,63 @@ class AccreditationController extends AbstractController
                 }
             }
 
+            if ($existingSubmission && $existingSubmission->getStatus() === AccreditationStatus::COMPLIANCE_REQUIRED) {
+                $errors = array_merge(
+                    $errors,
+                    ComplianceRequestService::validateCorrections(
+                        $existingSubmission,
+                        $formConfig,
+                        $formData,
+                        $processedFiles,
+                        $newlyUploadedFieldIds
+                    )
+                );
+            }
+
             if (count($errors) > 0) {
-                return $this->render('accreditation/submit.html.twig', [
-                    'formConfig' => $formConfig,
-                    'shippingLine' => $shippingLine,
-                    'errors' => $errors,
-                    'submittedData' => $formData,
-                ]);
+                return $this->render('accreditation/submit.html.twig', $this->submitViewParams(
+                    $formConfig,
+                    $shippingLine,
+                    $existingSubmission,
+                    $errors,
+                    $formData
+                ));
             }
 
             try {
-                // Submit the accreditation with files and shipping line
+                $wasComplianceResubmit = $existingSubmission
+                    && $existingSubmission->getStatus() === AccreditationStatus::COMPLIANCE_REQUIRED;
+
                 $submission = $this->accreditationService->submitAccreditation($user, $formData, $processedFiles, $shippingLine);
 
-                $this->addFlash('success', 'Your accreditation application for ' . $shippingLine->getBrandName() . ' has been submitted successfully!');
+                $this->addFlash(
+                    'success',
+                    $wasComplianceResubmit
+                        ? 'Your compliance update for ' . $shippingLine->getBrandName() . ' has been resubmitted and is back under review.'
+                        : 'Your accreditation application for ' . $shippingLine->getBrandName() . ' has been submitted successfully!'
+                );
                 return $this->redirectToRoute('accreditation_index');
             } catch (\Exception $e) {
                 $this->addFlash('error', 'Failed to submit accreditation: ' . $e->getMessage());
-                return $this->render('accreditation/submit.html.twig', [
-                    'formConfig' => $formConfig,
-                    'shippingLine' => $shippingLine,
-                    'errors' => [],
-                    'submittedData' => $formData,
-                ]);
+                return $this->render('accreditation/submit.html.twig', $this->submitViewParams(
+                    $formConfig,
+                    $shippingLine,
+                    $existingSubmission,
+                    [],
+                    $formData
+                ));
             }
         }
 
-        return $this->render('accreditation/submit.html.twig', [
-            'formConfig' => $formConfig,
-            'shippingLine' => $shippingLine,
-            'errors' => [],
-            'submittedData' => []
-        ]);
+        $prefillData = $this->buildCompliancePrefillData($existingSubmission);
+
+        return $this->render('accreditation/submit.html.twig', $this->submitViewParams(
+            $formConfig,
+            $shippingLine,
+            $existingSubmission,
+            [],
+            $prefillData
+        ));
     }
 
     #[Route('/broker/select', name: 'accreditation_broker_select', methods: ['GET', 'POST'])]
@@ -462,5 +509,116 @@ class AccreditationController extends AbstractController
             error_log('File download error: ' . $e->getMessage() . ' for fileId: ' . $fileId . ', userId: ' . $user->getId());
             throw $this->createNotFoundException('File not found: ' . $e->getMessage());
         }
+    }
+
+    private function describeUploadError(mixed $file): ?string
+    {
+        if (!$file instanceof UploadedFile || $file->isValid()) {
+            return null;
+        }
+
+        return 'Upload failed: ' . $file->getErrorMessage();
+    }
+
+    /**
+     * @param array<string, mixed> $errors
+     * @param array<string, mixed> $submittedData
+     * @return array<string, mixed>
+     */
+    private function submitViewParams(
+        $formConfig,
+        $shippingLine,
+        ?\App\Entity\AccreditationSubmission $existingSubmission,
+        array $errors,
+        array $submittedData
+    ): array {
+        return [
+            'formConfig' => $formConfig,
+            'shippingLine' => $shippingLine,
+            'errors' => $errors,
+            'submittedData' => $submittedData,
+            'complianceResubmit' => $this->buildComplianceResubmitContext($existingSubmission),
+        ];
+    }
+
+    /**
+     * @return array{active: bool, feedback?: ?string, submissionId?: int, previousFiles?: array<string, mixed>, evaluatedAt?: \DateTimeInterface}
+     */
+    private function buildComplianceResubmitContext(?\App\Entity\AccreditationSubmission $existingSubmission): array
+    {
+        if (!$existingSubmission || $existingSubmission->getStatus() !== AccreditationStatus::COMPLIANCE_REQUIRED) {
+            return ['active' => false];
+        }
+
+        $submittedData = $existingSubmission->getSubmittedData() ?? [];
+        $request = ComplianceRequestService::fromSubmission($existingSubmission);
+
+        return [
+            'active' => true,
+            'feedback' => $existingSubmission->getDenialReason(),
+            'submissionId' => $existingSubmission->getId(),
+            'previousFiles' => $submittedData['_files'] ?? [],
+            'evaluatedAt' => $existingSubmission->getEvaluatedAt(),
+            'fieldIds' => ComplianceRequestService::fieldIds($existingSubmission),
+            'fieldNotes' => $request['field_notes'] ?? [],
+            'fieldsToCorrect' => ComplianceRequestService::resolveFields(
+                $existingSubmission,
+                $existingSubmission->getFormConfig()
+            ),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildCompliancePrefillData(?\App\Entity\AccreditationSubmission $existingSubmission): array
+    {
+        if (!$existingSubmission || $existingSubmission->getStatus() !== AccreditationStatus::COMPLIANCE_REQUIRED) {
+            return [];
+        }
+
+        return ComplianceRequestService::stripInternalKeys($existingSubmission->getSubmittedData() ?? []);
+    }
+
+    /**
+     * @param array<string, mixed> $processedFiles
+     * @return array<string, mixed>
+     */
+    private function mergeRetainedComplianceFiles(array $processedFiles, ?\App\Entity\AccreditationSubmission $existingSubmission): array
+    {
+        if (!$existingSubmission || $existingSubmission->getStatus() !== AccreditationStatus::COMPLIANCE_REQUIRED) {
+            return $processedFiles;
+        }
+
+        $complianceFieldIds = ComplianceRequestService::fieldIds($existingSubmission);
+        $retained = $existingSubmission->getSubmittedData()['_files'] ?? [];
+        foreach ($retained as $fieldName => $fileId) {
+            if (!isset($processedFiles[$fieldName]) && !in_array($fieldName, $complianceFieldIds, true)) {
+                $processedFiles[$fieldName] = $fileId;
+            }
+        }
+
+        return $processedFiles;
+    }
+
+    /**
+     * @param array<string, mixed> $formData
+     * @return array<string, mixed>
+     */
+    private function mergeRetainedComplianceFormData(array $formData, ?\App\Entity\AccreditationSubmission $existingSubmission): array
+    {
+        if (!$existingSubmission || $existingSubmission->getStatus() !== AccreditationStatus::COMPLIANCE_REQUIRED) {
+            return $formData;
+        }
+
+        $complianceFieldIds = ComplianceRequestService::fieldIds($existingSubmission);
+        $prefill = ComplianceRequestService::stripInternalKeys($existingSubmission->getSubmittedData() ?? []);
+        foreach ($prefill as $key => $value) {
+            if (!in_array($key, $complianceFieldIds, true)) {
+                $formData[$key] = $value;
+            }
+        }
+
+        return $formData;
     }
 }

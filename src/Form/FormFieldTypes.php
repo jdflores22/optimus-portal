@@ -28,6 +28,8 @@ final class FormFieldTypes
         'geolocation',
         'address',
         'signature',
+        'section_heading',
+        'divider',
     ];
 
     /** @return array<string, array<string, array{icon: string, name: string, preset?: array<string, mixed>}>> */
@@ -72,7 +74,18 @@ final class FormFieldTypes
                 'geolocation' => ['icon' => 'icon-[tabler--map-pin]', 'name' => 'Geotag Location'],
                 'address' => ['icon' => 'icon-[tabler--map-2]', 'name' => 'Address Picker'],
             ],
+            'Layout' => [
+                'section_heading' => ['icon' => 'icon-[tabler--heading]', 'name' => 'Section Heading', 'preset' => [
+                    'validation' => ['subtitle' => ''],
+                ]],
+                'divider' => ['icon' => 'icon-[tabler--separator]', 'name' => 'Divider'],
+            ],
         ];
+    }
+
+    public static function isLayoutType(string $type): bool
+    {
+        return in_array($type, ['section_heading', 'divider'], true);
     }
 
     public static function isFileType(string $type): bool

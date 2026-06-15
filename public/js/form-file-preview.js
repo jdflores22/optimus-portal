@@ -8,12 +8,26 @@
         return file && (file.type.startsWith('image/') || file.type === 'application/pdf');
     }
 
+    function revokePreviewUrls(container) {
+        if (!container) {
+            return;
+        }
+        container.querySelectorAll('iframe[src^="blob:"], img[src^="blob:"]').forEach(function (el) {
+            URL.revokeObjectURL(el.src);
+        });
+    }
+
     function renderPreview(container, file) {
         if (!container || !file || !isPreviewable(file)) {
-            if (container) container.classList.add('hidden');
+            if (container) {
+                revokePreviewUrls(container);
+                container.classList.add('hidden');
+                container.innerHTML = '';
+            }
             return;
         }
 
+        revokePreviewUrls(container);
         container.classList.remove('hidden');
         container.innerHTML = '';
 
@@ -21,11 +35,7 @@
             const img = document.createElement('img');
             img.className = 'max-h-48 rounded-lg border border-base-content/10 mx-auto';
             img.alt = 'Upload preview';
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+            img.src = URL.createObjectURL(file);
             container.appendChild(img);
             return;
         }
@@ -34,30 +44,32 @@
             const frame = document.createElement('iframe');
             frame.className = 'w-full h-56 rounded-lg border border-base-content/10';
             frame.title = 'PDF preview';
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                frame.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+            frame.src = URL.createObjectURL(file);
             container.appendChild(frame);
         }
     }
 
     function bindInput(input) {
-        if (!input || input.dataset.previewBound === 'true') return;
+        if (!input || input.dataset.previewBound === 'true') {
+            return;
+        }
 
         const previewEl = document.querySelector('[data-file-preview="' + input.id + '"]');
-        if (!previewEl) return;
+        if (!previewEl) {
+            return;
+        }
 
         input.addEventListener('change', function () {
             const files = input.files;
             if (!files || files.length === 0) {
+                revokePreviewUrls(previewEl);
                 previewEl.classList.add('hidden');
                 previewEl.innerHTML = '';
                 return;
             }
 
             if (input.multiple) {
+                revokePreviewUrls(previewEl);
                 previewEl.classList.remove('hidden');
                 previewEl.innerHTML = '';
                 Array.from(files).forEach(function (file, index) {

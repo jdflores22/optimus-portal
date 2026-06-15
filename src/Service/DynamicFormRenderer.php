@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\FormConfiguration;
+use App\Form\FormFieldTypes;
 
 class DynamicFormRenderer
 {
@@ -63,6 +64,10 @@ class DynamicFormRenderer
             $isRequired = $field['required'] ?? false;
             $validation = $field['validation'] ?? [];
 
+            if (FormFieldTypes::isLayoutType($fieldType) || FormFieldTypes::isFileType($fieldType)) {
+                continue;
+            }
+
             if (!$this->shouldShowField($field, $data)) {
                 continue;
             }
@@ -108,9 +113,14 @@ class DynamicFormRenderer
      */
     private function renderField(array $field): string
     {
+        $type = $field['type'];
+
+        if (FormFieldTypes::isLayoutType($type)) {
+            return $this->renderLayoutField($field);
+        }
+
         $fieldId = htmlspecialchars($field['id']);
         $label = htmlspecialchars($field['label']);
-        $type = $field['type'];
         $required = $field['required'] ?? false;
         $requiredMark = $required ? '<span class="text-error">*</span>' : '';
 
@@ -152,6 +162,35 @@ class DynamicFormRenderer
         $html .= '</div>';
 
         return $html;
+    }
+
+    private function renderLayoutField(array $field): string
+    {
+        $label = htmlspecialchars($field['label'] ?? '');
+        $validation = $field['validation'] ?? [];
+
+        return match ($field['type']) {
+            'section_heading' => $this->renderSectionHeading($label, $validation['subtitle'] ?? ''),
+            'divider' => $label !== ''
+                ? '<div class="divider my-6">' . $label . '</div>'
+                : '<hr class="my-6 border-base-content/15" />',
+            default => '',
+        };
+    }
+
+    private function renderSectionHeading(string $title, string $subtitle): string
+    {
+        $subtitleHtml = $subtitle !== ''
+            ? '<p class="text-sm text-base-content/60 mt-1">' . htmlspecialchars($subtitle) . '</p>'
+            : '';
+
+        return <<<HTML
+<div class="my-6">
+    <h3 class="text-lg font-bold text-base-content">{$title}</h3>
+    {$subtitleHtml}
+    <div class="border-b border-base-content/15 mt-3"></div>
+</div>
+HTML;
     }
 
     /**

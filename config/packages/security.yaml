@@ -93,7 +93,7 @@ security:
         - { path: ^/api/session/status, roles: ROLE_USER }
         - { path: ^/api/payments/\d+/receipt/download, roles: ROLE_USER }
         - { path: ^/api/extend-session, roles: ROLE_USER }
-        - { path: ^/api/locations, roles: ROLE_USER }
+        - { path: ^/api/locations, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/pre-advice, roles: ROLE_TRUCKER }
         # Manifest Payment and NOA Workflow API endpoints
         - { path: ^/api/manifests$, roles: ROLE_SL_STAFF, methods: [POST] }

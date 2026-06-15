@@ -5,6 +5,8 @@ namespace App\Controller;
 use App\Entity\Enum\AccreditationStatus;
 use App\Entity\Enum\UserRole;
 use App\Service\AccreditationWorkflowService;
+use App\Service\ComplianceRequestService;
+use App\Form\FormFieldTypes;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -299,7 +301,23 @@ class EvaluatorController extends AbstractController
 
         return $this->render('evaluator/application_detail.html.twig', [
             'submission' => $submission,
+            'sortedFormFields' => $this->sortFormFields($submission->getFormConfig()?->getFields()['fields'] ?? []),
+            'complianceFieldsToCorrect' => ComplianceRequestService::resolveFields(
+                $submission,
+                $submission->getFormConfig()
+            ),
         ]);
+    }
+
+    /**
+     * @param list<array<string, mixed>> $fields
+     * @return list<array<string, mixed>>
+     */
+    private function sortFormFields(array $fields): array
+    {
+        usort($fields, static fn (array $a, array $b): int => ($a['order'] ?? 0) <=> ($b['order'] ?? 0));
+
+        return $fields;
     }
 
     #[Route('/application/{id}/evaluate', name: 'app_evaluator_evaluate', methods: ['POST'])]
@@ -328,7 +346,9 @@ class EvaluatorController extends AbstractController
         }
 
         $status = $request->request->get('status');
-        $reason = $request->request->get('reason', '');
+        $reason = trim((string) $request->request->get('reason', ''));
+        $complianceFields = array_values(array_filter((array) $request->request->all('compliance_fields')));
+        $complianceFieldNotes = (array) $request->request->all('compliance_field_notes');
 
         // Validate status
         $validStatuses = [
@@ -343,10 +363,25 @@ class EvaluatorController extends AbstractController
             return $this->redirectToRoute('app_evaluator_application_detail', ['id' => $id]);
         }
 
-        // Validate reason is provided for denials and rejections
-        if (in_array($status, ['DENIED', 'REJECTED']) && empty(trim($reason))) {
+        if (in_array($status, ['DENIED', 'REJECTED'], true) && $reason === '') {
             $this->addFlash('error', 'Reason is required for denials and rejections');
             return $this->redirectToRoute('app_evaluator_application_detail', ['id' => $id]);
+        }
+
+        if ($status === 'COMPLIANCE_REQUIRED') {
+            $validFieldIds = array_map(
+                static fn (array $field): string => (string) $field['id'],
+                array_filter(
+                    $this->sortFormFields($submission->getFormConfig()?->getFields()['fields'] ?? []),
+                    static fn (array $field): bool => !FormFieldTypes::isLayoutType($field['type'] ?? '')
+                )
+            );
+            $complianceFields = array_values(array_intersect($complianceFields, $validFieldIds));
+
+            if ($complianceFields === []) {
+                $this->addFlash('error', 'Select at least one application field that requires correction.');
+                return $this->redirectToRoute('app_evaluator_application_detail', ['id' => $id]);
+            }
         }
 
         try {
@@ -354,7 +389,9 @@ class EvaluatorController extends AbstractController
                 $id,
                 $this->getUser(),
                 $validStatuses[$status],
-                $reason
+                $reason !== '' ? $reason : null,
+                $status === 'COMPLIANCE_REQUIRED' ? $complianceFields : [],
+                $status === 'COMPLIANCE_REQUIRED' ? $complianceFieldNotes : []
             );
 
             $this->addFlash('success', 'Application evaluated successfully');

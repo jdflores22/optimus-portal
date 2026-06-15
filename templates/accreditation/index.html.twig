@@ -81,6 +81,11 @@
                                     <span class="icon-[tabler--x] size-4"></span>
                                     Rejected
                                 </span>
+                            {% elseif status == 'COMPLIANCE_REQUIRED' %}
+                                <span class="badge badge-warning badge-lg gap-2">
+                                    <span class="icon-[tabler--alert-triangle] size-4"></span>
+                                    Compliance Required
+                                </span>
                             {% else %}
                                 <span class="badge badge-ghost badge-lg">Not Applied</span>
                             {% endif %}
@@ -126,6 +131,42 @@
                                 <span class="icon-[tabler--file-text] size-4"></span>
                                 View Application
                             </a>
+                        {% elseif status == 'COMPLIANCE_REQUIRED' %}
+                            <p class="text-sm text-base-content/70 mb-4">
+                                Additional documents or corrections are required before your application can continue.
+                            </p>
+                            {% if item.complianceFields|default([])|length > 0 %}
+                                <div class="mb-4">
+                                    {% include 'accreditation/_compliance_fields_list.html.twig' with {
+                                        fieldsToCorrect: item.complianceFields
+                                    } %}
+                                </div>
+                            {% elseif submission and submission.denialReason %}
+                                <div class="alert alert-warning mb-4 text-left">
+                                    <span class="icon-[tabler--alert-triangle] size-4 shrink-0"></span>
+                                    <div>
+                                        <p class="text-xs font-semibold uppercase tracking-wide mb-1">Required actions</p>
+                                        <p class="text-sm whitespace-pre-wrap">{{ submission.denialReason }}</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {% if submission %}
+                                <div class="text-xs text-base-content/50 mb-4">
+                                    Requested on {{ submission.evaluatedAt|date('M j, Y') }}
+                                </div>
+                            {% endif %}
+                            <a href="{{ path('accreditation_submit', {shippingLineId: shippingLine.id}) }}"
+                               class="btn btn-warning w-full gap-2 mb-2">
+                                <span class="icon-[tabler--upload] size-4"></span>
+                                Resubmit Compliance
+                            </a>
+                            {% if submission %}
+                                <a href="{{ path('accreditation_detail', {id: submission.id}) }}"
+                                   class="btn btn-ghost w-full gap-2">
+                                    <span class="icon-[tabler--eye] size-4"></span>
+                                    View Application
+                                </a>
+                            {% endif %}
                         {% elseif status == 'REJECTED' or status == 'DENIED' %}
                             <p class="text-sm text-base-content/70 mb-4">
                                 Your SAS application was rejected. Please review the feedback and reapply.

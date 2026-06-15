@@ -1,9 +1,41 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}SAS Application Details - OPTIMUS{% endblock %}
+{% block title %}SAS Application — {{ submission.shippingLine.brandName }} - OPTIMUS{% endblock %}
 
 {% block body %}
-<!-- Toast Notification Container -->
+{% set sortedFields = submission.formConfig and submission.formConfig.fields.fields is defined
+    ? submission.formConfig.fields.fields|sort((a, b) => (a.order ?? 0) <=> (b.order ?? 0))
+    : [] %}
+{% set logoUrl = submission.shippingLine.logoPath ? asset('uploads/shipping-lines/' ~ submission.shippingLine.logoPath) : (submission.shippingLine.portalConfig.logoUrl ?? null) %}
+{% set isComplianceRequired = submission.status.value == 'COMPLIANCE_REQUIRED' %}
+{% set complianceFieldsToCorrect = complianceFieldsToCorrect|default([]) %}
+{% set complianceFlaggedIds = complianceFieldsToCorrect|column('id') %}
+{% set complianceFieldCount = complianceFieldsToCorrect|length %}
+{% set complianceNotesByField = {} %}
+{% for item in complianceFieldsToCorrect %}
+    {% if item.note|default('') %}
+        {% set complianceNotesByField = complianceNotesByField|merge({ (item.id): item.note }) %}
+    {% endif %}
+{% endfor %}
+{% set unchangedFieldCount = sortedFields|filter(f => f.type not in ['section_heading', 'divider'] and f.id not in complianceFlaggedIds)|length %}
+{% set stepperCurrent = isComplianceRequired ? 2 : (submission.evaluatedAt ? 3 : 2) %}
+
+{% set statusBadge = 'badge-ghost' %}
+{% set statusIcon = 'help-circle' %}
+{% if submission.status.value == 'APPROVED' %}
+    {% set statusBadge = 'badge-success' %}
+    {% set statusIcon = 'circle-check' %}
+{% elseif submission.status.value in ['DENIED', 'REJECTED'] %}
+    {% set statusBadge = 'badge-error' %}
+    {% set statusIcon = 'x' %}
+{% elseif submission.status.value == 'PENDING' %}
+    {% set statusBadge = 'badge-info' %}
+    {% set statusIcon = 'clock' %}
+{% elseif submission.status.value == 'COMPLIANCE_REQUIRED' %}
+    {% set statusBadge = 'badge-warning' %}
+    {% set statusIcon = 'alert-triangle' %}
+{% endif %}
+
 <div class="toast toast-top toast-end z-50">
     {% for type, messages in app.flashes %}
         {% for message in messages %}
@@ -15,146 +47,386 @@
 </div>
 
 <div class="min-h-screen bg-base-200">
-    <!-- Breadcrumb Navigation -->
-    <div class="bg-base-100">
-        <div class="px-4 sm:px-6 lg:px-8 py-3">
-            <div class="breadcrumbs text-sm">
-                <ul>
-                    <li><a href="{{ path('accreditation_index') }}" class="text-primary hover:text-primary-focus">SAS</a></li>
-                    <li class="text-base-content">Application #{{ submission.id }}</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <!-- Shipping Line Branding Header -->
-    <div class="bg-base-100 shadow-sm">
-        <div class="px-4 sm:px-6 lg:px-8 py-6">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <!-- Left: Shipping Line Info -->
-                <div class="flex items-center gap-4">
-                    {% set logoUrl = submission.shippingLine.logoPath ? asset('uploads/shipping-lines/' ~ submission.shippingLine.logoPath) : (submission.shippingLine.portalConfig.logoUrl ?? null) %}
+    <div class="bg-base-100 shadow-sm {% if isComplianceRequired %}border-b-4 border-warning{% endif %}">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="flex items-start gap-3">
+                    <a href="{{ path('accreditation_index') }}" class="btn btn-ghost btn-sm btn-circle mt-0.5 shrink-0" aria-label="Back to SAS">
+                        <span class="icon-[tabler--arrow-left] size-5"></span>
+                    </a>
+                    <div>
+                        <div class="breadcrumbs text-xs mb-1">
+                            <ul>
+                                <li><a href="{{ path('accreditation_index') }}">SAS</a></li>
+                                <li>{{ submission.shippingLine.brandName }}</li>
+                                <li>Application #{{ submission.id }}</li>
+                            </ul>
+                        </div>
+                        <h1 class="text-2xl font-bold text-base-content">
+                            {% if isComplianceRequired %}Compliance Review{% else %}Application Details{% endif %}
+                        </h1>
+                        <p class="text-sm text-base-content/60 mt-1">
+                            {% if isComplianceRequired %}
+                                {{ complianceFieldCount }} field{{ complianceFieldCount == 1 ? '' : 's' }} need{{ complianceFieldCount == 1 ? 's' : '' }} your attention before resubmitting.
+                            {% else %}
+                                Submitted {{ submission.submittedAt|date('F j, Y \\a\\t g:i A') }}
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 sm:max-w-xs">
                     {% if logoUrl %}
-                        <img src="{{ logoUrl }}" 
-                             alt="{{ submission.shippingLine.brandName }} logo" 
-                             class="h-16 w-auto object-contain">
+                        <img src="{{ logoUrl }}" alt="{{ submission.shippingLine.brandName }} logo" class="h-10 w-auto object-contain shrink-0">
                     {% else %}
-                        {% set brandColor = submission.shippingLine.brandColor ?? (submission.shippingLine.portalConfig.primaryColor ?? '#3B82F6') %}
-                        <div class="size-16 rounded-xl flex items-center justify-center shadow-lg" style="background: linear-gradient(135deg, {{ brandColor }}, {{ brandColor }}dd);">
-                            <span class="text-2xl font-bold text-white">{{ submission.shippingLine.brandName|slice(0, 2)|upper }}</span>
+                        <div class="avatar placeholder shrink-0">
+                            <div class="bg-primary text-primary-content rounded-xl size-10">
+                                <span class="text-sm font-bold">{{ submission.shippingLine.brandName|slice(0, 2)|upper }}</span>
+                            </div>
                         </div>
                     {% endif %}
-                    <div>
-                        <h1 class="text-2xl md:text-3xl font-bold text-base-content">{{ submission.shippingLine.brandName }}</h1>
-                        <p class="text-sm text-base-content/60 mt-1">SAS Application #{{ submission.id }}</p>
+                    <div class="min-w-0">
+                        <p class="font-semibold text-base-content truncate">{{ submission.shippingLine.brandName }}</p>
+                        <span class="badge {{ statusBadge }} badge-sm mt-1">{{ submission.status.value|replace({'_': ' '})|title }}</span>
                     </div>
                 </div>
-                
-                <!-- Right: Back Button -->
-                <a href="{{ path('accreditation_index') }}" class="btn btn-ghost gap-2">
-                    <span class="icon-[tabler--arrow-left] size-4"></span>
-                    Back to SAS Center
-                </a>
             </div>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="px-4 sm:px-6 lg:px-8 py-8">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Left Column: Status & Timeline -->
-            <div class="lg:col-span-1 space-y-6">
-                <!-- Status Card -->
-                <div class="card bg-base-100 shadow-sm">
-                    <div class="card-body p-6">
-                        <h3 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-4">Application Status</h3>
-                        
-                        {% set statusBadge = 'badge-ghost' %}
-                        {% set statusIcon = 'help-circle' %}
-                        {% if submission.status.value == 'APPROVED' %}
-                            {% set statusBadge = 'badge-success' %}
-                            {% set statusIcon = 'circle-check' %}
-                        {% elseif submission.status.value == 'DENIED' or submission.status.value == 'REJECTED' %}
-                            {% set statusBadge = 'badge-error' %}
-                            {% set statusIcon = 'x' %}
-                        {% elseif submission.status.value == 'PENDING' %}
-                            {% set statusBadge = 'badge-info' %}
-                            {% set statusIcon = 'clock' %}
-                        {% elseif submission.status.value == 'COMPLIANCE_REQUIRED' %}
-                            {% set statusBadge = 'badge-warning' %}
-                            {% set statusIcon = 'alert-triangle' %}
-                        {% endif %}
-                        
-                        <div class="flex flex-col items-center text-center p-6 bg-base-200 rounded-xl">
-                            <div class="size-16 {{ statusBadge }} rounded-full flex items-center justify-center mb-4">
-                                <span class="icon-[tabler--{{ statusIcon }}] size-8"></span>
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 space-y-6">
+        {% if submission.status.value == 'APPROVED' %}
+            <div class="alert alert-success shadow-sm">
+                <span class="icon-[tabler--circle-check] size-6"></span>
+                <div>
+                    <h3 class="font-bold">SAS Accreditation Approved</h3>
+                    <p class="text-sm">Your accreditation for {{ submission.shippingLine.brandName }} is active. You now have secured access to their services on OPTIMUS.</p>
+                    {% if submission.approvedAt %}
+                        <p class="text-xs mt-2 opacity-80">Approved on {{ submission.approvedAt|date('F j, Y') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% elseif submission.status.value == 'PENDING' %}
+            <div class="alert alert-info shadow-sm">
+                <span class="icon-[tabler--clock] size-6"></span>
+                <div>
+                    <h3 class="font-bold">Application Under Review</h3>
+                    <p class="text-sm">Your application is being reviewed by the {{ submission.shippingLine.brandName }} team. We will notify you by email when a decision is made.</p>
+                    <p class="text-xs mt-2 opacity-80">Typical review time: 3–5 business days</p>
+                </div>
+            </div>
+        {% elseif submission.status.value in ['DENIED', 'REJECTED'] %}
+            <div class="alert alert-error shadow-sm">
+                <span class="icon-[tabler--x] size-6"></span>
+                <div>
+                    <h3 class="font-bold">Application {{ submission.status.value|title }}</h3>
+                    <p class="text-sm">Your application was not approved. Review the feedback below and submit a new application if you wish to reapply.</p>
+                    {% if submission.evaluatedAt %}
+                        <p class="text-xs mt-2 opacity-80">{{ submission.status.value|title }} on {{ submission.evaluatedAt|date('F j, Y') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% elseif isComplianceRequired %}
+            <div class="card bg-gradient-to-br from-warning/10 via-base-100 to-base-100 shadow-sm border border-warning/20">
+                <div class="card-body p-5 sm:p-6">
+                    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+                        <div class="flex items-start gap-4 min-w-0 flex-1">
+                            <div class="size-12 rounded-2xl bg-warning/15 flex items-center justify-center shrink-0">
+                                <span class="icon-[tabler--alert-triangle] size-6 text-warning"></span>
                             </div>
-                            <p class="text-2xl font-bold text-base-content">
-                                {{ submission.status.value|replace({'_': ' '})|title }}
-                            </p>
+                            <div class="min-w-0">
+                                <h2 class="font-bold text-lg text-base-content">Action required before approval</h2>
+                                <p class="text-sm text-base-content/70 mt-1">
+                                    Your evaluator reviewed application #{{ submission.id }} and requested corrections.
+                                    Update the flagged fields and resubmit — everything else stays as-is.
+                                </p>
+                                {% if submission.evaluatedAt %}
+                                    <p class="text-xs text-base-content/50 mt-2">
+                                        Reviewed {{ submission.evaluatedAt|date('F j, Y \\a\\t g:i A') }}
+                                    </p>
+                                {% endif %}
+                                {% if submission.denialReason %}
+                                    <div class="mt-3 rounded-xl bg-base-200/60 border border-base-content/10 p-3">
+                                        <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50 mb-1">General comments</p>
+                                        <p class="text-sm whitespace-pre-wrap">{{ submission.denialReason }}</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-3 shrink-0 w-full lg:w-auto">
+                            <div class="rounded-2xl bg-base-100 border border-warning/20 px-5 py-4 text-center min-w-[8.5rem]">
+                                <p class="text-3xl font-bold text-warning">{{ complianceFieldCount }}</p>
+                                <p class="text-xs font-medium text-base-content/60 mt-1">to correct</p>
+                            </div>
+                            <a href="{{ path('accreditation_submit', {shippingLineId: submission.shippingLine.id}) }}"
+                               class="btn btn-warning gap-2 w-full">
+                                <span class="icon-[tabler--edit] size-4"></span>
+                                Update & Resubmit
+                            </a>
                         </div>
                     </div>
                 </div>
+            </div>
+        {% endif %}
 
-                <!-- Timeline Card -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+            <div class="lg:col-span-2 space-y-6">
                 <div class="card bg-base-100 shadow-sm">
-                    <div class="card-body p-6">
-                        <h3 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-4">Timeline</h3>
-                        <ul class="timeline timeline-vertical">
-                            <!-- Submitted -->
-                            <li>
-                                <div class="timeline-start text-xs text-base-content/60">{{ submission.submittedAt|date('M j, Y') }}</div>
-                                <div class="timeline-middle">
-                                    <span class="icon-[tabler--circle-check] size-5 text-info"></span>
-                                </div>
-                                <div class="timeline-end timeline-box bg-info/10 border-info/20">
-                                    <p class="text-sm font-medium text-base-content">Submitted</p>
-                                    <p class="text-xs text-base-content/60">{{ submission.submittedAt|date('g:i A') }}</p>
-                                </div>
-                                <hr class="bg-info" />
-                            </li>
-                            
-                            {% if submission.evaluatedAt %}
-                            <!-- Evaluated -->
-                            <li>
-                                <hr class="bg-secondary" />
-                                <div class="timeline-start text-xs text-base-content/60">{{ submission.evaluatedAt|date('M j, Y') }}</div>
-                                <div class="timeline-middle">
-                                    <span class="icon-[tabler--circle-check] size-5 text-secondary"></span>
-                                </div>
-                                <div class="timeline-end timeline-box bg-secondary/10 border-secondary/20">
-                                    <p class="text-sm font-medium text-base-content">Evaluated</p>
-                                    <p class="text-xs text-base-content/60">{{ submission.evaluatedAt|date('g:i A') }}</p>
-                                </div>
-                                {% if submission.approvedAt %}<hr class="bg-success" />{% endif %}
-                            </li>
-                            {% endif %}
-                            
-                            {% if submission.approvedAt %}
-                            <!-- Approved -->
-                            <li>
-                                <hr class="bg-success" />
-                                <div class="timeline-start text-xs text-base-content/60">{{ submission.approvedAt|date('M j, Y') }}</div>
-                                <div class="timeline-middle">
-                                    <span class="icon-[tabler--circle-check] size-5 text-success"></span>
-                                </div>
-                                <div class="timeline-end timeline-box bg-success/10 border-success/20">
-                                    <p class="text-sm font-medium text-base-content">Approved</p>
-                                    <p class="text-xs text-base-content/60">{{ submission.approvedAt|date('g:i A') }}</p>
-                                </div>
-                            </li>
-                            {% endif %}
-                        </ul>
+                    <div class="card-body p-5 sm:p-6">
+                        {% include 'components/flyonui_stepper.html.twig' with {
+                            steps: [
+                                { label: 'Application' },
+                                { label: isComplianceRequired ? 'Compliance' : 'Review' },
+                                { label: 'Evaluation' }
+                            ],
+                            current: stepperCurrent
+                        } %}
                     </div>
                 </div>
 
-                <!-- Quick Actions -->
-                <div class="card bg-base-100 shadow-sm">
-                    <div class="card-body p-6">
-                        <h3 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-4">Quick Actions</h3>
-                        <div class="space-y-3">
-                            {% if submission.status.value == 'DENIED' or submission.status.value == 'REJECTED' or submission.status.value == 'COMPLIANCE_REQUIRED' %}
-                                <a href="{{ path('accreditation_submit', {shippingLineId: submission.shippingLine.id}) }}" 
+                {% if submission.denialReason and not isComplianceRequired %}
+                    <div class="card bg-base-100 shadow-sm border border-warning/20">
+                        <div class="card-body p-5 sm:p-6">
+                            <h2 class="font-semibold text-lg text-base-content flex items-center gap-2 mb-3">
+                                <span class="icon-[tabler--message] size-5 text-warning"></span>
+                                Evaluator Feedback
+                            </h2>
+                            <div class="rounded-xl bg-warning/5 p-4">
+                                <p class="text-sm whitespace-pre-wrap text-base-content">{{ submission.denialReason }}</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if isComplianceRequired and complianceFieldCount > 0 %}
+                    <div class="card bg-base-100 shadow-sm border border-warning/20">
+                        <div class="card-body p-5 sm:p-6">
+                            <div class="flex items-center justify-between gap-3 mb-5">
+                                <div>
+                                    <h2 class="font-semibold text-lg text-base-content flex items-center gap-2">
+                                        <span class="icon-[tabler--alert-circle] size-5 text-warning"></span>
+                                        Fields requiring correction
+                                    </h2>
+                                    <p class="text-sm text-base-content/60 mt-1">These are the values your evaluator flagged. You'll update them on the resubmit page.</p>
+                                </div>
+                                <span class="badge badge-warning badge-outline shrink-0">{{ complianceFieldCount }}</span>
+                            </div>
+
+                            {% if sortedFields|length > 0 and submission.submittedData %}
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {% for field in sortedFields %}
+                                        {% if field.id in complianceFlaggedIds %}
+                                            {% include 'accreditation/_detail_field.html.twig' with {
+                                                field: field,
+                                                submittedData: submission.submittedData,
+                                                complianceFlagged: true,
+                                                complianceNote: complianceNotesByField[field.id]|default(''),
+                                                complianceFocusMode: true
+                                            } %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if unchangedFieldCount > 0 %}
+                        <details class="card bg-base-100 shadow-sm group">
+                            <summary class="card-body p-5 sm:p-6 cursor-pointer list-none flex items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <span class="icon-[tabler--lock] size-5 text-base-content/40 shrink-0"></span>
+                                    <div>
+                                        <h2 class="font-semibold text-base text-base-content">Unchanged information</h2>
+                                        <p class="text-sm text-base-content/60 mt-0.5">{{ unchangedFieldCount }} field{{ unchangedFieldCount == 1 ? '' : 's' }} kept from your submission — no action needed</p>
+                                    </div>
+                                </div>
+                                <span class="icon-[tabler--chevron-down] size-5 text-base-content/40 shrink-0 transition-transform group-open:rotate-180"></span>
+                            </summary>
+                            <div class="px-5 sm:px-6 pb-5 sm:pb-6 pt-0">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-base-content/10 pt-5">
+                                    {% for field in sortedFields %}
+                                        {% if field.id not in complianceFlaggedIds %}
+                                            {% include 'accreditation/_detail_field.html.twig' with {
+                                                field: field,
+                                                submittedData: submission.submittedData
+                                            } %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </details>
+                    {% endif %}
+                {% else %}
+                    <div class="card bg-base-100 shadow-sm">
+                        <div class="card-body p-5 sm:p-6">
+                            <h2 class="font-semibold text-lg text-base-content flex items-center gap-2 mb-5">
+                                <span class="icon-[tabler--clipboard-list] size-5 text-primary"></span>
+                                Submitted Application
+                            </h2>
+
+                            {% if sortedFields|length > 0 and submission.submittedData %}
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {% for field in sortedFields %}
+                                        {% include 'accreditation/_detail_field.html.twig' with {
+                                            field: field,
+                                            submittedData: submission.submittedData
+                                        } %}
+                                    {% endfor %}
+                                </div>
+                            {% elseif submission.submittedData %}
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {% for key, value in submission.submittedData %}
+                                        {% if key not in ['_files', '_csrf_token', '_token', '_resubmitted_after_compliance', '_compliance_request'] %}
+                                            <div class="rounded-xl bg-base-200/50 p-4">
+                                                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-2">{{ key|replace({'_': ' '})|title }}</p>
+                                                <p class="text-sm text-base-content">{{ value is iterable ? value|json_encode : value }}</p>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-sm text-base-content/50">No application data available.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="lg:col-span-1 space-y-6">
+                <div class="card bg-base-100 shadow-sm lg:sticky lg:top-24">
+                    <div class="card-body p-5 sm:p-6 space-y-6">
+                        {% if isComplianceRequired %}
+                            <div>
+                                <h3 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3">What to do next</h3>
+                                <ol class="space-y-3 text-sm">
+                                    <li class="flex items-start gap-3">
+                                        <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-warning/15 text-xs font-bold text-warning">1</span>
+                                        <span>Review each flagged field and the evaluator's notes</span>
+                                    </li>
+                                    <li class="flex items-start gap-3">
+                                        <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-warning/15 text-xs font-bold text-warning">2</span>
+                                        <span>Click <strong>Update & Resubmit</strong> to correct those fields</span>
+                                    </li>
+                                    <li class="flex items-start gap-3">
+                                        <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-warning/15 text-xs font-bold text-warning">3</span>
+                                        <span>Your application returns to the evaluator queue</span>
+                                    </li>
+                                </ol>
+                            </div>
+
+                            {% if complianceFieldCount > 0 %}
+                                <div>
+                                    <h3 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3">Correction checklist</h3>
+                                    <ul class="space-y-2">
+                                        {% for item in complianceFieldsToCorrect %}
+                                            <li>
+                                                <a href="#compliance-detail-{{ item.id }}"
+                                                   class="flex items-start gap-2.5 rounded-xl border border-warning/20 bg-warning/5 px-3 py-2.5 text-sm hover:border-warning/40 transition-colors">
+                                                    <span class="icon-[tabler--alert-circle] size-4 text-warning shrink-0 mt-0.5"></span>
+                                                    <span class="min-w-0">
+                                                        <span class="font-medium text-base-content block">{{ item.label }}</span>
+                                                        {% if item.note %}
+                                                            <span class="text-xs text-base-content/60 block mt-0.5">{{ item.note }}</span>
+                                                        {% endif %}
+                                                    </span>
+                                                </a>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+
+                            <a href="{{ path('accreditation_submit', {shippingLineId: submission.shippingLine.id}) }}"
+                               class="btn btn-warning w-full gap-2">
+                                <span class="icon-[tabler--edit] size-4"></span>
+                                Update & Resubmit
+                            </a>
+
+                            <div class="divider my-0"></div>
+                        {% endif %}
+
+                        <div>
+                            <h3 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3">Status</h3>
+                            <div class="flex flex-col items-center text-center p-5 bg-base-200 rounded-xl">
+                                <div class="size-14 {{ statusBadge }} rounded-full flex items-center justify-center mb-3">
+                                    <span class="icon-[tabler--{{ statusIcon }}] size-7"></span>
+                                </div>
+                                <p class="text-xl font-bold text-base-content">{{ submission.status.value|replace({'_': ' '})|title }}</p>
+                                <p class="text-xs text-base-content/60 mt-1">Application #{{ submission.id }}</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3">Timeline</h3>
+                            <ul class="timeline timeline-vertical timeline-compact">
+                                <li>
+                                    <div class="timeline-start text-xs text-base-content/60">{{ submission.submittedAt|date('M j') }}</div>
+                                    <div class="timeline-middle">
+                                        <span class="icon-[tabler--circle-check] size-4 text-info"></span>
+                                    </div>
+                                    <div class="timeline-end timeline-box text-xs py-2">
+                                        <p class="font-medium">Submitted</p>
+                                        <p class="text-base-content/60">{{ submission.submittedAt|date('g:i A') }}</p>
+                                    </div>
+                                    {% if submission.evaluatedAt or submission.approvedAt %}<hr class="bg-base-content/10" />{% endif %}
+                                </li>
+                                {% if submission.evaluatedAt %}
+                                    <li>
+                                        <hr class="bg-base-content/10" />
+                                        <div class="timeline-start text-xs text-base-content/60">{{ submission.evaluatedAt|date('M j') }}</div>
+                                        <div class="timeline-middle">
+                                            <span class="icon-[tabler--{{ isComplianceRequired ? 'alert-triangle' : 'circle-check' }}] size-4 {{ isComplianceRequired ? 'text-warning' : 'text-secondary' }}"></span>
+                                        </div>
+                                        <div class="timeline-end timeline-box text-xs py-2">
+                                            <p class="font-medium">{{ isComplianceRequired ? 'Compliance requested' : 'Evaluated' }}</p>
+                                            <p class="text-base-content/60">{{ submission.evaluatedAt|date('g:i A') }}</p>
+                                        </div>
+                                        {% if submission.approvedAt %}<hr class="bg-success/40" />{% endif %}
+                                    </li>
+                                {% endif %}
+                                {% if submission.approvedAt %}
+                                    <li>
+                                        <hr class="bg-success/40" />
+                                        <div class="timeline-start text-xs text-base-content/60">{{ submission.approvedAt|date('M j') }}</div>
+                                        <div class="timeline-middle">
+                                            <span class="icon-[tabler--circle-check] size-4 text-success"></span>
+                                        </div>
+                                        <div class="timeline-end timeline-box text-xs py-2">
+                                            <p class="font-medium">Approved</p>
+                                            <p class="text-base-content/60">{{ submission.approvedAt|date('g:i A') }}</p>
+                                        </div>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+
+                        <div class="divider my-0"></div>
+
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between gap-3">
+                                <span class="text-base-content/60">Shipping line</span>
+                                <span class="font-medium text-right">{{ submission.shippingLine.brandName }}</span>
+                            </div>
+                            {% if submission.formConfig %}
+                                <div class="flex justify-between gap-3">
+                                    <span class="text-base-content/60">Form version</span>
+                                    <span class="font-medium">v{{ submission.formConfig.version }}</span>
+                                </div>
+                            {% endif %}
+                            <div class="flex justify-between gap-3">
+                                <span class="text-base-content/60">Documents</span>
+                                <span class="font-medium">{{ submission.submittedData._files|default({})|length }}</span>
+                            </div>
+                            {% if isComplianceRequired %}
+                                <div class="flex justify-between gap-3">
+                                    <span class="text-base-content/60">Fields to correct</span>
+                                    <span class="font-medium text-warning">{{ complianceFieldCount }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="space-y-2 pt-2">
+                            {% if submission.status.value in ['DENIED', 'REJECTED'] %}
+                                <a href="{{ path('accreditation_submit', {shippingLineId: submission.shippingLine.id}) }}"
                                    class="btn btn-primary w-full gap-2">
                                     <span class="icon-[tabler--upload] size-4"></span>
                                     Submit New Application
@@ -168,211 +440,15 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Right Column: Details -->
-            <div class="lg:col-span-2 space-y-6">
-
-                <!-- Status Message -->
-                {% if submission.status.value == 'APPROVED' %}
-                    <div class="alert alert-success">
-                        <span class="icon-[tabler--circle-check] size-6"></span>
-                        <div>
-                            <h3 class="font-bold">SAS Accreditation Approved</h3>
-                            <p class="text-sm">Congratulations! Your SAS accreditation has been successfully approved. You now have full secured access to all platform features and services for {{ submission.shippingLine.brandName }}.</p>
-                            {% if submission.evaluatedAt %}
-                                <p class="text-xs mt-2 opacity-80">Approved on {{ submission.evaluatedAt|date('F j, Y') }}</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% elseif submission.status.value == 'PENDING' %}
-                    <div class="alert alert-info">
-                        <span class="icon-[tabler--clock] size-6"></span>
-                        <div>
-                            <h3 class="font-bold">SAS Application Under Review</h3>
-                            <p class="text-sm">Your SAS application is currently being reviewed by the {{ submission.shippingLine.brandName }} evaluation team. We'll notify you via email once the review is complete.</p>
-                            <p class="text-xs mt-2 opacity-80">Expected review time: 3-5 business days</p>
-                        </div>
-                    </div>
-                {% elseif submission.status.value == 'DENIED' or submission.status.value == 'REJECTED' %}
-                    <div class="alert alert-error">
-                        <span class="icon-[tabler--x] size-6"></span>
-                        <div>
-                            <h3 class="font-bold">SAS Application {{ submission.status.value|title }}</h3>
-                            <p class="text-sm">Unfortunately, your SAS application was not approved. Please review the feedback below and consider submitting a new application with the required corrections.</p>
-                            {% if submission.evaluatedAt %}
-                                <p class="text-xs mt-2 opacity-80">{{ submission.status.value|title }} on {{ submission.evaluatedAt|date('F j, Y') }}</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% elseif submission.status.value == 'COMPLIANCE_REQUIRED' %}
-                    <div class="alert alert-warning">
-                        <span class="icon-[tabler--alert-triangle] size-6"></span>
-                        <div>
-                            <h3 class="font-bold">Additional Compliance Required</h3>
-                            <p class="text-sm">Your SAS application requires additional compliance documentation or corrections. Please review the feedback and resubmit with the required information.</p>
-                        </div>
-                    </div>
-                {% endif %}
-                
-                <!-- Feedback Section -->
-                {% if submission.denialReason %}
-                    <div class="card bg-base-100 shadow-sm">
-                        <div class="card-body p-6">
-                            <h3 class="text-lg font-bold text-base-content flex items-center gap-2 mb-4">
-                                <span class="icon-[tabler--message] size-5"></span>
-                                Evaluator Feedback
-                            </h3>
-                            <div class="alert">
-                                <p class="text-sm whitespace-pre-wrap">{{ submission.denialReason }}</p>
-                            </div>
-                        </div>
-                    </div>
-                {% endif %}
-
-                <!-- Submitted Data Preview -->
-                {% if submission.submittedData %}
-                    <div class="card bg-base-100 shadow-sm">
-                        <div class="card-body p-6">
-                            <h3 class="text-lg font-bold text-base-content flex items-center gap-2 mb-4">
-                                <span class="icon-[tabler--file-text] size-5"></span>
-                                Submitted Information
-                            </h3>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {% for key, value in submission.submittedData %}
-                                    {% if key != '_csrf_token' and key != '_token' %}
-                                        <div class="space-y-2">
-                                            {% set fieldLabel = key|replace({'_': ' '})|title %}
-                                            {% if submission.formConfig.fields is defined %}
-                                                {% for field in submission.formConfig.fields %}
-                                                    {% if field['id'] is defined and field['id'] == key and field['label'] is defined %}
-                                                        {% set fieldLabel = field['label'] %}
-                                                    {% endif %}
-                                                {% endfor %}
-                                            {% endif %}
-                                            <label class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">
-                                                {{ fieldLabel }}
-                                            </label>
-                                            {% if value is iterable and value is not same as(value|join) %}
-                                                <!-- Handle arrays/objects -->
-                                                {% if key == '_files' %}
-                                                    <!-- Special handling for _files field with document types and file IDs -->
-                                                    <div class="space-y-2">
-                                                        {% for docType, fileId in value %}
-                                                            {% set docLabel = docType|replace({'_': ' '})|title %}
-                                                            <div class="flex items-center justify-between p-3 bg-info/10 rounded-lg hover:bg-info/20 transition-colors">
-                                                                <div class="flex items-center gap-3">
-                                                                    <span class="icon-[tabler--file-text] size-5 text-info"></span>
-                                                                    <span class="text-sm font-medium text-base-content">{{ docLabel }}</span>
-                                                                </div>
-                                                                <button onclick="openDocumentModal('{{ fileId }}', '{{ docLabel }}')" 
-                                                                        class="btn btn-info btn-sm gap-2">
-                                                                    <span class="icon-[tabler--eye] size-4"></span>
-                                                                    View
-                                                                </button>
-                                                            </div>
-                                                        {% endfor %}
-                                                    </div>
-                                                {% else %}
-                                                    <!-- Regular array/object handling -->
-                                                    <div class="flex flex-wrap gap-2">
-                                                        {% if value is iterable %}
-                                                            {% for item in value %}
-                                                                <span class="badge badge-info badge-lg">{{ item }}</span>
-                                                            {% endfor %}
-                                                        {% else %}
-                                                            <p class="text-sm text-base-content">{{ value }}</p>
-                                                        {% endif %}
-                                                    </div>
-                                                {% endif %}
-                                            {% elseif 'file' in key|lower or 'document' in key|lower or 'upload' in key|lower or 'attachment' in key|lower %}
-                                                <!-- File fields - show view button with modal -->
-                                                {% if value %}
-                                                    <div class="flex items-center justify-between p-3 bg-info/10 rounded-lg hover:bg-info/20 transition-colors">
-                                                        <div class="flex items-center gap-3">
-                                                            <span class="icon-[tabler--file-text] size-5 text-info"></span>
-                                                            <span class="text-sm font-medium text-base-content">{{ fieldLabel }}</span>
-                                                        </div>
-                                                        <button onclick="openDocumentModal('{{ value }}', '{{ fieldLabel }}')" 
-                                                                class="btn btn-info btn-sm gap-2">
-                                                            <span class="icon-[tabler--eye] size-4"></span>
-                                                            View
-                                                        </button>
-                                                    </div>
-                                                {% else %}
-                                                    <p class="text-sm text-base-content/50 italic">No file uploaded</p>
-                                                {% endif %}
-                                            {% elseif 'email' in key|lower %}
-                                                <!-- Email fields -->
-                                                <p class="text-sm text-base-content font-medium">
-                                                    <a href="mailto:{{ value }}" class="link link-primary">{{ value }}</a>
-                                                </p>
-                                            {% elseif 'phone' in key|lower %}
-                                                <!-- Phone fields -->
-                                                <p class="text-sm text-base-content font-medium">
-                                                    <a href="tel:{{ value }}" class="link link-primary">{{ value }}</a>
-                                                </p>
-                                            {% elseif 'website' in key|lower or 'url' in key|lower %}
-                                                <!-- URL fields -->
-                                                <p class="text-sm text-base-content font-medium">
-                                                    <a href="{{ value }}" target="_blank" class="link link-primary inline-flex items-center gap-1">
-                                                        {{ value }}
-                                                        <span class="icon-[tabler--external-link] size-3"></span>
-                                                    </a>
-                                                </p>
-                                            {% elseif 'address' in key|lower %}
-                                                <!-- Address fields -->
-                                                <p class="text-sm text-base-content whitespace-pre-line bg-base-200 p-3 rounded-lg">{{ value }}</p>
-                                            {% elseif 'date' in key|lower %}
-                                                <!-- Date fields -->
-                                                <p class="text-sm text-base-content font-medium">
-                                                    {% if value|date('Y-m-d') %}
-                                                        {{ value|date('F j, Y') }}
-                                                    {% else %}
-                                                        {{ value }}
-                                                    {% endif %}
-                                                </p>
-                                            {% elseif value|length > 100 %}
-                                                <!-- Long text fields -->
-                                                <div class="text-sm text-base-content bg-base-200 rounded-lg p-4 whitespace-pre-wrap">{{ value }}</div>
-                                            {% elseif value == '1' or value == 'on' or value == 'true' %}
-                                                <!-- Boolean/checkbox fields -->
-                                                <div class="flex items-center gap-2">
-                                                    <span class="icon-[tabler--check] size-5 text-success"></span>
-                                                    <span class="text-sm text-success font-semibold">Yes</span>
-                                                </div>
-                                            {% elseif value == '0' or value == 'off' or value == 'false' %}
-                                                <!-- Boolean/checkbox fields -->
-                                                <div class="flex items-center gap-2">
-                                                    <span class="icon-[tabler--x] size-5 text-error"></span>
-                                                    <span class="text-sm text-error font-semibold">No</span>
-                                                </div>
-                                            {% else %}
-                                                <!-- Regular text fields -->
-                                                <p class="text-sm text-base-content font-medium">{{ value ?: 'Not provided' }}</p>
-                                            {% endif %}
-                                        </div>
-                                    {% endif %}
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                {% endif %}
-            </div>
         </div>
     </div>
 </div>
 
-<!-- Document Modal -->
 <div id="documentModal" class="fixed inset-0 z-[9999] hidden">
-    <!-- Backdrop -->
     <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal()"></div>
-    
-    <!-- Modal Content -->
     <div class="fixed inset-0 overflow-y-auto">
         <div class="flex min-h-full items-center justify-center p-4">
             <div class="relative bg-base-100 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col">
-                <!-- Modal Header -->
                 <div class="flex items-center justify-between px-6 py-4 border-b border-base-300">
                     <h3 class="text-lg font-bold flex items-center gap-2" id="modalTitle">
                         <span class="icon-[tabler--file-text] size-5"></span>
@@ -382,19 +458,14 @@
                         <span class="icon-[tabler--x] size-5"></span>
                     </button>
                 </div>
-                
-                <!-- Modal Body -->
                 <div class="flex-1 p-6 overflow-auto">
                     <div id="documentContent" class="flex items-center justify-center min-h-[400px]">
                         <div class="text-center">
                             <span class="loading loading-spinner loading-lg text-primary"></span>
                             <p class="text-base-content font-medium mt-4">Loading document...</p>
-                            <p class="text-sm text-base-content/60 mt-1">Please wait</p>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Modal Footer -->
                 <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-base-300">
                     <a id="downloadLink" href="#" target="_blank" class="btn btn-primary gap-2">
                         <span class="icon-[tabler--download] size-4"></span>
@@ -408,40 +479,31 @@
 </div>
 
 <script>
-// Document modal functions
 function openDocumentModal(fileId, documentTitle) {
     const modal = document.getElementById('documentModal');
     const modalTitle = document.getElementById('modalTitle');
     const documentContent = document.getElementById('documentContent');
     const downloadLink = document.getElementById('downloadLink');
-    
-    modalTitle.innerHTML = `<span class="icon-[tabler--file-text] size-5"></span> ${documentTitle || 'Document Viewer'}`;
-    
+
+    modalTitle.innerHTML = '<span class="icon-[tabler--file-text] size-5"></span> ' + (documentTitle || 'Document Viewer');
+
     const viewUrl = '{{ path('accreditation_file_download', {fileId: '__FILE_ID__'}) }}'.replace('__FILE_ID__', fileId);
     downloadLink.href = viewUrl;
-    
+
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
-    
-    // Show loading state
-    documentContent.innerHTML = `
-        <div class="text-center">
-            <span class="loading loading-spinner loading-lg text-primary"></span>
-            <p class="text-base-content font-medium mt-4">Loading document...</p>
-            <p class="text-sm text-base-content/60 mt-2">Please wait while we prepare your document</p>
-        </div>
-    `;
-    
-    // Fetch document as blob to avoid CSP issues
+
+    documentContent.innerHTML = '<div class="text-center"><span class="loading loading-spinner loading-lg text-primary"></span><p class="text-base-content font-medium mt-4">Loading document...</p></div>';
+
     fetch(viewUrl)
-        .then(response => {
+        .then(function (response) {
             if (!response.ok) throw new Error('Document not found');
             return response.blob();
         })
-        .then(blob => {
+        .then(function (blob) {
             const url = URL.createObjectURL(blob);
             const contentType = blob.type;
-            
+
             if (contentType.startsWith('image/') || documentTitle.toLowerCase().match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)) {
                 createImageElement(url, documentTitle);
             } else if (contentType === 'application/pdf' || documentTitle.toLowerCase().endsWith('.pdf')) {
@@ -450,117 +512,69 @@ function openDocumentModal(fileId, documentTitle) {
                 showUnsupportedFormat(viewUrl, documentTitle);
             }
         })
-        .catch(error => showDocumentError(error.message, viewUrl, documentTitle));
+        .catch(function (error) { showDocumentError(error.message, viewUrl, documentTitle); });
 }
 
 function createImageElement(url, documentTitle) {
-    const documentContent = document.getElementById('documentContent');
-    documentContent.innerHTML = `
-        <div class="w-full flex items-center justify-center p-4">
-            <img src="${url}" 
-                 alt="${documentTitle}"
-                 class="max-w-full max-h-full object-contain rounded-lg shadow-xl"
-                 onload="this.style.opacity='1'"
-                 style="opacity:0; transition: opacity 0.3s;">
-        </div>
-    `;
+    document.getElementById('documentContent').innerHTML =
+        '<div class="w-full flex items-center justify-center p-4"><img src="' + url + '" alt="' + documentTitle + '" class="max-w-full max-h-full object-contain rounded-lg shadow-xl"></div>';
 }
 
 function createPdfElement(url) {
-    const documentContent = document.getElementById('documentContent');
-    documentContent.innerHTML = `
-        <div class="w-full bg-base-100 rounded-lg overflow-hidden">
-            <iframe src="${url}" 
-                    class="w-full h-full min-h-[500px] border-0"
-                    onload="this.style.opacity='1'"
-                    style="opacity:0; transition: opacity 0.3s;">
-            </iframe>
-        </div>
-    `;
+    document.getElementById('documentContent').innerHTML =
+        '<div class="w-full bg-base-100 rounded-lg overflow-hidden"><iframe src="' + url + '" class="w-full h-full min-h-[500px] border-0"></iframe></div>';
 }
 
 function showUnsupportedFormat(fileUrl, documentTitle) {
-    const documentContent = document.getElementById('documentContent');
-    documentContent.innerHTML = `
-        <div class="flex flex-col items-center justify-center p-8 text-center">
-            <div class="size-24 bg-warning/10 rounded-2xl flex items-center justify-center mb-6">
-                <span class="icon-[tabler--file-text] size-12 text-warning"></span>
-            </div>
-            <h4 class="text-2xl font-bold text-base-content mb-3">Preview Not Available</h4>
-            <p class="text-base-content/60 mb-8 max-w-md">This document type cannot be previewed in the browser. Please download it to view the contents.</p>
-            <a href="${fileUrl}" target="_blank" class="btn btn-primary gap-2">
-                <span class="icon-[tabler--download] size-5"></span>
-                Download ${documentTitle}
-            </a>
-        </div>
-    `;
+    document.getElementById('documentContent').innerHTML =
+        '<div class="flex flex-col items-center justify-center p-8 text-center">' +
+        '<h4 class="text-xl font-bold mb-3">Preview Not Available</h4>' +
+        '<p class="text-base-content/60 mb-6">Download this file to view it.</p>' +
+        '<a href="' + fileUrl + '" target="_blank" class="btn btn-primary gap-2">Download ' + documentTitle + '</a></div>';
 }
 
 function showDocumentError(errorMessage, fileUrl, documentTitle) {
-    const documentContent = document.getElementById('documentContent');
-    documentContent.innerHTML = `
-        <div class="flex flex-col items-center justify-center p-8 text-center">
-            <div class="size-24 bg-error/10 rounded-2xl flex items-center justify-center mb-6">
-                <span class="icon-[tabler--alert-circle] size-12 text-error"></span>
-            </div>
-            <h4 class="text-2xl font-bold text-base-content mb-3">Unable to Load Document</h4>
-            <p class="text-base-content/60 mb-8 max-w-md">${errorMessage}. Please try downloading the document instead.</p>
-            <a href="${fileUrl}" target="_blank" class="btn btn-primary gap-2">
-                <span class="icon-[tabler--download] size-5"></span>
-                Download ${documentTitle}
-            </a>
-        </div>
-    `;
+    document.getElementById('documentContent').innerHTML =
+        '<div class="flex flex-col items-center justify-center p-8 text-center">' +
+        '<h4 class="text-xl font-bold mb-3">Unable to Load Document</h4>' +
+        '<p class="text-base-content/60 mb-6">' + errorMessage + '</p>' +
+        '<a href="' + fileUrl + '" target="_blank" class="btn btn-primary gap-2">Download ' + documentTitle + '</a></div>';
 }
 
 function closeModal() {
     const modal = document.getElementById('documentModal');
     modal.classList.add('hidden');
     document.body.style.overflow = '';
-    
-    // Clean up any object URLs
+
     const documentContent = document.getElementById('documentContent');
     const iframe = documentContent.querySelector('iframe');
     const img = documentContent.querySelector('img');
-    
-    if (iframe && iframe.src.startsWith('blob:')) {
-        URL.revokeObjectURL(iframe.src);
-    }
-    if (img && img.src.startsWith('blob:')) {
-        URL.revokeObjectURL(img.src);
-    }
-    
-    // Reset content to loading state
-    documentContent.innerHTML = `
-        <div class="text-center">
-            <span class="loading loading-spinner loading-lg text-primary"></span>
-            <p class="text-base-content font-medium mt-4">Loading document...</p>
-            <p class="text-sm text-base-content/60 mt-1">Please wait</p>
-        </div>
-    `;
+
+    if (iframe && iframe.src.startsWith('blob:')) URL.revokeObjectURL(iframe.src);
+    if (img && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
 }
 
-// Close modal with Escape key
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
         const modal = document.getElementById('documentModal');
-        if (!modal.classList.contains('hidden')) {
-            closeModal();
-        }
+        if (!modal.classList.contains('hidden')) closeModal();
     }
 });
 
-// Auto-dismiss flash messages after 5 seconds
-document.addEventListener('DOMContentLoaded', function() {
-    const alerts = document.querySelectorAll('.toast .alert');
-    alerts.forEach(alert => {
-        setTimeout(() => {
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.view-document-btn').forEach(function (button) {
+        button.addEventListener('click', function () {
+            openDocumentModal(this.getAttribute('data-file-id'), this.getAttribute('data-document-name'));
+        });
+    });
+
+    document.querySelectorAll('.toast .alert').forEach(function (alert) {
+        setTimeout(function () {
             alert.style.opacity = '0';
             alert.style.transition = 'opacity 0.3s ease';
-            setTimeout(() => alert.remove(), 300);
+            setTimeout(function () { alert.remove(); }, 300);
         }, 5000);
     });
 });
 </script>
-
 {% endblock %}

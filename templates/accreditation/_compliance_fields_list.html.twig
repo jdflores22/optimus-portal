@@ -1,0 +1,15 @@
+{% if fieldsToCorrect|default([])|length > 0 %}
+    <ul class="space-y-2">
+        {% for item in fieldsToCorrect %}
+            <li class="flex items-start gap-2 rounded-lg bg-warning/10 px-3 py-2">
+                <span class="icon-[tabler--alert-circle] size-4 text-warning shrink-0 mt-0.5"></span>
+                <div class="min-w-0">
+                    <p class="text-sm font-medium text-base-content">{{ item.label }}</p>
+                    {% if item.note %}
+                        <p class="text-xs text-base-content/70 mt-0.5">{{ item.note }}</p>
+                    {% endif %}
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

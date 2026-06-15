@@ -1,0 +1,48 @@
+{% set fieldType = field.type|default('text') %}
+{% set isFileType = fieldType in ['file', 'image', 'multi_file', 'signature'] %}
+{% set previousFileId = complianceResubmit.previousFiles[fieldId]|default(null) %}
+
+<div class="rounded-lg bg-base-100/80 border border-base-content/10 p-3 mb-4">
+    <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50 mb-2 flex items-center gap-1.5">
+        <span class="icon-[tabler--history] size-3.5"></span>
+        Previous submission
+    </p>
+
+    {% if isFileType %}
+        {% if previousFileId %}
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2 min-w-0 text-sm text-base-content/80">
+                    <span class="icon-[tabler--file-text] size-4 text-base-content/50 shrink-0"></span>
+                    <span class="truncate">File on record — replace with a new upload below</span>
+                </div>
+                <button type="button"
+                        class="btn btn-ghost btn-xs gap-1 shrink-0"
+                        onclick="window.open('{{ path('accreditation_file_download', {fileId: previousFileId is iterable ? previousFileId[0] : previousFileId}) }}', '_blank')">
+                    <span class="icon-[tabler--eye] size-3.5"></span>
+                    View
+                </button>
+            </div>
+        {% else %}
+            <p class="text-sm text-base-content/50 italic">No file was on record</p>
+        {% endif %}
+
+    {% elseif fieldType == 'address' and fieldValue is iterable %}
+        {% set addr = fieldValue %}
+        <p class="text-sm text-base-content/80">
+            {%- if addr.street|default('') %}{{ addr.street }}, {% endif -%}
+            {%- if addr.barangay_name|default('') %}{{ addr.barangay_name }}{% endif -%}
+            {%- if addr.city_name|default('') %}{% if addr.barangay_name|default('') %}, {% endif %}{{ addr.city_name }}{% endif -%}
+            {%- if addr.province_name|default('') %}, {{ addr.province_name }}{% endif -%}
+            {%- if addr.region_name|default('') %}, {{ addr.region_name }}{% endif -%}
+        </p>
+
+    {% elseif fieldValue is not empty %}
+        {% if fieldValue is iterable %}
+            <p class="text-sm text-base-content/80">{{ fieldValue|json_encode }}</p>
+        {% else %}
+            <p class="text-sm text-base-content/80 break-words">{{ fieldValue }}</p>
+        {% endif %}
+    {% else %}
+        <p class="text-sm text-base-content/50 italic">Not provided</p>
+    {% endif %}
+</div>

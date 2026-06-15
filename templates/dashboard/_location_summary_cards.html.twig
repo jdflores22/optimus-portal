@@ -1,0 +1,241 @@
+{# Port / Terminal and CY summary cards — Shipping Admin dashboard #}
+{% set port = locationSummary.port|default({}) %}
+{% set cy = locationSummary.cy|default({}) %}
+{% set outbound = outboundSummary|default({}) %}
+
+{# ── Port / Terminal summary cards ── #}
+<div>
+    <h2 class="text-sm font-semibold text-primary uppercase tracking-wide mb-3 flex items-center gap-2">
+        <span class="icon-[tabler--anchor] size-4"></span>
+        Port / Terminal
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-primary/10">
+            <div class="card-body p-5 flex-row items-center gap-4">
+                <div class="size-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <span class="icon-[tabler--anchor] size-6 text-primary"></span>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">Port Terminals</p>
+                    <p class="text-3xl font-bold text-base-content">{{ port.location_count|default(0) }}</p>
+                    <p class="text-xs text-primary font-medium">Discharge locations</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-primary/10">
+            <div class="card-body p-5">
+                <div class="flex items-start gap-4">
+                    <div class="size-12 rounded-full bg-info/10 flex items-center justify-center flex-shrink-0">
+                        <span class="icon-[tabler--ship] size-6 text-info"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">Inbound</p>
+                        <p class="text-3xl font-bold text-base-content">{{ port.inbound_count|default(0) }}</p>
+                        <p class="text-xs text-info font-medium mt-0.5">Laden expected · ETA today onward</p>
+                        <p class="text-xs text-base-content/50 mt-0.5">
+                            {{ port.inbound_20ft|default(0) }}×20ft
+                            · {{ port.inbound_40ft|default(0) }}×40ft
+                        </p>
+                        {% if port.inbound_by_terminal|default([])|length > 0 %}
+                        <div class="mt-2 flex flex-wrap gap-1">
+                            {% for terminal in port.inbound_by_terminal %}
+                            <span class="badge badge-info badge-sm gap-1" title="{{ terminal.name }} — {{ terminal.count_20ft }}×20ft, {{ terminal.count_40ft }}×40ft">
+                                {{ terminal.code }} {{ terminal.count }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-primary/10">
+            <div class="card-body p-5">
+                <div class="flex items-start gap-4">
+                    <div class="size-12 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
+                        <span class="icon-[tabler--map-pin] size-6 text-success"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">At Port</p>
+                        <p class="text-3xl font-bold text-base-content">{{ port.at_port_count|default(0) }}</p>
+                        <p class="text-xs text-success font-medium mt-0.5">
+                            Import {{ port.at_port_import_count|default(0) }}
+                            · Export/Repo {{ port.at_port_reposition_count|default(0) }}
+                        </p>
+                        <p class="text-xs text-base-content/50 mt-0.5">
+                            {{ port.at_port_20ft|default(0) }}×20ft
+                            · {{ port.at_port_40ft|default(0) }}×40ft
+                        </p>
+                        {% if port.at_port_by_terminal|default([])|length > 0 %}
+                        <div class="mt-2 flex flex-wrap gap-1">
+                            {% for terminal in port.at_port_by_terminal %}
+                            <span class="badge badge-success badge-sm gap-1" title="{{ terminal.name }}">
+                                {{ terminal.code }} {{ terminal.count }}
+                                {% if terminal.reposition_count > 0 and terminal.import_count == 0 %}
+                                    <span class="opacity-70">(repo)</span>
+                                {% elseif terminal.import_count > 0 and terminal.reposition_count == 0 %}
+                                    <span class="opacity-70">(import)</span>
+                                {% endif %}
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if repositioningRoute is defined %}
+        <a href="{{ path(repositioningRoute) }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-primary/10 hover:border-warning/40 block">
+        {% else %}
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-primary/10">
+        {% endif %}
+            <div class="card-body p-5">
+                <div class="flex items-start gap-4">
+                    <div class="size-12 rounded-full bg-warning/10 flex items-center justify-center flex-shrink-0">
+                        <span class="icon-[tabler--truck-delivery] size-6 text-warning"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">Outbound</p>
+                        <p class="text-3xl font-bold text-base-content">{{ outbound.total_active|default(0) }}</p>
+                        <p class="text-xs text-warning font-medium mt-0.5">
+                            {{ outbound.in_transit_count|default(0) }} in transit
+                            · {{ outbound.pending_count|default(0) }} pending approval
+                        </p>
+                        <p class="text-xs text-base-content/50 mt-0.5">
+                            {{ (outbound.in_transit_20ft|default(0) + outbound.pending_20ft|default(0)) }}×20ft
+                            · {{ (outbound.in_transit_40ft|default(0) + outbound.pending_40ft|default(0)) }}×40ft
+                            · CY → port repositioning
+                        </p>
+                        {% if outbound.by_port|default([])|length > 0 %}
+                        <div class="mt-2 flex flex-wrap gap-1">
+                            {% for portRow in outbound.by_port %}
+                            <span class="badge badge-warning badge-sm gap-1" title="{{ portRow.name }} — {{ portRow.in_transit_count }} in transit, {{ portRow.pending_count }} pending">
+                                {{ portRow.code }} {{ portRow.in_transit_count + portRow.pending_count }}
+                                {% if portRow.pending_count > 0 %}
+                                    <span class="opacity-70">({{ portRow.pending_count }} pending)</span>
+                                {% endif %}
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% elseif repositioningRoute is defined %}
+                        <p class="text-xs text-base-content/40 mt-2">No active outbound requests</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% if repositioningRoute is defined %}
+        </a>
+        {% else %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# ── Container Yard summary cards ── #}
+<div>
+    <h2 class="text-sm font-semibold text-base-content uppercase tracking-wide mb-3 flex items-center gap-2">
+        <span class="icon-[tabler--building-warehouse] size-4"></span>
+        Container Yards (CY)
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body p-5 flex-row items-center gap-4">
+                <div class="size-12 rounded-full bg-neutral/10 flex items-center justify-center flex-shrink-0">
+                    <span class="icon-[tabler--building-warehouse] size-6 text-base-content"></span>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">Container Yards</p>
+                    <p class="text-3xl font-bold text-base-content">{{ cy.location_count|default(0) }}</p>
+                    <p class="text-xs text-base-content/60 font-medium">Empty return locations</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body p-5">
+                <div class="flex items-start gap-4">
+                    <div class="size-12 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
+                        <span class="icon-[tabler--container] size-6 text-success"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">At CY</p>
+                        <p class="text-3xl font-bold text-base-content">{{ cy.allocated_count|default(0) }}</p>
+                        <p class="text-xs text-success font-medium mt-0.5">Physically allocated at yard</p>
+                        <p class="text-xs text-base-content/50 mt-0.5">
+                            {{ cy.allocated_20ft|default(0) }}×20ft
+                            · {{ cy.allocated_40ft|default(0) }}×40ft
+                        </p>
+                        {% if cy.allocated_by_yard|default([])|length > 0 %}
+                        <div class="mt-2 flex flex-wrap gap-1">
+                            {% for yard in cy.allocated_by_yard %}
+                            <span class="badge badge-success badge-sm gap-1" title="{{ yard.name }} — {{ yard.count_20ft }}×20ft, {{ yard.count_40ft }}×40ft">
+                                {{ yard.name|length > 12 ? yard.code : yard.name }} {{ yard.count }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body p-5">
+                <div class="flex items-start gap-4">
+                    <div class="size-12 rounded-full bg-warning/10 flex items-center justify-center flex-shrink-0">
+                        <span class="icon-[tabler--clock] size-6 text-warning"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">Pre-Forecast</p>
+                        <p class="text-3xl font-bold text-base-content">{{ cy.pre_forecast_count|default(0) }}</p>
+                        <p class="text-xs text-warning font-medium mt-0.5">Announced · pending arrival</p>
+                        <p class="text-xs text-base-content/50 mt-0.5">
+                            {{ cy.pre_forecast_20ft|default(0) }}×20ft
+                            · {{ cy.pre_forecast_40ft|default(0) }}×40ft
+                        </p>
+                        {% if cy.pre_forecast_by_yard|default([])|length > 0 %}
+                        <div class="mt-2 flex flex-wrap gap-1">
+                            {% for yard in cy.pre_forecast_by_yard %}
+                            <span class="badge badge-warning badge-sm gap-1" title="{{ yard.name }} — {{ yard.count_20ft }}×20ft, {{ yard.count_40ft }}×40ft">
+                                {{ yard.name|length > 12 ? yard.code : yard.name }} {{ yard.count }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body p-5">
+                <div class="flex items-start gap-4">
+                    <div class="size-12 rounded-full bg-info/10 flex items-center justify-center flex-shrink-0">
+                        <span class="icon-[tabler--chart-bar] size-6 text-info"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide">CY Capacity</p>
+                        <p class="text-2xl font-bold text-base-content">{{ cy.used_teu|default(0)|round(0) }} / {{ cy.total_capacity|default(0)|round(0) }} <span class="text-sm font-normal">TEUs</span></p>
+                        <p class="text-xs text-info font-medium mt-0.5">{{ cy.utilization_percent|default(0) }}% full · alloc + pre-forecast</p>
+                        <p class="text-xs text-base-content/50 mt-0.5">
+                            {{ cy.allocated_count|default(0) }} at yard
+                            · {{ cy.pre_forecast_count|default(0) }} pre-forecast
+                        </p>
+                        {% if cy.capacity_by_yard|default([])|length > 0 %}
+                        <div class="mt-2 flex flex-wrap gap-1">
+                            {% for yard in cy.capacity_by_yard %}
+                            <span class="badge badge-info badge-sm gap-1" title="{{ yard.name }} — {{ yard.used_teu|round(0) }}/{{ yard.total_capacity|round(0) }} TEU">
+                                {{ yard.name|length > 12 ? yard.code : yard.name }} {{ yard.utilization_percent }}%
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

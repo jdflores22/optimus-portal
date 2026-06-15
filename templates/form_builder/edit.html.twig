@@ -31,6 +31,10 @@
     'Location': {
         'geolocation': { icon: 'icon-[tabler--map-pin]', name: 'Geotag Location' },
         'address': { icon: 'icon-[tabler--map-2]', name: 'Address Picker' }
+    },
+    'Layout': {
+        'section_heading': { icon: 'icon-[tabler--heading]', name: 'Section Heading' },
+        'divider': { icon: 'icon-[tabler--separator]', name: 'Divider' }
     }
 }) %}
 
@@ -269,6 +273,43 @@
             .replace(/>/g, '&gt;');
     }
 
+    function isLayoutFieldType(type) {
+        return type === 'section_heading' || type === 'divider';
+    }
+
+    function applyLayoutFieldEditorState(fieldType) {
+        const requiredRow = document.getElementById('field-required')?.closest('label');
+        const labelInput = document.getElementById('field-label');
+        const labelText = labelInput?.closest('.form-control')?.querySelector('.label-text');
+
+        if (isLayoutFieldType(fieldType)) {
+            if (requiredRow) {
+                requiredRow.classList.add('hidden');
+            }
+            const requiredInput = document.getElementById('field-required');
+            if (requiredInput) {
+                requiredInput.checked = false;
+            }
+            if (fieldType === 'section_heading' && labelText) {
+                labelText.innerHTML = 'Section Title <span class="text-error">*</span>';
+                labelInput.setAttribute('required', 'required');
+            } else if (fieldType === 'divider' && labelText) {
+                labelText.innerHTML = 'Center Label <span class="text-base-content/50 text-xs">(optional)</span>';
+                labelInput.removeAttribute('required');
+            }
+        } else {
+            if (requiredRow) {
+                requiredRow.classList.remove('hidden');
+            }
+            if (labelText) {
+                labelText.innerHTML = 'Field Label <span class="text-error">*</span>';
+            }
+            if (labelInput) {
+                labelInput.setAttribute('required', 'required');
+            }
+        }
+    }
+
     function openModal(id) {
         const modal = document.getElementById(id);
         if (!modal) return;
@@ -462,8 +503,12 @@
         document.getElementById('field-type').value = fieldType;
         document.getElementById('save-field-properties').addEventListener('click', saveFieldFromProperties);
         document.getElementById('cancel-field-properties').addEventListener('click', clearFieldProperties);
-        document.getElementById('field-type').addEventListener('change', updateFieldTypeOptions);
+        document.getElementById('field-type').addEventListener('change', function () {
+            updateFieldTypeOptions();
+            applyLayoutFieldEditorState(this.value);
+        });
         updateFieldTypeOptions();
+        applyLayoutFieldEditorState(fieldType);
     }
 
     function clearFieldProperties() {
@@ -690,6 +735,18 @@
             case 'address':
                 optionsHTML = '<div class="alert alert-info py-3"><span class="text-xs">Region, Province, City/Municipality, and Barangay use the location database.</span></div>';
                 break;
+            case 'section_heading':
+                optionsHTML = `
+                    <div class="form-control">
+                        <label class="label py-1" for="field-subtitle"><span class="label-text">Subtitle (optional)</span></label>
+                        <input type="text" id="field-subtitle" class="input input-bordered w-full" value="${escapeHtml(val.subtitle || '')}" placeholder="Brief description for this section">
+                    </div>
+                    <p class="text-xs text-base-content/60">Visual section break with a title. Does not collect data.</p>
+                `;
+                break;
+            case 'divider':
+                optionsHTML = '<p class="text-xs text-base-content/60">Horizontal line separator. Add an optional center label in the title field above, or leave it blank for a plain line.</p>';
+                break;
             case 'multi_select':
                 const msOptions = val.options ? Object.values(val.options) : ['Option 1', 'Option 2'];
                 optionsHTML = `<div><label class="label py-1"><span class="label-text font-medium">Options</span></label><div id="field-options-list" class="space-y-2">${msOptions.map(function (o, i) { return '<div class="flex items-center gap-2"><input type="text" value="' + escapeHtml(o) + '" class="input input-bordered input-sm flex-1"></div>'; }).join('')}</div><button type="button" id="add-option" class="btn btn-ghost btn-xs mt-2 gap-1"><span class="icon-[tabler--plus] size-3"></span> Add Option</button></div>`;
@@ -727,6 +784,10 @@
 
         optionsContainer.innerHTML = optionsHTML + buildCommonFieldOptions(fd);
 
+        if (isLayoutFieldType(fieldType)) {
+            document.getElementById('field-unique')?.closest('label')?.classList.add('hidden');
+        }
+
         const addOptionBtn = document.getElementById('add-option');
         if (addOptionBtn) {
             addOptionBtn.addEventListener('click', addNewOption);
@@ -759,11 +820,12 @@
     }
 
     function saveFieldFromProperties() {
-        const label = document.getElementById('field-label').value;
+        const label = document.getElementById('field-label').value.trim();
         const type = document.getElementById('field-type').value;
         const required = document.getElementById('field-required').checked;
+        const layoutField = isLayoutFieldType(type);
 
-        if (!label || !type) {
+        if (!type || (layoutField && type === 'section_heading' && !label) || (!layoutField && !label)) {
             alert('Please fill in all required fields');
             return;
         }
@@ -785,7 +847,7 @@
             id: existingField ? existingField.id : 'field_' + Date.now(),
             label: label,
             type: type,
-            required: required,
+            required: layoutField ? false : required,
             order: existingField ? existingField.order : getNextFieldOrder(),
             validation: typeChanged ? {} : Object.assign({}, existingField?.validation || {})
         };
@@ -898,6 +960,16 @@
                 break;
             case 'toggle':
             case 'address':
+                break;
+            case 'section_heading':
+                const sectionSubtitle = document.getElementById('field-subtitle')?.value.trim();
+                if (sectionSubtitle) {
+                    fieldData.validation.subtitle = sectionSubtitle;
+                } else {
+                    delete fieldData.validation.subtitle;
+                }
+                break;
+            case 'divider':
                 break;
             case 'dropdown':
             case 'radio':
@@ -1387,6 +1459,18 @@
                         </div>
                     </div>
                 `;
+            case 'section_heading':
+                return `
+                    <div class="my-4">
+                        <h3 class="text-lg font-bold text-base-content">${escapeHtml(field.label || 'Section Title')}</h3>
+                        ${field.validation?.subtitle ? '<p class="text-sm text-base-content/60 mt-1">' + escapeHtml(field.validation.subtitle) + '</p>' : ''}
+                        <div class="border-b border-base-content/15 mt-3"></div>
+                    </div>
+                `;
+            case 'divider':
+                return field.label
+                    ? '<div class="divider my-4 text-sm">' + escapeHtml(field.label) + '</div>'
+                    : '<hr class="my-4 border-base-content/15">';
             case 'geolocation':
                 return `
                     <div class="form-control">

@@ -1,0 +1,25 @@
+{% set subtitle = field.validation.subtitle|default('') %}
+<div class="{% if field.type == 'divider' %}py-2{% else %}py-1{% endif %}"
+     data-field-block
+     data-field-layout="1"
+     data-field-id="{{ field.id }}"
+     data-field-type="{{ field.type }}"
+     data-field-label="{{ field.label|default('') }}"
+     data-field-required="0"
+     {% if field.validation.showWhen is defined %}data-show-when="{{ field.validation.showWhen|json_encode|e('html_attr') }}"{% endif %}>
+    {% if field.type == 'section_heading' %}
+        <div class="pt-2">
+            <h3 class="text-lg font-bold text-base-content">{{ field.label }}</h3>
+            {% if subtitle %}
+                <p class="text-sm text-base-content/60 mt-1">{{ subtitle }}</p>
+            {% endif %}
+            <div class="border-b border-base-content/15 mt-3"></div>
+        </div>
+    {% elseif field.type == 'divider' %}
+        {% if field.label|default('') %}
+            <div class="divider my-2 text-base-content/50 text-sm">{{ field.label }}</div>
+        {% else %}
+            <hr class="border-base-content/15 my-4">
+        {% endif %}
+    {% endif %}
+</div>

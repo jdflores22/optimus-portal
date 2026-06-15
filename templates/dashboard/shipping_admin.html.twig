@@ -11,7 +11,12 @@
         <p class="mt-1 text-sm text-base-content/60">Complete overview of your shipping line operations, container yards, and terminal management</p>
     </div>
 
-    {# Port / Terminal and CY utilization cards (same UI as SL Staff dashboard) #}
+    {# Port / Terminal and CY summary cards (inbound, at port, outbound requests, CY capacity) #}
+    {% include 'dashboard/_location_summary_cards.html.twig' with {
+        repositioningRoute: 'app_shipping_admin_repositioning_index'
+    } %}
+
+    {# Port / Terminal and CY per-location detail cards #}
     {% include 'dashboard/_port_cy_location_cards.html.twig' with {
         repositioningRoute: 'app_shipping_admin_repositioning_index',
         repositioningNewRoute: 'app_shipping_admin_repositioning_new',

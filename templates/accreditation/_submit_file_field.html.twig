@@ -13,7 +13,18 @@
        {% if enablePreview %}data-enable-preview="true"{% endif %}
        {% if isMultiple %}multiple{% endif %}
        accept="{% for t in allowedTypes %}.{{ t }}{% if not loop.last %},{% endif %}{% endfor %}"
-       {{ isRequired ? 'required data-required=true' : '' }}>
+       {{ (fieldStillRequired|default(isRequired and not (retainedFileId|default(null)))) ? 'required data-required=true' : '' }}>
+{% if isComplianceField|default(false) %}
+    <p class="text-xs text-warning mb-2 flex items-center gap-1">
+        <span class="icon-[tabler--upload] size-3.5"></span>
+        Upload a new file to replace the previous submission.
+    </p>
+{% elseif retainedFileId|default(null) %}
+    <p class="text-xs text-info mb-2 flex items-center gap-1">
+        <span class="icon-[tabler--paperclip] size-3.5"></span>
+        Previously uploaded. Upload a new file only if you need to replace it.
+    </p>
+{% endif %}
 <div class="border border-dashed border-base-content/15 rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
      data-file-zone="field_{{ fieldId }}"
      data-file-trigger="field_{{ fieldId }}">

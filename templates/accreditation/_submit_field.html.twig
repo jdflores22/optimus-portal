@@ -1,6 +1,11 @@
+{% if field.type in ['section_heading', 'divider'] %}
+    {% include 'accreditation/_submit_layout_field.html.twig' %}
+{% else %}
 {% set fieldId = field.id %}
+{% set complianceResubmit = complianceResubmit|default({ active: false, previousFiles: {}, fieldIds: [] }) %}
 {% set isRequired = field.required|default(false) %}
 {% set fieldValue = submittedData[fieldId] is defined ? submittedData[fieldId] : '' %}
+{% set isComplianceField = fieldId in complianceResubmit.fieldIds|default([]) %}
 {% set maxLength = field.validation.maxLength|default(field.validation.maxlength|default(null)) %}
 {% set minLength = field.validation.minLength|default(field.validation.minlength|default(null)) %}
 {% set lengthMode = field.validation.lengthMode|default(null) %}
@@ -48,13 +53,20 @@
     'address': 'icon-[tabler--map-2]'
 }[field.type|default('text')] ?? 'icon-[tabler--forms]' %}
 {% set isFileType = field.type in ['file', 'image', 'multi_file', 'signature'] %}
+{% set retainedFileId = isFileType ? (complianceResubmit.previousFiles[fieldId]|default(null)) : null %}
+{% set hasRetainedFile = retainedFileId is not empty and not isComplianceField %}
+{% set complianceNote = complianceResubmit.fieldNotes[fieldId]|default(null) %}
+{% set fieldStillRequired = isComplianceField ? true : (isFileType ? (isRequired and not hasRetainedFile) : isRequired) %}
 
-<div class="rounded-xl p-4 sm:p-5 {{ fieldHasError ? 'bg-error/5 ring-1 ring-error/30' : 'bg-base-200/50' }}"
+<div class="rounded-xl p-4 sm:p-5 {{ fieldHasError ? 'bg-error/5 ring-1 ring-error/30' : (isComplianceField ? (complianceFocusMode|default(false) ? 'bg-warning/5 ring-2 ring-warning/30 border-l-4 border-warning' : 'bg-warning/5 ring-1 ring-warning/30') : 'bg-base-200/50') }}"
      data-field-block
      data-field-id="{{ fieldId }}"
      data-field-type="{{ field.type|default('text') }}"
      data-field-label="{{ field.label }}"
-     data-field-required="{{ isRequired ? '1' : '0' }}"
+     data-field-required="{{ fieldStillRequired ? '1' : '0' }}"
+     {% if isComplianceField %}data-compliance-field="1"{% endif %}
+     {% if hasRetainedFile %}data-retained-file="1"{% endif %}
+     {% if isComplianceField %}data-compliance-correct="1" data-previous-value="{{ fieldValue is iterable ? fieldValue|json_encode|e('html_attr') : fieldValue|e('html_attr') }}" id="compliance-field-{{ fieldId }}"{% endif %}
      {% if lengthMode %}data-length-mode="{{ lengthMode }}"{% endif %}
      {% if effectiveMin %}data-min-length="{{ effectiveMin }}"{% endif %}
      {% if effectiveMax %}data-max-length="{{ effectiveMax }}"{% endif %}
@@ -65,24 +77,44 @@
      {% if isFileType and field.validation.maxSize is defined %}data-max-size="{{ field.validation.maxSize }}"{% endif %}
      {% if field.validation.showWhen is defined %}data-show-when="{{ field.validation.showWhen|json_encode|e('html_attr') }}"{% endif %}>
     <div class="flex items-start gap-3 mb-4">
-        <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <span class="{{ fieldIcon }} size-4 text-primary"></span>
+        <div class="size-9 rounded-lg {{ isComplianceField and complianceFocusMode|default(false) ? 'bg-warning/15' : 'bg-primary/10' }} flex items-center justify-center shrink-0">
+            <span class="{{ fieldIcon }} size-4 {{ isComplianceField and complianceFocusMode|default(false) ? 'text-warning' : 'text-primary' }}"></span>
         </div>
         <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2 flex-wrap">
-                <span class="badge badge-ghost badge-sm">#{{ loopIndex }}</span>
+                {% if not complianceFocusMode|default(false) %}
+                    <span class="badge badge-ghost badge-sm">#{{ loopIndex }}</span>
+                {% endif %}
                 <h3 class="font-semibold text-base-content">
                     {{ field.label }}
-                    {% if isRequired %}<span class="text-error">*</span>{% endif %}
+                    {% if isComplianceField %}
+                        <span class="badge badge-warning badge-sm ml-1">Needs correction</span>
+                    {% elseif isRequired %}<span class="text-error">*</span>{% endif %}
                 </h3>
             </div>
-            {% if field.validation.message is defined %}
+            {% if isComplianceField and complianceNote %}
+                <div class="mt-2 rounded-lg bg-warning/10 border border-warning/20 px-3 py-2">
+                    <p class="text-xs font-medium text-warning flex items-start gap-1.5">
+                        <span class="icon-[tabler--message-circle] size-3.5 shrink-0 mt-0.5"></span>
+                        <span>{{ complianceNote }}</span>
+                    </p>
+                </div>
+            {% elseif field.validation.message is defined %}
                 <p class="text-xs text-base-content/60 mt-1">{{ field.validation.message }}</p>
             {% elseif lengthHint %}
                 <p class="text-xs text-base-content/60 mt-1">{{ lengthHint }}</p>
             {% endif %}
         </div>
     </div>
+
+    {% if isComplianceField and complianceFocusMode|default(false) %}
+        {% include 'accreditation/_submit_compliance_previous.html.twig' with {
+            field: field,
+            fieldId: fieldId,
+            fieldValue: fieldValue,
+            complianceResubmit: complianceResubmit
+        } %}
+    {% endif %}
 
     <div class="form-control">
         {% if field.type == 'text' or field.type == 'email' %}
@@ -160,7 +192,11 @@
                       {{ isRequired ? 'required data-required=true' : '' }}>{{ fieldValue }}</textarea>
 
         {% elseif isFileType %}
-            {% include 'accreditation/_submit_file_field.html.twig' %}
+            {% include 'accreditation/_submit_file_field.html.twig' with {
+                retainedFileId: retainedFileId,
+                isComplianceField: isComplianceField,
+                fieldStillRequired: fieldStillRequired
+            } %}
 
         {% elseif field.type == 'dropdown' %}
             <select name="{{ fieldId }}"
@@ -342,3 +378,4 @@
         </label>
     </div>
 </div>
+{% endif %}

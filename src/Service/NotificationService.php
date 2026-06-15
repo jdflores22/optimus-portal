@@ -25,9 +25,9 @@ class NotificationService
     ) {
     }
 
-    public function sendAccreditationStatusChange(User $user, AccreditationStatus $status, ?string $message = null): void
+    public function sendAccreditationStatusChange(User $user, AccreditationStatus $status, ?string $message = null, array $complianceFields = []): void
     {
-        [$title, $body] = $this->buildAccreditationNotificationContent($status, $message);
+        [$title, $body] = $this->buildAccreditationNotificationContent($status, $message, $complianceFields);
 
         try {
             $this->inAppNotificationService->createNotification(
@@ -46,7 +46,7 @@ class NotificationService
         }
 
         try {
-            $this->emailNotificationService->sendAccreditationStatusChange($user, $status, $message);
+            $this->emailNotificationService->sendAccreditationStatusChange($user, $status, $message, $complianceFields);
         } catch (\Exception $e) {
             $this->logger->error('Failed to send accreditation email notification', [
                 'user_id' => $user->getId(),
@@ -97,8 +97,14 @@ class NotificationService
     /**
      * @return array{0: string, 1: string}
      */
-    private function buildAccreditationNotificationContent(AccreditationStatus $status, ?string $message): array
+    private function buildAccreditationNotificationContent(AccreditationStatus $status, ?string $message, array $complianceFields = []): array
     {
+        $fieldSummary = '';
+        if ($complianceFields !== []) {
+            $labels = array_map(static fn (array $field): string => $field['label'] ?? $field['id'], $complianceFields);
+            $fieldSummary = ' Fields to correct: ' . implode(', ', $labels) . '.';
+        }
+
         return match ($status) {
             AccreditationStatus::APPROVED => [
                 'Accreditation Approved',
@@ -112,6 +118,7 @@ class NotificationService
             AccreditationStatus::COMPLIANCE_REQUIRED => [
                 'Compliance Documents Required',
                 'Additional compliance documents are required for your accreditation application.'
+                    . $fieldSummary
                     . ($message ? ' Details: ' . $message : ''),
             ],
             default => [

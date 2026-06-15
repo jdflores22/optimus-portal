@@ -85,15 +85,30 @@
         <div class="content">
             <p>Dear {{ businessName ?? user.email }},</p>
             <p>Your accreditation application requires additional compliance documentation before we can proceed with approval.</p>
+            {% if complianceFields|default([])|length > 0 %}
+                <div class="details-box">
+                    <strong>Fields to correct:</strong>
+                    <ul style="margin: 12px 0 0 0; padding-left: 20px;">
+                        {% for field in complianceFields %}
+                            <li style="margin-bottom: 8px;">
+                                <strong>{{ field.label }}</strong>
+                                {% if field.note %}
+                                    <br><span style="color: #856404;">{{ field.note }}</span>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
             {% if reason %}
                 <div class="details-box">
-                    <strong>Required Actions:</strong><br>
+                    <strong>Additional comments:</strong><br>
                     {{ reason }}
                 </div>
             {% endif %}
             <p>Status: <span class="status-badge">{{ status.value }}</span></p>
             <p>Please review the requirements above and submit the necessary documentation to continue your application process.</p>
-            <a href="#" class="cta-button">Update Application</a>
+            <a href="{{ accreditationUrl }}" class="cta-button">Resubmit Compliance</a>
         </div>
         <div class="footer">
             <p><strong>OPTIMUS Shipping Portal</strong><br>
