@@ -1,0 +1,8 @@
+# Bootstrap entry when DocumentRoot is the project folder (not public/).
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_URI} !/public/
+    RewriteRule ^ index.php [L]
+</IfModule>
