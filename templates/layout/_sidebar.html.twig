@@ -108,7 +108,6 @@
             {# Role-specific items #}
             {% if app.user.role.value == 'SYSTEM_ADMIN' %}
                 <div class="divider text-base-content/50 py-4 after:border-0">Management</div>
-                <li><a href="{{ path('app_admin_approved_accreditations') }}" class="{{ currentRoute starts with 'app_admin_approved_accreditations' ? 'active' : '' }}"><span class="icon-[tabler--circle-check] size-5"></span>Accreditations</a></li>
                 <li><a href="{{ path('app_admin_users') }}" class="{{ currentRoute starts with 'app_admin_users' ? 'active' : '' }}"><span class="icon-[tabler--users] size-5"></span>User Management</a></li>
                 <li>
                     <a href="{{ path('admin_appeals_list') }}" class="{{ currentRoute starts with 'admin_appeals' ? 'active' : '' }}">
@@ -135,6 +134,7 @@
                 <li><a href="{{ path('admin_container_sizes_index') }}" class="{{ currentRoute starts with 'admin_container_sizes' ? 'active' : '' }}"><span class="icon-[tabler--resize] size-5"></span>Container Sizes</a></li>
                 <li><a href="{{ path('admin_user_hierarchy_list') }}" class="{{ currentRoute starts with 'admin_user_hierarchy' ? 'active' : '' }}"><span class="icon-[tabler--hierarchy] size-5"></span>User Hierarchy</a></li>
                 <li><a href="{{ path('form_builder_list') }}" class="{{ currentRoute starts with 'form_builder' ? 'active' : '' }}"><span class="icon-[tabler--forms] size-5"></span>Form Builder</a></li>
+                <li><a href="{{ path('document_template_list') }}" class="{{ currentRoute starts with 'document_template' ? 'active' : '' }}"><span class="icon-[tabler--certificate] size-5"></span>Document Templates</a></li>
                 <li><a href="{{ path('admin_payment_fee_config') }}" class="{{ currentRoute starts with 'admin_payment_fee_config' ? 'active' : '' }}"><span class="icon-[tabler--receipt-2] size-5"></span>Payment Fees</a></li>
                 <li><a href="{{ path('admin_cy_utilization_report') }}" class="{{ currentRoute starts with 'admin_cy_utilization' ? 'active' : '' }}"><span class="icon-[tabler--chart-bar] size-5"></span>CY Utilization</a></li>
                 <li><a href="{{ path('admin_port_utilization_report') }}" class="{{ currentRoute starts with 'admin_port_utilization' ? 'active' : '' }}"><span class="icon-[tabler--anchor] size-5"></span>Port Utilization</a></li>
@@ -173,6 +173,14 @@
                 <li><a href="{{ path('app_shipping_admin_repositioning_index') }}" class="{{ currentRoute starts with 'app_shipping_admin_repositioning' ? 'active' : '' }}"><span class="icon-[tabler--truck-delivery] size-5"></span>Outbound Requests</a></li>
                 <li><a href="{{ path('admin_user_hierarchy_list') }}" class="{{ currentRoute starts with 'admin_user_hierarchy' ? 'active' : '' }}"><span class="icon-[tabler--users] size-5"></span>My Team</a></li>
                 <div class="divider text-base-content/50 py-4 after:border-0">Management</div>
+                <li>
+                    <a href="{{ path('app_shipping_admin_accreditations') }}" class="{{ currentRoute starts with 'app_shipping_admin_accreditation' ? 'active' : '' }}">
+                        <span class="icon-[tabler--id] size-5"></span>Accreditations
+                        {% if shippingAdminPendingAccreditationCount is defined and shippingAdminPendingAccreditationCount > 0 %}
+                            <span class="badge badge-soft badge-warning badge-sm ml-auto">{{ shippingAdminPendingAccreditationCount }}</span>
+                        {% endif %}
+                    </a>
+                </li>
                 <li><a href="{{ path('app_shipping_admin_consignees') }}" class="{{ currentRoute starts with 'app_shipping_admin_consignees' ? 'active' : '' }}"><span class="icon-[tabler--building] size-5"></span>Consignees</a></li>
                 <li><a href="{{ path('app_shipping_admin_brokers') }}" class="{{ currentRoute starts with 'app_shipping_admin_brokers' ? 'active' : '' }}"><span class="icon-[tabler--briefcase] size-5"></span>Brokers</a></li>
 

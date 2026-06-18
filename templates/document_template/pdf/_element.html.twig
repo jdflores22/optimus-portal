@@ -1,0 +1,165 @@
+{% set style = element.style|default({}) %}
+{% set fl = freeLayout|default(false) %}
+
+{% if element.type == 'header_banner' %}
+    <div style="background-color: {{ style.backgroundColor|default('#1e3a5f') }}; color: {{ style.color|default('#ffffff') }}; padding: 14px 16px; text-align: {{ style.textAlign|default('center') }};{% if not fl %} margin-bottom: 4px;{% endif %}">
+        <div style="font-size: {{ style.fontSize|default(18) }}pt; font-weight: bold; line-height: 1.3;">{{ element.content|default('Document Title') }}</div>
+        {% if element.subtitle is defined and element.subtitle %}
+            <div style="font-size: 9pt; margin-top: 4px;">{{ element.subtitle }}</div>
+        {% endif %}
+    </div>
+
+{% elseif element.type == 'heading' %}
+    <div style="font-size: {{ style.fontSize|default(13) }}pt; font-weight: bold; color: {{ style.color|default('#1e3a5f') }}; text-align: {{ style.textAlign|default('left') }}; margin: {{ fl ? '0' : '14px 0 8px 0' }}; padding-bottom: 4px; border-bottom: 1px solid #d1d5db;">
+        {{ element.content|default('Heading') }}
+    </div>
+
+{% elseif element.type == 'text' %}
+    <div style="font-size: {{ style.fontSize|default(11) }}pt; color: {{ style.color|default('#333333') }}; text-align: {{ style.textAlign|default('left') }};{% if not fl %} margin-bottom: 6px;{% endif %}">
+        {{ element.content|default('')|nl2br }}
+    </div>
+
+{% elseif element.type == 'field_label' %}
+    <div style="font-size: {{ style.fontSize|default(11) }}pt; font-weight: {{ style.fontWeight|default('bold') }}; color: {{ style.color|default('#374151') }}; text-align: {{ style.textAlign|default('left') }};{% if not fl %} margin-bottom: 4px;{% endif %} word-wrap: break-word;">
+        {{ element.label|default('Label') }}
+    </div>
+
+{% elseif element.type == 'field_value' %}
+    <div style="font-size: {{ style.fontSize|default(11) }}pt; font-weight: {{ style.fontWeight|default('normal') }}; color: {{ style.color|default('#1e3a5f') }}; text-align: {{ style.textAlign|default('left') }};{% if not fl %} margin-bottom: 4px;{% endif %} word-wrap: break-word;">
+        {{ element.resolvedValue|default('—') }}
+    </div>
+
+{% elseif element.type == 'placeholder' %}
+    <table style="width: 100%; border-collapse: collapse;{% if not fl %} margin-bottom: 4px;{% endif %} font-size: {{ style.fontSize|default(11) }}pt; table-layout: fixed;">
+        <tr>
+            {% if element.label %}
+                <td style="width: 38%; font-weight: bold; color: #374151; padding: 5px 10px 5px 0; vertical-align: top;">{{ element.label }}</td>
+                <td style="width: 62%; color: #1e3a5f; padding: 5px 0; vertical-align: top; word-wrap: break-word;">{{ element.resolvedValue|default('—') }}</td>
+            {% else %}
+                <td style="color: #1e3a5f; padding: 5px 0; word-wrap: break-word;">{{ element.resolvedValue|default('—') }}</td>
+            {% endif %}
+        </tr>
+    </table>
+
+{% elseif element.type == 'info_row' %}
+    <table style="width: 100%; border-collapse: collapse;{% if not fl %} margin-bottom: 4px;{% endif %} font-size: {{ style.fontSize|default(11) }}pt; table-layout: fixed;">
+        <tr>
+            <td style="width: 38%; font-weight: bold; color: #374151; padding: 5px 10px 5px 0; vertical-align: top;">{{ element.label|default('Label') }}</td>
+            <td style="width: 62%; color: #1e3a5f; padding: 5px 0; vertical-align: top; word-wrap: break-word;">{{ element.resolvedValue|default('—') }}</td>
+        </tr>
+    </table>
+
+{% elseif element.type == 'divider' %}
+    {% include 'document_template/pdf/_divider.html.twig' with { element: element, style: style, freeLayout: fl } %}
+
+{% elseif element.type == 'spacer' %}
+    <div style="height: {{ element.height|default(12) }}px; line-height: 0; font-size: 0;">&nbsp;</div>
+
+{% elseif element.type == 'table' %}
+    {% set columns = element.columns|default(['Column 1', 'Column 2']) %}
+    {% set columnWidths = element.columnWidths|default([]) %}
+    {% set rows = element.resolvedRows|default([]) %}
+    {% set colCount = columns|length %}
+    {% set tableFont = style.fontSize|default(10) %}
+    <table class="doc-table" style="width: 100%; border-collapse: collapse; margin: {{ fl ? '0' : '8px 0 12px 0' }}; font-size: {{ tableFont }}pt; table-layout: fixed;">
+        <colgroup>
+            {% for col in columns %}
+                {% set colIndex = loop.index0 %}
+                {% set colWidth = attribute(columnWidths, colIndex)|default(colCount > 0 ? (100 / colCount)|round(1) : 100) %}
+                <col style="width: {{ colWidth }}%;">
+            {% endfor %}
+        </colgroup>
+        <thead>
+            <tr style="background-color: #1e3a5f; color: #ffffff;">
+                {% for col in columns %}
+                    {% set colIndex = loop.index0 %}
+                    {% set colWidth = attribute(columnWidths, colIndex)|default(colCount > 0 ? (100 / colCount)|round(1) : 100) %}
+                    <th style="width: {{ colWidth }}%; max-width: {{ colWidth }}%; padding: 8px 6px; text-align: left; border: 1px solid #1e3a5f; font-weight: bold; overflow: hidden; word-wrap: break-word; vertical-align: top;">{{ col }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% if rows|length > 0 %}
+                {% for row in rows %}
+                    <tr style="background-color: {{ loop.index is odd ? '#f8fafc' : '#ffffff' }};">
+                        {% for cell in row %}
+                            {% set colIndex = loop.index0 %}
+                            {% set colWidth = attribute(columnWidths, colIndex)|default(colCount > 0 ? (100 / colCount)|round(1) : 100) %}
+                            <td style="width: {{ colWidth }}%; max-width: {{ colWidth }}%; padding: 7px 6px; border: 1px solid #e2e8f0; word-wrap: break-word; vertical-align: top; overflow: hidden;{% if colIndex == 2 %} text-align: right; line-height: 1.35;{% endif %}">{{ cell|nl2br }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="{{ columns|length }}" style="padding: 12px; text-align: center; color: #9ca3af; border: 1px solid #e2e8f0;">No data</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+{% elseif element.type == 'signature' %}
+    <div style="{% if not fl %}margin-top: 28px;{% endif %} text-align: {{ style.textAlign|default('center') }};">
+        <div style="border-top: 1px solid #333333; width: 180px; margin: 0 auto 6px auto;"></div>
+        <div style="font-size: 9pt; color: #6b7280;">{{ element.label|default('Authorized Signature') }}</div>
+    </div>
+
+{% elseif element.type == 'qr_code' %}
+    {% set qrSize = element.size|default(72) %}
+    <div style="text-align: center; margin: {{ fl ? '0' : '12px 0' }};">
+        {% if element.qrImageSrc is defined and element.qrImageSrc %}
+            <img src="{{ element.qrImageSrc }}" alt="QR Code" style="display: inline-block; width: {{ qrSize }}px; height: {{ qrSize }}px;">
+        {% else %}
+            <div style="display: inline-block; width: {{ qrSize }}px; height: {{ qrSize }}px; border: 1px solid #d1d5db; text-align: center; font-size: 8pt; color: #9ca3af; padding-top: 28px;">
+                QR
+            </div>
+        {% endif %}
+        {% if element.resolvedValue is defined and element.resolvedValue and element.resolvedValue != '—' and not (element.resolvedValue starts with 'http') %}
+            <div style="font-size: 8pt; color: #6b7280; margin-top: 4px;">{{ element.resolvedValue }}</div>
+        {% endif %}
+    </div>
+
+{% elseif element.type == 'border_box' %}
+    {% set contentText = element.content|default('')|trim|upper %}
+    {% set bgColor = style.backgroundColor|default('transparent') %}
+    {% set borderColor = style.borderColor|default(style.backgroundColor|default('#1e3a5f')) %}
+    {% set textColor = style.color|default('#1e3a5f') %}
+    {% if contentText == 'PAID' %}
+        {% set bgColor = '#28a745' %}
+        {% set borderColor = '#28a745' %}
+        {% set textColor = '#ffffff' %}
+    {% elseif contentText == 'UNPAID' %}
+        {% set bgColor = '#dc3545' %}
+        {% set borderColor = '#dc3545' %}
+        {% set textColor = '#ffffff' %}
+    {% endif %}
+    <div style="border: {{ style.borderWidth|default(2) }}px solid {{ borderColor }}; background-color: {{ bgColor }}; color: {{ textColor }}; padding: {{ style.padding|default(16) }}px; text-align: {{ style.textAlign|default('left') }}; font-size: {{ style.fontSize|default(12) }}pt; font-weight: {{ style.fontWeight|default('normal') }}; word-wrap: break-word;">
+        {{ element.content|default('')|nl2br }}
+    </div>
+
+{% elseif element.type == 'two_column' %}
+    <table style="width: 100%; margin-bottom: {{ fl ? '0' : '10px' }}; border-collapse: collapse; table-layout: fixed;">
+        <tr>
+            <td style="width: 50%; vertical-align: top; padding-right: 8px; word-wrap: break-word;">{{ element.leftContent|default('')|nl2br }}</td>
+            <td style="width: 50%; vertical-align: top; padding-left: 8px; word-wrap: break-word;">{{ element.rightContent|default('')|nl2br }}</td>
+        </tr>
+    </table>
+
+{% elseif element.type == 'footer' %}
+    <div style="font-size: {{ style.fontSize|default(8) }}pt; color: {{ style.color|default('#6b7280') }}; text-align: {{ style.textAlign|default('center') }}; border-top: 1px solid #e5e7eb; padding-top: 10px; line-height: 1.4; word-wrap: break-word;">
+        {{ element.content|default('')|nl2br }}
+    </div>
+
+{% elseif element.type == 'logo' or element.type == 'image' %}
+    {% set cfg = element.config|default({}) %}
+    {% set align = style.textAlign|default('center') %}
+    {% if cfg.src is defined and cfg.src %}
+        <div style="text-align: {{ align }};">
+            <img src="{{ cfg.src }}" alt="{{ cfg.alt|default('Image') }}" style="max-width: {{ cfg.width|default(120) }}px; height: auto; display: inline-block;">
+        </div>
+    {% else %}
+        <div style="text-align: {{ align }}; font-size: 9pt; color: #9ca3af;">{{ cfg.alt|default('Image') }}</div>
+    {% endif %}
+
+{% else %}
+    <div style="font-size: 10pt; color: #9ca3af;">{{ element.type|default('unknown') }} block</div>
+{% endif %}

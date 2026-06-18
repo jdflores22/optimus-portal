@@ -13,6 +13,9 @@ class Broker extends User
     #[ORM\Column(type: 'string', length: 255)]
     private string $fullName;
 
+    #[ORM\Column(type: 'string', length: 500, nullable: true)]
+    private ?string $businessAddress = null;
+
     #[ORM\OneToMany(targetEntity: Consignee::class, mappedBy: 'linkedBroker')]
     private Collection $linkedConsignees;
 
@@ -30,6 +33,20 @@ class Broker extends User
     public function setFullName(string $fullName): self
     {
         $this->fullName = $fullName;
+        return $this;
+    }
+
+    public function getBusinessAddress(): ?string
+    {
+        return $this->businessAddress;
+    }
+
+    public function setBusinessAddress(?string $businessAddress): self
+    {
+        $this->businessAddress = $businessAddress !== null && $businessAddress !== ''
+            ? $businessAddress
+            : null;
+
         return $this;
     }
 

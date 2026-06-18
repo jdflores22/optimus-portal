@@ -115,4 +115,46 @@ final class FormFieldTypes
             default => [],
         };
     }
+
+    /** @return array<string, array{pattern: string, message: string, inputMode: string}> */
+    public static function inputRestrictionPresets(): array
+    {
+        return [
+            'numeric' => [
+                'pattern' => '^[0-9]+$',
+                'message' => 'Only numbers are allowed',
+                'inputMode' => 'numeric',
+            ],
+            'alpha' => [
+                'pattern' => '^[A-Za-z]+$',
+                'message' => 'Only letters are allowed',
+                'inputMode' => 'text',
+            ],
+            'alphanumeric' => [
+                'pattern' => '^[A-Za-z0-9]+$',
+                'message' => 'Only letters and numbers are allowed',
+                'inputMode' => 'text',
+            ],
+        ];
+    }
+
+    public static function applyInputRestriction(array $validation, string $restriction): array
+    {
+        unset($validation['inputRestriction'], $validation['pattern'], $validation['message']);
+
+        if ($restriction === '' || $restriction === 'none') {
+            return $validation;
+        }
+
+        $presets = self::inputRestrictionPresets();
+        if (!isset($presets[$restriction])) {
+            return $validation;
+        }
+
+        $validation['inputRestriction'] = $restriction;
+        $validation['pattern'] = $presets[$restriction]['pattern'];
+        $validation['message'] = $presets[$restriction]['message'];
+
+        return $validation;
+    }
 }

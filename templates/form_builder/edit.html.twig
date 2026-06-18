@@ -646,12 +646,40 @@
                 const rangeMax = detectedLengthMode === 'range'
                     ? (val.maxLength ?? val.maxlength ?? '')
                     : '';
+                const detectedRestriction = (function () {
+                    if (val.inputRestriction) {
+                        return val.inputRestriction;
+                    }
+                    const pattern = val.pattern || '';
+                    if (pattern === '^[0-9]+$') {
+                        return 'numeric';
+                    }
+                    if (pattern === '^[A-Za-z]+$') {
+                        return 'alpha';
+                    }
+                    if (pattern === '^[A-Za-z0-9]+$') {
+                        return 'alphanumeric';
+                    }
+                    return 'none';
+                })();
                 optionsHTML = `
                     <div class="form-control">
                         <label class="label py-1" for="field-placeholder">
                             <span class="label-text">Placeholder Text</span>
                         </label>
                         <input type="text" id="field-placeholder" class="input input-bordered w-full" placeholder="Enter placeholder text" value="${escapeHtml(fd.placeholder || '')}">
+                    </div>
+                    <div class="form-control">
+                        <label class="label py-1" for="field-input-restriction">
+                            <span class="label-text">Allowed characters</span>
+                        </label>
+                        <select id="field-input-restriction" class="select select-bordered w-full">
+                            <option value="none" ${detectedRestriction === 'none' ? 'selected' : ''}>Any text</option>
+                            <option value="numeric" ${detectedRestriction === 'numeric' ? 'selected' : ''}>Numbers only</option>
+                            <option value="alpha" ${detectedRestriction === 'alpha' ? 'selected' : ''}>Letters only</option>
+                            <option value="alphanumeric" ${detectedRestriction === 'alphanumeric' ? 'selected' : ''}>Letters and numbers only</option>
+                        </select>
+                        <p class="text-xs text-base-content/50 mt-1">Applicants cannot type disallowed characters in the live form.</p>
                     </div>
                     <div class="form-control">
                         <span class="label-text font-medium mb-2 block">Character Length</span>
@@ -876,6 +904,23 @@
                     fieldData.placeholder = placeholder;
                 } else {
                     delete fieldData.placeholder;
+                }
+
+                const restriction = document.getElementById('field-input-restriction')?.value || 'none';
+                const restrictionPresets = {
+                    numeric: { pattern: '^[0-9]+$', message: 'Only numbers are allowed' },
+                    alpha: { pattern: '^[A-Za-z]+$', message: 'Only letters are allowed' },
+                    alphanumeric: { pattern: '^[A-Za-z0-9]+$', message: 'Only letters and numbers are allowed' },
+                };
+
+                delete fieldData.validation.inputRestriction;
+                if (restriction !== 'none' && restrictionPresets[restriction]) {
+                    fieldData.validation.inputRestriction = restriction;
+                    fieldData.validation.pattern = restrictionPresets[restriction].pattern;
+                    fieldData.validation.message = restrictionPresets[restriction].message;
+                } else if (type !== 'phone' && type !== 'email' && type !== 'url') {
+                    delete fieldData.validation.pattern;
+                    delete fieldData.validation.message;
                 }
 
                 if (lengthMode === 'exact') {

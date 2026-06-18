@@ -1,0 +1,120 @@
+<script>
+let dtCurrentId = null;
+
+function dtOpenModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function dtCloseModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+    dtCurrentId = null;
+}
+
+function dtToast(message, type) {
+    const container = document.getElementById('dtToastContainer');
+    if (!container) return;
+    const cls = type === 'success' ? 'alert-success' : 'alert-error';
+    const toast = document.createElement('div');
+    toast.className = 'alert ' + cls + ' shadow-lg pointer-events-auto';
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+function dtPost(url, onSuccess) {
+    fetch(url, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json())
+        .then(result => {
+            if (result.success) onSuccess(result);
+            else dtToast(result.message || 'Error', 'error');
+        })
+        .catch(() => dtToast('Request failed', 'error'));
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.activate-template-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            dtCurrentId = this.dataset.templateId;
+            document.getElementById('dtActivateName').textContent = this.dataset.templateName;
+            dtOpenModal('dtActivateModal');
+        });
+    });
+
+    document.querySelectorAll('.deactivate-template-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            dtCurrentId = this.dataset.templateId;
+            document.getElementById('dtDeactivateName').textContent = this.dataset.templateName;
+            dtOpenModal('dtDeactivateModal');
+        });
+    });
+
+    document.querySelectorAll('.unpublish-template-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            dtCurrentId = this.dataset.templateId;
+            document.getElementById('dtUnpublishName').textContent = this.dataset.templateName;
+            dtOpenModal('dtUnpublishModal');
+        });
+    });
+
+    document.querySelectorAll('.delete-template-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            dtCurrentId = this.dataset.templateId;
+            document.getElementById('dtDeleteName').textContent = this.dataset.templateName;
+            dtOpenModal('dtDeleteModal');
+        });
+    });
+
+    document.getElementById('dtConfirmActivate')?.addEventListener('click', function () {
+        if (!dtCurrentId) return;
+        dtPost('/admin/document-templates/' + dtCurrentId + '/activate', () => {
+            dtCloseModal('dtActivateModal');
+            dtToast('Template activated', 'success');
+            setTimeout(() => location.reload(), 800);
+        });
+    });
+
+    document.getElementById('dtConfirmDeactivate')?.addEventListener('click', function () {
+        if (!dtCurrentId) return;
+        dtPost('/admin/document-templates/' + dtCurrentId + '/deactivate', () => {
+            dtCloseModal('dtDeactivateModal');
+            dtToast('Template deactivated', 'success');
+            setTimeout(() => location.reload(), 800);
+        });
+    });
+
+    document.getElementById('dtConfirmUnpublish')?.addEventListener('click', function () {
+        if (!dtCurrentId) return;
+        dtPost('/admin/document-templates/' + dtCurrentId + '/unpublish', () => {
+            dtCloseModal('dtUnpublishModal');
+            dtToast('Template unpublished', 'success');
+            setTimeout(() => location.reload(), 800);
+        });
+    });
+
+    document.getElementById('dtConfirmDelete')?.addEventListener('click', function () {
+        if (!dtCurrentId) return;
+        fetch('/admin/document-templates/' + dtCurrentId + '/delete', {
+            method: 'DELETE',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.json())
+        .then(result => {
+            dtCloseModal('dtDeleteModal');
+            if (result.success) {
+                dtToast('Template deleted', 'success');
+                setTimeout(() => location.reload(), 800);
+            } else {
+                dtToast(result.message || 'Error', 'error');
+            }
+        });
+    });
+});
+</script>

@@ -5,6 +5,7 @@ namespace App\Controller\Api;
 use App\Service\BillingService;
 use App\Service\ManifestAuthorizationService;
 use App\Service\AuditService;
+use App\Service\FileStorageServiceInterface;
 use App\Service\JwtService;
 use App\Service\UserService;
 use App\Entity\Enum\UserRole;
@@ -21,6 +22,7 @@ class BillingController extends BaseApiController
         private BillingService $billingService,
         private ManifestAuthorizationService $authorizationService,
         private AuditService $auditService,
+        private FileStorageServiceInterface $fileStorage,
         JwtService $jwtService,
         UserService $userService
     ) {
@@ -80,32 +82,13 @@ class BillingController extends BaseApiController
         }
 
         try {
-            $chargeData = [
+            $chargeData = $this->billingService->normalizeChargeData([
                 'freightCharges' => (float) $data['freightCharges'],
                 'thcCharges' => (float) $data['thcCharges'],
                 'additionalCharges' => $data['additionalCharges'] ?? null,
                 'currency' => $data['currency'] ?? 'PHP',
-                'exchangeRate' => isset($data['exchangeRate']) ? (float) $data['exchangeRate'] : null
-            ];
-
-            // If currency is USD, calculate USD amounts from PHP amounts
-            if ($chargeData['currency'] === 'USD' && $chargeData['exchangeRate']) {
-                // The user enters PHP amounts, so we need to convert TO USD
-                $chargeData['freightChargesUsd'] = $chargeData['freightCharges'] / $chargeData['exchangeRate'];
-                $chargeData['thcChargesUsd'] = $chargeData['thcCharges'] / $chargeData['exchangeRate'];
-                
-                // Calculate USD total for additional charges
-                $additionalUsd = 0;
-                if ($chargeData['additionalCharges']) {
-                    foreach ($chargeData['additionalCharges'] as $charge) {
-                        $additionalUsd += $charge['amount'] / $chargeData['exchangeRate'];
-                    }
-                }
-                $chargeData['totalAmountUsd'] = $chargeData['freightChargesUsd'] + $chargeData['thcChargesUsd'] + $additionalUsd;
-                
-                // Keep the PHP amounts as entered (no conversion needed)
-                // freightCharges and thcCharges remain as PHP values
-            }
+                'exchangeRate' => isset($data['exchangeRate']) ? (float) $data['exchangeRate'] : null,
+            ]);
 
             $billing = $this->billingService->generateBilling($id, $chargeData, $user);
 
@@ -215,28 +198,30 @@ class BillingController extends BaseApiController
                 }
             }
 
-            // Get PDF path
-            $pdfPath = $billing->getPdfPath();
-            
-            // If PDF doesn't exist or path is null, try to generate it
-            if (!$pdfPath || !file_exists($pdfPath)) {
-                try {
-                    // Regenerate the billing PDF
+            // Regenerate when template changed, explicitly requested, or file missing
+            $shouldRefresh = $request->query->getBoolean('refresh')
+                || !$billing->getPdfPath()
+                || !$this->fileStorage->fileExists((string) $billing->getPdfPath());
+
+            try {
+                if ($shouldRefresh) {
                     $billing = $this->billingService->regenerateBillingPdf($billingId);
-                    $pdfPath = $billing->getPdfPath();
-                    
-                    if (!$pdfPath || !file_exists($pdfPath)) {
-                        return $this->errorResponse('Unable to generate billing PDF', 500);
-                    }
-                } catch (\Exception $e) {
-                    return $this->errorResponse('Failed to generate billing PDF: ' . $e->getMessage(), 500);
+                } else {
+                    $billing = $this->billingService->ensureBillingPdfIsCurrent($billing);
                 }
+            } catch (\Exception $e) {
+                return $this->errorResponse('Failed to generate billing PDF: ' . $e->getMessage(), 500);
+            }
+
+            $pdfPath = $billing->getPdfPath();
+            if (!$pdfPath || !$this->fileStorage->fileExists($pdfPath)) {
+                return $this->errorResponse('Unable to generate billing PDF', 500);
             }
 
             // Log document download
             $this->auditService->logDocumentDownload($user, 'Billing', $billing->getId());
 
-            $response = new BinaryFileResponse($pdfPath);
+            $response = new BinaryFileResponse($this->fileStorage->getFullPath($pdfPath));
             
             // Check if inline viewing is requested (for iframe)
             $inline = $request->query->get('inline', 'true');

@@ -1,0 +1,23 @@
+{# Workflow status badge — optional size: 'sm' (default uses badge-sm) #}
+{% set badgeSize = size|default('sm') == 'sm' ? 'badge-sm' : 'badge-lg' %}
+{% if statusValue == 'manifest_uploaded' %}
+    <span class="badge badge-ghost {{ badgeSize }}">Uploaded</span>
+{% elseif statusValue == 'noa_generated' %}
+    <span class="badge badge-secondary badge-soft {{ badgeSize }}">NOA generated</span>
+{% elseif statusValue == 'bl_generated' %}
+    <span class="badge badge-info badge-soft {{ badgeSize }}">BL generated</span>
+{% elseif statusValue == 'bl_uploaded' %}
+    <span class="badge badge-info badge-soft {{ badgeSize }}">BL uploaded</span>
+{% elseif statusValue == 'billing_generated' %}
+    <span class="badge badge-warning badge-soft {{ badgeSize }}">Billing generated</span>
+{% elseif statusValue == 'payment_submitted' %}
+    <span class="badge badge-info badge-soft {{ badgeSize }}">Payment submitted</span>
+{% elseif statusValue == 'payment_verified' %}
+    <span class="badge badge-primary badge-soft {{ badgeSize }}">Payment verified</span>
+{% elseif statusValue == 'edo_generated' %}
+    <span class="badge badge-success badge-soft {{ badgeSize }}">eDO generated</span>
+{% elseif statusValue == 'edo_released' %}
+    <span class="badge badge-success {{ badgeSize }}">eDO released</span>
+{% else %}
+    <span class="badge badge-ghost {{ badgeSize }}">{{ manifest.workflowState.getDisplayName() }}</span>
+{% endif %}

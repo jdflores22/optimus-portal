@@ -133,9 +133,21 @@ class FileDownloadController extends AbstractController
             return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
         }
 
-        // Get manifest file path (assuming it's stored in the manifest entity)
-        $filePath = $manifest->getManifestFilePath();
-        if (!$filePath || !$this->fileStorage->fileExists($filePath)) {
+        // Prefer manifest file path, then workflow NOA-linked manifest pdf path.
+        $filePathCandidates = array_values(array_filter(array_unique([
+            $manifest->getNoa()?->getManifestPdfPath(),
+            $manifest->getManifestFilePath(),
+        ])));
+
+        $filePath = null;
+        foreach ($filePathCandidates as $candidatePath) {
+            if ($this->fileStorage->fileExists($candidatePath)) {
+                $filePath = $candidatePath;
+                break;
+            }
+        }
+
+        if (!$filePath) {
             return $this->json(['error' => 'Manifest file not found'], Response::HTTP_NOT_FOUND);
         }
 

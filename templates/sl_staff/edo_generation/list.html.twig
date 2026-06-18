@@ -7,324 +7,359 @@
 {% set pendingCount = containersNeedingEdo|length %}
 {% set generatedCount = containersWithEdo|length %}
 
-<div class="space-y-5 sm:space-y-6">
+<div class="max-w-7xl mx-auto w-full space-y-5 sm:space-y-6 pb-10">
 
-    {# Header #}
-    <div class="bg-base-100 shadow-sm rounded-xl">
-        <div class="p-4 sm:p-6">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div class="min-w-0">
-                    <div class="breadcrumbs text-xs mb-2">
-                        <ul>
-                            <li><a href="{{ path('app_sl_staff_dashboard') }}">SL Staff</a></li>
-                            <li>eDO Generation</li>
-                        </ul>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <div class="size-12 rounded-xl bg-success/10 flex items-center justify-center shrink-0">
-                            <span class="icon-[tabler--file-certificate] size-6 text-success"></span>
-                        </div>
-                        <div class="min-w-0">
-                            <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">eDO Generation</h1>
-                            <p class="text-sm text-base-content/60 mt-1">
-                                Generate electronic delivery orders for containers with verified final payments.
-                            </p>
-                        </div>
-                    </div>
+    {# ── Hero header ── #}
+    <div class="rounded-3xl border border-success/20 bg-gradient-to-br from-success/15 via-base-100 to-base-100 shadow-sm p-5 sm:p-7">
+        <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
+            <div class="space-y-3 min-w-0">
+                <div class="breadcrumbs text-xs">
+                    <ul>
+                        <li><a href="{{ path('app_sl_staff_dashboard') }}">SL Staff</a></li>
+                        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right] size-3.5"></span></li>
+                        <li aria-current="page">eDO Generation</li>
+                    </ul>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                    <a href="{{ path('sl_staff_renewal_requests_ready') }}" class="btn btn-ghost btn-sm gap-2">
-                        <span class="icon-[tabler--refresh] size-4"></span>
-                        Renewal Requests
-                    </a>
+
+                <span class="inline-flex items-center gap-2 rounded-full bg-success/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-success">
+                    <span class="icon-[tabler--file-certificate] size-3.5"></span>
+                    Electronic Delivery Orders
+                </span>
+
+                <div>
+                    <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-base-content leading-tight">eDO Generation</h1>
+                    <p class="mt-2 text-sm sm:text-base text-base-content/70 max-w-2xl">
+                        Issue electronic delivery orders for containers with verified final payments. Process pending containers or review already generated eDOs.
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
                     {% if pendingCount > 0 %}
-                        <button type="button" class="btn btn-primary btn-sm gap-2" onclick="switchTab('pending')">
-                            <span class="icon-[tabler--player-play] size-4"></span>
-                            Process Pending ({{ pendingCount }})
-                        </button>
+                        <span class="badge badge-warning badge-soft badge-lg gap-2">
+                            <span class="icon-[tabler--clock] size-4"></span>
+                            {{ pendingCount }} pending
+                        </span>
+                    {% else %}
+                        <span class="badge badge-success badge-soft badge-lg gap-2">
+                            <span class="icon-[tabler--circle-check] size-4"></span>
+                            All caught up
+                        </span>
                     {% endif %}
+                    <span class="badge badge-ghost badge-lg gap-2 font-semibold">
+                        <span class="icon-[tabler--container] size-4"></span>
+                        {{ totalContainers }} eligible
+                    </span>
+                    <span class="badge badge-success badge-lg gap-2">
+                        <span class="icon-[tabler--file-check] size-4"></span>
+                        {{ generatedCount }} generated
+                    </span>
                 </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 xl:justify-end shrink-0">
+                <a href="{{ path('sl_staff_renewal_requests_ready') }}" class="btn btn-outline btn-success btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--refresh] size-4"></span>
+                    Renewal Requests
+                </a>
+                {% if pendingCount > 0 %}
+                    <button type="button" class="btn btn-success btn-sm sm:btn-md gap-2" onclick="switchTab('pending')">
+                        <span class="icon-[tabler--player-play] size-4"></span>
+                        Process Pending ({{ pendingCount }})
+                    </button>
+                {% endif %}
+                <a href="{{ path('app_sl_staff_dashboard') }}" class="btn btn-ghost btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--arrow-left] size-4"></span>
+                    Dashboard
+                </a>
             </div>
         </div>
     </div>
 
-    {# Summary stats #}
-    <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-        <button type="button" data-tab-trigger="pending"
-                class="card shadow-sm text-left transition-colors tab-stat-card bg-warning/10 ring-2 ring-warning/30">
-            <div class="card-body p-4 sm:p-5">
-                <div class="flex items-center gap-3">
-                    <div class="size-10 bg-warning/20 text-warning rounded-xl flex items-center justify-center shrink-0">
-                        <span class="icon-[tabler--clock] size-5"></span>
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-xs text-base-content/70">Pending</p>
-                        <p class="text-2xl font-bold text-base-content">{{ pendingCount }}</p>
-                        <p class="text-xs text-warning/80">Awaiting eDO</p>
-                    </div>
-                </div>
+    {# Compact stats bar #}
+    <div class="stats stats-vertical sm:stats-horizontal w-full shadow-sm border border-base-300/50 bg-base-100 rounded-xl">
+        <button type="button" data-tab-trigger="pending" class="stat py-3 px-4 sm:py-4 text-left tab-stat-card transition-colors">
+            <div class="stat-figure text-warning">
+                <span class="icon-[tabler--clock] size-5"></span>
             </div>
+            <div class="stat-title text-xs">Pending</div>
+            <div class="stat-value text-lg font-bold text-warning">{{ pendingCount }}</div>
+            <div class="stat-desc text-xs">Awaiting eDO</div>
         </button>
-        <button type="button" data-tab-trigger="generated"
-                class="card shadow-sm text-left transition-colors tab-stat-card bg-base-100 hover:bg-success/5">
-            <div class="card-body p-4 sm:p-5">
-                <div class="flex items-center gap-3">
-                    <div class="size-10 bg-success/10 text-success rounded-xl flex items-center justify-center shrink-0">
-                        <span class="icon-[tabler--circle-check] size-5"></span>
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-xs text-base-content/70">Generated</p>
-                        <p class="text-2xl font-bold text-base-content">{{ generatedCount }}</p>
-                        <p class="text-xs text-success/80">eDOs issued</p>
-                    </div>
-                </div>
+        <button type="button" data-tab-trigger="generated" class="stat py-3 px-4 sm:py-4 text-left tab-stat-card transition-colors">
+            <div class="stat-figure text-success">
+                <span class="icon-[tabler--circle-check] size-5"></span>
             </div>
+            <div class="stat-title text-xs">Generated</div>
+            <div class="stat-value text-lg font-bold text-success">{{ generatedCount }}</div>
+            <div class="stat-desc text-xs">eDOs issued</div>
         </button>
-        <div class="card bg-base-100 shadow-sm col-span-2 lg:col-span-1">
-            <div class="card-body p-4 sm:p-5">
-                <div class="flex items-center gap-3">
-                    <div class="size-10 bg-info/10 text-info rounded-xl flex items-center justify-center shrink-0">
-                        <span class="icon-[tabler--container] size-5"></span>
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-xs text-base-content/70">Total Eligible</p>
-                        <p class="text-2xl font-bold text-base-content">{{ totalContainers }}</p>
-                        <p class="text-xs text-info/80">Verified payment</p>
-                    </div>
-                </div>
+        <div class="stat py-3 px-4 sm:py-4">
+            <div class="stat-figure text-info">
+                <span class="icon-[tabler--container] size-5"></span>
             </div>
+            <div class="stat-title text-xs">Total eligible</div>
+            <div class="stat-value text-lg font-bold text-info">{{ totalContainers }}</div>
+            <div class="stat-desc text-xs">Payment verified</div>
         </div>
     </div>
 
     {% if totalContainers == 0 %}
-        <div class="card bg-base-100 shadow-sm">
+        <div class="card card-border bg-base-100 shadow-sm">
             <div class="card-body text-center py-16 px-4">
-                <div class="inline-flex items-center justify-center size-16 bg-base-200 rounded-2xl mb-4">
-                    <span class="icon-[tabler--file-off] size-8 text-base-content/40"></span>
+                <div class="avatar avatar-placeholder mx-auto mb-4">
+                    <div class="bg-base-200 text-base-content/40 size-20 rounded-2xl">
+                        <span class="icon-[tabler--file-off] size-10"></span>
+                    </div>
                 </div>
                 <h3 class="text-lg font-semibold text-base-content">No containers ready</h3>
                 <p class="text-sm text-base-content/60 mt-2 max-w-md mx-auto">
                     Containers appear here after final payment is verified on the manifest.
                 </p>
+                <a href="{{ path('manifest_workflow_list') }}" class="btn btn-outline btn-primary btn-sm mt-6 gap-2">
+                    <span class="icon-[tabler--file-text] size-4"></span>
+                    View NOA list
+                </a>
             </div>
         </div>
     {% else %}
-        {# Search #}
-        <div class="card bg-base-100 shadow-sm">
-            <div class="card-body p-4 sm:p-5">
-                <label class="input input-bordered flex items-center gap-2 w-full max-w-xl">
-                    <span class="icon-[tabler--search] size-4 text-base-content/40"></span>
-                    <input type="search" id="searchInput" class="grow" placeholder="Search container, manifest, broker, or consignee…" autocomplete="off">
-                </label>
-            </div>
-        </div>
-
-        {# Pending tab #}
-        <div id="pending-tab" class="tab-panel space-y-4">
-            {% if pendingCount == 0 %}
-                <div class="card bg-base-100 shadow-sm">
-                    <div class="card-body text-center py-14 px-4">
-                        <div class="inline-flex items-center justify-center size-14 bg-success/10 rounded-2xl mb-3">
-                            <span class="icon-[tabler--circle-check] size-7 text-success"></span>
-                        </div>
-                        <h3 class="text-lg font-semibold text-base-content">All caught up</h3>
-                        <p class="text-sm text-base-content/60 mt-1">Every eligible container already has an eDO.</p>
-                        <button type="button" class="btn btn-ghost btn-sm mt-4 gap-1" onclick="switchTab('generated')">
-                            View generated eDOs
-                            <span class="icon-[tabler--arrow-right] size-4"></span>
+        {# Main list card with tabs + search #}
+        <div class="card card-border bg-base-100 shadow-sm">
+            <div class="card-body p-0">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 p-4 sm:p-5 border-b border-base-300/60">
+                    <div role="tablist" class="tabs tabs-bordered">
+                        <button type="button" class="tab tab-active gap-2" data-tab-trigger="pending" id="tab-btn-pending">
+                            <span class="icon-[tabler--clock] size-4"></span>
+                            Pending
+                            {% if pendingCount > 0 %}
+                                <span class="badge badge-warning badge-sm">{{ pendingCount }}</span>
+                            {% endif %}
+                        </button>
+                        <button type="button" class="tab gap-2" data-tab-trigger="generated" id="tab-btn-generated">
+                            <span class="icon-[tabler--circle-check] size-4"></span>
+                            Generated
+                            {% if generatedCount > 0 %}
+                                <span class="badge badge-success badge-sm">{{ generatedCount }}</span>
+                            {% endif %}
                         </button>
                     </div>
+                    <label class="input input-bordered input-sm flex items-center gap-2 w-full lg:max-w-sm">
+                        <span class="icon-[tabler--search] size-4 text-base-content/40"></span>
+                        <input type="search" id="searchInput" class="grow" placeholder="Search container, manifest, broker…" autocomplete="off">
+                    </label>
                 </div>
-            {% else %}
-                {% for group in pendingGroups %}
-                    {% set manifest = group.manifest %}
 
-                    <div class="card bg-base-100 shadow-sm edo-group-card" data-search="{{ group.search_text }}">
-                        <div class="px-4 sm:px-6 py-4 border-b border-base-200/80 bg-warning/5 rounded-t-xl">
-                            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                                <div class="flex items-start gap-3 min-w-0">
-                                    <button type="button" class="btn btn-ghost btn-sm btn-square shrink-0 group-toggle" onclick="toggleGroup({{ group.id }})" aria-expanded="true" aria-controls="group-{{ group.id }}">
-                                        <span class="icon-[tabler--chevron-down] size-5 transition-transform group-icon-{{ group.id }}"></span>
-                                    </button>
-                                    <div class="min-w-0">
-                                        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                            {% if manifest.noa %}
-                                                <a href="{{ path('manifest_workflow_noa_detail', {id: manifest.noa.id}) }}" class="font-semibold text-base-content hover:text-primary">
-                                                    {{ manifest.manifestNumber }}
-                                                </a>
-                                            {% else %}
-                                                <span class="font-semibold text-base-content">{{ manifest.manifestNumber }}</span>
-                                            {% endif %}
-                                            <span class="badge badge-warning badge-sm">{{ group.containers|length }} pending</span>
-                                            <span class="badge badge-ghost badge-sm">{{ group.edo_count_in_manifest }}/{{ group.total_in_manifest }} eDOs</span>
+                {# Pending tab #}
+                <div id="pending-tab" class="tab-panel p-4 sm:p-5 space-y-4">
+                    {% if pendingCount == 0 %}
+                        <div class="text-center py-14 px-4">
+                            <div class="avatar avatar-placeholder mx-auto mb-3">
+                                <div class="bg-success/15 text-success size-16 rounded-2xl">
+                                    <span class="icon-[tabler--circle-check] size-8"></span>
+                                </div>
+                            </div>
+                            <h3 class="text-lg font-semibold text-base-content">All caught up</h3>
+                            <p class="text-sm text-base-content/60 mt-1">Every eligible container already has an eDO.</p>
+                            <button type="button" class="btn btn-ghost btn-sm mt-4 gap-1" onclick="switchTab('generated')">
+                                View generated eDOs
+                                <span class="icon-[tabler--arrow-right] size-4"></span>
+                            </button>
+                        </div>
+                    {% else %}
+                        {% for group in pendingGroups %}
+                            {% set manifest = group.manifest %}
+
+                            <div class="card card-border bg-base-100 shadow-sm edo-group-card overflow-hidden" data-search="{{ group.search_text }}">
+                                <div class="px-4 sm:px-5 py-4 border-b border-warning/20 bg-warning/5">
+                                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                        <div class="flex items-start gap-3 min-w-0">
+                                            <button type="button" class="btn btn-ghost btn-sm btn-square shrink-0 group-toggle" onclick="toggleGroup({{ group.id }})" aria-expanded="true" aria-controls="group-{{ group.id }}">
+                                                <span class="icon-[tabler--chevron-down] size-5 transition-transform group-icon-{{ group.id }}"></span>
+                                            </button>
+                                            <div class="min-w-0">
+                                                <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                                    {% if manifest.noa %}
+                                                        <a href="{{ path('manifest_workflow_noa_detail', {id: manifest.noa.id}) }}" class="font-mono font-bold text-base-content hover:text-primary">
+                                                            {{ manifest.manifestNumber }}
+                                                        </a>
+                                                    {% else %}
+                                                        <span class="font-mono font-bold text-base-content">{{ manifest.manifestNumber }}</span>
+                                                    {% endif %}
+                                                    <span class="badge badge-warning badge-soft badge-sm">{{ group.containers|length }} pending</span>
+                                                    <span class="badge badge-ghost badge-sm">{{ group.edo_count_in_manifest }}/{{ group.total_in_manifest }} eDOs</span>
+                                                </div>
+                                                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-sm text-base-content/60">
+                                                    <span class="inline-flex items-center gap-1">
+                                                        <span class="icon-[tabler--briefcase] size-3.5"></span>
+                                                        {{ group.broker }}
+                                                    </span>
+                                                    <span class="hidden sm:inline text-base-content/30">·</span>
+                                                    <span class="inline-flex items-center gap-1">
+                                                        <span class="icon-[tabler--building-store] size-3.5"></span>
+                                                        {{ group.consignee }}
+                                                    </span>
+                                                    <span class="hidden sm:inline text-base-content/30">·</span>
+                                                    <span>{{ manifest.shippingLine.brandName }}</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-sm text-base-content/60">
-                                            <span class="inline-flex items-center gap-1">
-                                                <span class="icon-[tabler--briefcase] size-3.5"></span>
-                                                {{ group.broker }}
-                                            </span>
-                                            <span class="hidden sm:inline text-base-content/30">·</span>
-                                            <span class="inline-flex items-center gap-1">
-                                                <span class="icon-[tabler--building-store] size-3.5"></span>
-                                                {{ group.consignee }}
-                                            </span>
-                                            <span class="hidden sm:inline text-base-content/30">·</span>
-                                            <span>{{ manifest.shippingLine.brandName }}</span>
-                                        </div>
+                                        <button type="button"
+                                                class="btn btn-success btn-sm gap-2 shrink-0 js-open-generate-modal"
+                                                data-container-ids="{{ group.container_ids_csv }}"
+                                                data-manifest-id="{{ manifest.id }}"
+                                                data-label="{{ manifest.manifestNumber }} ({{ group.containers|length }} container{{ group.containers|length != 1 ? 's' : '' }})">
+                                            <span class="icon-[tabler--files] size-4"></span>
+                                            Generate All ({{ group.containers|length }})
+                                        </button>
                                     </div>
                                 </div>
-                                <button type="button"
-                                        class="btn btn-success btn-sm gap-2 shrink-0 js-open-generate-modal"
-                                        data-container-ids="{{ group.container_ids_csv }}"
-                                        data-manifest-id="{{ manifest.id }}"
-                                        data-label="{{ manifest.manifestNumber }} ({{ group.containers|length }} container{{ group.containers|length != 1 ? 's' : '' }})">
-                                    <span class="icon-[tabler--files] size-4"></span>
-                                    Generate All ({{ group.containers|length }})
+
+                                <div id="group-{{ group.id }}" class="group-content">
+                                    <div class="overflow-x-auto">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr class="text-base-content/60">
+                                                    <th>Container</th>
+                                                    <th>Size / Type</th>
+                                                    <th>Payment verified</th>
+                                                    <th class="text-right">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for data in group.containers %}
+                                                    {% set container = data.container %}
+                                                    {% set payment = manifest.payments|filter(p => p.paymentType.value == 'final_payment' and p.status.value == 'verified')|first %}
+                                                    <tr class="hover:bg-base-200/30">
+                                                        <td>
+                                                            <div class="font-medium font-mono">{{ container.containerNumber }}</div>
+                                                        </td>
+                                                        <td>
+                                                            <div class="text-sm font-medium">{{ container.containerSize.name }}</div>
+                                                            <div class="text-xs text-base-content/50">{{ container.containerType.name }}</div>
+                                                        </td>
+                                                        <td>
+                                                            {% if payment and payment.validatedAt %}
+                                                                <span class="text-sm">{{ payment.validatedAt|date('M j, Y') }}</span>
+                                                            {% else %}
+                                                                <span class="text-sm text-base-content/40">—</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <button type="button"
+                                                                    class="btn btn-success btn-xs sm:btn-sm gap-1 js-open-generate-modal"
+                                                                    data-container-ids="{{ container.id }}"
+                                                                    data-manifest-id="{{ manifest.id }}"
+                                                                    data-label="{{ container.containerNumber }}">
+                                                                <span class="icon-[tabler--file-plus] size-4"></span>
+                                                                Generate
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+
+                        <p id="pending-no-results" class="hidden text-center text-sm text-base-content/60 py-8">
+                            No pending containers match your search.
+                        </p>
+                    {% endif %}
+                </div>
+
+                {# Generated tab #}
+                <div id="generated-tab" class="tab-panel hidden p-4 sm:p-5">
+                    {% if generatedCount == 0 %}
+                        <div class="text-center py-14 px-4">
+                            <div class="avatar avatar-placeholder mx-auto mb-3">
+                                <div class="bg-base-200 text-base-content/40 size-16 rounded-2xl">
+                                    <span class="icon-[tabler--file-off] size-8"></span>
+                                </div>
+                            </div>
+                            <h3 class="text-lg font-semibold text-base-content">No eDOs generated yet</h3>
+                            <p class="text-sm text-base-content/60 mt-1">Generated eDOs will appear here after you process pending containers.</p>
+                            {% if pendingCount > 0 %}
+                                <button type="button" class="btn btn-success btn-sm mt-4 gap-2" onclick="switchTab('pending')">
+                                    <span class="icon-[tabler--player-play] size-4"></span>
+                                    Process pending
                                 </button>
-                            </div>
+                            {% endif %}
                         </div>
-
-                        <div id="group-{{ group.id }}" class="group-content">
-                            <div class="overflow-x-auto">
-                                <table class="table">
-                                    <thead>
-                                        <tr class="text-base-content/60">
-                                            <th>Container</th>
-                                            <th>Size / Type</th>
-                                            <th>Payment Verified</th>
-                                            <th class="text-right">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for data in group.containers %}
-                                            {% set container = data.container %}
-                                            {% set payment = manifest.payments|filter(p => p.paymentType.value == 'final_payment' and p.status.value == 'verified')|first %}
-                                            <tr class="hover:bg-base-200/30">
-                                                <td>
-                                                    <div class="font-medium font-mono">{{ container.containerNumber }}</div>
-                                                </td>
-                                                <td>
-                                                    <div class="text-sm font-medium">{{ container.containerSize.name }}</div>
-                                                    <div class="text-xs text-base-content/50">{{ container.containerType.name }}</div>
-                                                </td>
-                                                <td>
-                                                    {% if payment and payment.validatedAt %}
-                                                        <span class="text-sm">{{ payment.validatedAt|date('M j, Y') }}</span>
-                                                    {% else %}
-                                                        <span class="text-sm text-base-content/40">—</span>
-                                                    {% endif %}
-                                                </td>
-                                                <td class="text-right">
-                                                    <button type="button"
-                                                            class="btn btn-success btn-sm gap-1 js-open-generate-modal"
-                                                            data-container-ids="{{ container.id }}"
-                                                            data-manifest-id="{{ manifest.id }}"
-                                                            data-label="{{ container.containerNumber }}">
-                                                        <span class="icon-[tabler--file-plus] size-4"></span>
-                                                        Generate
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
-
-                <p id="pending-no-results" class="hidden text-center text-sm text-base-content/60 py-8">
-                    No pending containers match your search.
-                </p>
-            {% endif %}
-        </div>
-
-        {# Generated tab #}
-        <div id="generated-tab" class="tab-panel hidden space-y-4">
-            {% if generatedCount == 0 %}
-                <div class="card bg-base-100 shadow-sm">
-                    <div class="card-body text-center py-14 px-4">
-                        <div class="inline-flex items-center justify-center size-14 bg-base-200 rounded-2xl mb-3">
-                            <span class="icon-[tabler--file-off] size-7 text-base-content/40"></span>
-                        </div>
-                        <h3 class="text-lg font-semibold text-base-content">No eDOs generated yet</h3>
-                        <p class="text-sm text-base-content/60 mt-1">Generated eDOs will appear here after you process pending containers.</p>
-                    </div>
-                </div>
-            {% else %}
-                <div class="card bg-base-100 shadow-sm">
-                    <div class="px-4 sm:px-6 py-4 border-b border-base-200/80 bg-success/5 rounded-t-xl">
-                        <h2 class="font-semibold text-base-content">Generated eDOs</h2>
-                        <p class="text-xs text-base-content/60 mt-0.5">{{ generatedCount }} container{{ generatedCount != 1 ? 's' : '' }} with active eDOs</p>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="table">
-                            <thead>
-                                <tr class="text-base-content/60">
-                                    <th>Container</th>
-                                    <th>Manifest</th>
-                                    <th>Broker / Consignee</th>
-                                    <th>eDO Number</th>
-                                    <th>Status</th>
-                                    <th>Generated</th>
-                                    <th>Expires</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for data in containersWithEdo %}
-                                    {% set container = data.container %}
-                                    {% set manifest = data.manifest %}
-                                    {% set edo = data.edo %}
-                                    {% set searchText = (container.containerNumber ~ ' ' ~ manifest.manifestNumber ~ ' ' ~ (manifest.broker ? manifest.broker.fullName : '') ~ ' ' ~ (manifest.consignee ? manifest.consignee.businessName : '') ~ ' ' ~ edo.edoNumber)|lower %}
-                                    <tr class="hover:bg-base-200/30 edo-generated-row" data-search="{{ searchText }}">
-                                        <td>
-                                            <div class="font-medium font-mono">{{ container.containerNumber }}</div>
-                                            <div class="text-xs text-base-content/50">{{ container.containerSize.name }} · {{ container.containerType.name }}</div>
-                                        </td>
-                                        <td>
-                                            {% if manifest.noa %}
-                                                <a href="{{ path('manifest_workflow_noa_detail', {id: manifest.noa.id}) }}" class="link link-primary text-sm font-medium">
-                                                    {{ manifest.manifestNumber }}
-                                                </a>
-                                            {% else %}
-                                                <span class="text-sm font-medium">{{ manifest.manifestNumber }}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <div class="text-sm">{{ manifest.broker ? manifest.broker.fullName : 'N/A' }}</div>
-                                            <div class="text-xs text-base-content/50">{{ manifest.consignee ? manifest.consignee.businessName : 'N/A' }}</div>
-                                        </td>
-                                        <td>
-                                            <span class="font-mono text-sm">{{ edo.edoNumber }}</span>
-                                        </td>
-                                        <td>
-                                            {% if edo.status.value == 'released' %}
-                                                <span class="badge badge-success badge-sm">Released</span>
-                                            {% else %}
-                                                <span class="badge badge-warning badge-sm">Pending Release</span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="text-sm text-base-content/70 whitespace-nowrap">{{ edo.generatedAt|date('M j, Y') }}</td>
-                                        <td class="text-sm text-base-content/70 whitespace-nowrap">{{ edo.expiresAt|date('M j, Y') }}</td>
+                    {% else %}
+                        <div class="overflow-x-auto rounded-xl border border-base-300/50">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr class="bg-success/5 text-base-content/60">
+                                        <th>Container</th>
+                                        <th>Manifest</th>
+                                        <th>Broker / Consignee</th>
+                                        <th>eDO number</th>
+                                        <th>Status</th>
+                                        <th>Generated</th>
+                                        <th>Expires</th>
                                     </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {% for data in containersWithEdo %}
+                                        {% set container = data.container %}
+                                        {% set manifest = data.manifest %}
+                                        {% set edo = data.edo %}
+                                        {% set searchText = (container.containerNumber ~ ' ' ~ manifest.manifestNumber ~ ' ' ~ (manifest.broker ? manifest.broker.fullName : '') ~ ' ' ~ (manifest.consignee ? manifest.consignee.businessName : '') ~ ' ' ~ edo.edoNumber)|lower %}
+                                        <tr class="hover:bg-base-200/30 edo-generated-row" data-search="{{ searchText }}">
+                                            <td>
+                                                <div class="font-medium font-mono">{{ container.containerNumber }}</div>
+                                                <div class="text-xs text-base-content/50">{{ container.containerSize.name }} · {{ container.containerType.name }}</div>
+                                            </td>
+                                            <td>
+                                                {% if manifest.noa %}
+                                                    <a href="{{ path('manifest_workflow_noa_detail', {id: manifest.noa.id}) }}" class="link link-primary text-sm font-mono font-medium">
+                                                        {{ manifest.manifestNumber }}
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-sm font-mono font-medium">{{ manifest.manifestNumber }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="text-sm">{{ manifest.broker ? manifest.broker.fullName : 'N/A' }}</div>
+                                                <div class="text-xs text-base-content/50">{{ manifest.consignee ? manifest.consignee.businessName : 'N/A' }}</div>
+                                            </td>
+                                            <td>
+                                                <span class="font-mono text-sm">{{ edo.edoNumber }}</span>
+                                            </td>
+                                            <td>
+                                                {% if edo.status.value == 'released' %}
+                                                    <span class="badge badge-success badge-soft badge-sm">Released</span>
+                                                {% else %}
+                                                    <span class="badge badge-warning badge-soft badge-sm">Pending release</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-sm text-base-content/70 whitespace-nowrap">{{ edo.generatedAt|date('M j, Y') }}</td>
+                                            <td class="text-sm text-base-content/70 whitespace-nowrap">{{ edo.expiresAt|date('M j, Y') }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <p id="generated-no-results" class="hidden text-center text-sm text-base-content/60 py-4">
+                            No generated eDOs match your search.
+                        </p>
+                    {% endif %}
                 </div>
-                <p id="generated-no-results" class="hidden text-center text-sm text-base-content/60 py-4">
-                    No generated eDOs match your search.
-                </p>
-            {% endif %}
+            </div>
         </div>
     {% endif %}
 </div>
 {% endblock %}
 
 {% block page_modals %}
-<div id="generateModal" class="hidden fixed inset-0 z-[10001] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="generateModalTitle">
-    <div class="absolute inset-0 bg-black/50 backdrop-blur-[1px]" data-close-generate-modal></div>
-    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg z-10 border border-base-300">
+<div id="generateModal"
+     class="hidden fixed inset-0 z-[999999] items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="generateModalTitle">
+    <div class="absolute inset-0 bg-black/75 backdrop-blur-sm" data-close-generate-modal></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg z-10 border border-base-300/60 overflow-hidden">
         <div class="p-6">
             <div class="flex items-start justify-between gap-3 mb-5">
                 <div>
@@ -334,7 +369,7 @@
                     </h3>
                     <p class="text-sm text-base-content/60 mt-1">Set the expiration date for the new eDO document.</p>
                 </div>
-                <button type="button" class="btn btn-text btn-circle btn-sm shrink-0" data-close-generate-modal aria-label="Close">
+                <button type="button" class="btn btn-ghost btn-sm btn-circle shrink-0" data-close-generate-modal aria-label="Close">
                     <span class="icon-[tabler--x] size-5"></span>
                 </button>
             </div>
@@ -342,28 +377,28 @@
             <div class="space-y-4">
                 <div class="rounded-xl bg-info/10 border border-info/20 p-4">
                     <p class="text-xs font-medium text-info uppercase tracking-wide">Target</p>
-                    <p class="text-sm font-medium mt-1" id="modalContainerInfo">—</p>
+                    <p class="text-sm font-medium mt-1 font-mono" id="modalContainerInfo">—</p>
                 </div>
 
                 <div class="form-control">
                     <label class="label py-1" for="expirationDate">
                         <span class="label-text font-medium">Expiration date <span class="text-error">*</span></span>
                     </label>
-                    <div class="flex gap-2">
+                    <div class="join w-full">
                         <input type="date"
                                id="expirationDate"
-                               class="input input-bordered w-full flex-1 min-w-0"
+                               class="input input-bordered join-item w-full flex-1 min-w-0"
                                min="{{ 'now'|date('Y-m-d') }}"
                                required>
                         <button type="button"
                                 id="openExpirationDatePicker"
-                                class="btn btn-outline btn-square shrink-0"
+                                class="btn btn-outline join-item shrink-0"
                                 aria-label="Open calendar">
                             <span class="icon-[tabler--calendar] size-5"></span>
                         </button>
                     </div>
                     <label class="label py-1">
-                        <span class="label-text-alt text-base-content/50">Click the field or calendar icon — yesterday and earlier cannot be selected</span>
+                        <span class="label-text-alt text-base-content/50">Must be today or a future date</span>
                     </label>
                 </div>
             </div>
@@ -388,6 +423,10 @@ let currentManifestId = null;
 let activeTab = 'pending';
 const groupStates = {};
 
+function getAppShell() {
+    return document.querySelector('body > .flex.min-h-screen');
+}
+
 function getExpirationDateInput() {
     return document.getElementById('expirationDate');
 }
@@ -407,9 +446,7 @@ function openExpirationDatePicker() {
         try {
             input.showPicker();
             return;
-        } catch (error) {
-            // showPicker can throw if not triggered by user gesture in some browsers
-        }
+        } catch (error) {}
     }
 
     input.focus();
@@ -428,26 +465,24 @@ function setExpirationDateConstraints(forceToday = false) {
     }
 }
 
+function updateTabUi(tabName) {
+    document.querySelectorAll('[data-tab-trigger]').forEach(trigger => {
+        const isActive = trigger.dataset.tabTrigger === tabName;
+        if (trigger.classList.contains('tab')) {
+            trigger.classList.toggle('tab-active', isActive);
+        }
+        if (trigger.classList.contains('stat')) {
+            trigger.classList.toggle('bg-warning/10', isActive && tabName === 'pending');
+            trigger.classList.toggle('bg-success/10', isActive && tabName === 'generated');
+        }
+    });
+}
+
 function switchTab(tabName) {
     activeTab = tabName;
     document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden'));
     document.getElementById(tabName + '-tab').classList.remove('hidden');
-
-    document.querySelectorAll('[data-tab-trigger]').forEach(card => {
-        card.classList.remove('bg-warning/10', 'ring-2', 'ring-warning/30', 'bg-success/10', 'ring-success/30');
-        card.classList.add('bg-base-100', 'hover:bg-base-200/40');
-    });
-
-    const activeCard = document.querySelector(`[data-tab-trigger="${tabName}"]`);
-    if (activeCard) {
-        activeCard.classList.remove('bg-base-100', 'hover:bg-base-200/40');
-        if (tabName === 'pending') {
-            activeCard.classList.add('bg-warning/10', 'ring-2', 'ring-warning/30');
-        } else {
-            activeCard.classList.add('bg-success/10', 'ring-2', 'ring-success/30');
-        }
-    }
-
+    updateTabUi(tabName);
     applySearch();
 }
 
@@ -465,7 +500,7 @@ function toggleGroup(groupId) {
     const expanded = groupStates[groupId] !== false;
     groupStates[groupId] = !expanded;
     content.classList.toggle('hidden', expanded);
-    if (icon) icon.style.transform = expanded ? 'rotate(0deg)' : 'rotate(180deg)';
+    if (icon) icon.style.transform = expanded ? 'rotate(-90deg)' : 'rotate(0deg)';
     if (button) button.setAttribute('aria-expanded', expanded ? 'false' : 'true');
 }
 
@@ -520,6 +555,8 @@ document.addEventListener('DOMContentLoaded', () => {
             closeGenerateModal();
         }
     });
+
+    updateTabUi('pending');
 });
 
 function applySearch() {
@@ -564,7 +601,13 @@ function openGenerateModal(containerIds, manifestId, containerInfo) {
 
     resetGenerateButton();
     modal.classList.remove('hidden');
+    modal.classList.add('flex');
     document.body.classList.add('overflow-hidden');
+    const appShell = getAppShell();
+    if (appShell) {
+        appShell.setAttribute('aria-hidden', 'true');
+        appShell.setAttribute('inert', '');
+    }
     setExpirationDateConstraints(true);
 }
 
@@ -573,7 +616,13 @@ function closeGenerateModal() {
     if (!modal || modal.classList.contains('hidden')) return;
 
     modal.classList.add('hidden');
+    modal.classList.remove('flex');
     document.body.classList.remove('overflow-hidden');
+    const appShell = getAppShell();
+    if (appShell) {
+        appShell.removeAttribute('aria-hidden');
+        appShell.removeAttribute('inert');
+    }
     resetGenerateButton();
     currentContainerIds = [];
     currentManifestId = null;
@@ -637,18 +686,12 @@ async function generateEdos() {
         if (data.success) {
             closeGenerateModal();
 
-            const successDiv = document.createElement('div');
-            successDiv.className = 'alert alert-success fixed top-20 right-4 w-auto max-w-md z-30 shadow-lg';
-            successDiv.innerHTML = `
-                <span class="icon-[tabler--check] size-5"></span>
-                <span>${data.message || 'eDO generated successfully!'}</span>
-            `;
-            document.body.appendChild(successDiv);
+            const message = data.message || 'eDO generated successfully!';
+            if (window.notyf) {
+                window.notyf.success(message);
+            }
 
-            setTimeout(() => {
-                successDiv.remove();
-                window.location.reload();
-            }, 1500);
+            setTimeout(() => window.location.reload(), 1500);
         } else {
             alert(data.message || 'Failed to generate eDO');
             resetGenerateButton();

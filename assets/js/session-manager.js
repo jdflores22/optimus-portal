@@ -1,169 +1,171 @@
 /**
  * Session Manager
- * Handles session timeout differently for desktop and PWA
- * 
- * Desktop: Force logout on session timeout (security)
- * PWA: Infinite session with auto-refresh (convenience)
+ * Handles session timeout differently for desktop and PWA.
+ *
+ * Desktop: server is the source of truth; activity in any tab keeps the shared session alive.
+ * PWA: infinite session with periodic ping.
  */
 
 class SessionManager {
+    static LAST_ACTIVITY_KEY = 'optimus_last_activity';
+    static SESSION_EXPIRED_KEY = 'session_expired';
+
     constructor() {
         this.isPWA = this.detectPWA();
         this.sessionCheckInterval = null;
-        this.lastActivityTime = Date.now();
-        this.sessionTimeout = 30 * 60 * 1000; // Default 30 minutes in milliseconds
-        this.checkInterval = 60 * 1000; // Default check every 1 minute
-        this.pwaPingInterval = 5 * 60 * 1000; // Default ping every 5 minutes
-        
+        this.lastActivityTime = this.readSharedActivityTime();
+        this.sessionTimeout = 30 * 60 * 1000;
+        this.checkInterval = 60 * 1000;
+        this.pwaPingInterval = 5 * 60 * 1000;
+        this.isLoggingOut = false;
+
         this.loadConfigAndInit();
     }
-    
-    /**
-     * Load configuration from API and initialize
-     */
+
+    readSharedActivityTime() {
+        const stored = localStorage.getItem(SessionManager.LAST_ACTIVITY_KEY);
+        const parsed = stored ? parseInt(stored, 10) : NaN;
+
+        return Number.isFinite(parsed) ? parsed : Date.now();
+    }
+
+    recordActivity() {
+        const now = Date.now();
+        this.lastActivityTime = now;
+        localStorage.setItem(SessionManager.LAST_ACTIVITY_KEY, String(now));
+    }
+
+    syncActivityFromServer(lastActivitySeconds) {
+        if (!lastActivitySeconds) {
+            return;
+        }
+
+        const serverActivityMs = lastActivitySeconds * 1000;
+        if (serverActivityMs > this.lastActivityTime) {
+            this.lastActivityTime = serverActivityMs;
+            localStorage.setItem(SessionManager.LAST_ACTIVITY_KEY, String(serverActivityMs));
+        }
+    }
+
     async loadConfigAndInit() {
         try {
             const response = await fetch('/api/session/config', {
                 method: 'GET',
-                credentials: 'same-origin'
+                credentials: 'same-origin',
             });
-            
+
             if (response.ok) {
                 const config = await response.json();
                 this.sessionTimeout = config.desktop_timeout_minutes * 60 * 1000;
                 this.checkInterval = config.check_interval_seconds * 1000;
                 this.pwaPingInterval = config.pwa_ping_interval_minutes * 60 * 1000;
-                console.log('Session config loaded:', config);
             }
         } catch (error) {
             console.warn('Failed to load session config, using defaults:', error);
         }
-        
+
         this.init();
     }
-    
-    /**
-     * Detect if app is running as PWA
-     */
+
     detectPWA() {
-        // Check if running in standalone mode (installed PWA)
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
         const isIOSStandalone = window.navigator.standalone === true;
         const isAndroidPWA = document.referrer.includes('android-app://');
-        
+
         return isStandalone || isIOSStandalone || isAndroidPWA;
     }
-    
-    /**
-     * Initialize session manager
-     */
+
     init() {
         if (!this.isAuthenticated()) {
-            return; // Not logged in, nothing to manage
+            return;
         }
-        
-        console.log(`Session Manager initialized - Mode: ${this.isPWA ? 'PWA (Infinite)' : 'Desktop (Timeout)'}`);
-        
-        // Listen for logout events from other tabs
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'session_expired' && e.newValue === 'true') {
-                console.log('Session expired in another tab - logging out');
-                this.forceLogout();
+
+        window.addEventListener('storage', (event) => {
+            if (event.key === SessionManager.LAST_ACTIVITY_KEY && event.newValue) {
+                const activityTime = parseInt(event.newValue, 10);
+                if (Number.isFinite(activityTime) && activityTime > this.lastActivityTime) {
+                    this.lastActivityTime = activityTime;
+                }
+                return;
+            }
+
+            if (event.key === SessionManager.SESSION_EXPIRED_KEY && event.newValue === 'true') {
+                this.handleServerConfirmedExpiry(false);
             }
         });
-        
+
         if (this.isPWA) {
             this.initPWAMode();
         } else {
             this.initDesktopMode();
         }
     }
-    
-    /**
-     * Check if user is authenticated
-     */
+
     isAuthenticated() {
         const body = document.body;
+
         return body && body.hasAttribute('data-authenticated') && body.getAttribute('data-authenticated') === 'true';
     }
-    
-    /**
-     * Initialize PWA mode (infinite session with auto-refresh)
-     */
+
     initPWAMode() {
-        // Keep session alive by pinging server periodically
         this.sessionCheckInterval = setInterval(() => {
             this.keepSessionAlive();
         }, this.pwaPingInterval);
-        
-        // Refresh session on visibility change (when user returns to app)
+
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) {
                 this.keepSessionAlive();
             }
         });
-        
-        // Keep session alive on any user activity
+
         this.trackActivity();
     }
-    
-    /**
-     * Initialize Desktop mode (session timeout with forced logout)
-     */
+
     initDesktopMode() {
-        // Track user activity
         this.trackActivity();
-        
-        // Check session status periodically
+
         this.sessionCheckInterval = setInterval(() => {
             this.checkSessionTimeout();
         }, this.checkInterval);
-        
-        // Check session on visibility change
+
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) {
+                this.recordActivity();
                 this.checkSessionTimeout();
             }
         });
     }
-    
-    /**
-     * Track user activity
-     */
+
     trackActivity() {
         const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
-        let lastUpdateTime = Date.now();
-        
+        let lastUpdateTime = 0;
+
         const updateServerActivity = async () => {
-            // Only update server every 30 seconds to avoid too many requests
             const now = Date.now();
             if (now - lastUpdateTime < 30000) {
                 return;
             }
-            
+
             lastUpdateTime = now;
-            
+
             try {
                 await fetch('/api/session/activity', {
                     method: 'POST',
-                    credentials: 'same-origin'
+                    credentials: 'same-origin',
                 });
             } catch (error) {
                 console.error('Failed to update activity:', error);
             }
         };
-        
-        events.forEach(event => {
+
+        events.forEach((event) => {
             document.addEventListener(event, () => {
-                this.lastActivityTime = Date.now();
+                this.recordActivity();
                 updateServerActivity();
             }, { passive: true });
         });
     }
-    
-    /**
-     * Keep session alive (PWA mode)
-     */
+
     async keepSessionAlive() {
         try {
             const response = await fetch('/api/session/ping', {
@@ -171,9 +173,9 @@ class SessionManager {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: 'same-origin'
+                credentials: 'same-origin',
             });
-            
+
             if (!response.ok) {
                 console.warn('Session ping failed:', response.status);
             }
@@ -181,81 +183,66 @@ class SessionManager {
             console.error('Failed to keep session alive:', error);
         }
     }
-    
-    /**
-     * Check if session has timed out (Desktop mode)
-     */
+
     async checkSessionTimeout() {
-        const inactiveTime = Date.now() - this.lastActivityTime;
-        
-        // If inactive for longer than session timeout
-        if (inactiveTime > this.sessionTimeout) {
-            console.log('Session timeout detected - forcing logout');
-            await this.forceLogout();
+        if (this.isLoggingOut || document.hidden) {
             return;
         }
-        
-        // Check server-side session status
+
         try {
             const response = await fetch('/api/session/status', {
                 method: 'GET',
-                credentials: 'same-origin'
+                credentials: 'same-origin',
             });
-            
-            // If we get HTML instead of JSON, session has expired (redirected to login)
+
             const contentType = response.headers.get('content-type');
             if (contentType && contentType.includes('text/html')) {
-                console.log('Session expired - received HTML instead of JSON');
-                await this.forceLogout();
+                this.handleServerConfirmedExpiry(true);
                 return;
             }
-            
+
             const data = await response.json();
-            
+
             if (response.status === 401 || data.status === 'expired') {
-                // Session expired on server
-                console.log('Server session expired - forcing logout');
-                await this.forceLogout();
-            } else {
-                console.log('Session check passed - inactive time:', Math.floor(inactiveTime / 1000), 'seconds');
+                this.handleServerConfirmedExpiry(true);
+                return;
             }
+
+            this.syncActivityFromServer(data.last_activity);
         } catch (error) {
-            console.error('Failed to check session status:', error);
-            // If JSON parse error, likely got HTML (login page)
             if (error instanceof SyntaxError) {
-                console.log('Session expired - JSON parse error (got HTML)');
-                await this.forceLogout();
+                this.handleServerConfirmedExpiry(true);
+                return;
             }
+
+            console.error('Failed to check session status:', error);
         }
     }
-    
-    /**
-     * Force logout and redirect to login page
-     */
-    async forceLogout() {
-        // Clear interval
+
+    handleServerConfirmedExpiry(shouldBroadcast) {
+        if (this.isLoggingOut) {
+            return;
+        }
+
+        this.isLoggingOut = true;
+
         if (this.sessionCheckInterval) {
             clearInterval(this.sessionCheckInterval);
         }
-        
-        // Notify other tabs
-        localStorage.setItem('session_expired', 'true');
-        setTimeout(() => localStorage.removeItem('session_expired'), 1000);
-        
-        // Show logout message
+
+        if (shouldBroadcast) {
+            localStorage.setItem(SessionManager.SESSION_EXPIRED_KEY, 'true');
+            setTimeout(() => localStorage.removeItem(SessionManager.SESSION_EXPIRED_KEY), 1000);
+        }
+
         this.showLogoutModal();
-        
-        // Wait 3 seconds then redirect
+
         setTimeout(() => {
             window.location.href = '/logout?reason=session_timeout';
         }, 3000);
     }
-    
-    /**
-     * Show logout modal
-     */
+
     showLogoutModal() {
-        // Create modal
         const modal = document.createElement('div');
         modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-[10000]';
         modal.innerHTML = `
@@ -274,13 +261,10 @@ class SessionManager {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
     }
-    
-    /**
-     * Cleanup
-     */
+
     destroy() {
         if (this.sessionCheckInterval) {
             clearInterval(this.sessionCheckInterval);
@@ -288,7 +272,6 @@ class SessionManager {
     }
 }
 
-// Initialize session manager when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         window.sessionManager = new SessionManager();

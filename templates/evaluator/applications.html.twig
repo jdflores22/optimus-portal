@@ -60,12 +60,12 @@
             <div class="stat-figure text-success size-8">
                 <span class="icon-[tabler--circle-check] size-8"></span>
             </div>
-            <div class="stat-title">Approved</div>
+            <div class="stat-title">Forwarded</div>
             <div class="stat-value text-success text-4xl">
-                {% set approvedCount = applications|filter(app => app.status.value == 'APPROVED')|length %}
-                {{ approvedCount }}
+                {% set forwardedCount = applications|filter(app => app.status.value in ['AWAITING_FINAL_APPROVAL', 'APPROVED'])|length %}
+                {{ forwardedCount }}
             </div>
-            <div class="stat-desc">Successfully approved</div>
+            <div class="stat-desc">Approved and sent for final sign-off</div>
         </div>
         
         <div class="stat">
@@ -195,6 +195,10 @@
                                         {% if application.status.value == 'PENDING' %}
                                             <span class="badge badge-warning badge-soft">
                                                 Pending Review
+                                            </span>
+                                        {% elseif application.status.value == 'AWAITING_FINAL_APPROVAL' %}
+                                            <span class="badge badge-info badge-soft">
+                                                Awaiting Final Approval
                                             </span>
                                         {% elseif application.status.value == 'APPROVED' %}
                                             <span class="badge badge-success badge-soft">

@@ -10,8 +10,8 @@
         Port / Terminal
     </h2>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-primary/10">
-            <div class="card-body p-5 flex-row items-center gap-4">
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-primary/10 h-full">
+            <div class="card-body p-5 flex flex-row items-center gap-4 h-full" style="min-height: 170px;">
                 <div class="size-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <span class="icon-[tabler--anchor] size-6 text-primary"></span>
                 </div>
@@ -23,9 +23,9 @@
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-primary/10">
-            <div class="card-body p-5">
-                <div class="flex items-start gap-4">
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-primary/10 h-full">
+            <div class="card-body p-5 h-full flex flex-col" style="min-height: 170px;">
+                <div class="flex items-start gap-4 flex-1">
                     <div class="size-12 rounded-full bg-info/10 flex items-center justify-center flex-shrink-0">
                         <span class="icon-[tabler--ship] size-6 text-info"></span>
                     </div>
@@ -51,9 +51,9 @@
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-primary/10">
-            <div class="card-body p-5">
-                <div class="flex items-start gap-4">
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-primary/10 h-full">
+            <div class="card-body p-5 h-full flex flex-col" style="min-height: 170px;">
+                <div class="flex items-start gap-4 flex-1">
                     <div class="size-12 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
                         <span class="icon-[tabler--map-pin] size-6 text-success"></span>
                     </div>
@@ -88,12 +88,12 @@
         </div>
 
         {% if repositioningRoute is defined %}
-        <a href="{{ path(repositioningRoute) }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-primary/10 hover:border-warning/40 block">
+        <a href="{{ path(repositioningRoute) }}" class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-primary/10 hover:border-warning/40 block h-full">
         {% else %}
-        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-primary/10">
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow border border-primary/10 h-full">
         {% endif %}
-            <div class="card-body p-5">
-                <div class="flex items-start gap-4">
+            <div class="card-body p-5 h-full flex flex-col" style="min-height: 170px;">
+                <div class="flex items-start gap-4 flex-1">
                     <div class="size-12 rounded-full bg-warning/10 flex items-center justify-center flex-shrink-0">
                         <span class="icon-[tabler--truck-delivery] size-6 text-warning"></span>
                     </div>
@@ -141,8 +141,8 @@
         Container Yards (CY)
     </h2>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
-            <div class="card-body p-5 flex-row items-center gap-4">
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow h-full">
+            <div class="card-body p-5 flex flex-row items-center gap-4 h-full" style="min-height: 170px;">
                 <div class="size-12 rounded-full bg-neutral/10 flex items-center justify-center flex-shrink-0">
                     <span class="icon-[tabler--building-warehouse] size-6 text-base-content"></span>
                 </div>
@@ -154,9 +154,9 @@
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
-            <div class="card-body p-5">
-                <div class="flex items-start gap-4">
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow h-full">
+            <div class="card-body p-5 h-full flex flex-col" style="min-height: 170px;">
+                <div class="flex items-start gap-4 flex-1">
                     <div class="size-12 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
                         <span class="icon-[tabler--container] size-6 text-success"></span>
                     </div>
@@ -182,9 +182,9 @@
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
-            <div class="card-body p-5">
-                <div class="flex items-start gap-4">
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow h-full">
+            <div class="card-body p-5 h-full flex flex-col" style="min-height: 170px;">
+                <div class="flex items-start gap-4 flex-1">
                     <div class="size-12 rounded-full bg-warning/10 flex items-center justify-center flex-shrink-0">
                         <span class="icon-[tabler--clock] size-6 text-warning"></span>
                     </div>
@@ -210,9 +210,9 @@
             </div>
         </div>
 
-        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
-            <div class="card-body p-5">
-                <div class="flex items-start gap-4">
+        <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow h-full">
+            <div class="card-body p-5 h-full flex flex-col" style="min-height: 170px;">
+                <div class="flex items-start gap-4 flex-1">
                     <div class="size-12 rounded-full bg-info/10 flex items-center justify-center flex-shrink-0">
                         <span class="icon-[tabler--chart-bar] size-6 text-info"></span>
                     </div>

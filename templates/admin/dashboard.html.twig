@@ -15,12 +15,46 @@
 {% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="max-w-7xl mx-auto w-full space-y-6">
     <!-- Page Header -->
-    <div class="card">
-        <div class="card-body">
-            <h1 class="card-title text-xl sm:text-2xl">Dashboard</h1>
-            <p class="text-sm sm:text-base text-base-content/70 mt-1">Welcome back! Here's what's happening with your system today.</p>
+    <div class="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/15 via-base-100 to-base-100 shadow-sm p-5 sm:p-7">
+        <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
+            <div class="space-y-3">
+                <span class="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                    <span class="icon-[tabler--shield-check] size-3.5"></span>
+                    Admin Console
+                </span>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-base-content leading-tight">System Dashboard</h1>
+                    <p class="mt-2 text-sm sm:text-base text-base-content/70 max-w-2xl">
+                        Monitor users, payments, and overall system health from one centralized command view.
+                    </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="badge badge-primary badge-lg gap-2">
+                        <span class="icon-[tabler--users] size-4"></span>
+                        {{ stats.total_users }} total users
+                    </span>
+                    <span class="badge badge-warning badge-soft badge-lg gap-2">
+                        <span class="icon-[tabler--user-exclamation] size-4"></span>
+                        {{ stats.pending_users }} pending accounts
+                    </span>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 xl:justify-end">
+                <a href="{{ path('app_admin_users') }}" class="btn btn-outline btn-primary btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--users] size-4"></span>
+                    Manage Users
+                </a>
+                <a href="{{ path('app_admin_audit_logs') }}" class="btn btn-primary btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--clipboard-list] size-4"></span>
+                    Audit Logs
+                </a>
+                <a href="{{ path('app_admin_dashboard') }}" class="btn btn-ghost btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--refresh] size-4"></span>
+                    Refresh
+                </a>
+            </div>
         </div>
     </div>
 
@@ -147,18 +181,10 @@
                 </div>
                 <div class="stat">
                     <div class="stat-figure text-info">
-                        <span class="icon-[tabler--certificate] size-8"></span>
-                    </div>
-                    <div class="stat-title">Pending Accreditations</div>
-                    <div class="stat-value text-info">{{ stats.pending_accreditations }}</div>
-                    <div class="stat-desc">Awaiting review</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-figure text-success">
                         <span class="icon-[tabler--credit-card] size-8"></span>
                     </div>
                     <div class="stat-title">Pending Payments</div>
-                    <div class="stat-value text-success">{{ stats.pending_payments }}</div>
+                    <div class="stat-value text-info">{{ stats.pending_payments }}</div>
                     <div class="stat-desc">To be processed</div>
                 </div>
             </div>
@@ -182,7 +208,7 @@
     </div>
 
     <!-- Recent Activity -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 gap-6">
         <div class="card">
             <div class="card-body">
                 <h3 class="card-title text-base sm:text-lg mb-4">Recent Registrations</h3>
@@ -221,50 +247,18 @@
                 {% endif %}
             </div>
         </div>
-        <div class="card">
-            <div class="card-body">
-                <h3 class="card-title text-base sm:text-lg mb-4">Applications</h3>
-                {% if applications|length > 0 %}
-                    <div class="space-y-3">
-                        {% for app in applications|slice(0,5) %}
-                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-base-200/50 rounded-lg hover:bg-base-200 transition-colors">
-                                <div class="min-w-0 flex-1">
-                                    <p class="text-sm font-medium text-base-content truncate">{{ app.applicant.email }}</p>
-                                    <p class="text-xs text-base-content/70">{{ app.applicant.role.value }} • {{ app.submittedAt|date('M j, Y') }}</p>
-                                </div>
-                                <a href="{{ path('app_admin_application_detail', {id: app.id}) }}" class="btn btn-sm btn-primary w-full sm:w-auto flex-shrink-0">
-                                    <span class="icon-[tabler--eye] size-4"></span>
-                                    Review
-                                </a>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="text-center py-8">
-                        <span class="icon-[tabler--circle-check] size-12 text-success/40 mx-auto"></span>
-                        <p class="text-base-content/70 mt-2">All caught up!</p>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
     </div>
 
     <!-- Quick Actions -->
     <div class="card">
         <div class="card-body">
             <h3 class="card-title text-base sm:text-lg mb-6">Quick Actions</h3>
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
                 <a href="{{ path('app_admin_users') }}" class="flex flex-col items-center p-4 sm:p-6 bg-base-200/50 rounded-lg hover:bg-primary/10 hover:border-primary border-2 border-transparent transition-all">
                     <div class="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3">
                         <span class="icon-[tabler--users] size-5 sm:size-6 text-primary"></span>
                     </div>
                     <span class="text-xs sm:text-sm font-medium text-base-content text-center">Manage Users</span>
-                </a>
-                <a href="{{ path('app_admin_approved_accreditations') }}" class="flex flex-col items-center p-4 sm:p-6 bg-base-200/50 rounded-lg hover:bg-success/10 hover:border-success border-2 border-transparent transition-all">
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-success/10 rounded-lg flex items-center justify-center mb-3">
-                        <span class="icon-[tabler--certificate] size-5 sm:size-6 text-success"></span>
-                    </div>
-                    <span class="text-xs sm:text-sm font-medium text-base-content text-center">Accreditations</span>
                 </a>
                 <a href="{{ path('app_admin_audit_logs') }}" class="flex flex-col items-center p-4 sm:p-6 bg-base-200/50 rounded-lg hover:bg-secondary/10 hover:border-secondary border-2 border-transparent transition-all">
                     <div class="w-10 h-10 sm:w-12 sm:h-12 bg-secondary/10 rounded-lg flex items-center justify-center mb-3">

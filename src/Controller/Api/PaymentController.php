@@ -64,7 +64,7 @@ class PaymentController extends BaseApiController
             // Validate file upload
             $fileValidation = $this->validateFileUpload(
                 $receipt,
-                ['application/pdf', 'image/jpeg', 'image/png'],
+                ['application/pdf'],
                 5242880 // 5MB
             );
             if ($fileValidation) {
@@ -129,7 +129,7 @@ class PaymentController extends BaseApiController
             // Validate file upload
             $fileValidation = $this->validateFileUpload(
                 $receipt,
-                ['application/pdf', 'image/jpeg', 'image/png'],
+                ['application/pdf'],
                 5242880 // 5MB
             );
             if ($fileValidation) {
@@ -265,8 +265,9 @@ class PaymentController extends BaseApiController
             if ($approved) {
                 $response['officialReceiptGenerated'] = $payment->getOfficialReceiptPath() !== null;
                 $response['officialReceiptPath'] = $payment->getOfficialReceiptPath();
+                $response['billingRegenerated'] = $manifest->getBilling()?->getPdfPath() !== null;
                 $response['message'] = sprintf(
-                    'Payment version %d approved successfully. Official receipt has been generated.',
+                    'Payment version %d approved successfully. Billing statement marked PAID and official receipt generated.',
                     $payment->getVersion()
                 );
                 $response['nextStep'] = 'SL_STAFF will now generate the eDO with expiration date.';

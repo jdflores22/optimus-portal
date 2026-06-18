@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
+    <script>
+        (function() {
+            var t = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+
+    <title>{% block title %}OPTIMUS{% endblock %}</title>
+    <link rel="icon" href="{{ asset('images/optimus.jpg') }}">
+    <meta name="theme-color" content="#1e40af">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ 'now'|date('U') }}">
+
+    {% block stylesheets %}{% endblock %}
+    {% block javascripts %}{% endblock %}
+</head>
+<body class="bg-base-200 min-h-screen">
+    {% block body %}{% endblock %}
+</body>
+</html>

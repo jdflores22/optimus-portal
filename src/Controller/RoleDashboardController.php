@@ -498,8 +498,12 @@ class RoleDashboardController extends AbstractController
     #[IsGranted('ROLE_SL_STAFF')]
     public function slStaffDashboard(): Response
     {
+        /** @var StaffUser $currentUser */
+        $currentUser = $this->getUser();
+        $shippingLine = $currentUser->getShippingLineScope();
+
         // Get manifests ready for eDO generation
-        $manifestsReadyForEDO = $this->entityManager->getRepository(\App\Entity\Manifest::class)
+        $readyForEdoQb = $this->entityManager->getRepository(\App\Entity\Manifest::class)
             ->createQueryBuilder('m')
             ->leftJoin('m.broker', 'b')
             ->leftJoin('m.consignee', 'c')
@@ -519,12 +523,20 @@ class RoleDashboardController extends AbstractController
             ->setParameter('paymentStatus', \App\Entity\Enum\PaymentStatus::VERIFIED)
             ->groupBy('m.id')
             ->having('COUNT(containers.id) > 0')
-            ->orderBy('p.validatedAt', 'ASC')
-            ->getQuery()
-            ->getResult();
+            ->orderBy('p.validatedAt', 'ASC');
+
+        if ($shippingLine) {
+            $readyForEdoQb
+                ->andWhere('m.shippingLine = :shippingLine')
+                ->setParameter('shippingLine', $shippingLine);
+        } else {
+            $readyForEdoQb->andWhere('1 = 0');
+        }
+
+        $manifestsReadyForEDO = $readyForEdoQb->getQuery()->getResult();
 
         // Get recent eDOs generated (last 20)
-        $recentEDOs = $this->entityManager->getRepository(\App\Entity\ElectronicDeliveryOrder::class)
+        $recentEdosQb = $this->entityManager->getRepository(\App\Entity\ElectronicDeliveryOrder::class)
             ->createQueryBuilder('e')
             ->leftJoin('e.manifest', 'm')
             ->leftJoin('e.container', 'c')
@@ -533,61 +545,98 @@ class RoleDashboardController extends AbstractController
             ->leftJoin('m.consignee', 'cons')
             ->addSelect('m', 'c', 'ep', 'b', 'cons')
             ->orderBy('e.generatedAt', 'DESC')
-            ->setMaxResults(20)
-            ->getQuery()
-            ->getResult();
-        
-        // Port/Terminal (laden inbound) and CY (empty return) — separated by terminal type
-        /** @var StaffUser $currentUser */
-        $currentUser = $this->getUser();
-        $shippingLine = $currentUser->getShippingLineScope();
+            ->setMaxResults(20);
 
+        if ($shippingLine) {
+            $recentEdosQb
+                ->andWhere('m.shippingLine = :shippingLine')
+                ->setParameter('shippingLine', $shippingLine);
+        } else {
+            $recentEdosQb->andWhere('1 = 0');
+        }
+
+        $recentEDOs = $recentEdosQb->getQuery()->getResult();
+        
         $portLocationsData = [];
         $cyLocationsData = [];
+        $locationSummary = ['port' => [], 'cy' => []];
+        $outboundSummary = [
+            'total_active' => 0,
+            'in_transit_count' => 0,
+            'pending_count' => 0,
+            'by_port' => [],
+        ];
 
         if ($shippingLine) {
             $portLocationsData = $this->slStaffDashboardLocationService->buildPortTerminalLocations($shippingLine);
             $cyLocationsData = $this->slStaffDashboardLocationService->buildCyEmptyReturnLocations($shippingLine);
+            $locationSummary = $this->slStaffDashboardLocationService->buildLocationSummary($shippingLine);
+            $outboundSummary = $this->repositioningRequestService->buildOutboundSummary($shippingLine);
         }
 
         // Get recent NOAs from the workflow (not old shipments)
-        $recentShipments = $this->entityManager->getRepository(\App\Entity\NOA::class)
+        $recentShipmentsQb = $this->entityManager->getRepository(\App\Entity\NOA::class)
             ->createQueryBuilder('n')
+            ->innerJoin(\App\Entity\Manifest::class, 'm', 'WITH', 'm.noa = n')
             ->leftJoin('n.containers', 'c')
             ->addSelect('c')
+            ->groupBy('n.id')
             ->orderBy('n.createdAt', 'DESC')
-            ->setMaxResults(10)
-            ->getQuery()
-            ->getResult();
+            ->setMaxResults(10);
+
+        if ($shippingLine) {
+            $recentShipmentsQb
+                ->andWhere('m.shippingLine = :shippingLine')
+                ->setParameter('shippingLine', $shippingLine);
+        } else {
+            $recentShipmentsQb->andWhere('1 = 0');
+        }
+
+        $recentShipments = $recentShipmentsQb->getQuery()->getResult();
             
-        // Calculate basic statistics for all NOAs in the system
+        // Calculate NOA statistics scoped to the staff shipping line
+        $noaBaseQb = $this->entityManager->getRepository(\App\Entity\NOA::class)
+            ->createQueryBuilder('n')
+            ->innerJoin(\App\Entity\Manifest::class, 'm', 'WITH', 'm.noa = n');
+        if ($shippingLine) {
+            $noaBaseQb
+                ->andWhere('m.shippingLine = :shippingLine')
+                ->setParameter('shippingLine', $shippingLine);
+        } else {
+            $noaBaseQb->andWhere('1 = 0');
+        }
+
+        $totalNoa = (clone $noaBaseQb)
+            ->select('COUNT(DISTINCT n.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $todayNoa = (clone $noaBaseQb)
+            ->select('COUNT(DISTINCT n.id)')
+            ->andWhere('n.createdAt >= :today')
+            ->setParameter('today', new \DateTime('today'))
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $weekNoa = (clone $noaBaseQb)
+            ->select('COUNT(DISTINCT n.id)')
+            ->andWhere('n.createdAt >= :thisWeek')
+            ->setParameter('thisWeek', new \DateTime('-7 days'))
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $monthNoa = (clone $noaBaseQb)
+            ->select('COUNT(DISTINCT n.id)')
+            ->andWhere('n.createdAt >= :thisMonth')
+            ->setParameter('thisMonth', new \DateTime('-30 days'))
+            ->getQuery()
+            ->getSingleScalarResult();
+
         $stats = [
-            'my_shipments_total' => $this->entityManager->getRepository(\App\Entity\NOA::class)
-                ->createQueryBuilder('n')
-                ->select('COUNT(n.id)')
-                ->getQuery()
-                ->getSingleScalarResult(),
-            'my_shipments_today' => $this->entityManager->getRepository(\App\Entity\NOA::class)
-                ->createQueryBuilder('n')
-                ->select('COUNT(n.id)')
-                ->where('n.createdAt >= :today')
-                ->setParameter('today', new \DateTime('today'))
-                ->getQuery()
-                ->getSingleScalarResult(),
-            'my_shipments_this_week' => $this->entityManager->getRepository(\App\Entity\NOA::class)
-                ->createQueryBuilder('n')
-                ->select('COUNT(n.id)')
-                ->where('n.createdAt >= :thisWeek')
-                ->setParameter('thisWeek', new \DateTime('-7 days'))
-                ->getQuery()
-                ->getSingleScalarResult(),
-            'my_shipments_this_month' => $this->entityManager->getRepository(\App\Entity\NOA::class)
-                ->createQueryBuilder('n')
-                ->select('COUNT(n.id)')
-                ->where('n.createdAt >= :thisMonth')
-                ->setParameter('thisMonth', new \DateTime('-30 days'))
-                ->getQuery()
-                ->getSingleScalarResult(),
+            'my_shipments_total' => $totalNoa,
+            'my_shipments_today' => $todayNoa,
+            'my_shipments_this_week' => $weekNoa,
+            'my_shipments_this_month' => $monthNoa,
             'pending_edo_count' => count($manifestsReadyForEDO),
             'total_edos_generated' => $this->entityManager->getRepository(\App\Entity\ElectronicDeliveryOrder::class)
                 ->createQueryBuilder('e')
@@ -608,15 +657,24 @@ class RoleDashboardController extends AbstractController
         $startDate = new \DateTime('-30 days');
         $endDate = new \DateTime();
         
-        $myShipments = $this->entityManager->getRepository(\App\Entity\NOA::class)
+        $myShipmentsQb = $this->entityManager->getRepository(\App\Entity\NOA::class)
             ->createQueryBuilder('n')
+            ->innerJoin(\App\Entity\Manifest::class, 'm', 'WITH', 'm.noa = n')
             ->select('n.createdAt')
             ->where('n.createdAt >= :startDate')
             ->andWhere('n.createdAt <= :endDate')
             ->setParameter('startDate', $startDate)
-            ->setParameter('endDate', $endDate)
-            ->getQuery()
-            ->getResult();
+            ->setParameter('endDate', $endDate);
+
+        if ($shippingLine) {
+            $myShipmentsQb
+                ->andWhere('m.shippingLine = :shippingLine')
+                ->setParameter('shippingLine', $shippingLine);
+        } else {
+            $myShipmentsQb->andWhere('1 = 0');
+        }
+
+        $myShipments = $myShipmentsQb->getQuery()->getResult();
 
         // Group by date in PHP
         $shipmentsByDate = [];
@@ -643,6 +701,8 @@ class RoleDashboardController extends AbstractController
             'recentEDOs' => $recentEDOs,
             'cyLocations' => $cyLocationsData,
             'portLocations' => $portLocationsData,
+            'locationSummary' => $locationSummary,
+            'outboundSummary' => $outboundSummary,
             'stats' => $stats,
             'chartData' => $chartData,
         ]);

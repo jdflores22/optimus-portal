@@ -10,7 +10,8 @@ use TCPDF;
 class DocumentService implements DocumentServiceInterface
 {
     public function __construct(
-        private string $projectDir
+        private string $projectDir,
+        private EDODocumentGenerator $edoDocumentGenerator,
     ) {
     }
 
@@ -200,10 +201,11 @@ class DocumentService implements DocumentServiceInterface
         $pdf->Line(15, $pdf->GetY(), 195, $pdf->GetY());
         $pdf->Ln(5);
 
-        // Bill To and Amount Section
+        // Bill To and Amount Section — billing is issued to the consignee company
         $pdf->SetFont('helvetica', 'B', 10);
-        $brokerName = $manifest->getBroker() ? $manifest->getBroker()->getFullName() : 'N/A';
-        $pdf->Cell(95, 6, 'BILL TO: ' . $brokerName, 0, 0, 'L');
+        $consignee = $manifest->getConsignee();
+        $billToName = $consignee ? $consignee->getBusinessName() : 'N/A';
+        $pdf->Cell(95, 6, 'BILL TO: ' . $billToName, 0, 0, 'L');
 
         // Amount display with USD on top, PHP below (stacked format)
         $pdf->Cell(95, 6, '', 0, 0, 'L'); // Left side spacer
@@ -246,13 +248,8 @@ class DocumentService implements DocumentServiceInterface
         $pdf->SetDrawColor(0, 0, 0); // Reset to black
 
         $pdf->SetFont('helvetica', '', 9);
-        if ($manifest->getBroker()) {
-            $brokerAddress = 'N/A';
-            if (method_exists($manifest->getBroker(), 'getAddress')) {
-                $brokerAddress = $manifest->getBroker()->getAddress() ?? 'N/A';
-            }
-            $pdf->Cell(95, 5, 'Address: ' . $brokerAddress, 0, 1, 'L');
-            $pdf->Cell(95, 5, 'Email: ' . $manifest->getBroker()->getEmail(), 0, 1, 'L');
+        if ($consignee) {
+            $pdf->Cell(95, 5, 'Email: ' . $consignee->getEmail(), 0, 1, 'L');
         }
 
         $pdf->Ln(3);
@@ -417,109 +414,7 @@ class DocumentService implements DocumentServiceInterface
 
     public function generateEDOPDF(ElectronicDeliveryOrder $edo): string
     {
-        $manifest = $edo->getManifest();
-        
-        $pdf = new TCPDF();
-        $pdf->SetCreator('OPTIMUS Shipping Portal');
-        $pdf->SetAuthor('Shipping Line');
-        $pdf->SetTitle('Electronic Delivery Order');
-        $pdf->SetSubject('eDO');
-
-        $pdf->AddPage();
-        
-        // Header
-        $pdf->SetFont('helvetica', 'B', 20);
-        $pdf->Cell(0, 15, 'ELECTRONIC DELIVERY ORDER', 0, 1, 'C');
-        
-        $pdf->Ln(5);
-        
-        // EDO Details
-        $pdf->SetFont('helvetica', 'B', 14);
-        $pdf->Cell(60, 10, 'eDO Number:', 0, 0);
-        $pdf->SetFont('helvetica', '', 14);
-        $pdf->Cell(0, 10, $edo->getEdoNumber(), 0, 1);
-        
-        $pdf->SetFont('helvetica', 'B', 12);
-        $pdf->Cell(60, 8, 'Manifest Number:', 0, 0);
-        $pdf->SetFont('helvetica', '', 12);
-        $pdf->Cell(0, 8, $manifest->getManifestNumber(), 0, 1);
-        
-        $pdf->SetFont('helvetica', 'B', 12);
-        $pdf->Cell(60, 8, 'BL Number:', 0, 0);
-        $pdf->SetFont('helvetica', '', 12);
-        $pdf->Cell(0, 8, $manifest->getBlNumber() ?? 'N/A', 0, 1);
-        
-        // Container Yard Location
-        if ($edo->getCyLocation()) {
-            $pdf->SetFont('helvetica', 'B', 12);
-            $pdf->Cell(60, 8, 'Container Yard:', 0, 0);
-            $pdf->SetFont('helvetica', '', 12);
-            $pdf->Cell(0, 8, $edo->getCyLocation(), 0, 1);
-        }
-        
-        $pdf->SetFont('helvetica', 'B', 12);
-        $pdf->Cell(60, 8, 'Generated Date:', 0, 0);
-        $pdf->SetFont('helvetica', '', 12);
-        $pdf->Cell(0, 8, $edo->getGeneratedAt()->format('Y-m-d H:i:s'), 0, 1);
-        
-        // Expiration Date with Validity Days
-        $pdf->SetFont('helvetica', 'B', 12);
-        $pdf->Cell(60, 8, 'Expiration Date:', 0, 0);
-        $pdf->SetFont('helvetica', '', 12);
-        if ($edo->getExpiresAt()) {
-            $expirationDate = $edo->getExpiresAt()->format('Y-m-d H:i:s');
-            $validityDays = $edo->getExpiredDays() ?? 0;
-            $pdf->Cell(0, 8, $expirationDate . ' (' . $validityDays . ' days validity)', 0, 1);
-        } else {
-            $pdf->Cell(0, 8, 'N/A', 0, 1);
-        }
-        
-        $pdf->Ln(10);
-        
-        // Consignee Information
-        if ($manifest->getConsignee()) {
-            $pdf->SetFont('helvetica', 'B', 14);
-            $pdf->Cell(0, 10, 'Consignee Information', 0, 1);
-            
-            $pdf->SetFont('helvetica', 'B', 11);
-            $pdf->Cell(60, 7, 'Business Name:', 0, 0);
-            $pdf->SetFont('helvetica', '', 11);
-            $pdf->Cell(0, 7, $manifest->getConsignee()->getBusinessName(), 0, 1);
-            
-            $pdf->SetFont('helvetica', 'B', 11);
-            $pdf->Cell(60, 7, 'Email:', 0, 0);
-            $pdf->SetFont('helvetica', '', 11);
-            $pdf->Cell(0, 7, $manifest->getConsignee()->getEmail(), 0, 1);
-        }
-        
-        $pdf->Ln(10);
-        
-        // Authorization Statement
-        $pdf->SetFont('helvetica', 'B', 12);
-        $pdf->MultiCell(0, 10, 'AUTHORIZATION', 0, 'C');
-        
-        $pdf->SetFont('helvetica', '', 11);
-        $pdf->MultiCell(0, 7, 
-            'This Electronic Delivery Order authorizes the release of cargo as specified in the above manifest and bill of lading. ' .
-            'All payments have been verified and processed. The consignee or authorized representative may proceed with cargo collection.',
-            0, 'J'
-        );
-        
-        $pdf->Ln(15);
-        
-        // Digital Signature Placeholder
-        $pdf->SetFont('helvetica', 'I', 10);
-        $pdf->Cell(0, 10, 'Digitally Signed Document', 0, 1, 'C');
-        $pdf->Cell(0, 10, 'Signature Hash: [Will be added after generation]', 0, 1, 'C');
-
-        // Save PDF
-        $filename = 'edo_' . $edo->getEdoNumber() . '_' . time() . '.pdf';
-        $filepath = $this->projectDir . '/var/documents/edo/' . $filename;
-        
-        $this->ensureDirectoryExists(dirname($filepath));
-        $pdf->Output($filepath, 'F');
-
-        return $filepath;
+        return $this->edoDocumentGenerator->generatePDF($edo);
     }
 
     public function addDigitalSignature(string $pdfPath): void

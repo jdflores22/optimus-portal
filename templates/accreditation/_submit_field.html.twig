@@ -19,6 +19,11 @@
     {% set effectiveMax = maxLength %}
 {% endif %}
 {% set lengthHint = null %}
+{% set inputRestriction = field.validation.inputRestriction|default(null) %}
+{% set inputMode = null %}
+{% if inputRestriction == 'numeric' %}
+    {% set inputMode = 'numeric' %}
+{% endif %}
 {% if field.validation.message is not defined %}
     {% if effectiveMin and effectiveMax and effectiveMin == effectiveMax %}
         {% set lengthHint = 'Must be exactly ' ~ effectiveMin ~ ' characters' %}
@@ -73,7 +78,13 @@
      {% if field.validation.min is defined %}data-min="{{ field.validation.min }}"{% endif %}
      {% if field.validation.max is defined %}data-max="{{ field.validation.max }}"{% endif %}
      {% if field.validation.pattern is defined %}data-pattern="{{ field.validation.pattern }}"{% endif %}
-     {% if field.validation.message is defined %}data-validation-message="{{ field.validation.message }}"{% endif %}
+     {% if inputRestriction %}data-input-restriction="{{ inputRestriction }}"{% endif %}
+            {% if field.validation.message is not defined and inputRestriction %}
+                <p class="text-xs text-base-content/60 mt-1">
+                    {% if inputRestriction == 'numeric' %}Numbers only{% elseif inputRestriction == 'alpha' %}Letters only{% elseif inputRestriction == 'alphanumeric' %}Letters and numbers only{% endif %}
+                    {% if lengthHint %} · {{ lengthHint }}{% endif %}
+                </p>
+            {% elseif field.validation.message is defined %}data-validation-message="{{ field.validation.message }}"{% endif %}
      {% if isFileType and field.validation.maxSize is defined %}data-max-size="{{ field.validation.maxSize }}"{% endif %}
      {% if field.validation.showWhen is defined %}data-show-when="{{ field.validation.showWhen|json_encode|e('html_attr') }}"{% endif %}>
     <div class="flex items-start gap-3 mb-4">
@@ -99,6 +110,11 @@
                         <span>{{ complianceNote }}</span>
                     </p>
                 </div>
+            {% elseif field.validation.message is not defined and inputRestriction %}
+                <p class="text-xs text-base-content/60 mt-1">
+                    {% if inputRestriction == 'numeric' %}Numbers only{% elseif inputRestriction == 'alpha' %}Letters only{% elseif inputRestriction == 'alphanumeric' %}Letters and numbers only{% endif %}
+                    {% if lengthHint %} · {{ lengthHint }}{% endif %}
+                </p>
             {% elseif field.validation.message is defined %}
                 <p class="text-xs text-base-content/60 mt-1">{{ field.validation.message }}</p>
             {% elseif lengthHint %}
@@ -118,12 +134,20 @@
 
     <div class="form-control">
         {% if field.type == 'text' or field.type == 'email' %}
+            {% if isComplianceField %}
+                <p class="text-xs text-warning mb-2 flex items-center gap-1">
+                    <span class="icon-[tabler--edit] size-3.5"></span>
+                    Enter an updated value that differs from your previous submission.
+                </p>
+            {% endif %}
             <input type="{{ field.type }}"
                    name="{{ fieldId }}"
                    id="field_{{ fieldId }}"
                    class="input input-bordered w-full {{ fieldHasError ? 'input-error' : '' }}"
                    value="{{ fieldValue }}"
                    {% if field.placeholder|default('') %}placeholder="{{ field.placeholder }}"{% endif %}
+                   {% if inputMode %}inputmode="{{ inputMode }}"{% endif %}
+                   {% if inputRestriction %}data-input-restriction="{{ inputRestriction }}"{% endif %}
                    {% if effectiveMin %}minlength="{{ effectiveMin }}"{% endif %}
                    {% if effectiveMax %}maxlength="{{ effectiveMax }}"{% endif %}
                    {{ isRequired ? 'required data-required=true' : '' }}>
@@ -135,6 +159,8 @@
                    class="input input-bordered w-full {{ fieldHasError ? 'input-error' : '' }}"
                    value="{{ fieldValue }}"
                    {% if field.placeholder|default('') %}placeholder="{{ field.placeholder }}"{% else %}placeholder="+63 9XX XXX XXXX"{% endif %}
+                   {% if inputMode %}inputmode="{{ inputMode }}"{% elseif inputRestriction == 'numeric' %}inputmode="numeric"{% endif %}
+                   {% if inputRestriction %}data-input-restriction="{{ inputRestriction }}"{% endif %}
                    {% if effectiveMin %}minlength="{{ effectiveMin }}"{% endif %}
                    {% if effectiveMax %}maxlength="{{ effectiveMax }}"{% endif %}
                    {{ isRequired ? 'required data-required=true' : '' }}>
@@ -187,6 +213,7 @@
                       rows="4"
                       class="textarea textarea-bordered w-full {{ fieldHasError ? 'textarea-error' : '' }}"
                       {% if field.placeholder|default('') %}placeholder="{{ field.placeholder }}"{% endif %}
+                      {% if inputRestriction %}data-input-restriction="{{ inputRestriction }}"{% endif %}
                       {% if effectiveMin %}minlength="{{ effectiveMin }}"{% endif %}
                       {% if effectiveMax %}maxlength="{{ effectiveMax }}"{% endif %}
                       {{ isRequired ? 'required data-required=true' : '' }}>{{ fieldValue }}</textarea>
@@ -302,6 +329,12 @@
             </div>
 
         {% elseif field.type == 'address' %}
+            {% if isComplianceField %}
+                <p class="text-xs text-warning mb-2 flex items-center gap-1">
+                    <span class="icon-[tabler--map-pin] size-3.5"></span>
+                    Select a different region, city, or barangay from your previous submission.
+                </p>
+            {% endif %}
             {% include 'accreditation/_submit_address_field.html.twig' %}
 
         {% elseif field.type == 'geolocation' %}

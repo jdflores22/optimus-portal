@@ -20,7 +20,8 @@ class PaymentService implements PaymentServiceInterface
         private ManifestNotificationService $notificationService,
         private ActivityLogService $activityLogService,
         private PaymentFeeConfigurationServiceInterface $paymentFeeConfigService,
-        private PaymentReceiptGenerator $receiptGenerator,
+        private OfficialReceiptDocumentGenerator $officialReceiptDocumentGenerator,
+        private BillingDocumentGenerator $billingDocumentGenerator,
         private WorkflowOrchestrator $workflowOrchestrator,
         private string $projectDir
     ) {
@@ -155,10 +156,30 @@ class PaymentService implements PaymentServiceInterface
             
             // Flush payment and manifest changes together
             $this->entityManager->flush();
+
+            $billing = $manifest->getBilling();
+            if ($billing) {
+                try {
+                    $this->billingDocumentGenerator->generatePDF($billing, true);
+                    $this->entityManager->flush();
+                } catch (\Exception $e) {
+                    $this->auditService->logAction(
+                        $accounting,
+                        'billing_paid_regeneration_failed',
+                        'Billing',
+                        $billing->getId(),
+                        [
+                            'error' => $e->getMessage(),
+                            'manifest_id' => $manifest->getId(),
+                            'payment_id' => $payment->getId(),
+                        ]
+                    );
+                }
+            }
             
-            // Generate official receipt PDF from shipping line using TCPDF
+            // Generate official receipt PDF from active document template
             try {
-                $officialReceiptPath = $this->receiptGenerator->generateOfficialReceipt($payment);
+                $officialReceiptPath = $this->officialReceiptDocumentGenerator->generateOfficialReceipt($payment);
                 $payment->setOfficialReceiptPath($officialReceiptPath);
                 $this->entityManager->flush();
                 

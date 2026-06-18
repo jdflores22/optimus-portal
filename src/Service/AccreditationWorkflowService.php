@@ -6,6 +6,7 @@ use App\Entity\AccreditationSubmission;
 use App\Entity\Broker;
 use App\Entity\Consignee;
 use App\Entity\FormConfiguration;
+use App\Entity\ShippingLine;
 use App\Entity\User;
 use App\Entity\Enum\AccreditationStatus;
 use App\Entity\Enum\AccountStatus;
@@ -100,6 +101,7 @@ class AccreditationWorkflowService
                 $existingSubmission->setEvaluator(null);
                 $existingSubmission->setEvaluatedAt(null);
                 $existingSubmission->setDenialReason(null);
+                $this->syncBrokerBusinessAddress($user, $submissionData);
                 
                 error_log('DEBUG: Persisting updated submission to database');
                 $this->entityManager->flush();
@@ -116,6 +118,7 @@ class AccreditationWorkflowService
         $submission->setFormConfig($formConfig);
         $submission->setSubmittedData($submissionData);
         $submission->setStatus(AccreditationStatus::PENDING);
+        $this->syncBrokerBusinessAddress($user, $submissionData);
         
         // Set shipping line if provided
         if ($shippingLine) {
@@ -160,10 +163,17 @@ class AccreditationWorkflowService
 
             if ($existingSubmission) {
                 $status = $existingSubmission->getStatus();
-                if ($status === AccreditationStatus::PENDING || $status === AccreditationStatus::APPROVED) {
+                if (in_array($status, [
+                    AccreditationStatus::PENDING,
+                    AccreditationStatus::APPROVED,
+                    AccreditationStatus::AWAITING_FINAL_APPROVAL,
+                ], true)) {
+                    $label = $status === AccreditationStatus::AWAITING_FINAL_APPROVAL
+                        ? 'awaiting final approval'
+                        : strtolower($status->value);
                     return [
                         'valid' => false,
-                        'message' => 'You already have a ' . strtolower($status->value) . ' accreditation submission for this shipping line'
+                        'message' => 'You already have a ' . $label . ' accreditation submission for this shipping line',
                     ];
                 }
             }
@@ -174,10 +184,17 @@ class AccreditationWorkflowService
 
             if ($existingSubmission) {
                 $status = $existingSubmission->getStatus();
-                if ($status === AccreditationStatus::PENDING || $status === AccreditationStatus::APPROVED) {
+                if (in_array($status, [
+                    AccreditationStatus::PENDING,
+                    AccreditationStatus::APPROVED,
+                    AccreditationStatus::AWAITING_FINAL_APPROVAL,
+                ], true)) {
+                    $label = $status === AccreditationStatus::AWAITING_FINAL_APPROVAL
+                        ? 'awaiting final approval'
+                        : strtolower($status->value);
                     return [
                         'valid' => false,
-                        'message' => 'You already have a ' . strtolower($status->value) . ' accreditation submission'
+                        'message' => 'You already have a ' . $label . ' accreditation submission',
                     ];
                 }
             }
@@ -237,8 +254,13 @@ class AccreditationWorkflowService
                 throw new \InvalidArgumentException('Invalid status for evaluation');
             }
 
+            // Evaluator "Approve" forwards to Shipping Admin — not final approval
+            $storedStatus = $status === AccreditationStatus::APPROVED
+                ? AccreditationStatus::AWAITING_FINAL_APPROVAL
+                : $status;
+
             // Update submission
-            $submission->setStatus($status);
+            $submission->setStatus($storedStatus);
             $submission->setEvaluator($evaluator);
             $submission->setEvaluatedAt(new \DateTime());
 
@@ -275,7 +297,7 @@ class AccreditationWorkflowService
                 [
                     'status' => [
                         'from' => AccreditationStatus::PENDING->value,
-                        'to' => $status->value
+                        'to' => $storedStatus->value,
                     ],
                     'reason' => $reason,
                     'compliance_field_ids' => $complianceFieldIds,
@@ -286,14 +308,13 @@ class AccreditationWorkflowService
         // Send notification to applicant (asynchronously to avoid blocking the request)
         if ($submission) {
             try {
-                $complianceFields = $status === AccreditationStatus::COMPLIANCE_REQUIRED
+                $complianceFields = $submission->getStatus() === AccreditationStatus::COMPLIANCE_REQUIRED
                     ? ComplianceRequestService::resolveFields($submission, $submission->getFormConfig())
                     : [];
 
-                // Set a short timeout for email sending to avoid blocking the web request
                 $this->notificationService->sendAccreditationStatusChange(
                     $submission->getApplicant(),
-                    $status,
+                    $submission->getStatus(),
                     $reason,
                     $complianceFields
                 );
@@ -332,14 +353,18 @@ class AccreditationWorkflowService
             throw new \InvalidArgumentException('Accreditation submission not found');
         }
 
-        // Validate admin role
-        if ($admin->getRole() !== UserRole::SHIPPING_LINES_ADMIN && $admin->getRole() !== UserRole::SYSTEM_ADMIN) {
-            throw new \InvalidArgumentException('Only Shipping Lines Admin or System Admin can perform final approval');
+        if ($admin->getRole() !== UserRole::SHIPPING_LINES_ADMIN) {
+            throw new \InvalidArgumentException('Only Shipping Lines Admin can perform final approval');
         }
 
-        // Validate submission was approved by evaluator
-        if ($submission->getStatus() !== AccreditationStatus::APPROVED) {
-            throw new \InvalidArgumentException('Can only perform final approval on evaluator-approved submissions');
+        $shippingLine = $admin->getShippingLineScope();
+        if (!$shippingLine || $submission->getShippingLine()->getId() !== $shippingLine->getId()) {
+            throw new \InvalidArgumentException('You can only approve applications for your shipping line');
+        }
+
+        // Validate submission was recommended by evaluator and awaits final approval
+        if ($submission->getStatus() !== AccreditationStatus::AWAITING_FINAL_APPROVAL) {
+            throw new \InvalidArgumentException('Can only perform final approval on submissions awaiting final approval');
         }
 
         // Update submission
@@ -373,7 +398,7 @@ class AccreditationWorkflowService
             $submission->getId(),
             [
                 'status' => [
-                    'from' => AccreditationStatus::APPROVED->value,
+                    'from' => AccreditationStatus::AWAITING_FINAL_APPROVAL->value,
                     'to' => $approved ? AccreditationStatus::APPROVED->value : AccreditationStatus::DENIED->value
                 ],
                 'approved' => $approved,
@@ -455,21 +480,49 @@ class AccreditationWorkflowService
     }
 
     /**
-     * Get all evaluator-approved submissions for final approval
-     * 
-     * @return array Array of AccreditationSubmission entities
+     * @return array<AccreditationSubmission>
      */
-    public function getSubmissionsForFinalApproval(): array
+    public function getSubmissionsForFinalApprovalByShippingLine(ShippingLine $shippingLine): array
     {
         return $this->entityManager->getRepository(AccreditationSubmission::class)
             ->createQueryBuilder('s')
             ->where('s.status = :status')
-            ->andWhere('s.evaluator IS NOT NULL')
-            ->andWhere('s.finalApprover IS NULL')
-            ->setParameter('status', AccreditationStatus::APPROVED)
+            ->andWhere('s.shippingLine = :shippingLine')
+            ->setParameter('status', AccreditationStatus::AWAITING_FINAL_APPROVAL)
+            ->setParameter('shippingLine', $shippingLine)
             ->orderBy('s.evaluatedAt', 'ASC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * @return array<AccreditationSubmission>
+     */
+    public function getApprovedAccreditationsByShippingLine(ShippingLine $shippingLine): array
+    {
+        return $this->entityManager->getRepository(AccreditationSubmission::class)
+            ->createQueryBuilder('s')
+            ->where('s.status = :status')
+            ->andWhere('s.finalApprover IS NOT NULL')
+            ->andWhere('s.shippingLine = :shippingLine')
+            ->setParameter('status', AccreditationStatus::APPROVED)
+            ->setParameter('shippingLine', $shippingLine)
+            ->orderBy('s.approvedAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function countPendingFinalApprovalForShippingLine(ShippingLine $shippingLine): int
+    {
+        return (int) $this->entityManager->getRepository(AccreditationSubmission::class)
+            ->createQueryBuilder('s')
+            ->select('COUNT(s.id)')
+            ->where('s.status = :status')
+            ->andWhere('s.shippingLine = :shippingLine')
+            ->setParameter('status', AccreditationStatus::AWAITING_FINAL_APPROVAL)
+            ->setParameter('shippingLine', $shippingLine)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 
     /**
@@ -497,23 +550,6 @@ class AccreditationWorkflowService
     }
 
     /**
-     * Get all approved accreditations (final approved submissions)
-     * 
-     * @return array Array of AccreditationSubmission entities
-     */
-    public function getApprovedAccreditations(): array
-    {
-        return $this->entityManager->getRepository(AccreditationSubmission::class)
-            ->createQueryBuilder('s')
-            ->where('s.status = :status')
-            ->andWhere('s.finalApprover IS NOT NULL')
-            ->setParameter('status', AccreditationStatus::APPROVED)
-            ->orderBy('s.approvedAt', 'DESC')
-            ->getQuery()
-            ->getResult();
-    }
-
-    /**
      * Get all submissions
      * 
      * @return array Array of AccreditationSubmission entities
@@ -522,5 +558,46 @@ class AccreditationWorkflowService
     {
         return $this->entityManager->getRepository(AccreditationSubmission::class)
             ->findAll();
+    }
+
+    /**
+     * @param array<string, mixed> $submissionData
+     */
+    private function syncBrokerBusinessAddress(User $user, array $submissionData): void
+    {
+        if (!$user instanceof Broker) {
+            return;
+        }
+
+        $address = $this->extractBusinessAddress($submissionData);
+        if ($address === '') {
+            return;
+        }
+
+        $user->setBusinessAddress($address);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function extractBusinessAddress(array $data): string
+    {
+        foreach (['business_address', 'address', 'office_address', 'registered_address'] as $key) {
+            if (!empty($data[$key]) && is_string($data[$key])) {
+                return trim($data[$key]);
+            }
+        }
+
+        foreach ($data as $key => $value) {
+            if (!is_string($key) || !is_string($value)) {
+                continue;
+            }
+
+            if (str_contains(strtolower($key), 'address') && trim($value) !== '') {
+                return trim($value);
+            }
+        }
+
+        return '';
     }
 }

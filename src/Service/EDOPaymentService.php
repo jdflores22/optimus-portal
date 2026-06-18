@@ -197,6 +197,10 @@ class EDOPaymentService implements EDOPaymentServiceInterface
         UploadedFile $receiptFile,
         User $broker
     ): EDOPayment {
+        if (!$receiptFile->isValid() || $receiptFile->getSize() <= 0) {
+            throw new \InvalidArgumentException('Payment receipt file is required');
+        }
+
         // Step 1: Simple validation
         if ($edo->getStatus() === EDOStatus::RELEASED) {
             throw new \Exception('eDO already released');

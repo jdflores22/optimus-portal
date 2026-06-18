@@ -81,6 +81,7 @@ security:
         - { path: ^/forgot-password, roles: PUBLIC_ACCESS }
         - { path: ^/email/verify, roles: PUBLIC_ACCESS }
         - { path: ^/email/resend, roles: PUBLIC_ACCESS }
+        - { path: ^/verify/document, roles: PUBLIC_ACCESS }
         - { path: ^/role-acceptance, roles: PUBLIC_ACCESS }
         - { path: ^/trucker/login, roles: PUBLIC_ACCESS }
         - { path: ^/trucker/register, roles: PUBLIC_ACCESS }

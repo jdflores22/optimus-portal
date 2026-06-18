@@ -12,7 +12,7 @@ class BillingService implements BillingServiceInterface
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private DocumentService $documentService,
+        private BillingDocumentGenerator $billingDocumentGenerator,
         private AuditService $auditService,
         private WorkflowOrchestrator $workflowOrchestrator,
         private ActivityLogService $activityLogService,
@@ -78,8 +78,8 @@ class BillingService implements BillingServiceInterface
         
         $this->entityManager->flush();
 
-        // Generate PDF
-        $pdfPath = $this->documentService->generateBillingPDF($billing);
+        // Generate PDF via document template (falls back to legacy TCPDF when no active template)
+        $pdfPath = $this->billingDocumentGenerator->generatePDF($billing);
         $billing->setPdfPath($pdfPath);
         $this->entityManager->flush();
 
@@ -111,6 +111,39 @@ class BillingService implements BillingServiceInterface
         $this->notificationService->notifyBillingGenerated($manifest, $billing);
 
         return $billing;
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function normalizeChargeData(array $input): array
+    {
+        $chargeData = [
+            'freightCharges' => (float) ($input['freightCharges'] ?? 0),
+            'thcCharges' => (float) ($input['thcCharges'] ?? 0),
+            'additionalCharges' => $input['additionalCharges'] ?? null,
+            'currency' => $input['currency'] ?? 'PHP',
+            'exchangeRate' => isset($input['exchangeRate']) ? (float) $input['exchangeRate'] : null,
+        ];
+
+        if ($chargeData['currency'] === 'USD' && $chargeData['exchangeRate']) {
+            $chargeData['freightChargesUsd'] = $chargeData['freightCharges'] / $chargeData['exchangeRate'];
+            $chargeData['thcChargesUsd'] = $chargeData['thcCharges'] / $chargeData['exchangeRate'];
+
+            $additionalUsd = 0.0;
+            if (is_array($chargeData['additionalCharges'])) {
+                foreach ($chargeData['additionalCharges'] as $charge) {
+                    $additionalUsd += ((float) ($charge['amount'] ?? 0)) / $chargeData['exchangeRate'];
+                }
+            }
+
+            $chargeData['totalAmountUsd'] = $chargeData['freightChargesUsd']
+                + $chargeData['thcChargesUsd']
+                + $additionalUsd;
+        }
+
+        return $chargeData;
     }
 
     public function computeFreightCharges(Manifest $manifest): float
@@ -156,7 +189,7 @@ class BillingService implements BillingServiceInterface
         return $this->entityManager->getRepository(Billing::class)->find($billingId);
     }
 
-    public function regenerateBillingPdf(int $billingId): Billing
+    public function regenerateBillingPdf(int $billingId, bool $markAsPaid = false): Billing
     {
         $billing = $this->getBillingById($billingId);
         
@@ -164,10 +197,32 @@ class BillingService implements BillingServiceInterface
             throw new \InvalidArgumentException('Billing not found');
         }
 
-        // Generate PDF
-        $pdfPath = $this->documentService->generateBillingPDF($billing);
+        $pdfPath = $this->billingDocumentGenerator->generatePDF(
+            $billing,
+            $markAsPaid ? true : null
+        );
         $billing->setPdfPath($pdfPath);
         $this->entityManager->flush();
+
+        return $billing;
+    }
+
+    public function ensureBillingPdfIsCurrent(Billing $billing): Billing
+    {
+        $billingId = $billing->getId();
+        if ($billingId === null) {
+            return $billing;
+        }
+
+        $activeTemplate = $this->billingDocumentGenerator->getActiveBillingTemplate();
+        if ($activeTemplate === null) {
+            return $billing;
+        }
+
+        $currentHash = BillingDocumentGenerator::computeTemplateHash($activeTemplate);
+        if ($billing->getPdfPath() === null || $billing->getPdfTemplateHash() !== $currentHash) {
+            return $this->regenerateBillingPdf($billingId);
+        }
 
         return $billing;
     }

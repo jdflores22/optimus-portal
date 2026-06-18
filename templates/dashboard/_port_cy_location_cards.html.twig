@@ -1,5 +1,5 @@
 {# Shared Port/Terminal and CY utilization cards — SL Staff & Shipping Admin dashboards #}
-{% if portLocations is defined and portLocations|length > 0 %}
+{% if portLocations is defined %}
 <div class="card bg-base-100 shadow-sm mb-8">
     <div class="px-6 py-4 flex flex-wrap justify-between items-center gap-3 border-b border-primary/10 bg-primary/5 rounded-t-box">
         <div>
@@ -20,10 +20,11 @@
         </div>
     </div>
     <div class="p-6">
+        {% if portLocations|length > 0 %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for location in portLocations %}
-            <div class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 border border-primary/20">
-                <div class="card-body p-5">
+            <div class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 border border-primary/20 h-full">
+                <div class="card-body p-5 h-full flex flex-col">
                     <div class="flex items-start justify-between mb-4">
                         <div class="flex items-center gap-3 flex-1 min-w-0">
                             <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -41,7 +42,7 @@
                     </div>
 
                     {% for size, label in {'20ft': '20ft', '40ft': '40ft'} %}
-                    <div class="{{ not loop.last ? 'mb-4' : '' }}">
+                    <div class="{{ not loop.last ? 'mb-4' : '' }} flex-1">
                         <div class="flex items-center justify-between mb-3">
                             <h5 class="text-sm font-bold text-base-content">{{ label }} Containers</h5>
                             <span class="badge badge-neutral badge-sm">{{ label }}</span>
@@ -93,11 +94,22 @@
                 </p>
             </div>
         </div>
+        {% else %}
+        <div class="text-center py-12">
+            <div class="w-16 h-16 mx-auto bg-base-200 rounded-full flex items-center justify-center mb-4">
+                <span class="icon-[tabler--anchor] size-8 text-base-content/30"></span>
+            </div>
+            <h4 class="font-semibold text-base-content mb-2">No port terminals configured</h4>
+            <p class="text-sm text-base-content/60 max-w-md mx-auto">
+                Assign port/terminal locations to your shipping line to track inbound, at-port, and outbound container volume here.
+            </p>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endif %}
 
-{% if cyLocations is defined and cyLocations|length > 0 %}
+{% if cyLocations is defined %}
 <div class="card bg-base-100 shadow-sm mb-8">
     <div class="px-6 py-4 flex flex-wrap justify-between items-center gap-3 border-b border-base-200 bg-base-200/30 rounded-t-box">
         <div>
@@ -118,6 +130,7 @@
         </div>
     </div>
     <div class="p-6">
+        {% if cyLocations|length > 0 %}
         {% include 'dashboard/_cy_location_cards.html.twig' with {
             cyLocations: cyLocations,
             showSectionHeader: false,
@@ -125,6 +138,23 @@
             repositioningNewRoute: repositioningNewRoute|default(null),
             showDetailedStackLink: showDetailedStackLink|default(false)
         } %}
+        {% else %}
+        <div class="text-center py-12">
+            <div class="w-16 h-16 mx-auto bg-base-200 rounded-full flex items-center justify-center mb-4">
+                <span class="icon-[tabler--building-warehouse] size-8 text-base-content/30"></span>
+            </div>
+            <h4 class="font-semibold text-base-content mb-2">No container yards configured</h4>
+            <p class="text-sm text-base-content/60 max-w-md mx-auto">
+                Add CY-type terminal allocations for your shipping line to monitor yard capacity and empty returns.
+            </p>
+            {% if repositioningNewRoute is defined %}
+            <a href="{{ path(repositioningNewRoute) }}" class="btn btn-neutral btn-sm gap-2 mt-4">
+                <span class="icon-[tabler--plus] size-4"></span>
+                New Repositioning Request
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endif %}

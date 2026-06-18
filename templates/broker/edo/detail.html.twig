@@ -1,255 +1,319 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}eDO Detail - OPTIMUS{% endblock %}
+{% block page_title %}eDO Detail{% endblock %}
 
 {% block body %}
-<div class="min-h-screen bg-base-200">
-    <!-- Header Section -->
-    <div class="bg-base-100 shadow-sm">
-        <div class="px-4 sm:px-6 lg:px-8 py-4">
-            <div class="flex items-center gap-3">
-                <a href="{{ path('broker_edo_list_page') }}" class="btn btn-ghost btn-sm btn-circle">
-                    <span class="icon-[tabler--arrow-left] size-5"></span>
-                </a>
-                <div>
-                    <h1 class="text-2xl font-bold text-base-content">eDO Detail</h1>
-                    <p class="text-sm text-base-content/60 mt-1">View Electronic Delivery Order information and payment history</p>
-                </div>
-            </div>
+<div class="max-w-7xl mx-auto w-full space-y-5 sm:space-y-6 pb-10">
+
+    {# Loading #}
+    <div id="loadingState" class="card card-border bg-base-100 shadow-sm">
+        <div class="card-body p-12 text-center">
+            <span class="loading loading-spinner loading-lg text-primary"></span>
+            <p class="mt-4 text-sm text-base-content/60">Loading eDO details…</p>
         </div>
     </div>
 
-    <div class="px-4 sm:px-6 lg:px-8 py-6">
-        <!-- Loading State -->
-        <div id="loadingState" class="card bg-base-100 shadow-sm p-12 text-center">
-            <span class="loading loading-spinner loading-lg text-primary"></span>
-            <p class="mt-4 text-sm opacity-60">Loading eDO details...</p>
-        </div>
-
-        <!-- Error State -->
-        <div id="errorState" class="card bg-base-100 shadow-sm p-12 text-center hidden">
+    {# Error #}
+    <div id="errorState" class="hidden">
+        <div class="rounded-3xl border border-error/20 bg-gradient-to-br from-error/10 via-base-100 to-base-100 shadow-sm p-8 text-center">
             <div class="size-16 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span class="icon-[tabler--alert-circle] size-8 text-error"></span>
             </div>
-            <h3 class="text-base font-semibold">Error Loading eDO</h3>
-            <p id="errorMessage" class="mt-2 text-sm opacity-60"></p>
-            <div class="mt-6">
-                <a href="{{ path('broker_edo_list_page') }}" class="btn btn-ghost rounded-lg">
-                    Back to eDO List
-                </a>
+            <h2 class="text-lg font-semibold">Could not load eDO</h2>
+            <p id="errorMessage" class="mt-2 text-sm text-base-content/60 max-w-md mx-auto"></p>
+            <a href="{{ path('broker_edo_list_page') }}" class="btn btn-ghost btn-sm mt-6 gap-2">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back to eDO list
+            </a>
+        </div>
+    </div>
+
+    {# Main content — populated by JS #}
+    <div id="contentContainer" class="hidden space-y-5 sm:space-y-6">
+
+        {# Hero #}
+        <div id="heroCard" class="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-base-100 to-base-100 shadow-sm p-5 sm:p-7">
+            <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
+                <div class="space-y-3 min-w-0">
+                    <div class="breadcrumbs text-xs">
+                        <ul>
+                            <li><a href="{{ path('app_broker_dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right] size-3.5"></span></li>
+                            <li><a href="{{ path('broker_edo_list_page') }}">My eDOs</a></li>
+                            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right] size-3.5"></span></li>
+                            <li aria-current="page" id="breadcrumbEdoNumber">eDO</li>
+                        </ul>
+                    </div>
+
+                    <span class="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                        <span class="icon-[tabler--file-certificate] size-3.5"></span>
+                        Electronic Delivery Order
+                    </span>
+
+                    <div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <h1 id="heroEdoNumber" class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-base-content leading-tight font-mono"></h1>
+                            <span id="heroStatusBadge"></span>
+                        </div>
+                        <p class="mt-2 text-sm sm:text-base text-base-content/70 max-w-2xl">
+                            Container <span id="heroContainerText" class="font-mono font-semibold"></span>
+                            · Manifest <span id="heroManifestText" class="font-mono font-semibold"></span>
+                        </p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="badge badge-primary badge-soft badge-lg gap-2 font-mono">
+                            <span class="icon-[tabler--box] size-4"></span>
+                            <span id="heroContainerBadge"></span>
+                        </span>
+                        <span class="badge badge-ghost badge-lg gap-2 font-mono">
+                            <span class="icon-[tabler--file-text] size-4"></span>
+                            <span id="heroManifestBadge"></span>
+                        </span>
+                        <span class="badge badge-success badge-soft badge-lg gap-2 font-semibold">
+                            <span class="icon-[tabler--cash] size-4"></span>
+                            <span id="heroFeeBadge"></span>
+                        </span>
+                        <span id="heroExpiresBadge" class="badge badge-lg gap-2 hidden"></span>
+                    </div>
+                </div>
+
+                <div id="heroActions" class="flex flex-wrap items-center gap-2 xl:justify-end shrink-0">
+                    <a href="{{ path('broker_edo_list_page') }}" class="btn btn-ghost btn-sm sm:btn-md gap-2">
+                        <span class="icon-[tabler--arrow-left] size-4"></span>
+                        Back to list
+                    </a>
+                </div>
             </div>
         </div>
 
-        <!-- Content Container -->
-        <div id="contentContainer" class="hidden">
-            <!-- 2-Column Layout: eDO Info + Payment History (Left) | Activity Timeline (Right) -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Left Column: eDO Information and Payment History (2/3 width) -->
-                <div class="lg:col-span-2 space-y-6">
-                    <!-- eDO Information Card -->
-                    <div class="card bg-base-100 shadow-sm">
-                        <div class="card-body">
-                            <h2 class="card-title text-lg">eDO Information</h2>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                        <div>
-                            <label class="block text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">eDO Number</label>
-                            <p id="edoNumber" class="text-sm font-semibold"></p>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">Container Number</label>
-                            <p id="containerNumber" class="text-sm font-semibold"></p>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">Manifest Number</label>
-                            <p id="manifestNumber" class="text-sm font-semibold"></p>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">Status</label>
-                            <span id="edoStatus"></span>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">Expires At</label>
-                            <p id="expiresAt" class="text-sm"></p>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">Fee Amount</label>
-                            <p id="feeAmount" class="text-sm font-semibold"></p>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">Generated At</label>
-                            <p id="generatedAt" class="text-sm"></p>
-                        </div>
-                        <div id="releasedAtContainer" class="hidden">
-                            <label class="block text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">Released At</label>
-                            <p id="releasedAt" class="text-sm"></p>
-                        </div>
-                        <div id="releasedByContainer" class="hidden">
-                            <label class="block text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">Released By</label>
-                            <p id="releasedBy" class="text-sm"></p>
-                        </div>
-                        <div id="generatedByContainer" class="hidden">
-                            <label class="block text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">Generated By</label>
-                            <p id="generatedByName" class="text-sm"></p>
-                        </div>
-                        <div id="previousEdoContainer" class="hidden">
-                            <label class="block text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">Previous eDO Version</label>
-                            <a id="previousEdoLink" href="#" class="text-sm text-primary hover:underline font-medium"></a>
-                        </div>
-                    </div>
+        {# Dynamic alerts / CTAs #}
+        <div id="paymentPendingContainer" class="hidden">
+            <div class="alert alert-warning shadow-sm border border-warning/30">
+                <span class="icon-[tabler--clock] size-5 shrink-0"></span>
+                <div>
+                    <p class="font-semibold text-sm">Payment under review</p>
+                    <p class="text-xs opacity-90 mt-0.5">Your payment has been submitted and is awaiting admin verification.</p>
+                </div>
+            </div>
+        </div>
 
-                    <!-- Additional Notes Section -->
-                    <div id="additionalNotesContainer" class="hidden mt-6">
-                        <label class="block text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">Additional Notes</label>
-                        <div id="additionalNotes" class="p-4 bg-base-200 rounded-lg text-sm"></div>
-                    </div>
+        <div id="requestRenewalContainer" class="hidden space-y-3">
+            <div class="alert alert-error shadow-sm border border-error/30">
+                <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+                <div>
+                    <h3 class="font-semibold text-sm">eDO expired</h3>
+                    <p class="text-xs opacity-90 mt-0.5">This eDO has expired. You can request a new eDO to continue operations.</p>
+                </div>
+            </div>
+            <a id="requestRenewalBtn" href="#" class="btn btn-primary btn-sm gap-2 hidden">
+                <span class="icon-[tabler--refresh] size-4"></span>
+                Request new eDO
+            </a>
+        </div>
 
-                    <!-- Version History Section -->
-                    <div id="versionHistoryContainer" class="hidden mt-6">
-                        <label class="block text-xs font-semibold opacity-50 uppercase tracking-wider mb-2">eDO Version History</label>
-                        <div class="space-y-3">
-                            <!-- Previous eDO (Expired) -->
-                            <div id="previousEdoCard" class="hidden p-4 bg-error/5 border border-error/20 rounded-lg">
-                                <div class="flex items-start justify-between">
-                                    <div class="flex-1">
-                                        <div class="flex items-center gap-2">
-                                            <span class="icon-[tabler--file-x] size-5 text-error"></span>
-                                            <span class="text-sm font-semibold text-error">Previous eDO (Expired)</span>
+        {# Quick stats #}
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div class="card card-border bg-base-100 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide">Access fee</p>
+                    <p id="statFee" class="text-lg sm:text-xl font-bold text-base-content mt-1">—</p>
+                </div>
+            </div>
+            <div class="card card-border bg-base-100 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide">Expires</p>
+                    <p id="statExpires" class="text-lg sm:text-xl font-bold text-base-content mt-1">—</p>
+                </div>
+            </div>
+            <div class="card card-border bg-base-100 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide">Generated</p>
+                    <p id="statGenerated" class="text-sm sm:text-base font-semibold text-base-content mt-1 leading-snug">—</p>
+                </div>
+            </div>
+            <div class="card card-border bg-base-100 shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide">Payments</p>
+                    <p id="statPayments" class="text-lg sm:text-xl font-bold text-base-content mt-1">—</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-5 sm:gap-6">
+            {# Left column #}
+            <div class="xl:col-span-8 space-y-5 sm:space-y-6">
+
+                {# eDO details #}
+                <div class="card card-border bg-base-100 shadow-sm">
+                    <div class="card-body p-4 sm:p-6">
+                        <h2 class="card-title text-base sm:text-lg gap-2 mb-1">
+                            <span class="icon-[tabler--info-circle] size-5 text-primary"></span>
+                            eDO information
+                        </h2>
+                        <p class="text-sm text-base-content/60 mb-5">Shipment and release details for this electronic delivery order.</p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                            <div class="rounded-xl border border-base-300/60 bg-base-200/30 p-4">
+                                <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">eDO number</p>
+                                <p id="edoNumber" class="text-sm font-mono font-semibold"></p>
+                            </div>
+                            <div class="rounded-xl border border-base-300/60 bg-base-200/30 p-4">
+                                <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Container</p>
+                                <p id="containerNumber" class="text-sm font-mono font-semibold"></p>
+                            </div>
+                            <div class="rounded-xl border border-base-300/60 bg-base-200/30 p-4">
+                                <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Manifest</p>
+                                <p id="manifestNumber" class="text-sm font-mono font-semibold"></p>
+                            </div>
+                            <div class="rounded-xl border border-base-300/60 bg-base-200/30 p-4">
+                                <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Status</p>
+                                <div id="edoStatus"></div>
+                            </div>
+                            <div class="rounded-xl border border-base-300/60 bg-base-200/30 p-4">
+                                <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Expires at</p>
+                                <p id="expiresAt" class="text-sm"></p>
+                            </div>
+                            <div class="rounded-xl border border-base-300/60 bg-base-200/30 p-4">
+                                <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Fee amount</p>
+                                <p id="feeAmount" class="text-sm font-semibold"></p>
+                            </div>
+                            <div class="rounded-xl border border-base-300/60 bg-base-200/30 p-4">
+                                <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Generated at</p>
+                                <p id="generatedAt" class="text-sm"></p>
+                            </div>
+                            <div id="releasedAtContainer" class="hidden rounded-xl border border-base-300/60 bg-base-200/30 p-4">
+                                <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Released at</p>
+                                <p id="releasedAt" class="text-sm"></p>
+                            </div>
+                            <div id="releasedByContainer" class="hidden rounded-xl border border-base-300/60 bg-base-200/30 p-4">
+                                <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Released by</p>
+                                <p id="releasedBy" class="text-sm"></p>
+                            </div>
+                            <div id="generatedByContainer" class="hidden rounded-xl border border-base-300/60 bg-base-200/30 p-4">
+                                <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Generated by</p>
+                                <p id="generatedByName" class="text-sm"></p>
+                            </div>
+                            <div id="previousEdoContainer" class="hidden rounded-xl border border-base-300/60 bg-base-200/30 p-4 sm:col-span-2">
+                                <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Previous eDO version</p>
+                                <a id="previousEdoLink" href="#" class="text-sm text-primary hover:underline font-mono font-medium"></a>
+                            </div>
+                        </div>
+
+                        <div id="additionalNotesContainer" class="hidden mt-5">
+                            <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-2">Additional notes</p>
+                            <div id="additionalNotes" class="rounded-xl border border-base-300/60 bg-base-200/40 p-4 text-sm"></div>
+                        </div>
+
+                        <div id="versionHistoryContainer" class="hidden mt-6">
+                            <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-3">Version history</p>
+                            <div class="space-y-3">
+                                <div id="previousEdoCard" class="hidden rounded-xl border border-error/25 bg-error/5 p-4">
+                                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center gap-2">
+                                                <span class="icon-[tabler--file-x] size-5 text-error"></span>
+                                                <span class="text-sm font-semibold text-error">Previous eDO (expired)</span>
+                                            </div>
+                                            <p id="previousEdoNumberText" class="text-sm font-mono mt-2"></p>
+                                            <p id="previousEdoExpiry" class="text-xs text-base-content/60 mt-1"></p>
                                         </div>
-                                        <p id="previousEdoNumberText" class="text-sm font-mono mt-2"></p>
-                                        <p id="previousEdoExpiry" class="text-xs opacity-60 mt-1"></p>
+                                        <div class="flex gap-2 shrink-0">
+                                            <button id="downloadPreviousEdoBtn" type="button" class="btn btn-ghost btn-sm gap-2" title="Download previous eDO PDF">
+                                                <span class="icon-[tabler--download] size-4"></span>
+                                                Download
+                                            </button>
+                                            <a id="viewPreviousEdoBtn" href="#" class="btn btn-ghost btn-sm gap-2">
+                                                <span class="icon-[tabler--eye] size-4"></span>
+                                                View
+                                            </a>
+                                        </div>
                                     </div>
-                                    <div class="flex gap-2">
-                                        <button id="downloadPreviousEdoBtn" class="btn btn-ghost btn-sm rounded-lg gap-2" title="Download Previous eDO PDF">
-                                            <span class="icon-[tabler--download] size-4"></span>
-                                        </button>
-                                        <a id="viewPreviousEdoBtn" href="#" class="btn btn-ghost btn-sm rounded-lg gap-2">
-                                            <span class="icon-[tabler--eye] size-4"></span>
-                                            View
-                                        </a>
+                                </div>
+
+                                <div id="newEdoCard" class="hidden rounded-xl border border-success/25 bg-success/5 p-4">
+                                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center gap-2">
+                                                <span class="icon-[tabler--file-check] size-5 text-success"></span>
+                                                <span class="text-sm font-semibold text-success">New eDO (renewed)</span>
+                                            </div>
+                                            <p id="newEdoNumberText" class="text-sm font-mono mt-2"></p>
+                                            <p id="newEdoExpiry" class="text-xs text-base-content/60 mt-1"></p>
+                                            <span id="newEdoStatusBadge" class="mt-2 inline-block"></span>
+                                        </div>
+                                        <div class="flex gap-2 shrink-0">
+                                            <button id="downloadNewEdoBtn" type="button" class="btn btn-success btn-sm gap-2" title="Download new eDO PDF">
+                                                <span class="icon-[tabler--download] size-4"></span>
+                                                Download
+                                            </button>
+                                            <a id="viewNewEdoBtn" href="#" class="btn btn-success btn-sm gap-2">
+                                                <span class="icon-[tabler--eye] size-4"></span>
+                                                View
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <!-- New eDO (Renewed) -->
-                            <div id="newEdoCard" class="hidden p-4 bg-success/5 border border-success/20 rounded-lg">
-                                <div class="flex items-start justify-between">
-                                    <div class="flex-1">
-                                        <div class="flex items-center gap-2">
-                                            <span class="icon-[tabler--file-check] size-5 text-success"></span>
-                                            <span class="text-sm font-semibold text-success">New eDO (Renewed)</span>
-                                        </div>
-                                        <p id="newEdoNumberText" class="text-sm font-mono mt-2"></p>
-                                        <p id="newEdoExpiry" class="text-xs opacity-60 mt-1"></p>
-                                        <span id="newEdoStatusBadge" class="mt-2 inline-block"></span>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <button id="downloadNewEdoBtn" class="btn btn-success btn-sm rounded-lg gap-2" title="Download New eDO PDF">
-                                            <span class="icon-[tabler--download] size-4"></span>
-                                        </button>
-                                        <a id="viewNewEdoBtn" href="#" class="btn btn-success btn-sm rounded-lg gap-2">
-                                            <span class="icon-[tabler--eye] size-4"></span>
-                                            View
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
+                        </div>
+
+                        <div id="downloadEdoContainer" class="mt-6 hidden">
+                            <button id="downloadEdoBtn" type="button" class="btn btn-success gap-2">
+                                <span class="icon-[tabler--download] size-4"></span>
+                                Download eDO PDF
+                            </button>
+                        </div>
+
+                        <div id="submitPaymentContainer" class="mt-6 hidden">
+                            <a id="submitPaymentBtn" href="#" class="btn btn-primary gap-2">
+                                <span class="icon-[tabler--credit-card] size-4"></span>
+                                Submit payment
+                            </a>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Download eDO Button (for released eDOs) -->
-                    <div id="downloadEdoContainer" class="mt-6 hidden">
-                        <button id="downloadEdoBtn" class="btn btn-success rounded-lg gap-2">
-                            <span class="icon-[tabler--download] size-4"></span>
-                            Download eDO PDF
-                        </button>
-                    </div>
+                {# Payment history #}
+                <div class="card card-border bg-base-100 shadow-sm">
+                    <div class="card-body p-4 sm:p-6">
+                        <h2 class="card-title text-base sm:text-lg gap-2 mb-1">
+                            <span class="icon-[tabler--receipt] size-5 text-primary"></span>
+                            Payment history
+                        </h2>
+                        <p class="text-sm text-base-content/60 mb-5">Submitted receipts and verification status.</p>
 
-                    <!-- Submit Payment Button (for pending eDOs without payment) -->
-                    <div id="submitPaymentContainer" class="mt-6 hidden">
-                        <a id="submitPaymentBtn" href="#" class="btn btn-primary rounded-lg gap-2">
-                            <span class="icon-[tabler--credit-card] size-4"></span>
-                            Submit Payment
-                        </a>
-                    </div>
-
-                    <!-- Payment Pending Message (for eDOs with pending payment) -->
-                    <div id="paymentPendingContainer" class="mt-6 hidden">
-                        <div class="alert alert-warning">
-                            <span class="icon-[tabler--clock] size-5"></span>
-                            <div>
-                                <h3 class="font-semibold">Payment Under Review</h3>
-                                <div class="text-sm opacity-90 mt-1">Your payment has been submitted and is awaiting verification by the admin. You'll be notified once it's processed.</div>
-                            </div>
+                        <div id="noPaymentsState" class="hidden text-center py-10 rounded-xl border border-dashed border-base-300/60 bg-base-200/30">
+                            <span class="icon-[tabler--file-off] size-10 text-base-content/30 mx-auto block"></span>
+                            <p class="text-sm font-semibold mt-3">No payment history</p>
+                            <p class="text-xs text-base-content/60 mt-1">No payments have been submitted for this eDO yet.</p>
                         </div>
-                    </div>
 
-                    <!-- Request New eDO Button (for expired eDOs with terminal assigned) -->
-                    <!-- Requirements: 1.1 - Button visibility based on expiration and terminal assignment -->
-                    <div id="requestRenewalContainer" class="mt-6 hidden">
-                        <div class="alert alert-error mb-4">
-                            <span class="icon-[tabler--alert-triangle] size-5"></span>
-                            <div>
-                                <h3 class="font-semibold">eDO Expired</h3>
-                                <div class="text-sm opacity-90 mt-1">This eDO has expired. You can request a new eDO to continue operations.</div>
-                            </div>
+                        <div id="paymentTimeline" class="mt-1">
+                            <ul role="list" class="space-y-0"></ul>
                         </div>
-                        <a id="requestRenewalBtn" href="#" class="btn btn-primary rounded-lg gap-2">
-                            <span class="icon-[tabler--refresh] size-4"></span>
-                            Request New eDO
-                        </a>
                     </div>
                 </div>
             </div>
 
-            <!-- Payment History Card -->
-            <div class="card bg-base-100 shadow-sm">
-                <div class="card-body">
-                    <h2 class="card-title text-lg">Payment History</h2>
-                    
-                    <!-- Empty State -->
-                    <div id="noPaymentsState" class="text-center py-12 hidden">
-                        <div class="size-16 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <span class="icon-[tabler--file-off] size-8 opacity-40"></span>
+            {# Right column — activity #}
+            <div class="xl:col-span-4">
+                <div class="card card-border bg-base-100 shadow-sm xl:sticky xl:top-4">
+                    <div class="card-body p-4 sm:p-6">
+                        <h2 class="card-title text-base sm:text-lg gap-2 mb-1">
+                            <span class="icon-[tabler--timeline] size-5 text-primary"></span>
+                            Activity timeline
+                        </h2>
+                        <p class="text-sm text-base-content/60 mb-5">Recent actions on this eDO.</p>
+
+                        <div id="noActivityState" class="hidden text-center py-10 rounded-xl border border-dashed border-base-300/60 bg-base-200/30">
+                            <span class="icon-[tabler--clock-off] size-10 text-base-content/30 mx-auto block"></span>
+                            <p class="text-sm font-semibold mt-3">No activity yet</p>
+                            <p class="text-xs text-base-content/60 mt-1">Activity will appear here as the eDO progresses.</p>
                         </div>
-                        <h3 class="text-base font-semibold">No Payment History</h3>
-                        <p class="mt-2 text-sm opacity-60">No payments have been submitted for this eDO yet.</p>
-                    </div>
 
-                    <!-- Payment Timeline -->
-                    <div id="paymentTimeline" class="mt-4">
-                        <ul role="list" class="space-y-6">
-                            <!-- Populated by JavaScript -->
-                        </ul>
-                    </div>
-                </div>
-            </div>
-                </div>
-
-                <!-- Right Column: Activity Timeline (1/3 width) -->
-                <div class="lg:col-span-1">
-                    <div class="card bg-base-100 shadow-sm sticky top-6">
-                        <div class="card-body">
-                            <h2 class="card-title text-lg flex items-center gap-2">
-                                <span class="icon-[tabler--timeline] size-5"></span>
-                                Activity Timeline
-                            </h2>
-                            
-                            <!-- Empty State -->
-                            <div id="noActivityState" class="text-center py-12 hidden">
-                                <div class="size-16 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <span class="icon-[tabler--clock-off] size-8 opacity-40"></span>
-                                </div>
-                                <h3 class="text-base font-semibold">No Activity</h3>
-                                <p class="mt-2 text-sm opacity-60">No activity logs available for this eDO yet.</p>
-                            </div>
-
-                            <!-- Activity Timeline -->
-                            <div id="activityTimeline" class="mt-4">
-                                <ul role="list" class="space-y-4">
-                                    <!-- Populated by JavaScript -->
-                                </ul>
-                            </div>
+                        <div id="activityTimeline">
+                            <ul role="list" class="space-y-0"></ul>
                         </div>
                     </div>
                 </div>
@@ -258,67 +322,66 @@
     </div>
 </div>
 
-<!-- Receipt Preview Modal -->
-<div id="receiptPreviewModal" class="hidden fixed inset-0 z-[9999] overflow-y-auto" role="dialog">
-    <!-- Background overlay with blur -->
-    <div class="fixed inset-0 transition-opacity bg-black/70 backdrop-blur-sm" onclick="closeReceiptPreview()"></div>
-
-    <!-- Modal Container -->
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="relative bg-base-100 rounded-lg shadow-xl w-full max-w-5xl h-[85vh] flex flex-col z-[10000]">
-            <!-- Header -->
-            <div class="flex-shrink-0 px-6 py-4 border-b border-base-300 flex items-center justify-between">
-                <h3 class="text-lg font-semibold">Payment Receipt</h3>
-                <button onclick="closeReceiptPreview()" class="btn btn-ghost btn-sm btn-circle">
+{# Receipt preview modal #}
+<div id="receiptPreviewModal" class="hidden fixed inset-0 z-[9999] overflow-y-auto" role="dialog" aria-modal="true">
+    <div id="receiptPreviewBackdrop" class="fixed inset-0 bg-black/70 backdrop-blur-sm"></div>
+    <div class="flex items-center justify-center min-h-screen p-4 relative z-10">
+        <div class="bg-base-100 rounded-2xl shadow-xl w-full max-w-5xl h-[85vh] flex flex-col border border-base-300/60">
+            <div class="flex-shrink-0 px-5 sm:px-6 py-4 border-b border-base-300/60 flex items-center justify-between gap-3">
+                <h3 class="text-lg font-semibold">Payment receipt</h3>
+                <button type="button" id="closeReceiptPreviewBtn" class="btn btn-ghost btn-sm btn-circle">
                     <span class="icon-[tabler--x] size-5"></span>
                 </button>
             </div>
-
-            <!-- Content -->
-            <div class="flex-1 overflow-hidden bg-base-200">
-                <div id="receiptPreviewContent" class="w-full h-full">
-                    <!-- Populated by JavaScript -->
-                </div>
+            <div class="flex-1 overflow-hidden bg-base-200/50">
+                <div id="receiptPreviewContent" class="w-full h-full"></div>
             </div>
-
-            <!-- Footer -->
-            <div class="flex-shrink-0 px-6 py-4 border-t border-base-300 flex justify-end gap-3">
-                <a id="downloadReceiptBtn" href="#" download class="btn btn-ghost rounded-lg gap-2">
+            <div class="flex-shrink-0 px-5 sm:px-6 py-4 border-t border-base-300/60 flex justify-end gap-3">
+                <a id="downloadReceiptBtn" href="#" download class="btn btn-ghost btn-sm gap-2">
                     <span class="icon-[tabler--download] size-4"></span>
                     Download
                 </a>
-                <button onclick="closeReceiptPreview()" class="btn btn-primary rounded-lg">
-                    Close
-                </button>
+                <button type="button" id="closeReceiptPreviewFooterBtn" class="btn btn-primary btn-sm">Close</button>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block javascripts %}
+{{ parent() }}
 <script>
 const MONEY_PREFIX = {{ (0|format_money('PHP'))|slice(0, -4)|json_encode|raw }};
+const edoId = {{ edoId }};
+let edoData = null;
 
 function formatMoney(amount) {
     return MONEY_PREFIX + parseFloat(amount).toFixed(2);
 }
 
-// Get eDO ID from URL
-const urlParts = window.location.pathname.split('/');
-const edoId = urlParts[urlParts.length - 2]; // Get ID before '/page'
-let edoData = null;
-
-// Load eDO details on page load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     loadEdoDetails();
+
+    document.getElementById('closeReceiptPreviewBtn')?.addEventListener('click', closeReceiptPreview);
+    document.getElementById('closeReceiptPreviewFooterBtn')?.addEventListener('click', closeReceiptPreview);
+    document.getElementById('receiptPreviewBackdrop')?.addEventListener('click', closeReceiptPreview);
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            const modal = document.getElementById('receiptPreviewModal');
+            if (modal && !modal.classList.contains('hidden')) {
+                closeReceiptPreview();
+            }
+        }
+    });
 });
 
 async function loadEdoDetails() {
     try {
-        const response = await fetch(`/broker/edos/${edoId}`);
+        const response = await fetch('/broker/edos/' + edoId);
         const result = await response.json();
 
         if (!result.success) {
-            showError(result.error.message);
+            showError(result.error?.message || 'Failed to load eDO details.');
             return;
         }
 
@@ -327,7 +390,6 @@ async function loadEdoDetails() {
         displayPaymentHistory(edoData.paymentHistory);
         displayActivityTimeline(edoData.activityLogs);
 
-        // Hide loading, show content
         document.getElementById('loadingState').classList.add('hidden');
         document.getElementById('contentContainer').classList.remove('hidden');
     } catch (error) {
@@ -336,22 +398,97 @@ async function loadEdoDetails() {
     }
 }
 
+function updateHero(edo) {
+    const statusBadge = getStatusBadge(edo.status, 'lg');
+
+    document.getElementById('breadcrumbEdoNumber').textContent = edo.edoNumber;
+    document.getElementById('heroEdoNumber').textContent = edo.edoNumber;
+    document.getElementById('heroStatusBadge').innerHTML = statusBadge;
+    document.getElementById('heroContainerText').textContent = edo.containerNumber;
+    document.getElementById('heroManifestText').textContent = edo.manifestNumber;
+    document.getElementById('heroContainerBadge').textContent = edo.containerNumber;
+    document.getElementById('heroManifestBadge').textContent = edo.manifestNumber;
+    document.getElementById('heroFeeBadge').textContent = formatMoney(edo.feeAmount);
+
+    const heroCard = document.getElementById('heroCard');
+    const heroThemes = {
+        released: 'border-success/20 from-success/15',
+        pending_release: 'border-warning/20 from-warning/15',
+        expired: 'border-error/20 from-error/15',
+        rejected: 'border-error/20 from-error/15',
+    };
+    const theme = heroThemes[edo.status] || 'border-primary/20 from-primary/10';
+    heroCard.className = 'rounded-3xl border bg-gradient-to-br via-base-100 to-base-100 shadow-sm p-5 sm:p-7 ' + theme;
+
+    if (edo.expiresAt) {
+        const expiresBadge = document.getElementById('heroExpiresBadge');
+        const expirationDate = new Date(edo.expiresAt);
+        const isExpired = expirationDate < new Date();
+        expiresBadge.classList.remove('hidden');
+        expiresBadge.className = 'badge badge-lg gap-2 ' + (isExpired ? 'badge-error' : 'badge-ghost');
+        expiresBadge.innerHTML = '<span class="icon-[tabler--calendar] size-4"></span>' + (isExpired ? 'Expired ' : 'Expires ') + formatDate(edo.expiresAt);
+    }
+
+    document.getElementById('statFee').textContent = formatMoney(edo.feeAmount);
+    document.getElementById('statGenerated').textContent = formatDateTime(edo.generatedAt);
+    document.getElementById('statPayments').textContent = String(edoData.paymentHistory?.length || 0);
+
+    const statExpires = document.getElementById('statExpires');
+    if (edo.expiresAt) {
+        const expirationDate = new Date(edo.expiresAt);
+        if (expirationDate < new Date()) {
+            statExpires.innerHTML = '<span class="text-error">' + formatDate(edo.expiresAt) + '</span>';
+        } else {
+            statExpires.textContent = formatDate(edo.expiresAt);
+        }
+    } else {
+        statExpires.textContent = 'N/A';
+    }
+
+    const heroActions = document.getElementById('heroActions');
+    const backBtn = heroActions.querySelector('a[href="{{ path('broker_edo_list_page') }}"]');
+    heroActions.innerHTML = '';
+    if (backBtn) heroActions.appendChild(backBtn);
+
+    if (edo.status === 'released') {
+        heroActions.insertAdjacentHTML('beforeend',
+            '<button type="button" id="heroDownloadBtn" class="btn btn-success btn-sm sm:btn-md gap-2">' +
+            '<span class="icon-[tabler--download] size-4"></span>Download PDF</button>');
+        document.getElementById('heroDownloadBtn').onclick = function () { downloadEdo(edo.id); };
+    }
+
+    if (edo.status === 'pending_release') {
+        const hasPendingPayment = edoData.paymentHistory.some(function (p) { return p.status === 'pending_validation'; });
+        if (!hasPendingPayment) {
+            const paymentUrl = '/broker/manifests/' + edo.manifestId + '/' + encodeURIComponent(edo.edoNumber) + '/edo-payment';
+            heroActions.insertAdjacentHTML('beforeend',
+                '<a href="' + paymentUrl + '" class="btn btn-primary btn-sm sm:btn-md gap-2">' +
+                '<span class="icon-[tabler--credit-card] size-4"></span>Submit payment</a>');
+        }
+    }
+
+    if (edo.manifestId) {
+        heroActions.insertAdjacentHTML('beforeend',
+            '<a href="/broker/manifests/' + edo.manifestId + '" class="btn btn-outline btn-sm sm:btn-md gap-2">' +
+            '<span class="icon-[tabler--file-text] size-4"></span>View manifest</a>');
+    }
+}
+
 function displayEdoDetails(edo) {
+    updateHero(edo);
+
     document.getElementById('edoNumber').textContent = edo.edoNumber;
     document.getElementById('containerNumber').textContent = edo.containerNumber;
     document.getElementById('manifestNumber').textContent = edo.manifestNumber;
     document.getElementById('feeAmount').textContent = formatMoney(edo.feeAmount);
     document.getElementById('generatedAt').textContent = formatDateTime(edo.generatedAt);
+    document.getElementById('edoStatus').innerHTML = getStatusBadge(edo.status);
 
-    // Expiration date display
     if (edo.expiresAt) {
         const expiresAtElement = document.getElementById('expiresAt');
         const expirationDate = new Date(edo.expiresAt);
-        const now = new Date();
-        
-        if (expirationDate < now) {
-            // Expired - show in red
-            expiresAtElement.innerHTML = `<span class="text-error font-semibold">${formatDate(edo.expiresAt)}</span> <span class="badge badge-error badge-xs ml-1">Expired</span>`;
+        if (expirationDate < new Date()) {
+            expiresAtElement.innerHTML = '<span class="text-error font-semibold">' + formatDate(edo.expiresAt) + '</span> <span class="badge badge-error badge-xs ml-1">Expired</span>';
         } else {
             expiresAtElement.textContent = formatDate(edo.expiresAt);
         }
@@ -359,195 +496,103 @@ function displayEdoDetails(edo) {
         document.getElementById('expiresAt').textContent = 'N/A';
     }
 
-    // Status badge
-    const statusBadge = getStatusBadge(edo.status);
-    document.getElementById('edoStatus').innerHTML = statusBadge;
-
-    // Released info
     if (edo.releasedAt) {
         document.getElementById('releasedAtContainer').classList.remove('hidden');
         document.getElementById('releasedAt').textContent = formatDateTime(edo.releasedAt);
     }
-
     if (edo.releasedBy) {
         document.getElementById('releasedByContainer').classList.remove('hidden');
         document.getElementById('releasedBy').textContent = edo.releasedBy;
     }
-
-    // Generated by name (Requirements 16.2, 16.4)
     if (edo.generatedByName) {
         document.getElementById('generatedByContainer').classList.remove('hidden');
         document.getElementById('generatedByName').textContent = edo.generatedByName;
     }
-
-    // Previous eDO version link (Requirement 16.4)
     if (edo.previousEdoId && edo.previousEdoNumber) {
         document.getElementById('previousEdoContainer').classList.remove('hidden');
         const previousLink = document.getElementById('previousEdoLink');
         previousLink.textContent = edo.previousEdoNumber;
-        previousLink.href = `/broker/edos/${edo.previousEdoId}/page`;
+        previousLink.href = '/broker/edos/' + edo.previousEdoId + '/page';
     }
-
-    // Additional notes (Requirement 4.4)
     if (edo.additionalNotes) {
         document.getElementById('additionalNotesContainer').classList.remove('hidden');
         document.getElementById('additionalNotes').textContent = edo.additionalNotes;
     }
 
-    // Version History Section
     const hasPreviousEdo = edo.previousEdoId && edo.previousEdoNumber;
     const hasNewEdo = edo.hasRenewal && edo.newEdoId && edo.newEdoNumber;
-    
+
     if (hasPreviousEdo || hasNewEdo) {
         document.getElementById('versionHistoryContainer').classList.remove('hidden');
-        
-        // Show previous eDO card
+
         if (hasPreviousEdo) {
             document.getElementById('previousEdoCard').classList.remove('hidden');
             document.getElementById('previousEdoNumberText').textContent = edo.previousEdoNumber;
             document.getElementById('previousEdoExpiry').textContent = 'This eDO was renewed from the expired version';
-            document.getElementById('viewPreviousEdoBtn').href = `/broker/edos/${edo.previousEdoId}/page`;
-            document.getElementById('downloadPreviousEdoBtn').onclick = () => downloadEdo(edo.previousEdoId);
+            document.getElementById('viewPreviousEdoBtn').href = '/broker/edos/' + edo.previousEdoId + '/page';
+            document.getElementById('downloadPreviousEdoBtn').onclick = function () { downloadEdo(edo.previousEdoId); };
         }
-        
-        // Show new eDO card
         if (hasNewEdo) {
             document.getElementById('newEdoCard').classList.remove('hidden');
             document.getElementById('newEdoNumberText').textContent = edo.newEdoNumber;
             document.getElementById('newEdoExpiry').textContent = 'This expired eDO was renewed';
             document.getElementById('newEdoStatusBadge').innerHTML = getStatusBadge(edo.newEdoStatus);
-            document.getElementById('viewNewEdoBtn').href = `/broker/edos/${edo.newEdoId}/page`;
-            document.getElementById('downloadNewEdoBtn').onclick = () => downloadEdo(edo.newEdoId);
+            document.getElementById('viewNewEdoBtn').href = '/broker/edos/' + edo.newEdoId + '/page';
+            document.getElementById('downloadNewEdoBtn').onclick = function () { downloadEdo(edo.newEdoId); };
         }
     }
 
-    // Download button for released eDOs
     if (edo.status === 'released') {
         document.getElementById('downloadEdoContainer').classList.remove('hidden');
-        document.getElementById('downloadEdoBtn').onclick = () => downloadEdo(edo.id);
+        document.getElementById('downloadEdoBtn').onclick = function () { downloadEdo(edo.id); };
     }
-    
-    // Submit payment button - only show if:
-    // 1. eDO status is pending_release AND
-    // 2. There's no pending payment (check payment history)
+
     if (edo.status === 'pending_release') {
-        const hasPendingPayment = edoData.paymentHistory.some(p => p.status === 'pending_validation');
-        
+        const hasPendingPayment = edoData.paymentHistory.some(function (p) { return p.status === 'pending_validation'; });
         if (hasPendingPayment) {
-            // Show "payment pending" message
             document.getElementById('paymentPendingContainer').classList.remove('hidden');
         } else {
-            // Show "submit payment" button
-            const submitBtn = document.getElementById('submitPaymentBtn');
-            submitBtn.href = `/broker/manifests/${edo.manifestId}/${encodeURIComponent(edo.edoNumber)}/edo-payment`;
+            document.getElementById('submitPaymentBtn').href = '/broker/manifests/' + edo.manifestId + '/' + encodeURIComponent(edo.edoNumber) + '/edo-payment';
             document.getElementById('submitPaymentContainer').classList.remove('hidden');
         }
     }
 
-    // Request New eDO button - show if:
-    // 1. eDO status is 'expired' AND
-    // 2. Terminal is assigned (has cyLocation or terminal data) AND
-    // 3. No renewal request exists OR renewal request is completed/cancelled
-    // Requirements: 1.1 - Request New eDO Button Visibility
     if (edo.status === 'expired' && (edo.cyLocation || edo.terminalAssigned)) {
-        // Check if there's a renewal request
         if (edoData.renewalRequest) {
-            const renewalStatus = edoData.renewalRequest.status;
-            
-            // Show different messages based on renewal request status
-            if (renewalStatus === 'pending_review') {
-                // Accounting is reviewing - show info message
-                document.getElementById('requestRenewalContainer').classList.remove('hidden');
-                document.getElementById('requestRenewalContainer').innerHTML = `
-                    <div class="alert alert-info">
-                        <span class="icon-[tabler--clock] size-5"></span>
-                        <div>
-                            <h3 class="font-semibold">Renewal Request Under Review</h3>
-                            <div class="text-sm opacity-90 mt-1">Your renewal request is being reviewed by accounting. Billing will be generated soon.</div>
-                        </div>
-                    </div>
-                `;
-            } else if (renewalStatus === 'awaiting_payment') {
-                // Billing generated - show link to pay
-                const billingId = edoData.detentionBilling?.id;
-                const hasReceipt = edoData.detentionBilling?.hasReceipt || false;
-                
-                if (hasReceipt) {
-                    // Receipt uploaded - waiting for verification
-                    document.getElementById('requestRenewalContainer').classList.remove('hidden');
-                    document.getElementById('requestRenewalContainer').innerHTML = `
-                        <div class="alert alert-success">
-                            <span class="icon-[tabler--circle-check] size-5"></span>
-                            <div>
-                                <h3 class="font-semibold">Payment Receipt Uploaded</h3>
-                                <div class="text-sm opacity-90 mt-1">Your payment receipt has been uploaded and is awaiting verification by accounting.</div>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    // Need to upload receipt
-                    document.getElementById('requestRenewalContainer').classList.remove('hidden');
-                    document.getElementById('requestRenewalContainer').innerHTML = `
-                        <div class="alert alert-warning">
-                            <span class="icon-[tabler--alert-triangle] size-5"></span>
-                            <div>
-                                <h3 class="font-semibold">Detention Billing Generated</h3>
-                                <div class="text-sm opacity-90 mt-1">
-                                    Detention charges: ${formatMoney(edoData.renewalRequest.detentionChargeAmount)} 
-                                    (${edoData.renewalRequest.overdueDays} days overdue)
-                                </div>
-                                <div class="text-sm opacity-90 mt-1">Please upload your payment receipt to proceed.</div>
-                            </div>
-                        </div>
-                        <a href="/broker/edos/billings/detention" class="btn btn-warning rounded-lg gap-2 mt-4">
-                            <span class="icon-[tabler--upload] size-4"></span>
-                            Upload Payment Receipt
-                        </a>
-                    `;
-                }
-            } else if (renewalStatus === 'payment_submitted') {
-                // Payment receipt submitted - waiting for accounting verification
-                document.getElementById('requestRenewalContainer').classList.remove('hidden');
-                document.getElementById('requestRenewalContainer').innerHTML = `
-                    <div class="alert alert-info">
-                        <span class="icon-[tabler--clock] size-5"></span>
-                        <div>
-                            <h3 class="font-semibold">Payment Under Validation</h3>
-                            <div class="text-sm opacity-90 mt-1">Your payment receipt has been submitted and is being verified by accounting.</div>
-                        </div>
-                    </div>
-                `;
-            } else if (renewalStatus === 'ready_for_generation' || renewalStatus === 'payment_verified') {
-                // Payment verified - waiting for SL staff
-                document.getElementById('requestRenewalContainer').classList.remove('hidden');
-                document.getElementById('requestRenewalContainer').innerHTML = `
-                    <div class="alert alert-info">
-                        <span class="icon-[tabler--hourglass] size-5"></span>
-                        <div>
-                            <h3 class="font-semibold">Payment Verified</h3>
-                            <div class="text-sm opacity-90 mt-1">Your payment has been verified. The shipping line staff will generate your new eDO soon.</div>
-                        </div>
-                    </div>
-                `;
-            } else if (renewalStatus === 'completed') {
-                // Renewal completed - show success message
-                document.getElementById('requestRenewalContainer').classList.remove('hidden');
-                document.getElementById('requestRenewalContainer').innerHTML = `
-                    <div class="alert alert-success">
-                        <span class="icon-[tabler--circle-check] size-5"></span>
-                        <div>
-                            <h3 class="font-semibold">New eDO Generated</h3>
-                            <div class="text-sm opacity-90 mt-1">Your renewal request has been completed. A new eDO has been generated.</div>
-                        </div>
-                    </div>
-                `;
-            }
+            renderRenewalState(edo);
         } else {
-            // No renewal request - show request button
-            const requestRenewalBtn = document.getElementById('requestRenewalBtn');
-            requestRenewalBtn.href = `/broker/edos/${edo.id}/request-renewal`;
+            document.getElementById('requestRenewalBtn').href = '/broker/edos/' + edo.id + '/request-renewal';
             document.getElementById('requestRenewalContainer').classList.remove('hidden');
+            document.getElementById('requestRenewalBtn').classList.remove('hidden');
         }
+    }
+}
+
+function renderRenewalState(edo) {
+    const container = document.getElementById('requestRenewalContainer');
+    const renewalStatus = edoData.renewalRequest.status;
+    container.classList.remove('hidden');
+    document.getElementById('requestRenewalBtn').classList.add('hidden');
+
+    const templates = {
+        pending_review: '<div class="alert alert-info shadow-sm border border-info/30"><span class="icon-[tabler--clock] size-5 shrink-0"></span><div><p class="font-semibold text-sm">Renewal request under review</p><p class="text-xs opacity-90 mt-0.5">Your renewal request is being reviewed by accounting. Billing will be generated soon.</p></div></div>',
+        awaiting_payment: (function () {
+            const hasReceipt = edoData.detentionBilling?.hasReceipt || false;
+            if (hasReceipt) {
+                return '<div class="alert alert-success shadow-sm border border-success/30"><span class="icon-[tabler--circle-check] size-5 shrink-0"></span><div><p class="font-semibold text-sm">Payment receipt uploaded</p><p class="text-xs opacity-90 mt-0.5">Your payment receipt has been uploaded and is awaiting verification by accounting.</p></div></div>';
+            }
+            return '<div class="alert alert-warning shadow-sm border border-warning/30"><span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span><div><p class="font-semibold text-sm">Detention billing generated</p><p class="text-xs opacity-90 mt-0.5">Detention charges: ' + formatMoney(edoData.renewalRequest.detentionChargeAmount) + ' (' + edoData.renewalRequest.overdueDays + ' days overdue). Please upload your payment receipt to proceed.</p></div></div>' +
+                '<a href="/broker/edos/billings/detention" class="btn btn-warning btn-sm gap-2"><span class="icon-[tabler--upload] size-4"></span>Upload payment receipt</a>';
+        })(),
+        payment_submitted: '<div class="alert alert-info shadow-sm border border-info/30"><span class="icon-[tabler--clock] size-5 shrink-0"></span><div><p class="font-semibold text-sm">Payment under validation</p><p class="text-xs opacity-90 mt-0.5">Your payment receipt has been submitted and is being verified by accounting.</p></div></div>',
+        ready_for_generation: '<div class="alert alert-info shadow-sm border border-info/30"><span class="icon-[tabler--hourglass] size-5 shrink-0"></span><div><p class="font-semibold text-sm">Payment verified</p><p class="text-xs opacity-90 mt-0.5">Your payment has been verified. Shipping line staff will generate your new eDO soon.</p></div></div>',
+        payment_verified: '<div class="alert alert-info shadow-sm border border-info/30"><span class="icon-[tabler--hourglass] size-5 shrink-0"></span><div><p class="font-semibold text-sm">Payment verified</p><p class="text-xs opacity-90 mt-0.5">Your payment has been verified. Shipping line staff will generate your new eDO soon.</p></div></div>',
+        completed: '<div class="alert alert-success shadow-sm border border-success/30"><span class="icon-[tabler--circle-check] size-5 shrink-0"></span><div><p class="font-semibold text-sm">New eDO generated</p><p class="text-xs opacity-90 mt-0.5">Your renewal request has been completed. A new eDO has been generated.</p></div></div>',
+    };
+
+    const content = typeof templates[renewalStatus] === 'function' ? templates[renewalStatus]() : (templates[renewalStatus] || '');
+    if (content) {
+        container.innerHTML = content;
     }
 }
 
@@ -563,241 +608,113 @@ function displayPaymentHistory(payments) {
 
     noPaymentsState.classList.add('hidden');
     timeline.classList.remove('hidden');
-
-    const timelineHtml = payments.map((payment, index) => {
-        const isLast = index === payments.length - 1;
-        return createPaymentTimelineItem(payment, isLast);
+    timeline.querySelector('ul').innerHTML = payments.map(function (payment, index) {
+        return createPaymentTimelineItem(payment, index === payments.length - 1);
     }).join('');
-
-    timeline.querySelector('ul').innerHTML = timelineHtml;
 }
 
 function createPaymentTimelineItem(payment, isLast) {
     const statusConfig = {
-        'pending_validation': {
-            icon: 'icon-[tabler--clock]',
-            bgColor: 'bg-warning/10',
-            iconColor: 'text-warning',
-            title: 'Payment Submitted',
-            titleColor: 'text-warning'
-        },
-        'verified': {
-            icon: 'icon-[tabler--circle-check]',
-            bgColor: 'bg-success/10',
-            iconColor: 'text-success',
-            title: 'Payment Approved',
-            titleColor: 'text-success'
-        },
-        'approved': {
-            icon: 'icon-[tabler--circle-check]',
-            bgColor: 'bg-success/10',
-            iconColor: 'text-success',
-            title: 'Payment Approved',
-            titleColor: 'text-success'
-        },
-        'rejected': {
-            icon: 'icon-[tabler--circle-x]',
-            bgColor: 'bg-error/10',
-            iconColor: 'text-error',
-            title: 'Payment Rejected',
-            titleColor: 'text-error'
-        }
+        pending_validation: { icon: 'icon-[tabler--clock]', card: 'border-warning/30 bg-warning/5', title: 'Payment submitted', titleColor: 'text-warning' },
+        verified: { icon: 'icon-[tabler--circle-check]', card: 'border-success/30 bg-success/5', title: 'Payment approved', titleColor: 'text-success' },
+        approved: { icon: 'icon-[tabler--circle-check]', card: 'border-success/30 bg-success/5', title: 'Payment approved', titleColor: 'text-success' },
+        rejected: { icon: 'icon-[tabler--circle-x]', card: 'border-error/30 bg-error/5', title: 'Payment rejected', titleColor: 'text-error' },
     };
+    const config = statusConfig[payment.status] || statusConfig.pending_validation;
 
-    const config = statusConfig[payment.status] || statusConfig['pending_validation'];
-    
-    // Check if this is a detention payment (for renewed eDOs)
-    const isDetentionPayment = payment.type === 'detention_payment';
-    if (isDetentionPayment) {
-        config.title = 'Detention Charges Paid';
+    if (payment.type === 'detention_payment') {
+        config.title = 'Detention charges paid';
         config.icon = 'icon-[tabler--receipt]';
     }
 
-    let detailsHtml = `
-        <p class="text-sm opacity-60 mt-1">
-            Submitted by ${payment.submittedBy} on ${formatDateTime(payment.submittedAt)}
-        </p>
-        <p class="text-sm font-medium mt-1">Amount: ${formatMoney(payment.amount)}</p>
-    `;
-    
-    // Add detention details if this is a detention payment
-    if (isDetentionPayment && payment.detentionDays && payment.detentionRate) {
-        detailsHtml += `
-            <div class="mt-2 p-3 bg-info/10 border border-info/20 rounded-lg">
-                <p class="text-xs font-semibold text-info mb-1">${payment.description}</p>
-                <p class="text-xs opacity-60">Detention Days: ${payment.detentionDays} days</p>
-                <p class="text-xs opacity-60">Rate: ${formatMoney(payment.detentionRate)}/day</p>
-            </div>
-        `;
+    let detailsHtml = '<p class="text-xs text-base-content/60 mt-1">Submitted by ' + payment.submittedBy + ' · ' + formatDateTime(payment.submittedAt) + '</p>' +
+        '<p class="text-sm font-semibold mt-2">' + formatMoney(payment.amount) + '</p>';
+
+    if (payment.type === 'detention_payment' && payment.detentionDays && payment.detentionRate) {
+        detailsHtml += '<div class="mt-3 rounded-lg border border-info/20 bg-info/10 p-3">' +
+            '<p class="text-xs font-semibold text-info">' + payment.description + '</p>' +
+            '<p class="text-xs text-base-content/60 mt-1">' + payment.detentionDays + ' days · ' + formatMoney(payment.detentionRate) + '/day</p></div>';
     }
 
     if (payment.status === 'rejected') {
-        detailsHtml += `
-            <div class="mt-3 p-4 bg-error/10 border border-error/20 rounded-lg">
-                <p class="text-xs font-semibold text-error mb-1">Rejection Reason:</p>
-                <p class="text-sm text-error/90">${payment.rejectionReason}</p>
-                <p class="text-xs opacity-60 mt-2">Rejected by ${payment.rejectedBy} on ${formatDateTime(payment.rejectedAt)}</p>
-            </div>
-        `;
+        detailsHtml += '<div class="mt-3 rounded-lg border border-error/20 bg-error/10 p-3">' +
+            '<p class="text-xs font-semibold text-error">Rejection reason</p>' +
+            '<p class="text-sm mt-1">' + payment.rejectionReason + '</p>' +
+            '<p class="text-xs text-base-content/60 mt-2">' + payment.rejectedBy + ' · ' + formatDateTime(payment.rejectedAt) + '</p></div>';
     }
 
     if (payment.status === 'approved' || payment.status === 'verified') {
-        detailsHtml += `
-            <p class="text-sm opacity-60 mt-1">
-                Approved by ${payment.approvedBy} on ${formatDateTime(payment.approvedAt)}
-            </p>
-        `;
+        detailsHtml += '<p class="text-xs text-base-content/60 mt-2">Approved by ' + payment.approvedBy + ' · ' + formatDateTime(payment.approvedAt) + '</p>';
     }
 
-    // Receipt download button - only show for regular payments (not detention payments)
-    if (!isDetentionPayment) {
-        detailsHtml += `
-            <div class="mt-3 flex flex-wrap gap-2">
-                <button onclick="previewReceipt(${payment.id}, false)" class="btn btn-ghost btn-sm rounded-lg gap-2">
-                    <span class="icon-[tabler--eye] size-4"></span>
-                    View Receipt
-                </button>
-        `;
-
+    if (payment.type !== 'detention_payment') {
+        detailsHtml += '<div class="mt-3 flex flex-wrap gap-2">' +
+            '<button type="button" onclick="previewReceipt(' + payment.id + ', false)" class="btn btn-ghost btn-sm gap-2">' +
+            '<span class="icon-[tabler--eye] size-4"></span>View receipt</button>';
         if ((payment.status === 'approved' || payment.status === 'verified') && payment.officialReceiptPath) {
-            detailsHtml += `
-                <button onclick="previewReceipt(${payment.id}, true)" class="btn btn-success btn-sm rounded-lg gap-2">
-                    <span class="icon-[tabler--file-check] size-4"></span>
-                    Official Receipt
-                </button>
-            `;
+            detailsHtml += '<button type="button" onclick="previewReceipt(' + payment.id + ', true)" class="btn btn-success btn-sm gap-2">' +
+                '<span class="icon-[tabler--file-check] size-4"></span>Official receipt</button>';
         }
-
-        detailsHtml += `</div>`;
+        detailsHtml += '</div>';
     }
 
-    return `
-        <li>
-            <div class="relative ${!isLast ? 'pb-6' : ''}">
-                ${!isLast ? '<span class="absolute top-10 left-5 -ml-px h-full w-0.5 bg-base-300" aria-hidden="true"></span>' : ''}
-                <div class="relative flex gap-4">
-                    <div>
-                        <span class="size-10 rounded-full ${config.bgColor} flex items-center justify-center ring-4 ring-base-100">
-                            <span class="${config.icon} size-5 ${config.iconColor}"></span>
-                        </span>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div>
-                            <p class="text-sm font-semibold ${config.titleColor}">${config.title}</p>
-                            ${detailsHtml}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </li>
-    `;
+    return '<li class="' + (isLast ? '' : 'pb-4') + '">' +
+        '<div class="rounded-xl border p-4 ' + config.card + '">' +
+        '<div class="flex gap-3">' +
+        '<span class="size-9 rounded-full bg-base-100 flex items-center justify-center shrink-0 border border-base-300/40">' +
+        '<span class="' + config.icon + ' size-4 ' + config.titleColor + '"></span></span>' +
+        '<div class="flex-1 min-w-0"><p class="text-sm font-semibold ' + config.titleColor + '">' + config.title + '</p>' + detailsHtml + '</div>' +
+        '</div></div></li>';
 }
 
-function getStatusBadge(status) {
+function getStatusBadge(status, size) {
+    const sizeClass = size === 'lg' ? 'badge-lg' : 'text-xs';
     const badges = {
-        'pending_release': '<span class="badge badge-soft text-xs rounded-lg">Pending Payment</span>',
-        'pending_validation': '<span class="badge badge-soft badge-warning text-xs rounded-lg">Pending Validation</span>',
-        'payment_submitted': '<span class="badge badge-soft badge-info text-xs rounded-lg">Payment Submitted</span>',
-        'released': '<span class="badge badge-soft badge-success text-xs rounded-lg">Released</span>',
-        'rejected': '<span class="badge badge-soft badge-error text-xs rounded-lg">Rejected</span>',
-        'expired': '<span class="badge badge-soft badge-error text-xs rounded-lg">Expired</span>'
+        pending_release: '<span class="badge badge-soft badge-warning ' + sizeClass + '">Pending payment</span>',
+        pending_validation: '<span class="badge badge-soft badge-warning ' + sizeClass + '">Pending validation</span>',
+        payment_submitted: '<span class="badge badge-soft badge-info ' + sizeClass + '">Payment submitted</span>',
+        released: '<span class="badge badge-soft badge-success ' + sizeClass + '">Released</span>',
+        rejected: '<span class="badge badge-soft badge-error ' + sizeClass + '">Rejected</span>',
+        expired: '<span class="badge badge-soft badge-error ' + sizeClass + '">Expired</span>',
     };
-    return badges[status] || '<span class="badge badge-soft text-xs rounded-lg">Unknown</span>';
+    return badges[status] || '<span class="badge badge-soft ' + sizeClass + '">Unknown</span>';
 }
 
 function formatDateTime(dateString) {
     if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    return new Date(dateString).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
+    return new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-async function downloadEdo(edoId) {
-    try {
-        window.location.href = `/broker/edos/${edoId}/download`;
-    } catch (error) {
-        console.error('Error downloading eDO:', error);
-        alert('Failed to download eDO. Please try again.');
-    }
+function downloadEdo(targetEdoId) {
+    window.location.href = '/broker/edos/' + targetEdoId + '/download';
 }
 
-function previewReceipt(paymentId, isOfficialReceipt = false) {
-    const receiptUrl = `/broker/edos/${edoId}/receipt/${paymentId}`;
-    
+function previewReceipt(paymentId) {
+    const receiptUrl = '/broker/edos/' + edoId + '/receipt/' + paymentId;
     const modal = document.getElementById('receiptPreviewModal');
     const content = document.getElementById('receiptPreviewContent');
     const downloadBtn = document.getElementById('downloadReceiptBtn');
-    
-    // Set download link
+
     downloadBtn.href = receiptUrl;
-    downloadBtn.download = `receipt-${paymentId}.pdf`;
-    
-    // Show loading state
-    content.innerHTML = `
-        <div class="flex flex-col items-center justify-center h-full">
-            <span class="loading loading-spinner loading-lg text-primary"></span>
-            <p class="text-sm opacity-60 mt-4">Loading receipt...</p>
-        </div>
-    `;
-    
+    downloadBtn.download = 'receipt-' + paymentId + '.pdf';
+
+    content.innerHTML = '<div class="flex flex-col items-center justify-center h-full"><span class="loading loading-spinner loading-lg text-primary"></span><p class="text-sm text-base-content/60 mt-4">Loading receipt…</p></div>';
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
-    
-    // Load receipt in iframe - full height
-    content.innerHTML = `
-        <iframe 
-            src="${receiptUrl}" 
-            class="w-full h-full border-0 bg-white"
-            style="display: block;"
-            onload="this.style.display='block'"
-            onerror="handleReceiptLoadError()"
-        ></iframe>
-    `;
-}
 
-function handleReceiptLoadError() {
-    const content = document.getElementById('receiptPreviewContent');
-    content.innerHTML = `
-        <div class="flex flex-col items-center justify-center py-12">
-            <div class="size-16 bg-error/10 rounded-full flex items-center justify-center mb-4">
-                <span class="icon-[tabler--alert-circle] size-8 text-error"></span>
-            </div>
-            <p class="text-sm font-semibold">Failed to load receipt</p>
-            <p class="text-sm opacity-60 mt-1">Please try downloading the file instead</p>
-        </div>
-    `;
+    content.innerHTML = '<iframe src="' + receiptUrl + '" class="w-full h-full border-0 bg-white" title="Payment receipt"></iframe>';
 }
 
 function closeReceiptPreview() {
     document.getElementById('receiptPreviewModal').classList.add('hidden');
     document.getElementById('receiptPreviewContent').innerHTML = '';
-    document.body.style.overflow = 'auto';
+    document.body.style.overflow = '';
 }
-
-// Close modal on Escape key
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        const modal = document.getElementById('receiptPreviewModal');
-        if (modal && !modal.classList.contains('hidden')) {
-            closeReceiptPreview();
-        }
-    }
-});
 
 function displayActivityTimeline(activityLogs) {
     const timeline = document.getElementById('activityTimeline');
@@ -811,75 +728,52 @@ function displayActivityTimeline(activityLogs) {
 
     noActivityState.classList.add('hidden');
     timeline.classList.remove('hidden');
-
-    const timelineHtml = activityLogs.map((log, index) => {
-        const isLast = index === activityLogs.length - 1;
-        return createActivityTimelineItem(log, isLast);
+    timeline.querySelector('ul').innerHTML = activityLogs.map(function (log, index) {
+        return createActivityTimelineItem(log, index === activityLogs.length - 1);
     }).join('');
-
-    timeline.querySelector('ul').innerHTML = timelineHtml;
 }
 
 function createActivityTimelineItem(log, isLast) {
-    // Map activity types to icons and colors
     const activityConfig = {
-        'edo_generated': { icon: 'icon-[tabler--file-plus]', color: 'text-success', bgColor: 'bg-success/10' },
-        'edo_released': { icon: 'icon-[tabler--circle-check]', color: 'text-success', bgColor: 'bg-success/10' },
-        'edo_payment_submitted': { icon: 'icon-[tabler--credit-card]', color: 'text-info', bgColor: 'bg-info/10' },
-        'edo_payment_validated': { icon: 'icon-[tabler--check]', color: 'text-success', bgColor: 'bg-success/10' },
-        'edo_payment_rejected': { icon: 'icon-[tabler--x]', color: 'text-error', bgColor: 'bg-error/10' },
-        'edo_renewal_request_submitted': { icon: 'icon-[tabler--refresh]', color: 'text-warning', bgColor: 'bg-warning/10' },
-        'edo_renewal_form_viewed': { icon: 'icon-[tabler--eye]', color: 'text-base-content/60', bgColor: 'bg-base-200' },
-        'edo_status_changed': { icon: 'icon-[tabler--arrows-exchange]', color: 'text-info', bgColor: 'bg-info/10' },
-        'default': { icon: 'icon-[tabler--point]', color: 'text-base-content/60', bgColor: 'bg-base-200' }
+        edo_generated: { icon: 'icon-[tabler--file-plus]', color: 'text-success' },
+        edo_released: { icon: 'icon-[tabler--circle-check]', color: 'text-success' },
+        edo_payment_submitted: { icon: 'icon-[tabler--credit-card]', color: 'text-info' },
+        edo_payment_validated: { icon: 'icon-[tabler--check]', color: 'text-success' },
+        edo_payment_rejected: { icon: 'icon-[tabler--x]', color: 'text-error' },
+        edo_renewal_request_submitted: { icon: 'icon-[tabler--refresh]', color: 'text-warning' },
+        edo_renewal_form_viewed: { icon: 'icon-[tabler--eye]', color: 'text-base-content/60' },
+        edo_status_changed: { icon: 'icon-[tabler--arrows-exchange]', color: 'text-info' },
+        default: { icon: 'icon-[tabler--point]', color: 'text-base-content/60' },
     };
-
-    const config = activityConfig[log.activityType] || activityConfig['default'];
-
-    // Format activity description
+    const config = activityConfig[log.activityType] || activityConfig.default;
     let description = log.description || formatActivityType(log.activityType);
-    
-    // Add metadata if available
     let metadataHtml = '';
+
     if (log.metadata && Object.keys(log.metadata).length > 0) {
-        const metadataItems = [];
-        if (log.metadata.amount) metadataItems.push(formatMoney(log.metadata.amount));
-        if (log.metadata.status) metadataItems.push(log.metadata.status);
-        if (log.metadata.overdue_days) metadataItems.push(`${log.metadata.overdue_days} days overdue`);
-        
-        if (metadataItems.length > 0) {
-            metadataHtml = `<p class="text-xs opacity-60 mt-1">${metadataItems.join(' • ')}</p>`;
+        const items = [];
+        if (log.metadata.amount) items.push(formatMoney(log.metadata.amount));
+        if (log.metadata.status) items.push(log.metadata.status);
+        if (log.metadata.overdue_days) items.push(log.metadata.overdue_days + ' days overdue');
+        if (items.length > 0) {
+            metadataHtml = '<p class="text-xs text-base-content/60 mt-1">' + items.join(' · ') + '</p>';
         }
     }
 
-    return `
-        <li>
-            <div class="relative ${!isLast ? 'pb-4' : ''}">
-                ${!isLast ? '<span class="absolute top-8 left-4 -ml-px h-full w-0.5 bg-base-300" aria-hidden="true"></span>' : ''}
-                <div class="relative flex gap-3">
-                    <div>
-                        <span class="size-8 rounded-full ${config.bgColor} flex items-center justify-center ring-2 ring-base-100">
-                            <span class="${config.icon} size-4 ${config.color}"></span>
-                        </span>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-xs font-medium">${description}</p>
-                        ${metadataHtml}
-                        <p class="text-xs opacity-50 mt-1">${log.user}</p>
-                        <p class="text-xs opacity-40 mt-0.5">${formatDateTime(log.createdAt)}</p>
-                    </div>
-                </div>
-            </div>
-        </li>
-    `;
+    return '<li class="relative ' + (isLast ? '' : 'pb-5') + '">' +
+        (isLast ? '' : '<span class="absolute top-8 left-4 h-full w-px bg-base-300" aria-hidden="true"></span>') +
+        '<div class="relative flex gap-3 pl-0.5">' +
+        '<span class="size-8 rounded-full bg-base-200 flex items-center justify-center shrink-0 ring-2 ring-base-100 z-10">' +
+        '<span class="' + config.icon + ' size-4 ' + config.color + '"></span></span>' +
+        '<div class="flex-1 min-w-0 pt-0.5">' +
+        '<p class="text-sm font-medium leading-snug">' + description + '</p>' +
+        metadataHtml +
+        '<p class="text-xs text-base-content/50 mt-1">' + log.user + '</p>' +
+        '<p class="text-xs text-base-content/40">' + formatDateTime(log.createdAt) + '</p>' +
+        '</div></div></li>';
 }
 
 function formatActivityType(activityType) {
-    // Convert snake_case to Title Case
-    return activityType
-        .split('_')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+    return activityType.split('_').map(function (word) { return word.charAt(0).toUpperCase() + word.slice(1); }).join(' ');
 }
 
 function showError(message) {

@@ -470,7 +470,7 @@ class RoleBasedAccessControlTest extends KernelTestCase
         
         $evaluator = $this->createStaffUser('evaluator' . uniqid() . '@test.com', 'TestPass123!', UserRole::EVALUATOR);
         
-        $submission->setStatus(AccreditationStatus::APPROVED);
+        $submission->setStatus(AccreditationStatus::AWAITING_FINAL_APPROVAL);
         $submission->setEvaluator($evaluator);
         $submission->setEvaluatedAt(new \DateTime());
         

@@ -6,40 +6,51 @@
 {% set totalActionItems = stats.billing_pending_count + stats.final_payment_pending_count %}
 
 {% block body %}
-<div class="space-y-5 sm:space-y-6">
+<div class="max-w-7xl mx-auto w-full space-y-5 sm:space-y-6">
 
     {# Header #}
-    <div class="bg-base-100 shadow-sm rounded-xl">
-        <div class="p-4 sm:p-6">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div class="min-w-0">
-                    <div class="flex items-center gap-4">
-                        <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                            <span class="icon-[tabler--report-money] size-6 text-primary"></span>
-                        </div>
-                        <div class="min-w-0">
-                            <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">Accounting Dashboard</h1>
-                            <p class="text-sm text-base-content/60 mt-1">
-                                Billing generation, payment validation, and financial operations at a glance.
-                            </p>
-                        </div>
-                    </div>
+    <div class="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/15 via-base-100 to-base-100 shadow-sm p-5 sm:p-7">
+        <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
+            <div class="space-y-3">
+                <span class="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                    <span class="icon-[tabler--report-money] size-3.5"></span>
+                    Accounting Console
+                </span>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-base-content leading-tight">Accounting Dashboard</h1>
+                    <p class="mt-2 text-sm sm:text-base text-base-content/70 max-w-2xl">
+                        Process billing generation, validate payments, and keep manifest financial workflows moving.
+                    </p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <div class="hidden sm:flex items-center gap-2 bg-base-200/60 rounded-xl px-3 py-2 text-xs text-base-content/70">
-                        <span class="icon-[tabler--calendar] size-4 text-primary"></span>
-                        <span>{{ "now"|date("M j, Y") }}</span>
-                    </div>
-                    <a href="{{ path('accounting_payment_final_list') }}" class="btn btn-ghost btn-sm gap-2">
+                    <span class="badge badge-warning badge-lg gap-2">
+                        <span class="icon-[tabler--clock] size-4"></span>
+                        {{ stats.final_payment_pending_count }} pending validations
+                    </span>
+                    <span class="badge badge-success badge-soft badge-lg gap-2">
                         <span class="icon-[tabler--circle-check] size-4"></span>
-                        Final Payments
+                        {{ stats.final_payment_verified_today }} verified today
+                    </span>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 xl:justify-end">
+                <a href="{{ path('accounting_payment_final_list') }}" class="btn btn-outline btn-primary btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--circle-check] size-4"></span>
+                    Final Payments
+                </a>
+                {% if totalActionItems > 0 %}
+                    <a href="#action-queue" class="btn btn-primary btn-sm sm:btn-md gap-2">
+                        <span class="icon-[tabler--player-play] size-4"></span>
+                        Start Processing
                     </a>
-                    {% if totalActionItems > 0 %}
-                        <a href="#action-queue" class="btn btn-primary btn-sm gap-2">
-                            <span class="icon-[tabler--player-play] size-4"></span>
-                            Start Processing
-                        </a>
-                    {% endif %}
+                {% endif %}
+                <a href="{{ path('app_accounting_dashboard_new') }}" class="btn btn-ghost btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--refresh] size-4"></span>
+                    Refresh
+                </a>
+                <div class="hidden sm:flex items-center gap-2 bg-base-200/70 rounded-xl px-3 py-2 text-xs text-base-content/70">
+                    <span class="icon-[tabler--calendar] size-4 text-primary"></span>
+                    <span>{{ "now"|date("M j, Y") }}</span>
                 </div>
             </div>
         </div>
@@ -355,7 +366,7 @@
                                         <td class="text-sm text-base-content/60 whitespace-nowrap">{{ manifest.billing.createdAt|date('M j, Y g:i A') }}</td>
                                         <td class="text-right">
                                             <div class="flex gap-1.5 justify-end flex-wrap">
-                                                <a href="{{ path('manifest_workflow_detail', {id: manifest.id}) }}" class="btn btn-ghost btn-sm btn-square" title="View manifest">
+                                                <a href="{{ manifest_workflow_detail_path(manifest) }}" class="btn btn-ghost btn-sm btn-square" title="View manifest">
                                                     <span class="icon-[tabler--eye] size-4"></span>
                                                 </a>
                                                 {% if manifest.billing.pdfPath %}

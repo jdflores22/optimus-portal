@@ -180,4 +180,14 @@ class AccreditationSubmission
         $this->denialReason = $denialReason;
         return $this;
     }
+
+    public function isAwaitingFinalApproval(): bool
+    {
+        return $this->status === AccreditationStatus::AWAITING_FINAL_APPROVAL;
+    }
+
+    public function isFullyApproved(): bool
+    {
+        return $this->status === AccreditationStatus::APPROVED && $this->finalApprover !== null;
+    }
 }

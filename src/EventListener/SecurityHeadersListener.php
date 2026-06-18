@@ -20,11 +20,17 @@ class SecurityHeadersListener
         
         // Check if this is a file viewing route that needs iframe embedding
         $routeName = $request->attributes->get('_route');
-        $isFileViewRoute = in_array($routeName, [
+        $inline = $request->query->get('inline', 'false') === 'true';
+        $iframeEmbedRoutes = [
             'payment_file_view',
-            'app_admin_file_download', // Admin file viewing
-            // Add other file viewing routes as needed
-        ]);
+            'app_shipping_admin_accreditation_file_download',
+            'document_template_preview_html',
+            'document_template_preview_pdf',
+            'broker_manifest_billing_download',
+            'accounting_payment_billing_download',
+        ];
+        $isFileViewRoute = in_array($routeName, $iframeEmbedRoutes, true)
+            && ($inline || in_array($routeName, ['document_template_preview_html', 'document_template_preview_pdf', 'payment_file_view', 'app_shipping_admin_accreditation_file_download'], true));
 
         // Add security headers
         $response->headers->set('X-Content-Type-Options', 'nosniff');

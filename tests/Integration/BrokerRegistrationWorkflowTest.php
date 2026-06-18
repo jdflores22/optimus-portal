@@ -143,7 +143,7 @@ class BrokerRegistrationWorkflowTest extends KernelTestCase
 
         // Refresh submission
         $this->entityManager->refresh($submission);
-        $this->assertEquals(AccreditationStatus::APPROVED, $submission->getStatus());
+        $this->assertEquals(AccreditationStatus::AWAITING_FINAL_APPROVAL, $submission->getStatus());
         $this->assertEquals($evaluator, $submission->getEvaluator());
 
         // Step 5: Create shipping lines admin and perform final approval

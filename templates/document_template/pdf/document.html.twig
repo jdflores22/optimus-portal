@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    {% set isFreeLayout = canvas.layoutMode|default('flow') == 'free' %}
+    {% set pageWidth = canvas.width|default(794) %}
+    {% set basePageHeight = canvas.height|default(1123) %}
+    <style>
+        @page {
+            size: {{ paperSize|default('A4') }} {{ orientation|default('portrait') }};
+            margin: {% if isFreeLayout %}0{% else %}12mm{% endif %};
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            font-family: DejaVu Sans, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            font-size: 11pt;
+            line-height: 1.45;
+            color: #1a1a1a;
+            background: #ffffff;
+        }
+        {% if isFreeLayout %}
+        html, body {
+            width: {{ pageWidth }}px;
+            height: {{ basePageHeight }}px;
+            max-height: {{ basePageHeight }}px;
+            overflow: hidden;
+        }
+        body.document-page--free {
+            position: relative;
+            background: {{ canvas.backgroundColor|default('#ffffff') }};
+            {% if canvas.showPageBorder|default(false) %}
+            border: 2px solid {{ canvas.borderColor|default('#1e3a5f') }};
+            {% endif %}
+        }
+        {% endif %}
+        .document-page--flow {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 0;
+            background: {{ canvas.backgroundColor|default('#ffffff') }};
+            {% if canvas.showPageBorder|default(false) %}
+            border: 2px solid {{ canvas.borderColor|default('#1e3a5f') }};
+            padding: 16px 20px;
+            {% endif %}
+        }
+        .doc-block {
+            margin-bottom: 10px;
+        }
+        .doc-block--free {
+            position: absolute;
+            margin: 0;
+        }
+        .doc-block-content {
+            width: 100%;
+        }
+        .doc-table {
+            page-break-inside: auto;
+        }
+        .doc-table tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+    </style>
+</head>
+<body{% if isFreeLayout %} class="document-page--free"{% endif %}>
+    {% set margins = canvas.margin|default({}) %}
+    {% set defaultWidth = pageWidth - margins.left|default(48) - margins.right|default(48) %}
+
+    {% if isFreeLayout %}
+        {% for element in elements %}
+            {% set style = element.style|default({}) %}
+            {% set pos = element.position|default({}) %}
+            <div class="doc-block doc-block--free" style="left: {{ pos.x|default(0) }}px; top: {{ pos.y|default(0) }}px; width: {{ pos.width|default(defaultWidth) }}px; z-index: {{ element.order|default(1) }};">
+                <div class="doc-block-content" style="padding: {{ style.padding|default(0) }}px; margin: {{ style.marginTop|default(0) }}px {{ style.marginRight|default(0) }}px {{ style.marginBottom|default(0) }}px {{ style.marginLeft|default(0) }}px;">
+                    {% include 'document_template/pdf/_element.html.twig' with { element: element, context: context, freeLayout: true } %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="document-page--flow">
+            {% for element in elements %}
+                {% set style = element.style|default({}) %}
+                <div class="doc-block" style="padding: {{ style.padding|default(0) }}px; margin: {{ style.marginTop|default(0) }}px {{ style.marginRight|default(0) }}px {{ style.marginBottom|default(0) }}px {{ style.marginLeft|default(0) }}px;">
+                    {% include 'document_template/pdf/_element.html.twig' with { element: element, context: context } %}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</body>
+</html>

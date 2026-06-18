@@ -63,13 +63,13 @@ class NOAVoter extends Voter
     {
         $role = $user->getRole()->value;
 
-        // Shipping line staff and admins can view all NOAs
-        if (in_array($role, ['SYSTEM_ADMIN', 'SHIPPING_LINES_ADMIN', 'SL_STAFF', 'TERMINAL_TEAM'])) {
+        // Shipping line staff, accounting, and admins can view all NOAs
+        if (in_array($role, ['SYSTEM_ADMIN', 'SHIPPING_LINES_ADMIN', 'EVALUATOR', 'SL_STAFF', 'TERMINAL_TEAM', 'ACCOUNTING'])) {
             return true;
         }
 
         // Consignees can view their own NOAs
-        if ($role === 'CONSIGNEE' && $noa && $noa->getConsignee()->getUser() === $user) {
+        if ($role === 'CONSIGNEE' && $noa && $noa->getConsignee() === $user) {
             return true;
         }
 

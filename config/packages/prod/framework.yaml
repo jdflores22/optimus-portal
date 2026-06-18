@@ -1,23 +1,24 @@
 framework:
     session:
-        # Use Redis for session storage in production
-        handler_id: 'session.handler.redis'
+        # Use file-based session storage in production (Hostinger shared hosting)
+        # handler_id: 'session.handler.redis'  # Disabled - Redis not available
         # Production session configuration
         cookie_secure: true
         cookie_httponly: true
-        cookie_samesite: 'strict'
+        cookie_samesite: 'lax'
         gc_probability: 1
         gc_divisor: 100
+        gc_maxlifetime: 1800
 
-services:
-    # Redis session handler for production
-    session.handler.redis:
-        class: Symfony\Component\HttpFoundation\Session\Storage\Handler\RedisSessionHandler
-        arguments:
-            - '@Redis'
-            
-    Redis:
-        class: Redis
-        calls:
-            - [connect, ['127.0.0.1', 6379]]
-            - [select, [1]]
+# Redis configuration disabled - not available on Hostinger shared hosting
+# services:
+#     session.handler.redis:
+#         class: Symfony\Component\HttpFoundation\Session\Storage\Handler\RedisSessionHandler
+#         arguments:
+#             - '@Redis'
+#             
+#     Redis:
+#         class: Redis
+#         calls:
+#             - [connect, ['127.0.0.1', 6379]]
+#             - [select, [1]]

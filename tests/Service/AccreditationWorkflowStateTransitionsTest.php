@@ -70,6 +70,7 @@ class AccreditationWorkflowStateTransitionsTest extends KernelTestCase
     {
         $this->forAll(
             Generator\elements(
+                AccreditationStatus::AWAITING_FINAL_APPROVAL,
                 AccreditationStatus::APPROVED,
                 AccreditationStatus::DENIED,
                 AccreditationStatus::REJECTED,
@@ -105,7 +106,7 @@ class AccreditationWorkflowStateTransitionsTest extends KernelTestCase
      * Property: Evaluator can transition pending to valid states
      * 
      * For any pending submission, an evaluator should be able to transition it to
-     * APPROVED, DENIED, REJECTED, or COMPLIANCE_REQUIRED.
+     * AWAITING_FINAL_APPROVAL (via APPROVED input), DENIED, REJECTED, or COMPLIANCE_REQUIRED.
      */
     public function testEvaluatorCanTransitionPendingToValidStates(): void
     {
@@ -135,8 +136,12 @@ class AccreditationWorkflowStateTransitionsTest extends KernelTestCase
             // Refresh submission from database
             $this->entityManager->refresh($submission);
 
+            $expectedStatus = $targetStatus === AccreditationStatus::APPROVED
+                ? AccreditationStatus::AWAITING_FINAL_APPROVAL
+                : $targetStatus;
+
             // Assert status was changed
-            $this->assertEquals($targetStatus, $submission->getStatus());
+            $this->assertEquals($expectedStatus, $submission->getStatus());
             $this->assertEquals($evaluator->getId(), $submission->getEvaluator()->getId());
             $this->assertNotNull($submission->getEvaluatedAt());
         });
@@ -161,7 +166,7 @@ class AccreditationWorkflowStateTransitionsTest extends KernelTestCase
             // Create an evaluator-approved submission
             $submission = $this->createSubmission();
             $evaluator = $this->createEvaluator();
-            $submission->setStatus(AccreditationStatus::APPROVED);
+            $submission->setStatus(AccreditationStatus::AWAITING_FINAL_APPROVAL);
             $submission->setEvaluator($evaluator);
             $submission->setEvaluatedAt(new \DateTime());
             $this->entityManager->flush();
@@ -239,7 +244,7 @@ class AccreditationWorkflowStateTransitionsTest extends KernelTestCase
             // Create an evaluator-approved submission
             $submission = $this->createSubmission();
             $evaluator = $this->createEvaluator();
-            $submission->setStatus(AccreditationStatus::APPROVED);
+            $submission->setStatus(AccreditationStatus::AWAITING_FINAL_APPROVAL);
             $submission->setEvaluator($evaluator);
             $submission->setEvaluatedAt(new \DateTime());
             $this->entityManager->flush();

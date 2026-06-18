@@ -1,0 +1,24 @@
+{# Account-level pending notice — shown while account status is PENDING #}
+
+{% if accountStatus is defined and accountStatus.value == 'PENDING' %}
+
+<div class="alert alert-info shadow-sm flex-col sm:flex-row items-start sm:items-center gap-3">
+
+    <span class="icon-[tabler--info-circle] size-5 shrink-0"></span>
+
+    <div class="flex-1 min-w-0">
+
+        <p class="font-semibold">Account pending final approval</p>
+
+        <p class="text-sm">
+
+            You can log in and manage SAS applications, but manifest and payment features stay limited until a Shipping Lines Admin completes final approval on your account.
+
+        </p>
+
+    </div>
+
+</div>
+
+{% endif %}
+

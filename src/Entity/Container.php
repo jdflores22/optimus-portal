@@ -4,11 +4,12 @@ namespace App\Entity;
 
 use App\Entity\Enum\AllocationStatus;
 use App\Entity\Enum\ContainerStatus;
+use App\Repository\ContainerRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: ContainerRepository::class)]
 #[ORM\Table(name: 'containers')]
 class Container
 {
@@ -396,14 +397,27 @@ class Container
      */
     public function getCurrentEDO(): ?ElectronicDeliveryOrder
     {
+        $relevantStatuses = [
+            \App\Entity\Enum\EDOStatus::PENDING_RELEASE,
+            \App\Entity\Enum\EDOStatus::PENDING_VALIDATION,
+            \App\Entity\Enum\EDOStatus::ACTIVE,
+            \App\Entity\Enum\EDOStatus::RELEASED,
+            \App\Entity\Enum\EDOStatus::LOCKED,
+            \App\Entity\Enum\EDOStatus::EXPIRED,
+        ];
+
+        $latest = null;
         foreach ($this->edos as $edo) {
-            // Return eDOs that are active or pending release (awaiting payment)
-            if ($edo->getStatus() === \App\Entity\Enum\EDOStatus::ACTIVE || 
-                $edo->getStatus() === \App\Entity\Enum\EDOStatus::PENDING_RELEASE) {
-                return $edo;
+            if (!in_array($edo->getStatus(), $relevantStatuses, true)) {
+                continue;
+            }
+
+            if ($latest === null || $edo->getGeneratedAt() > $latest->getGeneratedAt()) {
+                $latest = $edo;
             }
         }
-        return null;
+
+        return $latest;
     }
 
     /**

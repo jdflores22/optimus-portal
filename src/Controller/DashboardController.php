@@ -2,10 +2,8 @@
 
 namespace App\Controller;
 
-use App\Entity\AccreditationSubmission;
 use App\Entity\AuditLog;
 use App\Entity\ConsigneeBrokerRelationship;
-use App\Entity\Enum\AccreditationStatus;
 use App\Entity\Enum\AccountStatus;
 use App\Entity\Enum\UserRole;
 use App\Entity\Manifest;
@@ -165,37 +163,6 @@ class DashboardController extends AbstractController
             return $cachedMetrics;
         }
 
-        // Accreditation metrics
-        $accreditationRepo = $this->entityManager->getRepository(AccreditationSubmission::class);
-        
-        $pendingCount = $accreditationRepo->createQueryBuilder('a')
-            ->select('COUNT(a.id)')
-            ->where('a.status = :status')
-            ->setParameter('status', AccreditationStatus::PENDING)
-            ->getQuery()
-            ->getSingleScalarResult();
-            
-        $approvedCount = $accreditationRepo->createQueryBuilder('a')
-            ->select('COUNT(a.id)')
-            ->where('a.status = :status')
-            ->setParameter('status', AccreditationStatus::APPROVED)
-            ->getQuery()
-            ->getSingleScalarResult();
-            
-        $deniedCount = $accreditationRepo->createQueryBuilder('a')
-            ->select('COUNT(a.id)')
-            ->where('a.status IN (:statuses)')
-            ->setParameter('statuses', [AccreditationStatus::DENIED, AccreditationStatus::REJECTED])
-            ->getQuery()
-            ->getSingleScalarResult();
-            
-        $complianceRequiredCount = $accreditationRepo->createQueryBuilder('a')
-            ->select('COUNT(a.id)')
-            ->where('a.status = :status')
-            ->setParameter('status', AccreditationStatus::COMPLIANCE_REQUIRED)
-            ->getQuery()
-            ->getSingleScalarResult();
-
         // User metrics by role
         $userRepo = $this->entityManager->getRepository(User::class);
         $userCounts = [];
@@ -212,13 +179,6 @@ class DashboardController extends AbstractController
         
         // Recent activity (last 7 days)
         $sevenDaysAgo = new \DateTime('-7 days');
-        $recentSubmissions = $accreditationRepo->createQueryBuilder('a')
-            ->select('COUNT(a.id)')
-            ->where('a.submittedAt >= :date')
-            ->setParameter('date', $sevenDaysAgo)
-            ->getQuery()
-            ->getSingleScalarResult();
-            
         $recentAuditLogs = $this->entityManager->getRepository(AuditLog::class)
             ->createQueryBuilder('a')
             ->select('COUNT(a.id)')
@@ -228,19 +188,11 @@ class DashboardController extends AbstractController
             ->getSingleScalarResult();
 
         $metrics = [
-            'accreditation' => [
-                'pending' => $pendingCount,
-                'approved' => $approvedCount,
-                'denied' => $deniedCount,
-                'compliance_required' => $complianceRequiredCount,
-                'total' => $pendingCount + $approvedCount + $deniedCount + $complianceRequiredCount,
-            ],
             'users' => [
                 'by_role' => $userCounts,
                 'total' => array_sum($userCounts),
             ],
             'recent_activity' => [
-                'submissions' => $recentSubmissions,
                 'audit_logs' => $recentAuditLogs,
             ],
         ];

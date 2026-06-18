@@ -8,42 +8,50 @@
     : 0 %}
 
 {% block body %}
-<div class="space-y-5 sm:space-y-6">
+<div class="max-w-7xl mx-auto w-full space-y-5 sm:space-y-6">
 
-    {# Header #}
-    <div class="bg-base-100 shadow-sm rounded-xl">
-        <div class="p-4 sm:p-6">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div class="min-w-0">
-                    <div class="flex items-center gap-4">
-                        <div class="size-12 rounded-xl bg-warning/10 flex items-center justify-center shrink-0">
-                            <span class="icon-[tabler--clipboard-check] size-6 text-warning"></span>
-                        </div>
-                        <div class="min-w-0">
-                            <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">Evaluator Dashboard</h1>
-                            <p class="text-sm text-base-content/60 mt-1">
-                                Review accreditation applications, track your evaluation workload, and monitor outcomes.
-                            </p>
-                        </div>
+    {# Header — applications-first #}
+    <div class="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/15 via-base-100 to-base-100 shadow-sm p-5 sm:p-7">
+            <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
+                <div class="space-y-3">
+                    <span class="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                        <span class="icon-[tabler--gavel] size-3.5"></span>
+                        Evaluator Console
+                    </span>
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-base-content leading-tight">Accreditation Applications</h1>
+                        <p class="mt-2 text-sm sm:text-base text-base-content/70 max-w-2xl">
+                            Review submissions, issue compliance requests, and move qualified applications to final approval.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="badge badge-warning badge-lg gap-2">
+                            <span class="icon-[tabler--clock] size-4"></span>
+                            {{ stats.pending_applications }} pending
+                        </span>
+                        <span class="badge badge-success badge-soft badge-lg gap-2">
+                            <span class="icon-[tabler--circle-check] size-4"></span>
+                            {{ approvalRate }}% approval rate
+                        </span>
                     </div>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                    <a href="{{ path('app_evaluator_applications') }}" class="btn btn-ghost btn-sm gap-2">
+                <div class="flex flex-wrap items-center gap-2 xl:justify-end">
+                    <a href="#review-queue" class="btn btn-primary btn-sm sm:btn-md gap-2">
+                        <span class="icon-[tabler--player-play] size-4"></span>
+                        Start Reviewing
+                    </a>
+                    <a href="{{ path('app_evaluator_applications') }}" class="btn btn-outline btn-primary btn-sm sm:btn-md gap-2">
                         <span class="icon-[tabler--file-text] size-4"></span>
                         All Applications
                     </a>
-                    {% if stats.pending_applications > 0 %}
-                        <a href="#review-queue" class="btn btn-primary btn-sm gap-2">
-                            <span class="icon-[tabler--player-play] size-4"></span>
-                            Start Reviewing
-                        </a>
-                    {% endif %}
+                    <a href="{{ path('app_evaluator_dashboard') }}" class="btn btn-ghost btn-sm sm:btn-md gap-2">
+                        <span class="icon-[tabler--refresh] size-4"></span>
+                        Refresh
+                    </a>
                 </div>
             </div>
-        </div>
     </div>
 
-    {# Flash messages #}
     {% for message in app.flashes('success') %}
         <div class="alert alert-success shadow-sm">
             <span class="icon-[tabler--circle-check] size-5"></span>
@@ -57,426 +65,82 @@
         </div>
     {% endfor %}
 
-    {# Status highlights #}
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
-        <a href="#review-queue" class="card bg-warning/10 shadow-sm hover:bg-warning/15 transition-colors">
-            <div class="card-body p-4 sm:p-5">
-                <div class="flex items-center gap-3">
-                    <div class="size-11 bg-warning/20 text-warning rounded-xl flex items-center justify-center shrink-0">
-                        <span class="icon-[tabler--clock] size-5"></span>
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-xs font-medium text-warning">Pending Review</p>
-                        <p class="text-3xl font-bold text-base-content">{{ stats.pending_new }}</p>
-                        <p class="text-xs text-base-content/60">New applications awaiting evaluation</p>
-                    </div>
-                </div>
+    {# Compact queue summary — links into sections below #}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <a href="#review-queue" class="flex items-center gap-3 rounded-xl bg-warning/10 border border-warning/20 px-4 py-3 hover:bg-warning/15 transition-colors">
+            <span class="icon-[tabler--inbox] size-6 text-warning shrink-0"></span>
+            <div class="min-w-0">
+                <p class="text-2xl font-bold leading-none">{{ stats.pending_applications }}</p>
+                <p class="text-xs text-base-content/70 mt-1">Pending review</p>
             </div>
         </a>
-        <a href="#compliance-queue" class="card bg-info/10 shadow-sm hover:bg-info/15 transition-colors">
-            <div class="card-body p-4 sm:p-5">
-                <div class="flex items-center gap-3">
-                    <div class="size-11 bg-info/20 text-info rounded-xl flex items-center justify-center shrink-0">
-                        <span class="icon-[tabler--alert-circle] size-5"></span>
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-xs font-medium text-info">Compliance Required</p>
-                        <p class="text-3xl font-bold text-base-content">{{ stats.compliance_required }}</p>
-                        <p class="text-xs text-base-content/60">Waiting for applicant to comply</p>
-                    </div>
-                </div>
+        <a href="#compliance-queue" class="flex items-center gap-3 rounded-xl bg-info/10 border border-info/20 px-4 py-3 hover:bg-info/15 transition-colors">
+            <span class="icon-[tabler--alert-circle] size-6 text-info shrink-0"></span>
+            <div class="min-w-0">
+                <p class="text-2xl font-bold leading-none">{{ stats.compliance_required }}</p>
+                <p class="text-xs text-base-content/70 mt-1">Awaiting compliance</p>
             </div>
         </a>
-        <a href="#review-queue" class="card bg-success/10 shadow-sm hover:bg-success/15 transition-colors">
-            <div class="card-body p-4 sm:p-5">
-                <div class="flex items-center gap-3">
-                    <div class="size-11 bg-success/20 text-success rounded-xl flex items-center justify-center shrink-0">
-                        <span class="icon-[tabler--refresh] size-5"></span>
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-xs font-medium text-success">Complied & Resubmitted</p>
-                        <p class="text-3xl font-bold text-base-content">{{ stats.complied_resubmissions }}</p>
-                        <p class="text-xs text-base-content/60">Resubmitted after compliance — review first</p>
-                    </div>
-                </div>
+        <a href="#review-queue" class="flex items-center gap-3 rounded-xl bg-success/10 border border-success/20 px-4 py-3 hover:bg-success/15 transition-colors">
+            <span class="icon-[tabler--refresh] size-6 text-success shrink-0"></span>
+            <div class="min-w-0">
+                <p class="text-2xl font-bold leading-none">{{ stats.complied_resubmissions }}</p>
+                <p class="text-xs text-base-content/70 mt-1">Resubmitted — review first</p>
             </div>
         </a>
     </div>
 
-    {# Performance stats #}
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        <div class="card bg-base-100 shadow-sm">
-            <div class="card-body p-4 sm:p-5">
-                <div class="flex items-center gap-3">
-                    <div class="size-10 bg-warning/10 text-warning rounded-xl flex items-center justify-center shrink-0">
-                        <span class="icon-[tabler--clock] size-5"></span>
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-xs text-base-content/70">Pending Review</p>
-                        <p class="text-2xl font-bold text-base-content">{{ stats.pending_applications }}</p>
-                        <p class="text-xs text-warning/80">Awaiting action</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="card bg-base-100 shadow-sm">
-            <div class="card-body p-4 sm:p-5">
-                <div class="flex items-center gap-3">
-                    <div class="size-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0">
-                        <span class="icon-[tabler--calendar-event] size-5"></span>
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-xs text-base-content/70">Evaluated Today</p>
-                        <p class="text-2xl font-bold text-base-content">{{ stats.evaluated_today }}</p>
-                        <p class="text-xs text-primary/80">{{ stats.evaluated_this_week }} this week</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="card bg-base-100 shadow-sm">
-            <div class="card-body p-4 sm:p-5">
-                <div class="flex items-center gap-3">
-                    <div class="size-10 bg-success/10 text-success rounded-xl flex items-center justify-center shrink-0">
-                        <span class="icon-[tabler--circle-check] size-5"></span>
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-xs text-base-content/70">Approved</p>
-                        <p class="text-2xl font-bold text-base-content">{{ stats.approved_count }}</p>
-                        <p class="text-xs text-success/80">{{ stats.denied_count }} denied</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="card bg-base-100 shadow-sm">
-            <div class="card-body p-4 sm:p-5">
-                <div class="flex items-center gap-3">
-                    <div class="size-10 bg-info/10 text-info rounded-xl flex items-center justify-center shrink-0">
-                        <span class="icon-[tabler--chart-donut] size-5"></span>
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-xs text-base-content/70">Total Evaluated</p>
-                        <p class="text-2xl font-bold text-base-content">{{ stats.total_evaluated }}</p>
-                        <p class="text-xs text-info/80">{{ approvalRate }}% approval rate</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {# Charts #}
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-5">
-        <div class="card bg-base-100 shadow-sm xl:col-span-2">
-            <div class="card-body p-4 sm:p-5">
-                <div class="flex items-center justify-between gap-3 mb-4">
-                    <div>
-                        <h2 class="font-semibold text-base-content">Evaluation Activity</h2>
-                        <p class="text-xs text-base-content/60">Applications evaluated over the last 30 days</p>
-                    </div>
-                    <span class="badge badge-ghost badge-sm">{{ stats.evaluated_this_month }} this month</span>
-                </div>
-                <div id="evaluation-trends-chart" class="min-h-[260px]"></div>
-            </div>
-        </div>
-        <div class="card bg-base-100 shadow-sm">
-            <div class="card-body p-4 sm:p-5">
-                <h2 class="font-semibold text-base-content mb-1">Outcome Mix</h2>
-                <p class="text-xs text-base-content/60 mb-4">Your evaluation decisions</p>
-                <div id="status-distribution-chart" class="min-h-[260px]"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-5">
-        <div class="xl:col-span-2 space-y-4 sm:space-y-5">
-        {# Review queue #}
-        <div id="review-queue" class="card bg-base-100 shadow-sm">
-            <div class="card-body p-0">
-                <div class="px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                        <h2 class="font-semibold text-lg text-base-content flex items-center gap-2">
-                            <span class="icon-[tabler--inbox] size-5 text-warning"></span>
-                            Review Queue
-                        </h2>
-                        <p class="text-xs text-base-content/60 mt-0.5">Complied resubmissions first, then new pending applications</p>
-                    </div>
-                    {% if stats.pending_applications > 0 %}
-                        <span class="badge badge-warning badge-lg">{{ stats.pending_applications }} to review</span>
-                    {% endif %}
-                </div>
-
-                {% if reviewQueue|length > 0 %}
-                    {# Desktop table #}
-                    <div class="hidden md:block overflow-x-auto">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Status</th>
-                                    <th>Applicant</th>
-                                    <th>Type</th>
-                                    <th>Shipping Line</th>
-                                    <th>Submitted</th>
-                                    <th>Waiting</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for application in reviewQueue %}
-                                    {% set applicant = application.applicant %}
-                                    {% set isComplied = application.submittedData['_resubmitted_after_compliance']|default(false) %}
-                                    {% set rowHighlight = isComplied ? 'bg-success/10' : 'bg-warning/8' %}
-                                    {% set waitDays = (('now'|date('U')) - (application.submittedAt|date('U'))) // 86400 %}
-                                    <tr class="hover {{ rowHighlight }}">
-                                        <td>
-                                            {% if isComplied %}
-                                                <span class="badge badge-success badge-sm gap-1">
-                                                    <span class="icon-[tabler--refresh] size-3"></span>
-                                                    Complied
-                                                </span>
-                                            {% else %}
-                                                <span class="badge badge-warning badge-sm gap-1">
-                                                    <span class="icon-[tabler--clock] size-3"></span>
-                                                    Pending
-                                                </span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <div class="font-medium text-sm">
-                                                {% if applicant.role.value == 'BROKER' %}
-                                                    {{ applicant.fullName }}
-                                                {% elseif applicant.role.value == 'CONSIGNEE' %}
-                                                    {{ applicant.businessName }}
-                                                {% else %}
-                                                    {{ applicant.email }}
-                                                {% endif %}
-                                            </div>
-                                            <div class="text-xs text-base-content/60">{{ applicant.email }}</div>
-                                        </td>
-                                        <td>
-                                            <span class="badge badge-soft badge-sm">
-                                                {{ applicant.role.value|replace({'_': ' '})|title }}
-                                            </span>
-                                        </td>
-                                        <td class="text-sm">{{ application.shippingLine.brandName }}</td>
-                                        <td class="text-sm whitespace-nowrap">{{ application.submittedAt|date('M j, Y') }}</td>
-                                        <td>
-                                            <span class="badge badge-sm {{ waitDays >= 7 ? 'badge-error' : (waitDays >= 3 ? 'badge-warning' : 'badge-ghost') }}">
-                                                {{ waitDays }} day{{ waitDays == 1 ? '' : 's' }}
-                                            </span>
-                                        </td>
-                                        <td class="text-right">
-                                            <a href="{{ path('app_evaluator_application_detail', {id: application.id}) }}" class="btn btn-primary btn-xs gap-1">
-                                                <span class="icon-[tabler--eye] size-3.5"></span>
-                                                Review
-                                            </a>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {# Mobile cards #}
-                    <div class="md:hidden divide-y divide-base-content/10">
-                        {% for application in reviewQueue %}
-                            {% set applicant = application.applicant %}
-                            {% set isComplied = application.submittedData['_resubmitted_after_compliance']|default(false) %}
-                            {% set waitDays = (('now'|date('U')) - (application.submittedAt|date('U'))) // 86400 %}
-                            <div class="p-4 space-y-3 {{ isComplied ? 'bg-success/10' : 'bg-warning/8' }}">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div class="min-w-0">
-                                        <p class="font-semibold text-sm truncate">
-                                            {% if applicant.role.value == 'BROKER' %}
-                                                {{ applicant.fullName }}
-                                            {% elseif applicant.role.value == 'CONSIGNEE' %}
-                                                {{ applicant.businessName }}
-                                            {% else %}
-                                                {{ applicant.email }}
-                                            {% endif %}
-                                        </p>
-                                        <p class="text-xs text-base-content/60 truncate">{{ applicant.email }}</p>
-                                    </div>
-                                    {% if isComplied %}
-                                        <span class="badge badge-success badge-sm shrink-0 gap-1">
-                                            <span class="icon-[tabler--refresh] size-3"></span>
-                                            Complied
-                                        </span>
-                                    {% else %}
-                                        <span class="badge badge-warning badge-sm shrink-0 gap-1">
-                                            <span class="icon-[tabler--clock] size-3"></span>
-                                            Pending
-                                        </span>
-                                    {% endif %}
-                                </div>
-                                <div class="flex flex-wrap gap-2 text-xs">
-                                    <span class="badge badge-soft badge-sm">{{ applicant.role.value|replace({'_': ' '})|title }}</span>
-                                    <span class="badge badge-ghost badge-sm">{{ application.shippingLine.brandName }}</span>
-                                    <span class="badge badge-sm {{ waitDays >= 7 ? 'badge-error' : (waitDays >= 3 ? 'badge-warning' : 'badge-ghost') }}">
-                                        {{ waitDays }}d waiting
-                                    </span>
-                                </div>
-                                <a href="{{ path('app_evaluator_application_detail', {id: application.id}) }}" class="btn btn-primary btn-sm w-full gap-2">
-                                    <span class="icon-[tabler--eye] size-4"></span>
-                                    Review Application
-                                </a>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="px-4 sm:px-5 py-12 text-center">
-                        <div class="size-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <span class="icon-[tabler--circle-check] size-8 text-success"></span>
-                        </div>
-                        <h3 class="font-semibold text-base-content">Queue is clear</h3>
-                        <p class="text-sm text-base-content/60 mt-1">No pending applications right now. Great work.</p>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-
-        {# Compliance required — awaiting applicant #}
-        <div id="compliance-queue" class="card bg-base-100 shadow-sm">
-            <div class="card-body p-0">
-                <div class="px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                        <h2 class="font-semibold text-lg text-base-content flex items-center gap-2">
-                            <span class="icon-[tabler--alert-circle] size-5 text-info"></span>
-                            Awaiting Applicant Compliance
-                        </h2>
-                        <p class="text-xs text-base-content/60 mt-0.5">Applications you sent back for additional information</p>
-                    </div>
-                    {% if stats.compliance_required > 0 %}
-                        <span class="badge badge-info badge-lg">{{ stats.compliance_required }} awaiting</span>
-                    {% endif %}
-                </div>
-
-                {% if complianceRequiredApplications|length > 0 %}
-                    <div class="overflow-x-auto">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Applicant</th>
-                                    <th>Type</th>
-                                    <th>Shipping Line</th>
-                                    <th>Requested</th>
-                                    <th>Feedback</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for application in complianceRequiredApplications %}
-                                    {% set applicant = application.applicant %}
-                                    <tr class="hover bg-info/10">
-                                        <td>
-                                            <div class="font-medium text-sm">
-                                                {% if applicant.role.value == 'BROKER' %}
-                                                    {{ applicant.fullName }}
-                                                {% elseif applicant.role.value == 'CONSIGNEE' %}
-                                                    {{ applicant.businessName }}
-                                                {% else %}
-                                                    {{ applicant.email }}
-                                                {% endif %}
-                                            </div>
-                                            <div class="text-xs text-base-content/60">{{ applicant.email }}</div>
-                                        </td>
-                                        <td>
-                                            <span class="badge badge-soft badge-sm">{{ applicant.role.value|replace({'_': ' '})|title }}</span>
-                                        </td>
-                                        <td class="text-sm">{{ application.shippingLine.brandName }}</td>
-                                        <td class="text-sm whitespace-nowrap">
-                                            {{ application.evaluatedAt ? application.evaluatedAt|date('M j, Y') : '—' }}
-                                        </td>
-                                        <td class="text-sm max-w-xs truncate" title="{{ application.denialReason }}">
-                                            {{ application.denialReason|default('—') }}
-                                        </td>
-                                        <td class="text-right">
-                                            <a href="{{ path('app_evaluator_application_detail', {id: application.id}) }}" class="btn btn-ghost btn-xs gap-1">
-                                                <span class="icon-[tabler--eye] size-3.5"></span>
-                                                View
-                                            </a>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="px-4 sm:px-5 py-10 text-center text-sm text-base-content/60">
-                        No applications currently awaiting applicant compliance.
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-        </div>
-
-        {# Sidebar insights #}
-        <div class="space-y-4 sm:space-y-5">
-            <div class="card bg-base-100 shadow-sm">
-                <div class="card-body p-4 sm:p-5">
-                    <h2 class="font-semibold text-base-content mb-1">Applications by Role</h2>
-                    <p class="text-xs text-base-content/60 mb-4">Your evaluated submissions</p>
-                    <div id="applications-by-role-chart" class="min-h-[220px]"></div>
-                </div>
-            </div>
-
-            <div class="card bg-base-100 shadow-sm">
-                <div class="card-body p-4 sm:p-5 space-y-4">
-                    <h2 class="font-semibold text-base-content">Performance Snapshot</h2>
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between text-sm">
-                            <span class="text-base-content/70">This month</span>
-                            <span class="font-semibold">{{ stats.evaluated_this_month }}</span>
-                        </div>
-                        <div class="flex items-center justify-between text-sm">
-                            <span class="text-base-content/70">Approved</span>
-                            <span class="font-semibold text-success">{{ stats.approved_count }}</span>
-                        </div>
-                        <div class="flex items-center justify-between text-sm">
-                            <span class="text-base-content/70">Denied / Rejected</span>
-                            <span class="font-semibold text-error">{{ stats.denied_count }}</span>
-                        </div>
-                    </div>
-                    <progress class="progress progress-success w-full" value="{{ approvalRate }}" max="100"></progress>
-                    <p class="text-xs text-base-content/60">{{ approvalRate }}% of your decisions were approvals</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {# Recently evaluated #}
-    <div class="card bg-base-100 shadow-sm">
+    {# Primary: Review queue #}
+    <div id="review-queue" class="card bg-base-100 shadow-md border-2 border-warning/30">
         <div class="card-body p-0">
-            <div class="px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-base-content/10 bg-warning/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <h2 class="font-semibold text-lg text-base-content flex items-center gap-2">
-                        <span class="icon-[tabler--history] size-5 text-primary"></span>
-                        Recently Evaluated
+                    <h2 class="font-bold text-lg sm:text-xl text-base-content flex items-center gap-2">
+                        <span class="icon-[tabler--inbox] size-6 text-warning"></span>
+                        Review Queue
                     </h2>
-                    <p class="text-xs text-base-content/60 mt-0.5">Your latest accreditation decisions</p>
+                    <p class="text-sm text-base-content/60 mt-0.5">Complied resubmissions first, then new pending applications</p>
                 </div>
-                <a href="{{ path('app_evaluator_applications') }}" class="btn btn-ghost btn-sm gap-1">
-                    View all
-                    <span class="icon-[tabler--chevron-right] size-4"></span>
-                </a>
+                {% if stats.pending_applications > 0 %}
+                    <span class="badge badge-warning badge-lg">{{ stats.pending_applications }} application{{ stats.pending_applications == 1 ? '' : 's' }}</span>
+                {% endif %}
             </div>
 
-            {% if recentlyEvaluated|length > 0 %}
-                <div class="overflow-x-auto">
-                    <table class="table table-zebra">
+            {% if reviewQueue|length > 0 %}
+                <div class="hidden md:block overflow-x-auto">
+                    <table class="table">
                         <thead>
                             <tr>
+                                <th>Status</th>
                                 <th>Applicant</th>
                                 <th>Type</th>
-                                <th>Shipping Line</th>
-                                <th>Decision</th>
-                                <th>Evaluated</th>
+                                <th>Company / Consignee</th>
+                                <th>Submitted</th>
+                                <th>Waiting</th>
                                 <th></th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for application in recentlyEvaluated %}
+                            {% for application in reviewQueue %}
                                 {% set applicant = application.applicant %}
-                                {% set isComplianceDecision = application.status.value == 'COMPLIANCE_REQUIRED' %}
-                                <tr class="hover {{ isComplianceDecision ? 'bg-info/10' : '' }}">
+                                {% set applicantCompanyName = application.submittedData.business_name|default('') ?: (applicant.role.value == 'BROKER' ? applicant.fullName : applicant.businessName) %}
+                                {% set isComplied = application.submittedData['_resubmitted_after_compliance']|default(false) %}
+                                {% set rowHighlight = isComplied ? 'bg-success/10' : 'bg-warning/8' %}
+                                {% set waitDays = (('now'|date('U')) - (application.submittedAt|date('U'))) // 86400 %}
+                                <tr class="hover {{ rowHighlight }}">
+                                    <td>
+                                        {% if isComplied %}
+                                            <span class="badge badge-success badge-sm gap-1">
+                                                <span class="icon-[tabler--refresh] size-3"></span>
+                                                Complied
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-warning badge-sm gap-1">
+                                                <span class="icon-[tabler--clock] size-3"></span>
+                                                Pending
+                                            </span>
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         <div class="font-medium text-sm">
                                             {% if applicant.role.value == 'BROKER' %}
@@ -494,28 +158,17 @@
                                             {{ applicant.role.value|replace({'_': ' '})|title }}
                                         </span>
                                     </td>
-                                    <td class="text-sm">{{ application.shippingLine.brandName }}</td>
+                                    <td class="text-sm">{{ applicantCompanyName }}</td>
+                                    <td class="text-sm whitespace-nowrap">{{ application.submittedAt|date('M j, Y') }}</td>
                                     <td>
-                                        {% if application.status.value == 'APPROVED' %}
-                                            <span class="badge badge-success badge-sm">Approved</span>
-                                        {% elseif application.status.value in ['DENIED', 'REJECTED'] %}
-                                            <span class="badge badge-error badge-sm">{{ application.status.value|replace({'_': ' '})|title }}</span>
-                                        {% elseif application.status.value == 'COMPLIANCE_REQUIRED' %}
-                                            <span class="badge badge-info badge-sm gap-1">
-                                                <span class="icon-[tabler--alert-circle] size-3"></span>
-                                                Compliance Required
-                                            </span>
-                                        {% else %}
-                                            <span class="badge badge-ghost badge-sm">{{ application.status.value|replace({'_': ' '})|title }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-sm whitespace-nowrap">
-                                        {{ application.evaluatedAt ? application.evaluatedAt|date('M j, Y g:i A') : '—' }}
+                                        <span class="badge badge-sm {{ waitDays >= 7 ? 'badge-error' : (waitDays >= 3 ? 'badge-warning' : 'badge-ghost') }}">
+                                            {{ waitDays }} day{{ waitDays == 1 ? '' : 's' }}
+                                        </span>
                                     </td>
                                     <td class="text-right">
-                                        <a href="{{ path('app_evaluator_application_detail', {id: application.id}) }}" class="btn btn-ghost btn-xs gap-1">
+                                        <a href="{{ path('app_evaluator_application_detail', {id: application.id}) }}" class="btn btn-primary btn-sm gap-1">
                                             <span class="icon-[tabler--eye] size-3.5"></span>
-                                            View
+                                            Review
                                         </a>
                                     </td>
                                 </tr>
@@ -523,13 +176,246 @@
                         </tbody>
                     </table>
                 </div>
+
+                <div class="md:hidden divide-y divide-base-content/10">
+                    {% for application in reviewQueue %}
+                        {% set applicant = application.applicant %}
+                        {% set applicantCompanyName = application.submittedData.business_name|default('') ?: (applicant.role.value == 'BROKER' ? applicant.fullName : applicant.businessName) %}
+                        {% set isComplied = application.submittedData['_resubmitted_after_compliance']|default(false) %}
+                        {% set waitDays = (('now'|date('U')) - (application.submittedAt|date('U'))) // 86400 %}
+                        <div class="p-4 sm:p-5 space-y-3 {{ isComplied ? 'bg-success/10' : 'bg-warning/8' }}">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="font-semibold truncate">
+                                        {% if applicant.role.value == 'BROKER' %}
+                                            {{ applicant.fullName }}
+                                        {% elseif applicant.role.value == 'CONSIGNEE' %}
+                                            {{ applicant.businessName }}
+                                        {% else %}
+                                            {{ applicant.email }}
+                                        {% endif %}
+                                    </p>
+                                    <p class="text-xs text-base-content/60 truncate">{{ applicant.email }}</p>
+                                </div>
+                                {% if isComplied %}
+                                    <span class="badge badge-success badge-sm shrink-0 gap-1">
+                                        <span class="icon-[tabler--refresh] size-3"></span>
+                                        Complied
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-warning badge-sm shrink-0 gap-1">
+                                        <span class="icon-[tabler--clock] size-3"></span>
+                                        Pending
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <span class="badge badge-soft badge-sm">{{ applicant.role.value|replace({'_': ' '})|title }}</span>
+                                <span class="badge badge-ghost badge-sm">{{ applicantCompanyName }}</span>
+                                <span class="badge badge-sm {{ waitDays >= 7 ? 'badge-error' : (waitDays >= 3 ? 'badge-warning' : 'badge-ghost') }}">
+                                    {{ waitDays }}d waiting
+                                </span>
+                            </div>
+                            <a href="{{ path('app_evaluator_application_detail', {id: application.id}) }}" class="btn btn-primary w-full gap-2">
+                                <span class="icon-[tabler--eye] size-4"></span>
+                                Review Application
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
             {% else %}
-                <div class="px-4 sm:px-5 py-10 text-center text-sm text-base-content/60">
-                    No evaluations recorded yet. Completed reviews will appear here.
+                <div class="px-4 sm:px-6 py-16 text-center">
+                    <div class="size-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="icon-[tabler--circle-check] size-8 text-success"></span>
+                    </div>
+                    <h3 class="font-semibold text-lg text-base-content">Queue is clear</h3>
+                    <p class="text-sm text-base-content/60 mt-1 max-w-md mx-auto">No pending applications right now. Check recently evaluated items below or view all applications.</p>
+                    <a href="{{ path('app_evaluator_applications') }}" class="btn btn-ghost btn-sm mt-4 gap-2">
+                        <span class="icon-[tabler--file-text] size-4"></span>
+                        Browse all applications
+                    </a>
                 </div>
             {% endif %}
         </div>
     </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-5">
+        {# Compliance required #}
+        <div id="compliance-queue" class="card bg-base-100 shadow-sm h-fit">
+            <div class="card-body p-0">
+                <div class="px-4 sm:px-5 py-4 border-b border-base-content/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div>
+                        <h2 class="font-semibold text-base-content flex items-center gap-2">
+                            <span class="icon-[tabler--alert-circle] size-5 text-info"></span>
+                            Awaiting Applicant Compliance
+                        </h2>
+                        <p class="text-xs text-base-content/60 mt-0.5">Sent back for additional information</p>
+                    </div>
+                    {% if stats.compliance_required > 0 %}
+                        <span class="badge badge-info">{{ stats.compliance_required }}</span>
+                    {% endif %}
+                </div>
+
+                {% if complianceRequiredApplications|length > 0 %}
+                    <div class="divide-y divide-base-content/10 max-h-[420px] overflow-y-auto">
+                        {% for application in complianceRequiredApplications %}
+                            {% set applicant = application.applicant %}
+                            {% set applicantCompanyName = application.submittedData.business_name|default('') ?: (applicant.role.value == 'BROKER' ? applicant.fullName : applicant.businessName) %}
+                            <div class="p-4 hover:bg-info/5 transition-colors">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="font-medium text-sm truncate">
+                                            {% if applicant.role.value == 'BROKER' %}
+                                                {{ applicant.fullName }}
+                                            {% elseif applicant.role.value == 'CONSIGNEE' %}
+                                                {{ applicant.businessName }}
+                                            {% else %}
+                                                {{ applicant.email }}
+                                            {% endif %}
+                                        </p>
+                                        <p class="text-xs text-base-content/60">{{ applicantCompanyName }}</p>
+                                        {% if application.denialReason %}
+                                            <p class="text-xs text-base-content/70 mt-2 line-clamp-2" title="{{ application.denialReason }}">{{ application.denialReason }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <a href="{{ path('app_evaluator_application_detail', {id: application.id}) }}" class="btn btn-ghost btn-xs shrink-0 gap-1">
+                                        <span class="icon-[tabler--eye] size-3.5"></span>
+                                        View
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-8 text-center text-sm text-base-content/60">
+                        No applications awaiting applicant compliance.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Recently evaluated #}
+        <div id="recently-evaluated" class="card bg-base-100 shadow-sm h-fit">
+            <div class="card-body p-0">
+                <div class="px-4 sm:px-5 py-4 border-b border-base-content/10 flex items-center justify-between gap-2">
+                    <div>
+                        <h2 class="font-semibold text-base-content flex items-center gap-2">
+                            <span class="icon-[tabler--history] size-5 text-primary"></span>
+                            Recently Evaluated
+                        </h2>
+                        <p class="text-xs text-base-content/60 mt-0.5">Your latest decisions</p>
+                    </div>
+                    <a href="{{ path('app_evaluator_applications') }}" class="btn btn-ghost btn-xs gap-1">
+                        All
+                        <span class="icon-[tabler--chevron-right] size-3.5"></span>
+                    </a>
+                </div>
+
+                {% if recentlyEvaluated|length > 0 %}
+                    <div class="divide-y divide-base-content/10 max-h-[420px] overflow-y-auto">
+                        {% for application in recentlyEvaluated %}
+                            {% set applicant = application.applicant %}
+                            {% set applicantCompanyName = application.submittedData.business_name|default('') ?: (applicant.role.value == 'BROKER' ? applicant.fullName : applicant.businessName) %}
+                            <div class="p-4 hover:bg-base-200/40 transition-colors flex items-center justify-between gap-3">
+                                <div class="min-w-0 flex-1">
+                                    <p class="font-medium text-sm truncate">
+                                        {% if applicant.role.value == 'BROKER' %}
+                                            {{ applicant.fullName }}
+                                        {% elseif applicant.role.value == 'CONSIGNEE' %}
+                                            {{ applicant.businessName }}
+                                        {% else %}
+                                            {{ applicant.email }}
+                                        {% endif %}
+                                    </p>
+                                    <div class="flex flex-wrap items-center gap-2 mt-1">
+                                        <span class="text-xs text-base-content/60">{{ applicantCompanyName }}</span>
+                                        {% if application.status.value == 'AWAITING_FINAL_APPROVAL' %}
+                                            <span class="badge badge-info badge-xs">Awaiting final</span>
+                                        {% elseif application.status.value == 'APPROVED' %}
+                                            <span class="badge badge-success badge-xs">Approved</span>
+                                        {% elseif application.status.value in ['DENIED', 'REJECTED'] %}
+                                            <span class="badge badge-error badge-xs">{{ application.status.value|title }}</span>
+                                        {% elseif application.status.value == 'COMPLIANCE_REQUIRED' %}
+                                            <span class="badge badge-info badge-xs">Compliance</span>
+                                        {% else %}
+                                            <span class="badge badge-ghost badge-xs">{{ application.status.value|replace({'_': ' '})|title }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-xs text-base-content/50 mt-1">
+                                        {{ application.evaluatedAt ? application.evaluatedAt|date('M j, Y g:i A') : '—' }}
+                                    </p>
+                                </div>
+                                <a href="{{ path('app_evaluator_application_detail', {id: application.id}) }}" class="btn btn-ghost btn-xs shrink-0">
+                                    <span class="icon-[tabler--eye] size-4"></span>
+                                </a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="p-8 text-center text-sm text-base-content/60">
+                        No evaluations recorded yet.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Analytics — secondary, collapsible #}
+    <details class="group card bg-base-100 shadow-sm">
+        <summary class="card-body p-4 sm:p-5 cursor-pointer list-none flex items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+            <div class="flex items-center gap-3">
+                <span class="icon-[tabler--chart-bar] size-5 text-base-content/50"></span>
+                <div>
+                    <h2 class="font-semibold text-base-content">Performance & Analytics</h2>
+                    <p class="text-xs text-base-content/60">Evaluation trends, outcomes, and workload metrics</p>
+                </div>
+            </div>
+            <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+        </summary>
+        <div class="card-body pt-0 px-4 sm:px-5 pb-5 sm:pb-6 space-y-5 border-t border-base-content/10">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pt-4">
+                <div class="rounded-xl bg-base-200/50 p-4">
+                    <p class="text-xs text-base-content/60">Evaluated today</p>
+                    <p class="text-2xl font-bold mt-1">{{ stats.evaluated_today }}</p>
+                    <p class="text-xs text-base-content/50">{{ stats.evaluated_this_week }} this week</p>
+                </div>
+                <div class="rounded-xl bg-base-200/50 p-4">
+                    <p class="text-xs text-base-content/60">This month</p>
+                    <p class="text-2xl font-bold mt-1">{{ stats.evaluated_this_month }}</p>
+                    <p class="text-xs text-base-content/50">Total evaluated</p>
+                </div>
+                <div class="rounded-xl bg-base-200/50 p-4">
+                    <p class="text-xs text-base-content/60">Approved</p>
+                    <p class="text-2xl font-bold text-success mt-1">{{ stats.approved_count }}</p>
+                    <p class="text-xs text-base-content/50">{{ approvalRate }}% approval rate</p>
+                </div>
+                <div class="rounded-xl bg-base-200/50 p-4">
+                    <p class="text-xs text-base-content/60">Denied / rejected</p>
+                    <p class="text-2xl font-bold text-error mt-1">{{ stats.denied_count }}</p>
+                    <p class="text-xs text-base-content/50">{{ stats.total_evaluated }} all time</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-5">
+                <div class="xl:col-span-2 rounded-xl border border-base-content/10 p-4 sm:p-5">
+                    <h3 class="font-medium text-sm text-base-content mb-1">Evaluation activity</h3>
+                    <p class="text-xs text-base-content/60 mb-4">Last 30 days</p>
+                    <div id="evaluation-trends-chart" class="min-h-[240px]"></div>
+                </div>
+                <div class="rounded-xl border border-base-content/10 p-4 sm:p-5">
+                    <h3 class="font-medium text-sm text-base-content mb-1">Outcome mix</h3>
+                    <p class="text-xs text-base-content/60 mb-4">Your decisions</p>
+                    <div id="status-distribution-chart" class="min-h-[240px]"></div>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-base-content/10 p-4 sm:p-5 max-w-xl">
+                <h3 class="font-medium text-sm text-base-content mb-1">Applications by role</h3>
+                <p class="text-xs text-base-content/60 mb-4">Evaluated submissions</p>
+                <div id="applications-by-role-chart" class="min-h-[200px]"></div>
+            </div>
+        </div>
+    </details>
 </div>
 {% endblock %}
 
@@ -541,66 +427,85 @@ document.addEventListener('DOMContentLoaded', function () {
     const textColor = isDark ? '#a3a3a3' : '#64748b';
     const gridColor = isDark ? '#334155' : '#e2e8f0';
 
-    const trendsEl = document.querySelector('#evaluation-trends-chart');
-    if (trendsEl && typeof ApexCharts !== 'undefined') {
-        const trendPoints = chartData.evaluationTrends || [];
-        new ApexCharts(trendsEl, {
-            chart: { type: 'area', height: 260, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
-            series: [{ name: 'Evaluations', data: trendPoints.map(p => p.y) }],
-            xaxis: {
-                categories: trendPoints.map(p => p.x),
-                labels: { style: { colors: textColor }, rotate: -45 },
-                axisBorder: { show: false },
-                axisTicks: { show: false }
-            },
-            yaxis: { labels: { style: { colors: textColor } }, min: 0, forceNiceScale: true },
-            stroke: { curve: 'smooth', width: 2 },
-            fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.05 } },
-            colors: ['#f59e0b'],
-            dataLabels: { enabled: false },
-            grid: { borderColor: gridColor, strokeDashArray: 4 },
-            tooltip: { theme: isDark ? 'dark' : 'light' },
-            noData: { text: 'No evaluations in the last 30 days' }
-        }).render();
+    function renderCharts() {
+        const trendsEl = document.querySelector('#evaluation-trends-chart');
+        if (trendsEl && typeof ApexCharts !== 'undefined' && !trendsEl.dataset.rendered) {
+            const trendPoints = chartData.evaluationTrends || [];
+            new ApexCharts(trendsEl, {
+                chart: { type: 'area', height: 240, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
+                series: [{ name: 'Evaluations', data: trendPoints.map(p => p.y) }],
+                xaxis: {
+                    categories: trendPoints.map(p => p.x),
+                    labels: { style: { colors: textColor }, rotate: -45 },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false }
+                },
+                yaxis: { labels: { style: { colors: textColor } }, min: 0, forceNiceScale: true },
+                stroke: { curve: 'smooth', width: 2 },
+                fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.05 } },
+                colors: ['#f59e0b'],
+                dataLabels: { enabled: false },
+                grid: { borderColor: gridColor, strokeDashArray: 4 },
+                tooltip: { theme: isDark ? 'dark' : 'light' },
+                noData: { text: 'No evaluations in the last 30 days' }
+            }).render();
+            trendsEl.dataset.rendered = '1';
+        }
+
+        const statusEl = document.querySelector('#status-distribution-chart');
+        if (statusEl && typeof ApexCharts !== 'undefined' && !statusEl.dataset.rendered) {
+            const statusData = chartData.statusDistribution || { labels: [], series: [] };
+            new ApexCharts(statusEl, {
+                chart: { type: 'donut', height: 240, fontFamily: 'Inter, sans-serif' },
+                series: statusData.series,
+                labels: statusData.labels,
+                colors: ['#22c55e', '#ef4444', '#f59e0b', '#94a3b8'],
+                legend: { position: 'bottom', labels: { colors: textColor } },
+                dataLabels: { enabled: true },
+                plotOptions: { pie: { donut: { size: '62%' } } },
+                stroke: { width: 0 },
+                tooltip: { theme: isDark ? 'dark' : 'light' },
+                noData: { text: 'No evaluation history yet' }
+            }).render();
+            statusEl.dataset.rendered = '1';
+        }
+
+        const roleEl = document.querySelector('#applications-by-role-chart');
+        if (roleEl && typeof ApexCharts !== 'undefined' && !roleEl.dataset.rendered) {
+            const roleData = chartData.applicationsByRole || { categories: [], series: [] };
+            new ApexCharts(roleEl, {
+                chart: { type: 'bar', height: 200, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
+                series: [{ name: 'Applications', data: roleData.series }],
+                xaxis: {
+                    categories: roleData.categories,
+                    labels: { style: { colors: textColor } },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false }
+                },
+                yaxis: { labels: { style: { colors: textColor } }, min: 0, forceNiceScale: true },
+                colors: ['#3b82f6'],
+                plotOptions: { bar: { borderRadius: 6, columnWidth: '45%' } },
+                dataLabels: { enabled: false },
+                grid: { borderColor: gridColor, strokeDashArray: 4 },
+                tooltip: { theme: isDark ? 'dark' : 'light' },
+                noData: { text: 'No role data yet' }
+            }).render();
+            roleEl.dataset.rendered = '1';
+        }
     }
 
-    const statusEl = document.querySelector('#status-distribution-chart');
-    if (statusEl && typeof ApexCharts !== 'undefined') {
-        const statusData = chartData.statusDistribution || { labels: [], series: [] };
-        new ApexCharts(statusEl, {
-            chart: { type: 'donut', height: 260, fontFamily: 'Inter, sans-serif' },
-            series: statusData.series,
-            labels: statusData.labels,
-            colors: ['#22c55e', '#ef4444', '#f59e0b', '#94a3b8'],
-            legend: { position: 'bottom', labels: { colors: textColor } },
-            dataLabels: { enabled: true },
-            plotOptions: { pie: { donut: { size: '62%' } } },
-            stroke: { width: 0 },
-            tooltip: { theme: isDark ? 'dark' : 'light' },
-            noData: { text: 'No evaluation history yet' }
-        }).render();
-    }
-
-    const roleEl = document.querySelector('#applications-by-role-chart');
-    if (roleEl && typeof ApexCharts !== 'undefined') {
-        const roleData = chartData.applicationsByRole || { categories: [], series: [] };
-        new ApexCharts(roleEl, {
-            chart: { type: 'bar', height: 220, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
-            series: [{ name: 'Applications', data: roleData.series }],
-            xaxis: {
-                categories: roleData.categories,
-                labels: { style: { colors: textColor } },
-                axisBorder: { show: false },
-                axisTicks: { show: false }
-            },
-            yaxis: { labels: { style: { colors: textColor } }, min: 0, forceNiceScale: true },
-            colors: ['#3b82f6'],
-            plotOptions: { bar: { borderRadius: 6, columnWidth: '45%' } },
-            dataLabels: { enabled: false },
-            grid: { borderColor: gridColor, strokeDashArray: 4 },
-            tooltip: { theme: isDark ? 'dark' : 'light' },
-            noData: { text: 'No role data yet' }
-        }).render();
+    const analyticsDetails = document.querySelector('details.group');
+    if (analyticsDetails) {
+        analyticsDetails.addEventListener('toggle', function () {
+            if (analyticsDetails.open) {
+                renderCharts();
+            }
+        });
+        if (analyticsDetails.open) {
+            renderCharts();
+        }
+    } else {
+        renderCharts();
     }
 });
 </script>

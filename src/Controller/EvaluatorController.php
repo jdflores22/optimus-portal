@@ -104,9 +104,12 @@ class EvaluatorController extends AbstractController
                 ->createQueryBuilder('a')
                 ->select('COUNT(a.id)')
                 ->where('a.evaluator = :evaluator')
-                ->andWhere('a.status = :approved')
+                ->andWhere('a.status IN (:forwardedStatuses)')
                 ->setParameter('evaluator', $this->getUser())
-                ->setParameter('approved', \App\Entity\Enum\AccreditationStatus::APPROVED)
+                ->setParameter('forwardedStatuses', [
+                    AccreditationStatus::AWAITING_FINAL_APPROVAL,
+                    AccreditationStatus::APPROVED,
+                ])
                 ->getQuery()
                 ->getSingleScalarResult(),
             'denied_count' => $this->entityManager->getRepository(\App\Entity\AccreditationSubmission::class)
@@ -394,7 +397,11 @@ class EvaluatorController extends AbstractController
                 $status === 'COMPLIANCE_REQUIRED' ? $complianceFieldNotes : []
             );
 
-            $this->addFlash('success', 'Application evaluated successfully');
+            $flashMessage = match ($status) {
+                'APPROVED' => 'Application forwarded to Shipping Admin for final approval',
+                default => 'Application evaluated successfully',
+            };
+            $this->addFlash('success', $flashMessage);
             return $this->redirectToRoute('app_evaluator_dashboard');
         } catch (\InvalidArgumentException $e) {
             $this->addFlash('error', $e->getMessage());

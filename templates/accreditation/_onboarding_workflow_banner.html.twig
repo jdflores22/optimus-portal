@@ -1,0 +1,60 @@
+{# Compact accreditation workflow overview — responsive, no overflowing stepper #}
+
+<div class="card bg-base-100 shadow-sm border border-base-300/60">
+
+    <div class="card-body p-4 sm:p-5 gap-4">
+
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+
+            <div>
+
+                <h2 class="text-sm font-semibold text-base-content uppercase tracking-wide">Accreditation workflow</h2>
+
+                <p class="text-xs text-base-content/60 mt-1 max-w-2xl">
+
+                    Evaluator approval alone does not grant access — Shipping Lines Admin must complete final approval before manifest and payment services are available.
+
+                </p>
+
+            </div>
+
+            <span class="badge badge-outline badge-sm shrink-0 self-start">6 steps</span>
+
+        </div>
+
+
+
+        <ol class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 list-none p-0 m-0">
+
+            {% for label in [
+
+                'Register & verify email',
+
+                'Link broker (consignees)',
+
+                'Submit SAS application',
+
+                'Evaluator review',
+
+                'Shipping Admin final approval',
+
+                'Access shipping line services'
+
+            ] %}
+
+            <li class="flex items-start gap-2.5 rounded-lg bg-base-200/60 border border-base-300/50 px-3 py-2.5 text-sm">
+
+                <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary text-xs font-bold">{{ loop.index }}</span>
+
+                <span class="text-base-content/80 leading-snug pt-0.5">{{ label }}</span>
+
+            </li>
+
+            {% endfor %}
+
+        </ol>
+
+    </div>
+
+</div>
+

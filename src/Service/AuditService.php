@@ -36,7 +36,7 @@ class AuditService
         array $changes
     ): AuditLog {
         $auditLog = new AuditLog();
-        $auditLog->setUser($user);
+        $auditLog->setUser($this->resolveManagedUser($user));
         $auditLog->setAction($action);
         $auditLog->setEntityType($entityType);
         $auditLog->setEntityId($entityId);
@@ -63,7 +63,7 @@ class AuditService
     public function logAccess(User $user, string $resource, int $resourceId): AuditLog
     {
         $auditLog = new AuditLog();
-        $auditLog->setUser($user);
+        $auditLog->setUser($this->resolveManagedUser($user));
         $auditLog->setAction('access');
         $auditLog->setEntityType($resource);
         $auditLog->setEntityId($resourceId);
@@ -369,5 +369,14 @@ class AuditService
         }
 
         return $request->getClientIp() ?? '0.0.0.0';
+    }
+
+    private function resolveManagedUser(User $user): User
+    {
+        if ($this->entityManager->contains($user)) {
+            return $user;
+        }
+
+        return $this->entityManager->getReference(User::class, $user->getId());
     }
 }

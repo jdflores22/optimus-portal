@@ -86,6 +86,7 @@ class AccreditationController extends AbstractController
             'shippingLines' => $shippingLineData,
             'user' => $user,
             'hasActiveBroker' => $hasActiveBroker,
+            'accountStatus' => $user->getStatus(),
         ]);
     }
 
@@ -129,8 +130,12 @@ class AccreditationController extends AbstractController
         $existingSubmission = $this->entityManager->getRepository(\App\Entity\AccreditationSubmission::class)
             ->findByApplicantAndShippingLine($user, $shippingLineId);
         
-        if ($existingSubmission && in_array($existingSubmission->getStatus()->value, ['PENDING', 'APPROVED'])) {
-            $this->addFlash('error', 'You already have a ' . strtolower($existingSubmission->getStatus()->value) . ' application for this shipping line');
+        if ($existingSubmission && in_array($existingSubmission->getStatus()->value, ['PENDING', 'APPROVED', 'AWAITING_FINAL_APPROVAL'])) {
+            $statusLabel = match ($existingSubmission->getStatus()) {
+                AccreditationStatus::AWAITING_FINAL_APPROVAL => 'awaiting final approval',
+                default => strtolower($existingSubmission->getStatus()->value),
+            };
+            $this->addFlash('error', 'You already have a ' . $statusLabel . ' application for this shipping line');
             return $this->redirectToRoute('accreditation_index');
         }
 

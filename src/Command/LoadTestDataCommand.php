@@ -233,7 +233,8 @@ class LoadTestDataCommand extends Command
             $submission->setFormConfig($brokerForm);
             $submission->setSubmittedData([
                 'business_name' => $brokerData[$i]['company'],
-                'license_number' => "BRK" . str_pad($i + 1, 6, '0', STR_PAD_LEFT)
+                'license_number' => "BRK" . str_pad($i + 1, 6, '0', STR_PAD_LEFT),
+                'business_address' => $this->getBrokerAddress($i),
             ]);
             $submission->setStatus($statuses[$i]);
             

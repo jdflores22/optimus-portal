@@ -83,7 +83,19 @@ class AccreditationSubmissionRepository extends ServiceEntityRepository
      */
     public function findApprovedSubmissions(?int $shippingLineId = null): array
     {
-        return $this->findByStatus(AccreditationStatus::APPROVED, $shippingLineId);
+        $qb = $this->createQueryBuilder('a')
+            ->leftJoin('a.applicant', 'u')
+            ->addSelect('u')
+            ->leftJoin('a.shippingLine', 'sl')
+            ->addSelect('sl')
+            ->where('a.status = :status')
+            ->andWhere('a.finalApprover IS NOT NULL')
+            ->setParameter('status', AccreditationStatus::APPROVED)
+            ->orderBy('a.submittedAt', 'ASC');
+
+        $this->applyShippingLineFilter($qb, $shippingLineId, 'a');
+
+        return $qb->getQuery()->getResult();
     }
 
     /**

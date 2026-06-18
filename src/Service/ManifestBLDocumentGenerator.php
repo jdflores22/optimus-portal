@@ -2,9 +2,9 @@
 
 namespace App\Service;
 
+use App\Entity\Enum\DocumentTemplateType;
+use App\Entity\Manifest;
 use App\Entity\NOA;
-use Dompdf\Dompdf;
-use Dompdf\Options;
 
 /**
  * Service for generating Manifest/BL PDF documents
@@ -12,87 +12,91 @@ use Dompdf\Options;
 class ManifestBLDocumentGenerator
 {
     public function __construct(
-        private FileStorageServiceInterface $fileStorageService
+        private FileStorageServiceInterface $fileStorageService,
+        private DocumentTemplateBuilderService $templateBuilderService,
+        private DocumentTemplatePdfGenerator $pdfGenerator,
+        private DocumentTemplateContextBuilder $contextBuilder,
+        private DocumentVerificationService $documentVerificationService,
     ) {
     }
 
     /**
-     * Generate Manifest/BL PDF document for NOA
-     * 
-     * @param NOA $noa The NOA entity
-     * @param string $manifestNumber The manifest/BL number to include in the PDF
      * @return string Path to generated PDF file
      */
-    public function generatePDF(NOA $noa, string $manifestNumber): string
+    public function generatePDF(NOA $noa, string $manifestNumber, ?Manifest $manifest = null): string
     {
-        try {
-            error_log('ManifestBLDocumentGenerator: Starting PDF generation');
-            
-            // Generate HTML content
-            error_log('ManifestBLDocumentGenerator: Generating HTML');
-            $html = $this->generateHTML($noa, $manifestNumber);
-            error_log('ManifestBLDocumentGenerator: HTML generated, length: ' . strlen($html));
+        $activeTemplate = $this->templateBuilderService->getActiveTemplate(DocumentTemplateType::MANIFEST_BL);
+        if (!$activeTemplate) {
+            throw new \RuntimeException('No active Manifest/BL document template found. Please activate a MANIFEST_BL template.');
+        }
 
-            // Create PDF using Dompdf
-            error_log('ManifestBLDocumentGenerator: Creating Dompdf instance');
-            $dompdf = DompdfFactory::create();
-            error_log('ManifestBLDocumentGenerator: Dompdf created');
-            
-            error_log('ManifestBLDocumentGenerator: Loading HTML');
-            $dompdf->loadHtml($html);
-            error_log('ManifestBLDocumentGenerator: Setting paper size');
-            $dompdf->setPaper('A4', 'portrait');
-            error_log('ManifestBLDocumentGenerator: Rendering PDF');
-            $dompdf->render();
-            error_log('ManifestBLDocumentGenerator: PDF rendered');
+        $noaId = $noa->getId();
+        if ($noaId === null) {
+            throw new \InvalidArgumentException('NOA must be persisted before generating a manifest verification QR code.');
+        }
 
-            // Generate filename
-            $filename = sprintf('MANIFEST_BL_%s_%s.pdf', $noa->getBlNumber(), date('YmdHis'));
-            error_log('ManifestBLDocumentGenerator: Filename: ' . $filename);
+        $context = $this->contextBuilder->buildManifestBlContext($noa, $manifestNumber, $manifest);
+        $documentNumber = $context['manifest']['number'] ?? $manifestNumber;
+        $context = $this->documentVerificationService->appendVerificationContext(
+            $context,
+            DocumentTemplateType::MANIFEST_BL,
+            'manifest_bl',
+            $noaId,
+            $documentNumber,
+            $this->buildVerificationSummary($context),
+        );
+        $pdfContent = $this->pdfGenerator->generatePdf($activeTemplate, $context);
 
-            // Save PDF to temporary file
-            $tempPath = sys_get_temp_dir() . '/' . $filename;
-            error_log('ManifestBLDocumentGenerator: Temp path: ' . $tempPath);
-            
-            file_put_contents($tempPath, $dompdf->output());
-            error_log('ManifestBLDocumentGenerator: PDF saved to temp file, size: ' . filesize($tempPath));
+        $filename = sprintf('MANIFEST_BL_%s_%s.pdf', $noa->getBlNumber(), date('YmdHis'));
+        $tempPath = sys_get_temp_dir() . '/' . $filename;
+        file_put_contents($tempPath, $pdfContent);
 
-            // Create UploadedFile from temporary file
-            error_log('ManifestBLDocumentGenerator: Creating UploadedFile');
-            $uploadedFile = new \Symfony\Component\HttpFoundation\File\UploadedFile(
+        $filePath = $this->fileStorageService->uploadFile(
+            new \Symfony\Component\HttpFoundation\File\UploadedFile(
                 $tempPath,
                 $filename,
                 'application/pdf',
                 null,
                 true
-            );
-            error_log('ManifestBLDocumentGenerator: UploadedFile created');
+            ),
+            'documents',
+            'manifest'
+        );
 
-            // Upload to storage
-            error_log('ManifestBLDocumentGenerator: Uploading to storage');
-            $filePath = $this->fileStorageService->uploadFile(
-                $uploadedFile,
-                'documents',
-                'manifest'
-            );
-            error_log('ManifestBLDocumentGenerator: File uploaded, path: ' . $filePath);
+        $noa->setManifestPdfPath($filePath);
+        @unlink($tempPath);
 
-            // Save PDF path to NOA entity
-            error_log('ManifestBLDocumentGenerator: Setting manifest PDF path on NOA entity');
-            $noa->setManifestPdfPath($filePath);
-            error_log('ManifestBLDocumentGenerator: Manifest PDF path set');
+        return $filePath;
+    }
 
-            // Clean up temporary file
-            @unlink($tempPath);
-            error_log('ManifestBLDocumentGenerator: Temp file cleaned up');
+    /**
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
+    private function buildVerificationSummary(array $context): array
+    {
+        return [
+            'document_number' => $context['manifest']['number'] ?? '',
+            'bl_number' => $context['manifest']['bl_number'] ?? $context['noa']['bl_number'] ?? '',
+            'vessel_number' => $context['manifest']['vessel_name'] ?? $context['noa']['vessel_number'] ?? '',
+            'eta' => $context['manifest']['arrival_date'] ?? $context['noa']['eta'] ?? '',
+            'port_location' => $context['noa']['port_location'] ?? '',
+            'consignee_name' => $context['consignee']['name'] ?? '',
+            'container_count' => $context['manifest']['container_count'] ?? $context['noa']['container_count'] ?? '',
+            'company_name' => $context['company']['name'] ?? '',
+            'generated_at' => $context['generated']['date'] ?? date('Y-m-d H:i:s'),
+        ];
+    }
 
-            return $filePath;
-        } catch (\Exception $e) {
-            error_log('ManifestBLDocumentGenerator ERROR: ' . $e->getMessage());
-            error_log('ManifestBLDocumentGenerator ERROR File: ' . $e->getFile() . ' Line: ' . $e->getLine());
-            error_log('ManifestBLDocumentGenerator ERROR Stack: ' . $e->getTraceAsString());
-            throw $e;
-        }
+    private function renderLegacyPdf(NOA $noa, string $manifestNumber): string
+    {
+        $html = $this->generateHTML($noa, $manifestNumber);
+        $dompdf = DompdfFactory::create();
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        return $dompdf->output();
     }
 
     /**

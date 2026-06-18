@@ -81,8 +81,14 @@ services:
     App\Twig\AppealExtension:
         tags: ['twig.extension']
 
+    App\Twig\AccreditationExtension:
+        tags: ['twig.extension']
+
     # Transfer Request Twig Extension for badge counts
     App\Twig\TransferRequestExtension:
+        tags: ['twig.extension']
+
+    App\Twig\ManifestWorkflowExtension:
         tags: ['twig.extension']
 
     # Avatar Color Configuration Services
@@ -366,6 +372,7 @@ services:
         public: true
         arguments:
             $projectDir: '%kernel.project_dir%'
+            $edoDocumentGenerator: '@App\Service\EDODocumentGenerator'
 
     # Dwell Time Management Services
     App\Service\DwellTimeMonitor:
@@ -419,11 +426,37 @@ services:
         arguments:
             $fileStorageService: '@App\Service\FileStorageServiceInterface'
             $dompdfFactory: '@App\Service\DompdfFactory'
+            $templateBuilderService: '@App\Service\DocumentTemplateBuilderService'
+            $pdfGenerator: '@App\Service\DocumentTemplatePdfGenerator'
+            $contextBuilder: '@App\Service\DocumentTemplateContextBuilder'
 
     App\Service\ManifestBLDocumentGenerator:
         public: true
         arguments:
             $fileStorageService: '@App\Service\FileStorageServiceInterface'
+            $templateBuilderService: '@App\Service\DocumentTemplateBuilderService'
+            $pdfGenerator: '@App\Service\DocumentTemplatePdfGenerator'
+            $contextBuilder: '@App\Service\DocumentTemplateContextBuilder'
+            $documentVerificationService: '@App\Service\DocumentVerificationService'
+
+    App\Service\BillingDocumentGenerator:
+        public: true
+        arguments:
+            $fileStorageService: '@App\Service\FileStorageServiceInterface'
+            $templateBuilderService: '@App\Service\DocumentTemplateBuilderService'
+            $pdfGenerator: '@App\Service\DocumentTemplatePdfGenerator'
+            $contextBuilder: '@App\Service\DocumentTemplateContextBuilder'
+            $documentVerificationService: '@App\Service\DocumentVerificationService'
+
+    App\Service\OfficialReceiptDocumentGenerator:
+        public: true
+        arguments:
+            $fileStorageService: '@App\Service\FileStorageServiceInterface'
+            $templateBuilderService: '@App\Service\DocumentTemplateBuilderService'
+            $pdfGenerator: '@App\Service\DocumentTemplatePdfGenerator'
+            $contextBuilder: '@App\Service\DocumentTemplateContextBuilder'
+            $documentVerificationService: '@App\Service\DocumentVerificationService'
+            $legacyReceiptGenerator: '@App\Service\PaymentReceiptGenerator'
 
     App\Service\NOAService:
         public: true
@@ -444,7 +477,7 @@ services:
         public: true
         arguments:
             $entityManager: '@doctrine.orm.entity_manager'
-            $documentService: '@App\Service\DocumentService'
+            $billingDocumentGenerator: '@App\Service\BillingDocumentGenerator'
             $auditService: '@App\Service\AuditService'
             $workflowOrchestrator: '@App\Service\WorkflowOrchestrator'
 
@@ -468,9 +501,6 @@ services:
 
     App\Service\EDODocumentGenerator:
         public: true
-        arguments:
-            $fileStorageService: '@App\Service\FileStorageServiceInterface'
-            $dompdfFactory: '@App\Service\DompdfFactory'
 
     App\Service\BatchEDOGenerationServiceInterface:
         alias: App\Service\BatchEDOGenerationService

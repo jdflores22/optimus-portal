@@ -1,0 +1,56 @@
+<div id="dtActivateModal" class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div class="absolute inset-0 bg-black/60" onclick="dtCloseModal('dtActivateModal')"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6 text-center">
+        <div class="size-14 bg-info/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="icon-[tabler--circle-check] size-7 text-info"></span>
+        </div>
+        <h3 class="text-lg font-bold mb-2">Activate Template</h3>
+        <p class="text-sm text-base-content/70 mb-4">Activate "<span id="dtActivateName" class="font-semibold"></span>"?</p>
+        <div class="alert alert-warning text-start mb-6 text-sm">This deactivates any other active template of the same document type.</div>
+        <div class="flex gap-3">
+            <button type="button" onclick="dtCloseModal('dtActivateModal')" class="btn btn-ghost flex-1">Cancel</button>
+            <button type="button" id="dtConfirmActivate" class="btn btn-info flex-1">Activate</button>
+        </div>
+    </div>
+</div>
+
+<div id="dtDeactivateModal" class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div class="absolute inset-0 bg-black/60" onclick="dtCloseModal('dtDeactivateModal')"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6 text-center">
+        <div class="size-14 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="icon-[tabler--circle-x] size-7 text-warning"></span>
+        </div>
+        <h3 class="text-lg font-bold mb-2">Deactivate Template</h3>
+        <p class="text-sm text-base-content/70 mb-6">Deactivate "<span id="dtDeactivateName" class="font-semibold"></span>"?</p>
+        <div class="flex gap-3">
+            <button type="button" onclick="dtCloseModal('dtDeactivateModal')" class="btn btn-ghost flex-1">Cancel</button>
+            <button type="button" id="dtConfirmDeactivate" class="btn btn-warning flex-1">Deactivate</button>
+        </div>
+    </div>
+</div>
+
+<div id="dtUnpublishModal" class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div class="absolute inset-0 bg-black/60" onclick="dtCloseModal('dtUnpublishModal')"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6 text-center">
+        <h3 class="text-lg font-bold mb-2">Unpublish Template</h3>
+        <p class="text-sm text-base-content/70 mb-6">Revert "<span id="dtUnpublishName" class="font-semibold"></span>" to draft?</p>
+        <div class="flex gap-3">
+            <button type="button" onclick="dtCloseModal('dtUnpublishModal')" class="btn btn-ghost flex-1">Cancel</button>
+            <button type="button" id="dtConfirmUnpublish" class="btn btn-warning flex-1">Unpublish</button>
+        </div>
+    </div>
+</div>
+
+<div id="dtDeleteModal" class="hidden fixed inset-0 z-[10005] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div class="absolute inset-0 bg-black/60" onclick="dtCloseModal('dtDeleteModal')"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 p-6 text-center">
+        <h3 class="text-lg font-bold mb-2">Delete Template</h3>
+        <p class="text-sm text-base-content/70 mb-6">Permanently delete "<span id="dtDeleteName" class="font-semibold"></span>"?</p>
+        <div class="flex gap-3">
+            <button type="button" onclick="dtCloseModal('dtDeleteModal')" class="btn btn-ghost flex-1">Cancel</button>
+            <button type="button" id="dtConfirmDelete" class="btn btn-error flex-1">Delete</button>
+        </div>
+    </div>
+</div>
+
+<div id="dtToastContainer" class="fixed top-20 end-4 z-[10020] space-y-2 pointer-events-none"></div>

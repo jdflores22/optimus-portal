@@ -2,14 +2,20 @@
 
 namespace App\Controller\Broker;
 
+use App\Service\AuditService;
+use App\Service\BillingServiceInterface;
 use App\Service\ManifestService;
 use App\Service\ManifestAuthorizationService;
+use App\Service\FileStorageServiceInterface;
 use App\Entity\Enum\UserRole;
+use App\Entity\Enum\PaymentType;
+use App\Entity\Enum\PaymentStatus;
 use App\Entity\Enum\WorkflowState;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -21,7 +27,10 @@ class BrokerManifestController extends AbstractController
         private ManifestService $manifestService,
         private ManifestAuthorizationService $authorizationService,
         private EntityManagerInterface $entityManager,
-        private \App\Service\WorkspaceService $workspaceService
+        private \App\Service\WorkspaceService $workspaceService,
+        private FileStorageServiceInterface $fileStorage,
+        private BillingServiceInterface $billingService,
+        private AuditService $auditService,
     ) {
     }
 
@@ -619,8 +628,27 @@ class BrokerManifestController extends AbstractController
             throw $this->createAccessDeniedException('Access denied');
         }
 
+        $finalPayments = array_values(array_filter(
+            $manifest->getPayments()->toArray(),
+            static fn ($payment) => $payment->getPaymentType() === PaymentType::FINAL_PAYMENT
+                && $payment->getSubmittedBy()?->getId() === $user->getId()
+        ));
+        usort($finalPayments, static fn ($a, $b) => $a->getVersion() <=> $b->getVersion());
+
+        $latestFinalPayment = $finalPayments !== [] ? $finalPayments[array_key_last($finalPayments)] : null;
+        $verifiedFinalPayment = null;
+        foreach (array_reverse($finalPayments) as $payment) {
+            if ($payment->getStatus() === PaymentStatus::VERIFIED) {
+                $verifiedFinalPayment = $payment;
+                break;
+            }
+        }
+
         return $this->render('broker/manifest/documents.html.twig', [
             'manifest' => $manifest,
+            'finalPayments' => $finalPayments,
+            'latestFinalPayment' => $latestFinalPayment,
+            'verifiedFinalPayment' => $verifiedFinalPayment,
         ]);
     }
 
@@ -696,10 +724,10 @@ class BrokerManifestController extends AbstractController
         }
 
         // Get the most recent payment to check for rejection
-        $rejectionReason = null;
+        $rejectedPayment = null;
         $currentPayment = $edo->getCurrentPayment();
         if ($currentPayment && $currentPayment->getStatus()->value === 'rejected') {
-            $rejectionReason = $currentPayment->getRejectionReason();
+            $rejectedPayment = $currentPayment;
         }
 
         // Get payment fee configuration (QR code and amount)
@@ -720,13 +748,12 @@ class BrokerManifestController extends AbstractController
             'edoNumber' => $edo->getEdoNumber(),
             'containerNumber' => $edo->getContainer()?->getContainerNumber() ?? 'N/A',
             'manifestNumber' => $manifest->getManifestNumber() ?? 'N/A',
-            'feeAmount' => $configuredFeeAmount, // Use configured amount from admin panel
+            'feeAmount' => $configuredFeeAmount,
             'edoStatus' => $edo->getStatus()->value,
-            'rejectionReason' => $rejectionReason,
+            'rejectedPayment' => $rejectedPayment,
             'qrCodePath' => $qrCodePath,
             'manifest' => $manifest,
             'edo' => $edo,
-            'existingPayment' => $currentPayment,
         ]);
     }
 
@@ -734,54 +761,200 @@ class BrokerManifestController extends AbstractController
     public function downloadNoa(int $id): Response
     {
         $manifest = $this->manifestService->getManifestById($id);
-        
+
         if (!$manifest) {
             throw $this->createNotFoundException('Manifest not found');
         }
 
         $user = $this->getUser();
-        
-        // Verify broker is assigned to this manifest
+
         if ($manifest->getBroker()?->getId() !== $user->getId()) {
             throw $this->createAccessDeniedException('You are not assigned to this manifest');
         }
 
-        // Get the NOA
-        $noa = $manifest->getNoa();
-        
-        if (!$noa) {
-            $this->addFlash('error', 'NOA not found for this manifest');
-            return $this->redirectToRoute('broker_manifest_detail', ['id' => $id]);
-        }
+        $pdfPath = $manifest->getNoa()?->getPdfPath()
+            ?? $manifest->getNoaDocument()?->getPdfPath();
 
-        $pdfPath = $noa->getPdfPath();
-        
         if (!$pdfPath) {
             $this->addFlash('error', 'NOA PDF not available');
             return $this->redirectToRoute('broker_manifest_detail', ['id' => $id]);
         }
 
-        // Try multiple possible locations for the file
-        $possiblePaths = [
-            $this->getParameter('kernel.project_dir') . '/var/share/' . $pdfPath,
-            $this->getParameter('kernel.project_dir') . '/public/uploads/' . $pdfPath,
-        ];
-        
-        $fullPath = null;
-        foreach ($possiblePaths as $path) {
-            if (file_exists($path)) {
-                $fullPath = $path;
-                break;
-            }
-        }
-        
+        $fullPath = $this->resolveStoredPdfPath($pdfPath);
         if (!$fullPath) {
             $this->addFlash('error', 'NOA PDF file not found on server');
             return $this->redirectToRoute('broker_manifest_detail', ['id' => $id]);
         }
 
-        // Return file as download
-        return $this->file($fullPath, 'NOA_' . $noa->getNoaNumber() . '.pdf');
+        $noaNumber = $manifest->getNoa()?->getNoaNumber()
+            ?? $manifest->getNoaDocument()?->getNoaNumber()
+            ?? 'NOA';
+
+        return $this->file($fullPath, 'NOA_' . $noaNumber . '.pdf');
+    }
+
+    #[Route('/{id}/manifest/download', name: 'broker_manifest_bl_download', methods: ['GET'])]
+    public function downloadManifestBl(int $id): Response
+    {
+        $manifest = $this->manifestService->getManifestById($id);
+
+        if (!$manifest) {
+            throw $this->createNotFoundException('Manifest not found');
+        }
+
+        $user = $this->getUser();
+
+        if ($manifest->getBroker()?->getId() !== $user->getId()) {
+            throw $this->createAccessDeniedException('You are not assigned to this manifest');
+        }
+
+        $noa = $manifest->getNoa();
+        $relativeCandidates = array_values(array_filter(array_unique([
+            $noa?->getManifestPdfPath(),
+            $manifest->getManifestFilePath(),
+        ])));
+
+        if ($relativeCandidates === []) {
+            $this->addFlash('error', 'Manifest/BL PDF not available');
+            return $this->redirectToRoute('broker_manifest_detail', ['id' => $id]);
+        }
+
+        $fullPath = null;
+        foreach ($relativeCandidates as $relativePath) {
+            $fullPath = $this->resolveStoredPdfPath($relativePath);
+            if ($fullPath) {
+                break;
+            }
+        }
+
+        if (!$fullPath) {
+            $this->addFlash('error', 'Manifest/BL PDF file not found on server');
+            return $this->redirectToRoute('broker_manifest_detail', ['id' => $id]);
+        }
+
+        $documentNumber = $noa?->getBlNumber() ?: $manifest->getManifestNumber();
+
+        return $this->file($fullPath, 'MANIFEST_BL_' . $documentNumber . '.pdf');
+    }
+
+    #[Route('/{id}/bl-file/download', name: 'broker_manifest_bl_file_download', methods: ['GET'])]
+    public function downloadBlFile(int $id): Response
+    {
+        $manifest = $this->manifestService->getManifestById($id);
+
+        if (!$manifest) {
+            throw $this->createNotFoundException('Manifest not found');
+        }
+
+        $user = $this->getUser();
+
+        if ($manifest->getBroker()?->getId() !== $user->getId()) {
+            throw $this->createAccessDeniedException('You are not assigned to this manifest');
+        }
+
+        $filePath = $manifest->getBlFilePath();
+        $blNumber = $manifest->getBlNumber();
+
+        if (!$filePath || !$blNumber) {
+            $this->addFlash('error', 'Bill of Lading file not available');
+            return $this->redirectToRoute('broker_manifest_detail', ['id' => $id]);
+        }
+
+        if (str_starts_with($filePath, '/uploads/')) {
+            $filePath = substr($filePath, 9);
+        } elseif (str_starts_with($filePath, 'uploads/')) {
+            $filePath = substr($filePath, 8);
+        }
+
+        $fullPath = $this->resolveStoredPdfPath($filePath);
+        if (!$fullPath) {
+            $this->addFlash('error', 'Bill of Lading file not found on server');
+            return $this->redirectToRoute('broker_manifest_detail', ['id' => $id]);
+        }
+
+        $this->auditService->logDocumentDownload($user, 'BL', $manifest->getId());
+
+        return $this->file($fullPath, 'BL-' . $blNumber . '.pdf');
+    }
+
+    #[Route('/{id}/billing/download', name: 'broker_manifest_billing_download', methods: ['GET'])]
+    public function downloadBilling(int $id, Request $request): Response
+    {
+        $manifest = $this->manifestService->getManifestById($id);
+
+        if (!$manifest) {
+            throw $this->createNotFoundException('Manifest not found');
+        }
+
+        $user = $this->getUser();
+
+        if ($manifest->getBroker()?->getId() !== $user->getId()) {
+            throw $this->createAccessDeniedException('You are not assigned to this manifest');
+        }
+
+        $billing = $manifest->getBilling();
+        if (!$billing) {
+            $this->addFlash('error', 'No billing document exists for this manifest yet.');
+            return $this->redirectToRoute('broker_manifest_detail', ['id' => $id]);
+        }
+
+        $fullPath = $billing->getPdfPath()
+            ? $this->resolveStoredPdfPath($billing->getPdfPath())
+            : null;
+
+        if (!$fullPath) {
+            try {
+                $billing = $this->billingService->regenerateBillingPdf((int) $billing->getId());
+                $pdfPath = $billing->getPdfPath();
+                $fullPath = $pdfPath ? $this->resolveStoredPdfPath($pdfPath) : null;
+            } catch (\Throwable $e) {
+                $this->addFlash('error', 'Failed to generate billing PDF: ' . $e->getMessage());
+                return $this->redirectToRoute('broker_manifest_detail', ['id' => $id]);
+            }
+        }
+
+        if (!$fullPath) {
+            $this->addFlash('error', 'Billing PDF file not found on server');
+            return $this->redirectToRoute('broker_manifest_detail', ['id' => $id]);
+        }
+
+        $inline = $request->query->get('inline', 'false') === 'true';
+        if (!$inline) {
+            $this->auditService->logDocumentDownload($user, 'Billing', $billing->getId());
+        }
+
+        $filename = sprintf('Billing-%s.pdf', str_pad((string) $billing->getId(), 5, '0', STR_PAD_LEFT));
+        $disposition = $inline ? ResponseHeaderBag::DISPOSITION_INLINE : ResponseHeaderBag::DISPOSITION_ATTACHMENT;
+
+        $response = $this->file($fullPath, $filename, $disposition);
+        $response->headers->set('Content-Type', 'application/pdf');
+
+        if ($inline) {
+            $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
+            $response->headers->set('Content-Security-Policy', "frame-ancestors 'self'");
+        }
+
+        return $response;
+    }
+
+    private function resolveStoredPdfPath(string $relativePath): ?string
+    {
+        if ($this->fileStorage->fileExists($relativePath)) {
+            return $this->fileStorage->getFullPath($relativePath);
+        }
+
+        $projectDir = (string) $this->getParameter('kernel.project_dir');
+        foreach ([
+            $projectDir . '/public/uploads/' . $relativePath,
+            $projectDir . '/var/share/' . $relativePath,
+            $relativePath,
+        ] as $candidatePath) {
+            if (is_file($candidatePath)) {
+                return $candidatePath;
+            }
+        }
+
+        return null;
     }
 
     #[Route('/{id}/add-container', name: 'broker_manifest_add_container', methods: ['POST'])]

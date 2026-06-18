@@ -62,7 +62,7 @@
                                 View
                             </button>
                             {% if showFileDownload|default(false) %}
-                                <a href="{{ path('accreditation_file_download', {fileId: singleFileId}) }}"
+                                <a href="{{ path(fileDownloadRoute|default('accreditation_file_download'), {fileId: singleFileId}) }}"
                                    class="btn btn-ghost btn-sm gap-1 shrink-0"
                                    target="_blank"
                                    rel="noopener">
@@ -89,7 +89,7 @@
                             View
                         </button>
                         {% if showFileDownload|default(false) %}
-                            <a href="{{ path('accreditation_file_download', {fileId: fileId}) }}"
+                            <a href="{{ path(fileDownloadRoute|default('accreditation_file_download'), {fileId: fileId}) }}"
                                class="btn btn-ghost btn-sm gap-1"
                                target="_blank"
                                rel="noopener">

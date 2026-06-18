@@ -1,0 +1,63 @@
+{% extends 'base.html.twig' %}
+
+{% set isLandscape = template.orientation == 'landscape' %}
+{% set previewWidth = isLandscape ? 1123 : 794 %}
+{% set previewHeight = isLandscape ? 794 : 1123 %}
+
+{% block title %}Preview — {{ template.name }} - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <div class="bg-base-100 shadow-sm">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <div class="breadcrumbs text-xs mb-1">
+                        <ul>
+                            <li><a href="{{ path('document_template_list') }}">Document Templates</a></li>
+                            <li><a href="{{ path('document_template_edit', {id: template.id}) }}">{{ template.name }}</a></li>
+                            <li>Preview</li>
+                        </ul>
+                    </div>
+                    <h1 class="text-2xl font-bold">{{ template.name }}</h1>
+                    <div class="flex flex-wrap items-center gap-2 mt-2">
+                        <span class="badge badge-primary badge-sm">{{ template.documentType.getLabel() }}</span>
+                        <span class="text-sm text-base-content/60">Version {{ template.version }}</span>
+                        <span class="text-sm text-base-content/60">{{ template.paperSize }} {{ template.orientation }}</span>
+                        {% include 'document_template/_status_badge.html.twig' %}
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ path('document_template_preview_pdf', {id: template.id}) }}" target="_blank" class="btn btn-ghost btn-sm gap-2">
+                        <span class="icon-[tabler--file-type-pdf] size-4"></span>
+                        Open PDF
+                    </a>
+                    <a href="{{ path('document_template_edit', {id: template.id}) }}" class="btn btn-ghost btn-sm gap-2">
+                        <span class="icon-[tabler--arrow-left] size-4"></span>
+                        Back to Builder
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="alert alert-info mb-4">
+            <span class="icon-[tabler--info-circle] size-5"></span>
+            <span class="text-sm">This preview is rendered with the same PDF engine used for generated documents. Sample data is shown; live PDFs will use real document values.</span>
+        </div>
+
+        <div class="flex justify-center">
+            <div class="bg-base-300 p-4 sm:p-8 rounded-xl shadow-inner overflow-auto max-w-full">
+                <div class="bg-white shadow-2xl mx-auto" style="width: {{ previewWidth }}px; max-width: 100%;">
+                    <iframe src="{{ path('document_template_preview_pdf', {id: template.id}) }}#toolbar=0&navpanes=0"
+                            class="w-full border-0 bg-white"
+                            style="height: {{ previewHeight }}px; max-width: 100%;"
+                            title="Document PDF preview">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

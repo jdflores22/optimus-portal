@@ -1,0 +1,323 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Accreditations - {{ shippingLine.brandName }}{% endblock %}
+{% block page_title %}Accreditations{% endblock %}
+
+{% set logoUrl = shippingLine.logoPath
+    ? asset('uploads/shipping-lines/' ~ shippingLine.logoPath)
+    : (shippingLine.portalConfig.logoUrl ?? null) %}
+{% set queueBrokers = awaitingApproval|filter(s => s.applicant.role.value == 'BROKER')|length %}
+{% set queueConsignees = awaitingApproval|filter(s => s.applicant.role.value == 'CONSIGNEE')|length %}
+
+{% block body %}
+<div class="space-y-5 sm:space-y-6">
+
+    {# Hero #}
+    <div class="bg-gradient-to-r from-info/10 via-base-100 to-base-100 shadow-sm rounded-xl border border-info/20">
+        <div class="p-4 sm:p-6">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div class="flex items-start gap-4 min-w-0">
+                    {% if logoUrl %}
+                        <img src="{{ logoUrl }}" alt="{{ shippingLine.brandName }} logo" class="h-12 w-auto object-contain shrink-0 hidden sm:block">
+                    {% else %}
+                        <div class="avatar placeholder shrink-0 hidden sm:flex">
+                            <div class="bg-info text-info-content rounded-xl size-12">
+                                <span class="text-sm font-bold">{{ shippingLine.brandName|slice(0, 2)|upper }}</span>
+                            </div>
+                        </div>
+                    {% endif %}
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-info mb-1">Final approval</p>
+                        <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-base-content">Accreditations</h1>
+                        <p class="text-sm text-base-content/60 mt-1 max-w-2xl">
+                            Sign off on evaluator-forwarded applications and manage accredited brokers and consignees for
+                            <span class="font-medium text-base-content">{{ shippingLine.brandName }}</span>.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 shrink-0">
+                    {% if pendingCount > 0 %}
+                        <span class="badge badge-info badge-lg gap-2">
+                            <span class="icon-[tabler--hourglass] size-4"></span>
+                            {{ pendingCount }} awaiting decision
+                        </span>
+                        <a href="#final-approval-queue" class="btn btn-primary gap-2">
+                            <span class="icon-[tabler--player-play] size-4"></span>
+                            Start Reviewing
+                        </a>
+                    {% else %}
+                        <span class="badge badge-success badge-lg gap-2">
+                            <span class="icon-[tabler--circle-check] size-4"></span>
+                            Queue clear
+                        </span>
+                    {% endif %}
+                    <a href="{{ path('app_shipping_admin_brokers') }}" class="btn btn-ghost btn-sm gap-2">
+                        <span class="icon-[tabler--briefcase] size-4"></span>
+                        Brokers
+                    </a>
+                    <a href="{{ path('app_shipping_admin_consignees') }}" class="btn btn-ghost btn-sm gap-2">
+                        <span class="icon-[tabler--building] size-4"></span>
+                        Consignees
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success shadow-sm">
+            <span class="icon-[tabler--circle-check] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error shadow-sm">
+            <span class="icon-[tabler--circle-x] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+
+    {# Summary tiles #}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <a href="#final-approval-queue" class="flex items-center gap-3 rounded-xl bg-info/10 border border-info/20 px-4 py-3 hover:bg-info/15 transition-colors">
+            <span class="icon-[tabler--gavel] size-6 text-info shrink-0"></span>
+            <div class="min-w-0">
+                <p class="text-2xl font-bold leading-none">{{ pendingCount }}</p>
+                <p class="text-xs text-base-content/70 mt-1">Awaiting final approval</p>
+            </div>
+        </a>
+        <a href="#approved-accreditations" class="flex items-center gap-3 rounded-xl bg-success/10 border border-success/20 px-4 py-3 hover:bg-success/15 transition-colors">
+            <span class="icon-[tabler--circle-check] size-6 text-success shrink-0"></span>
+            <div class="min-w-0">
+                <p class="text-2xl font-bold leading-none">{{ approvedCount }}</p>
+                <p class="text-xs text-base-content/70 mt-1">Fully approved</p>
+            </div>
+        </a>
+        <div class="flex items-center gap-3 rounded-xl bg-base-100 border border-base-content/10 px-4 py-3">
+            <span class="icon-[tabler--users] size-6 text-primary shrink-0"></span>
+            <div class="min-w-0">
+                <p class="text-2xl font-bold leading-none">{{ queueBrokers }}<span class="text-base-content/30 mx-1">/</span>{{ queueConsignees }}</p>
+                <p class="text-xs text-base-content/70 mt-1">Brokers / consignees in queue</p>
+            </div>
+        </div>
+    </div>
+
+    {# Primary: Final approval queue #}
+    <div id="final-approval-queue" class="card bg-base-100 shadow-md border-2 border-info/30">
+        <div class="card-body p-0">
+            <div class="px-4 sm:px-6 py-4 sm:py-5 border-b border-base-content/10 bg-info/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h2 class="font-bold text-lg sm:text-xl text-base-content flex items-center gap-2">
+                        <span class="icon-[tabler--hourglass] size-6 text-info"></span>
+                        Final Approval Queue
+                    </h2>
+                    <p class="text-sm text-base-content/60 mt-0.5">Applications the evaluator recommended — awaiting your sign-off</p>
+                </div>
+                {% if pendingCount > 0 %}
+                    <span class="badge badge-info badge-lg">{{ pendingCount }} application{{ pendingCount == 1 ? '' : 's' }}</span>
+                {% endif %}
+            </div>
+
+            {% if awaitingApproval is empty %}
+                <div class="px-4 sm:px-6 py-16 text-center">
+                    <div class="size-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="icon-[tabler--circle-check] size-8 text-success"></span>
+                    </div>
+                    <h3 class="font-semibold text-lg text-base-content">Nothing pending</h3>
+                    <p class="text-sm text-base-content/60 mt-1 max-w-md mx-auto">No applications are waiting for your final decision right now.</p>
+                </div>
+            {% else %}
+                <div class="hidden md:block overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Applicant</th>
+                                <th>Type</th>
+                                <th>Company / Consignee</th>
+                                <th>Evaluator</th>
+                                <th>Forwarded</th>
+                                <th>Waiting</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for submission in awaitingApproval %}
+                                {% set applicant = submission.applicant %}
+                                {% set applicantCompanyName = submission.submittedData.business_name|default('') ?: (applicant.role.value == 'BROKER' ? applicant.fullName : applicant.businessName) %}
+                                {% set waitDays = submission.evaluatedAt ? (('now'|date('U')) - (submission.evaluatedAt|date('U'))) // 86400 : 0 %}
+                                <tr class="hover bg-info/5">
+                                    <td>
+                                        <span class="badge badge-info badge-sm gap-1">
+                                            <span class="icon-[tabler--hourglass] size-3"></span>
+                                            Awaiting final
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="font-medium text-sm">{{ applicant.email }}</div>
+                                        <div class="text-xs text-base-content/60">#{{ submission.id }}</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-soft badge-sm">
+                                            {{ applicant.role.value|replace({'_': ' '})|title }}
+                                        </span>
+                                    </td>
+                                    <td class="text-sm font-medium">{{ applicantCompanyName }}</td>
+                                    <td class="text-sm">
+                                        {% if submission.evaluator %}
+                                            {{ submission.evaluator.fullName|default(submission.evaluator.email) }}
+                                        {% else %}
+                                            <span class="text-base-content/40">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-sm whitespace-nowrap">
+                                        {{ submission.evaluatedAt ? submission.evaluatedAt|date('M j, Y') : '—' }}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-sm {{ waitDays >= 7 ? 'badge-error' : (waitDays >= 3 ? 'badge-warning' : 'badge-ghost') }}">
+                                            {{ waitDays }} day{{ waitDays == 1 ? '' : 's' }}
+                                        </span>
+                                    </td>
+                                    <td class="text-right">
+                                        <a href="{{ path('app_shipping_admin_accreditation_detail', {id: submission.id}) }}" class="btn btn-primary btn-sm gap-1">
+                                            <span class="icon-[tabler--eye] size-3.5"></span>
+                                            Review
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="md:hidden divide-y divide-base-content/10">
+                    {% for submission in awaitingApproval %}
+                        {% set applicant = submission.applicant %}
+                        {% set applicantCompanyName = submission.submittedData.business_name|default('') ?: (applicant.role.value == 'BROKER' ? applicant.fullName : applicant.businessName) %}
+                        {% set waitDays = submission.evaluatedAt ? (('now'|date('U')) - (submission.evaluatedAt|date('U'))) // 86400 : 0 %}
+                        <div class="p-4 sm:p-5 space-y-3 bg-info/5">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="font-semibold truncate">{{ applicantCompanyName }}</p>
+                                    <p class="text-xs text-base-content/60 truncate">{{ applicant.email }}</p>
+                                </div>
+                                <span class="badge badge-info badge-sm shrink-0 gap-1">
+                                    <span class="icon-[tabler--hourglass] size-3"></span>
+                                    Final
+                                </span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <span class="badge badge-soft badge-sm">{{ applicant.role.value|replace({'_': ' '})|title }}</span>
+                                <span class="badge badge-ghost badge-sm">#{{ submission.id }}</span>
+                                {% if submission.evaluator %}
+                                    <span class="badge badge-ghost badge-sm truncate max-w-[10rem]" title="{{ submission.evaluator.fullName|default(submission.evaluator.email) }}">
+                                        {{ submission.evaluator.fullName|default(submission.evaluator.email) }}
+                                    </span>
+                                {% endif %}
+                                <span class="badge badge-sm {{ waitDays >= 7 ? 'badge-error' : (waitDays >= 3 ? 'badge-warning' : 'badge-ghost') }}">
+                                    {{ waitDays }}d waiting
+                                </span>
+                            </div>
+                            <a href="{{ path('app_shipping_admin_accreditation_detail', {id: submission.id}) }}" class="btn btn-primary w-full gap-2">
+                                <span class="icon-[tabler--eye] size-4"></span>
+                                Review Application
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Approved accreditations #}
+    <div id="approved-accreditations" class="card bg-base-100 shadow-sm">
+        <div class="card-body p-0">
+            <div class="px-4 sm:px-6 py-4 border-b border-base-content/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                    <h2 class="font-semibold text-lg text-base-content flex items-center gap-2">
+                        <span class="icon-[tabler--certificate] size-5 text-success"></span>
+                        Approved Accreditations
+                    </h2>
+                    <p class="text-xs text-base-content/60 mt-0.5">Applications you have fully approved</p>
+                </div>
+                {% if approvedCount > 0 %}
+                    <span class="badge badge-success badge-outline">{{ approvedCount }} total</span>
+                {% endif %}
+            </div>
+
+            {% if approved is empty %}
+                <div class="p-8 sm:p-12 text-center text-sm text-base-content/60">
+                    <span class="icon-[tabler--certificate] size-10 text-base-content/20 block mx-auto mb-3"></span>
+                    No approved accreditations yet. Approved applications will appear here after you sign off.
+                </div>
+            {% else %}
+                <div class="hidden md:block overflow-x-auto">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Applicant</th>
+                                <th>Type</th>
+                                <th>Company / Consignee</th>
+                                <th>Evaluator</th>
+                                <th>Approved</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for submission in approved %}
+                                {% set applicant = submission.applicant %}
+                                {% set applicantCompanyName = submission.submittedData.business_name|default('') ?: (applicant.role.value == 'BROKER' ? applicant.fullName : applicant.businessName) %}
+                                <tr class="hover">
+                                    <td>
+                                        <div class="font-medium text-sm">{{ applicant.email }}</div>
+                                        <div class="text-xs text-base-content/50">#{{ submission.id }}</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-soft badge-sm">
+                                            {{ applicant.role.value|replace({'_': ' '})|title }}
+                                        </span>
+                                    </td>
+                                    <td class="text-sm">{{ applicantCompanyName }}</td>
+                                    <td class="text-sm text-base-content/70">
+                                        {{ submission.evaluator ? submission.evaluator.fullName|default(submission.evaluator.email) : '—' }}
+                                    </td>
+                                    <td class="text-sm whitespace-nowrap">
+                                        {{ submission.approvedAt ? submission.approvedAt|date('M j, Y') : '—' }}
+                                    </td>
+                                    <td class="text-right">
+                                        <a href="{{ path('app_shipping_admin_accreditation_detail', {id: submission.id}) }}" class="btn btn-ghost btn-xs gap-1">
+                                            <span class="icon-[tabler--eye] size-3.5"></span>
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="md:hidden divide-y divide-base-content/10 max-h-[480px] overflow-y-auto">
+                    {% for submission in approved %}
+                        {% set applicant = submission.applicant %}
+                        {% set applicantCompanyName = submission.submittedData.business_name|default('') ?: (applicant.role.value == 'BROKER' ? applicant.fullName : applicant.businessName) %}
+                        <div class="p-4 flex items-center justify-between gap-3 hover:bg-base-200/40 transition-colors">
+                            <div class="min-w-0 flex-1">
+                                <p class="font-medium text-sm truncate">{{ applicantCompanyName }}</p>
+                                <div class="flex flex-wrap items-center gap-2 mt-1">
+                                    <span class="badge badge-soft badge-xs">{{ applicant.role.value|replace({'_': ' '})|title }}</span>
+                                    <span class="text-xs text-base-content/50">
+                                        {{ submission.approvedAt ? submission.approvedAt|date('M j, Y') : '—' }}
+                                    </span>
+                                </div>
+                            </div>
+                            <a href="{{ path('app_shipping_admin_accreditation_detail', {id: submission.id}) }}" class="btn btn-ghost btn-sm btn-circle shrink-0" aria-label="View application">
+                                <span class="icon-[tabler--eye] size-4"></span>
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

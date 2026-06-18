@@ -17,11 +17,30 @@
 {% set logoUrl = submission.shippingLine and submission.shippingLine.logoPath
     ? asset('uploads/shipping-lines/' ~ submission.shippingLine.logoPath)
     : (submission.shippingLine.portalConfig.logoUrl ?? null) %}
-{% set stepperCurrent = submission.evaluatedAt ? 3 : 2 %}
+{% set isComplianceRequired = submission.status.value == 'COMPLIANCE_REQUIRED' %}
+{% set isApproved = submission.status.value == 'APPROVED' %}
+{% set isAwaitingFinal = submission.isAwaitingFinalApproval() %}
+{% set isDenied = submission.status.value in ['DENIED', 'REJECTED'] %}
+{% if isApproved %}
+    {% set stepperCurrent = 5 %}
+{% elseif isAwaitingFinal %}
+    {% set stepperCurrent = 3 %}
+{% elseif isComplianceRequired %}
+    {% set stepperCurrent = 2 %}
+{% elseif submission.evaluatedAt %}
+    {% set stepperCurrent = isDenied ? 3 : 2 %}
+{% elseif submission.status.value == 'PENDING' %}
+    {% set stepperCurrent = 2 %}
+{% else %}
+    {% set stepperCurrent = 1 %}
+{% endif %}
 
 {% set statusBadge = 'badge-ghost' %}
 {% set statusIcon = 'help-circle' %}
-{% if submission.status.value == 'APPROVED' %}
+{% if submission.status.value == 'AWAITING_FINAL_APPROVAL' %}
+    {% set statusBadge = 'badge-info' %}
+    {% set statusIcon = 'hourglass' %}
+{% elseif submission.status.value == 'APPROVED' %}
     {% set statusBadge = 'badge-success' %}
     {% set statusIcon = 'circle-check' %}
 {% elseif submission.status.value in ['DENIED', 'REJECTED'] %}
@@ -71,7 +90,7 @@
                         {% endif %}
                         <div class="min-w-0">
                             <p class="font-semibold text-base-content truncate">{{ submission.shippingLine.brandName }}</p>
-                            <span class="badge {{ statusBadge }} badge-sm mt-1">{{ submission.status.value|replace({'_': ' '})|title }}</span>
+                            <span class="badge {{ statusBadge }} badge-sm mt-1">{{ submission.status.displayName }}</span>
                         </div>
                     </div>
                 {% endif %}
@@ -110,8 +129,9 @@
                         {% include 'components/flyonui_stepper.html.twig' with {
                             steps: [
                                 { label: 'Application' },
-                                { label: 'Review' },
-                                { label: 'Evaluation' }
+                                { label: 'Evaluator Review' },
+                                { label: 'Final Approval' },
+                                { label: isApproved ? 'Approved' : (isDenied ? 'Decision' : 'Complete') }
                             ],
                             current: stepperCurrent
                         } %}
@@ -285,7 +305,7 @@
                                 <div class="size-14 {{ statusBadge }} rounded-full flex items-center justify-center mb-3">
                                     <span class="icon-[tabler--{{ statusIcon }}] size-7"></span>
                                 </div>
-                                <p class="text-xl font-bold text-base-content">{{ submission.status.value|replace({'_': ' '})|title }}</p>
+                                <p class="text-xl font-bold text-base-content">{{ submission.status.displayName }}</p>
                             </div>
 
                             <ul class="timeline timeline-vertical timeline-compact">

@@ -25,57 +25,18 @@
 
     <div class="stats stats-vertical sm:stats-horizontal shadow w-full bg-base-100">
         <div class="stat">
-            <div class="stat-figure text-info"><span class="icon-[tabler--clock] size-8"></span></div>
-            <div class="stat-title">Pending Applications</div>
-            <div class="stat-value text-info">{{ metrics.accreditation.pending }}</div>
-        </div>
-        <div class="stat">
-            <div class="stat-figure text-success"><span class="icon-[tabler--circle-check] size-8"></span></div>
-            <div class="stat-title">Approved</div>
-            <div class="stat-value text-success">{{ metrics.accreditation.approved }}</div>
-        </div>
-        <div class="stat">
-            <div class="stat-figure text-error"><span class="icon-[tabler--circle-x] size-8"></span></div>
-            <div class="stat-title">Denied</div>
-            <div class="stat-value text-error">{{ metrics.accreditation.denied }}</div>
-        </div>
-        <div class="stat">
             <div class="stat-figure text-primary"><span class="icon-[tabler--users] size-8"></span></div>
             <div class="stat-title">Total Users</div>
             <div class="stat-value text-primary">{{ metrics.users.total }}</div>
         </div>
+        <div class="stat">
+            <div class="stat-figure text-info"><span class="icon-[tabler--clipboard-list] size-8"></span></div>
+            <div class="stat-title">Audit Events (7d)</div>
+            <div class="stat-value text-info">{{ metrics.recent_activity.audit_logs }}</div>
+        </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="card bg-base-100 shadow-sm">
-            <div class="card-body">
-                <h2 class="card-title text-lg">Accreditation Status</h2>
-                <div class="space-y-3 mt-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm">Pending</span>
-                        <span class="badge badge-info">{{ metrics.accreditation.pending }}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm">Approved</span>
-                        <span class="badge badge-success">{{ metrics.accreditation.approved }}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm">Denied/Rejected</span>
-                        <span class="badge badge-error">{{ metrics.accreditation.denied }}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm">Compliance Required</span>
-                        <span class="badge badge-warning">{{ metrics.accreditation.compliance_required }}</span>
-                    </div>
-                    <div class="divider my-1"></div>
-                    <div class="flex justify-between items-center font-semibold">
-                        <span>Total Applications</span>
-                        <span>{{ metrics.accreditation.total }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+    <div class="grid grid-cols-1 gap-6">
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body">
                 <h2 class="card-title text-lg">Users by Role</h2>
@@ -94,12 +55,8 @@
     <div class="card bg-base-100 shadow-sm">
         <div class="card-body">
             <h2 class="card-title text-lg">Recent Activity (Last 7 Days)</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                <div class="text-center p-4 bg-base-200/50 rounded-xl">
-                    <div class="text-3xl font-bold text-info">{{ metrics.recent_activity.submissions }}</div>
-                    <div class="text-sm text-base-content/60 mt-1">New Submissions</div>
-                </div>
-                <div class="text-center p-4 bg-base-200/50 rounded-xl">
+            <div class="mt-4">
+                <div class="text-center p-4 bg-base-200/50 rounded-xl max-w-sm mx-auto">
                     <div class="text-3xl font-bold text-success">{{ metrics.recent_activity.audit_logs }}</div>
                     <div class="text-sm text-base-content/60 mt-1">Audit Log Entries</div>
                 </div>

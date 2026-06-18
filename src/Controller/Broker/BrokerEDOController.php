@@ -26,6 +26,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -1158,8 +1159,8 @@ class BrokerEDOController extends AbstractController
 
             // Step 3: Get uploaded file
             $receiptFile = $request->files->get('receiptFile');
-            if (!$receiptFile) {
-                return $this->json(['success' => false, 'error' => ['message' => 'No file uploaded']], 400);
+            if ($validationError = $this->validateEdoPaymentReceiptFile($receiptFile)) {
+                return $this->json(['success' => false, 'error' => ['message' => $validationError]], 400);
             }
 
             // Step 4: Submit payment
@@ -1201,54 +1202,47 @@ class BrokerEDOController extends AbstractController
      * Requirements: 9.1, 9.2, 9.3, 9.5, 14.4, 15.5
      */
     #[Route('/{id}/download', name: 'broker_edo_download', methods: ['GET'])]
-    public function downloadEDO(int $id): Response
+    public function downloadEDO(int $id, Request $request): Response
     {
         $edo = $this->edoRepository->findOneWithRelations($id);
 
         if (!$edo) {
-            return $this->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'EDO_NOT_FOUND',
-                    'message' => 'eDO not found',
-                ],
-            ], Response::HTTP_NOT_FOUND);
+            return $this->edoDownloadErrorResponse($request, null, 'eDO not found', Response::HTTP_NOT_FOUND);
         }
+
+        $manifestId = $edo->getManifest()->getId();
 
         // Verify broker owns the manifest associated with eDO
         $user = $this->getUser();
         if ($edo->getManifest()->getBroker()?->getId() !== $user->getId()) {
-            return $this->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'UNAUTHORIZED_ACCESS',
-                    'message' => 'You do not have permission to download this eDO',
-                ],
-            ], Response::HTTP_FORBIDDEN);
+            return $this->edoDownloadErrorResponse(
+                $request,
+                $manifestId,
+                'You do not have permission to download this eDO',
+                Response::HTTP_FORBIDDEN
+            );
         }
 
         // Verify eDO status is RELEASED or EXPIRED (expired eDOs were previously released)
         if ($edo->getStatus()->value !== 'released' && $edo->getStatus()->value !== 'expired') {
-            return $this->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'EDO_NOT_RELEASED',
-                    'message' => 'eDO must be released before it can be downloaded',
-                ],
-            ], Response::HTTP_BAD_REQUEST);
+            return $this->edoDownloadErrorResponse(
+                $request,
+                $manifestId,
+                'eDO must be released before it can be downloaded',
+                Response::HTTP_BAD_REQUEST
+            );
         }
 
         // Retrieve eDO PDF file path
         $pdfPath = $edo->getPdfPath();
 
         if (!$pdfPath) {
-            return $this->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'PDF_NOT_FOUND',
-                    'message' => 'eDO PDF file not found',
-                ],
-            ], Response::HTTP_NOT_FOUND);
+            return $this->edoDownloadErrorResponse(
+                $request,
+                $manifestId,
+                'eDO PDF file not found',
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         // Normalize path separators for Windows
@@ -1272,13 +1266,12 @@ class BrokerEDOController extends AbstractController
         }
 
         if (!$fullPath) {
-            return $this->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'PDF_NOT_FOUND',
-                    'message' => 'eDO PDF file not found on server. Path: ' . $pdfPath,
-                ],
-            ], Response::HTTP_NOT_FOUND);
+            return $this->edoDownloadErrorResponse(
+                $request,
+                $manifestId,
+                'eDO PDF file not found on server',
+                Response::HTTP_NOT_FOUND
+            );
         }
 
         // Log eDO download action
@@ -1514,6 +1507,52 @@ class BrokerEDOController extends AbstractController
                 'error' => $e->getMessage()
             ]);
         }
+    }
+
+    private function edoDownloadErrorResponse(
+        Request $request,
+        ?int $manifestId,
+        string $message,
+        int $statusCode
+    ): Response {
+        if ($request->getPreferredFormat() === 'json') {
+            return $this->json([
+                'success' => false,
+                'error' => [
+                    'message' => $message,
+                ],
+            ], $statusCode);
+        }
+
+        $this->addFlash('error', $message);
+
+        if ($manifestId !== null) {
+            return $this->redirectToRoute('broker_manifest_detail', ['id' => $manifestId]);
+        }
+
+        return $this->redirectToRoute('broker_manifest_list');
+    }
+
+    private function validateEdoPaymentReceiptFile(?UploadedFile $file): ?string
+    {
+        if ($file === null || !$file->isValid()) {
+            return 'Payment receipt file is required. Please upload a PDF, JPG, or PNG.';
+        }
+
+        if ($file->getSize() <= 0) {
+            return 'Payment receipt file is empty. Please upload a valid file.';
+        }
+
+        $allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+        if (!in_array((string) $file->getMimeType(), $allowedMimeTypes, true)) {
+            return 'Invalid file type. Please upload a PDF, JPG, or PNG.';
+        }
+
+        if ($file->getSize() > 5 * 1024 * 1024) {
+            return 'File size must be less than 5MB.';
+        }
+
+        return null;
     }
 }
 

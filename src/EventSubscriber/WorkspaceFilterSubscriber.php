@@ -5,22 +5,23 @@ namespace App\EventSubscriber;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpKernel\Event\RequestEvent;
+use Symfony\Component\HttpKernel\Event\ControllerEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use App\Entity\Broker;
+use App\Service\WorkspaceService;
 
 /**
  * Ensures brokers have an active workspace selected before accessing workspace-dependent routes
  */
 class WorkspaceFilterSubscriber implements EventSubscriberInterface
 {
-    private const WORKSPACE_ROUTES = [
-        'broker_manifest_list',
-        'broker_manifest_detail',
-        'broker_manifest_payment',
-        'broker_manifest_upload_bl',
-        'broker_manifest_submit_payment',
+    private const WORKSPACE_ROUTE_PREFIXES = [
+        'broker_manifest_',
+        'broker_edo_',
+        'broker_detention_',
+        'broker_billing_',
     ];
 
     private const EXCLUDED_ROUTES = [
@@ -38,6 +39,7 @@ class WorkspaceFilterSubscriber implements EventSubscriberInterface
     public function __construct(
         private TokenStorageInterface $tokenStorage,
         private UrlGeneratorInterface $urlGenerator,
+        private WorkspaceService $workspaceService,
         private LoggerInterface $logger
     ) {
     }
@@ -45,11 +47,11 @@ class WorkspaceFilterSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
-            KernelEvents::REQUEST => ['onKernelRequest', 10],
+            KernelEvents::CONTROLLER => ['onKernelController', 0],
         ];
     }
 
-    public function onKernelRequest(RequestEvent $event): void
+    public function onKernelController(ControllerEvent $event): void
     {
         if (!$event->isMainRequest()) {
             return;
@@ -75,31 +77,39 @@ class WorkspaceFilterSubscriber implements EventSubscriberInterface
         }
         
         $user = $token->getUser();
-        if (!$user || $user->getRole()->value !== 'BROKER') {
+        if (!$user instanceof Broker) {
             return;
         }
 
-        // Only check workspace for specific workspace-dependent routes
-        if (!in_array($route, self::WORKSPACE_ROUTES)) {
+        // Only check workspace for workspace-dependent broker routes
+        if (!$this->requiresWorkspace($route)) {
             return;
         }
 
-        // Check if workspace is selected
-        $session = $request->getSession();
-        $activeWorkspaceId = $session->get('active_workspace_consignee_id');
-
-        if (!$activeWorkspaceId) {
-            $this->logger->info('Broker attempted to access workspace route without active workspace', [
-                'user_id' => $user->getId(),
-                'route' => $route,
-                'ip' => $request->getClientIp(),
-            ]);
-
-            // Redirect to workspace selector
-            $response = new RedirectResponse(
-                $this->urlGenerator->generate('broker_workspace_selector')
-            );
-            $event->setResponse($response);
+        if (!$this->workspaceService->needsWorkspaceSelection($user)) {
+            return;
         }
+
+        $this->logger->info('Broker attempted to access workspace route without active workspace', [
+            'user_id' => $user->getId(),
+            'route' => $route,
+            'ip' => $request->getClientIp(),
+        ]);
+
+        $request->getSession()->getFlashBag()->add('error', 'Please select a workspace first');
+
+        $selectorUrl = $this->urlGenerator->generate('broker_workspace_selector');
+        $event->setController(static fn () => new RedirectResponse($selectorUrl));
+    }
+
+    private function requiresWorkspace(string $route): bool
+    {
+        foreach (self::WORKSPACE_ROUTE_PREFIXES as $prefix) {
+            if (str_starts_with($route, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

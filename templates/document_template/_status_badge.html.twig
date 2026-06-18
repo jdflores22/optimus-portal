@@ -1,0 +1,9 @@
+{% if template.status.value == 'ACTIVE' %}
+    <span class="badge badge-success badge-sm">Active</span>
+{% elseif template.status.value == 'INACTIVE' %}
+    <span class="badge badge-warning badge-sm">Inactive</span>
+{% elseif template.status.value == 'PUBLISHED' %}
+    <span class="badge badge-info badge-sm">Published</span>
+{% else %}
+    <span class="badge badge-ghost badge-sm">Draft</span>
+{% endif %}

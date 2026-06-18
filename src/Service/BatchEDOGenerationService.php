@@ -107,6 +107,7 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
                 
                 // Set PDF path (will be generated later)
                 $edo->setPdfPath(''); // Will be set when PDF is generated
+                $edo->setGeneratedByName($this->resolveGeneratorDisplayName($generatedBy));
                 
                 $this->entityManager->persist($edo);
                 $generatedEDOs[] = $edo;
@@ -134,7 +135,7 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
             
             // Generate ONE PDF for all eDOs
             try {
-                $bulkPdfPath = $this->edoDocumentGenerator->generateBulkPDF($generatedEDOs);
+                $bulkPdfPath = $this->edoDocumentGenerator->generateBulkPDF($generatedEDOs, $generatedBy);
                 
                 // Set the same PDF path for all eDOs
                 foreach ($generatedEDOs as $edo) {
@@ -419,6 +420,16 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
         
         foreach ($containers as $container) {
             $batchSequence++;
+
+            $existingEdo = $container->getCurrentEDO();
+            if ($existingEdo !== null) {
+                throw new EDOWorkflowException(sprintf(
+                    'Container %s already has eDO %s (%s).',
+                    $container->getContainerNumber(),
+                    $existingEdo->getEdoNumber(),
+                    $existingEdo->getStatus()->getDisplayName()
+                ));
+            }
             
             try {
                 // Update current container being processed
@@ -466,6 +477,7 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
 
                 // Ensure status is PENDING_RELEASE (awaiting payment)
                 $edo->setStatus(\App\Entity\Enum\EDOStatus::PENDING_RELEASE);
+                $edo->setGeneratedByName($this->resolveGeneratorDisplayName($user));
 
                 $this->entityManager->persist($edo);
                 $this->entityManager->flush();
@@ -539,7 +551,7 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
                 ]);
 
                 // Generate one PDF with all containers
-                $bulkPdfPath = $this->edoDocumentGenerator->generateBulkPDF($generatedEdos);
+                $bulkPdfPath = $this->edoDocumentGenerator->generateBulkPDF($generatedEdos, $user);
 
                 // Update all eDOs with the same PDF path
                 foreach ($generatedEdos as $edo) {
@@ -719,6 +731,18 @@ class BatchEDOGenerationService implements BatchEDOGenerationServiceInterface
             $manifest,
             $user
         );
+    }
+
+    private function resolveGeneratorDisplayName(User $user): string
+    {
+        if (method_exists($user, 'getFullName')) {
+            $fullName = $user->getFullName();
+            if ($fullName !== null && $fullName !== '') {
+                return $fullName;
+            }
+        }
+
+        return $user->getEmail();
     }
 }
 

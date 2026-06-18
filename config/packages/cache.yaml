@@ -35,24 +35,25 @@ framework:
 when@prod:
     framework:
         cache:
-            app: cache.adapter.redis
-            default_redis_provider: '%env(REDIS_URL)%'
+            # Use filesystem cache in production (Redis not available on Hostinger)
+            app: cache.adapter.filesystem
+            # default_redis_provider: '%env(REDIS_URL)%'
             pools:
                 avatar_colors.cache:
-                    adapter: cache.adapter.redis
+                    adapter: cache.adapter.filesystem
                 form_configurations.cache:
-                    adapter: cache.adapter.redis
+                    adapter: cache.adapter.filesystem
                 user_permissions.cache:
-                    adapter: cache.adapter.redis
+                    adapter: cache.adapter.filesystem
                 dashboard_metrics.cache:
-                    adapter: cache.adapter.redis
+                    adapter: cache.adapter.filesystem
                 file_metadata.cache:
-                    adapter: cache.adapter.redis
+                    adapter: cache.adapter.filesystem
                 manifest_workflow.cache:
-                    adapter: cache.adapter.redis
+                    adapter: cache.adapter.filesystem
                 manifest_authorization.cache:
-                    adapter: cache.adapter.redis
+                    adapter: cache.adapter.filesystem
                 edo_pdf.cache:
-                    adapter: cache.adapter.redis
+                    adapter: cache.adapter.filesystem
                 payment_history.cache:
-                    adapter: cache.adapter.redis
+                    adapter: cache.adapter.filesystem

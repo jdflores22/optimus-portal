@@ -27,6 +27,8 @@ class SecurityHeadersSubscriber implements EventSubscriberInterface
         // Routes that should allow iframe embedding (inline viewing)
         $inlineRoutes = [
             'api_billing_download',
+            'broker_manifest_billing_download',
+            'accounting_payment_billing_download',
             'api_payments_download_receipt',
             'accounting_payment_receipt',
             'accounting_billing_payment_receipt',
@@ -34,14 +36,19 @@ class SecurityHeadersSubscriber implements EventSubscriberInterface
             'api_edo_download',
             'api_bl_download',
             'api_manifest_download',
-            'broker_edo_view_receipt'
+            'broker_edo_view_receipt',
+            'document_template_preview_html',
+            'document_template_preview_pdf',
         ];
         
         $routeName = $request->attributes->get('_route');
         $inline = $request->query->get('inline', 'false') === 'true';
         
         // If this is an inline viewing request for allowed routes OR if it's the broker receipt route
-        if ((in_array($routeName, $inlineRoutes) && $inline) || $routeName === 'broker_edo_view_receipt') {
+        if ((in_array($routeName, $inlineRoutes) && $inline)
+            || $routeName === 'broker_edo_view_receipt'
+            || $routeName === 'document_template_preview_html'
+            || $routeName === 'document_template_preview_pdf') {
             // Allow iframe embedding from same origin
             $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
             $response->headers->set('Content-Security-Policy', "frame-ancestors 'self'");

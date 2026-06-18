@@ -1,0 +1,69 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Create Document Template - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <div class="bg-base-100 shadow-sm">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="breadcrumbs text-xs mb-1">
+                <ul>
+                    <li><a href="{{ path('document_template_list') }}">Document Templates</a></li>
+                    <li>Create</li>
+                </ul>
+            </div>
+            <h1 class="text-2xl font-bold">Create Document Template</h1>
+            <p class="text-sm text-base-content/60 mt-1">Choose a document type and start designing your layout</p>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="max-w-2xl mx-auto">
+            {% for message in app.flashes('error') %}
+                <div class="alert alert-error mb-6"><span class="icon-[tabler--alert-circle] size-5"></span><span>{{ message }}</span></div>
+            {% endfor %}
+
+            <div class="card bg-base-100 shadow-sm">
+                <div class="card-body p-6 sm:p-8">
+                    <form method="POST" action="{{ path('document_template_store') }}" class="space-y-5">
+                        <div class="form-control">
+                            <label class="label py-1" for="name">
+                                <span class="label-text font-medium">Template Name <span class="text-error">*</span></span>
+                            </label>
+                            <input type="text" id="name" name="name" required class="input input-bordered w-full"
+                                   placeholder="e.g., Standard NOA Certificate">
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label py-1" for="type">
+                                <span class="label-text font-medium">Document Type <span class="text-error">*</span></span>
+                            </label>
+                            <select id="type" name="type" required class="select select-bordered w-full">
+                                <option value="">-- Select Document Type --</option>
+                                {% for docType in documentTypes %}
+                                    <option value="{{ docType.value }}">{{ docType.getLabel() }}</option>
+                                {% endfor %}
+                            </select>
+                            <label class="label py-1">
+                                <span class="label-text-alt text-base-content/60">
+                                    Determines available placeholders and default layout starter
+                                </span>
+                            </label>
+                        </div>
+
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('document_template_create') }}">
+
+                        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
+                            <a href="{{ path('document_template_list') }}" class="btn btn-ghost">Cancel</a>
+                            <button type="submit" class="btn btn-primary gap-2">
+                                <span class="icon-[tabler--plus] size-4"></span>
+                                Create & Open Builder
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

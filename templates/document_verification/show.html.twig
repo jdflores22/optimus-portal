@@ -1,0 +1,104 @@
+{% extends 'layout/public_minimal.html.twig' %}
+
+{% block title %}Document Verification - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen py-10 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-2xl mx-auto">
+        {% include 'components/_brand_mark.html.twig' with { size: 'md' } %}
+
+        <div class="card bg-base-100 shadow-lg mt-8">
+            <div class="card-body p-6 sm:p-8">
+                <div class="flex items-start gap-4 mb-6">
+                    <div class="rounded-full bg-success/15 p-3 shrink-0">
+                        <span class="icon-[tabler--shield-check] size-8 text-success"></span>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-success">Verified Document</p>
+                        <h1 class="text-2xl font-bold text-base-content mt-1">{{ documentTypeLabel }}</h1>
+                        <p class="text-sm text-base-content/60 mt-1">
+                            This document was issued through OPTIMUS and verified on {{ verifiedAt|date('F j, Y \\a\\t g:i A') }}.
+                        </p>
+                    </div>
+                </div>
+
+                {% if isPreviewSample %}
+                    <div class="rounded-lg border border-info/30 bg-info/10 text-info px-4 py-3 mb-6 flex items-start gap-3">
+                        <span class="icon-[tabler--info-circle] size-5 shrink-0 mt-0.5"></span>
+                        <span class="text-sm">This is a template preview sample. Generated documents use a unique verification link.</span>
+                    </div>
+                {% endif %}
+
+                <div class="rounded-xl border border-base-300 divide-y divide-base-300">
+                    <div class="px-4 py-3 bg-base-200/60">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Document Number</p>
+                        <p class="text-lg font-semibold text-base-content mt-1">{{ summary.document_number ?? '—' }}</p>
+                    </div>
+
+                    {% if summary.bl_number is defined %}
+                        <div class="px-4 py-3 flex justify-between gap-4">
+                            <span class="text-sm text-base-content/60">B/L Number</span>
+                            <span class="text-sm font-medium text-base-content text-right">{{ summary.bl_number }}</span>
+                        </div>
+                    {% endif %}
+
+                    {% if summary.vessel_number is defined %}
+                        <div class="px-4 py-3 flex justify-between gap-4">
+                            <span class="text-sm text-base-content/60">Vessel</span>
+                            <span class="text-sm font-medium text-base-content text-right">{{ summary.vessel_number }}</span>
+                        </div>
+                    {% endif %}
+
+                    {% if summary.eta is defined %}
+                        <div class="px-4 py-3 flex justify-between gap-4">
+                            <span class="text-sm text-base-content/60">ETA</span>
+                            <span class="text-sm font-medium text-base-content text-right">{{ summary.eta }}</span>
+                        </div>
+                    {% endif %}
+
+                    {% if summary.port_location is defined %}
+                        <div class="px-4 py-3 flex justify-between gap-4">
+                            <span class="text-sm text-base-content/60">Port Location</span>
+                            <span class="text-sm font-medium text-base-content text-right">{{ summary.port_location }}</span>
+                        </div>
+                    {% endif %}
+
+                    {% if summary.consignee_name is defined %}
+                        <div class="px-4 py-3 flex justify-between gap-4">
+                            <span class="text-sm text-base-content/60">Consignee</span>
+                            <span class="text-sm font-medium text-base-content text-right">{{ summary.consignee_name }}</span>
+                        </div>
+                    {% endif %}
+
+                    {% if summary.container_count is defined %}
+                        <div class="px-4 py-3 flex justify-between gap-4">
+                            <span class="text-sm text-base-content/60">Containers</span>
+                            <span class="text-sm font-medium text-base-content text-right">{{ summary.container_count }}</span>
+                        </div>
+                    {% endif %}
+
+                    {% if summary.company_name is defined %}
+                        <div class="px-4 py-3 flex justify-between gap-4">
+                            <span class="text-sm text-base-content/60">Issued By</span>
+                            <span class="text-sm font-medium text-base-content text-right">{{ summary.company_name }}</span>
+                        </div>
+                    {% endif %}
+
+                    {% if summary.generated_at is defined %}
+                        <div class="px-4 py-3 flex justify-between gap-4">
+                            <span class="text-sm text-base-content/60">Generated</span>
+                            <span class="text-sm font-medium text-base-content text-right">{{ summary.generated_at }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                {% if verification %}
+                    <p class="text-xs text-base-content/50 mt-6 text-center">
+                        Verification ID: {{ verification.verificationToken|slice(0, 8) }}…{{ verification.verificationToken|slice(-8) }}
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

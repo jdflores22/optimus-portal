@@ -68,29 +68,14 @@
         }
     }
 
-    ConsigneeOnboardingGuide.prototype.getMainElement = function () {
-        return document.getElementById('app-main');
-    };
-
-    ConsigneeOnboardingGuide.prototype.getMainBounds = function () {
-        const main = this.getMainElement();
-        if (!main) {
-            return {
-                top: 0,
-                left: 0,
-                right: window.innerWidth,
-                bottom: window.innerHeight,
-                width: window.innerWidth,
-            };
-        }
-
-        const rect = main.getBoundingClientRect();
+    ConsigneeOnboardingGuide.prototype.getViewportBounds = function () {
         return {
-            top: rect.top,
-            left: rect.left,
-            right: rect.right,
-            bottom: rect.bottom,
-            width: rect.width,
+            top: 0,
+            left: 0,
+            right: window.innerWidth,
+            bottom: window.innerHeight,
+            width: window.innerWidth,
+            height: window.innerHeight,
         };
     };
 
@@ -150,6 +135,15 @@
         modal.classList.toggle('guide-backdrop-hidden', hidden);
     };
 
+    ConsigneeOnboardingGuide.prototype.setGenerateModalLayer = function (active) {
+        const modal = document.getElementById('generateModal');
+        if (!modal) {
+            return;
+        }
+
+        modal.classList.toggle('consignee-guide-modal-layer', active);
+    };
+
     ConsigneeOnboardingGuide.prototype.prepareStep = function (stepName) {
         this.setGuideModalBackdrop(false);
 
@@ -196,10 +190,17 @@
         this.activeTarget = target;
         this.isOpen = true;
 
-        target.classList.add('relative', 'z-[10009]');
+        target.classList.add('relative', 'z-[1000001]');
+        this.setGenerateModalLayer(stepName === 'generate_referral_code_modal');
         this.overlay.classList.remove('hidden');
         this.overlay.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
+
+        try {
+            target.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+        } catch (error) {
+            target.scrollIntoView(true);
+        }
 
         if (this.titleEl) {
             this.titleEl.textContent = step.title;
@@ -226,39 +227,39 @@
             return;
         }
 
-        const main = this.getMainBounds();
+        const viewport = this.getViewportBounds();
         const hole = this.getHighlightBounds();
 
-        const mTop = main.top;
-        const mLeft = main.left;
-        const mRight = main.right;
-        const mBottom = main.bottom;
+        const vTop = viewport.top;
+        const vLeft = viewport.left;
+        const vRight = viewport.right;
+        const vBottom = viewport.bottom;
 
-        const topHeight = Math.max(0, Math.min(hole.top, mBottom) - mTop);
-        this.panels.top.style.top = mTop + 'px';
-        this.panels.top.style.left = mLeft + 'px';
-        this.panels.top.style.width = main.width + 'px';
+        const topHeight = Math.max(0, Math.min(hole.top, vBottom) - vTop);
+        this.panels.top.style.top = vTop + 'px';
+        this.panels.top.style.left = vLeft + 'px';
+        this.panels.top.style.width = viewport.width + 'px';
         this.panels.top.style.height = topHeight + 'px';
 
-        const bottomTop = Math.max(hole.bottom, mTop);
-        const bottomHeight = Math.max(0, mBottom - bottomTop);
+        const bottomTop = Math.max(hole.bottom, vTop);
+        const bottomHeight = Math.max(0, vBottom - bottomTop);
         this.panels.bottom.style.top = bottomTop + 'px';
-        this.panels.bottom.style.left = mLeft + 'px';
-        this.panels.bottom.style.width = main.width + 'px';
+        this.panels.bottom.style.left = vLeft + 'px';
+        this.panels.bottom.style.width = viewport.width + 'px';
         this.panels.bottom.style.height = bottomHeight + 'px';
 
-        const midTop = Math.max(hole.top, mTop);
-        const midBottom = Math.min(hole.bottom, mBottom);
+        const midTop = Math.max(hole.top, vTop);
+        const midBottom = Math.min(hole.bottom, vBottom);
         const midHeight = Math.max(0, midBottom - midTop);
 
-        const leftWidth = Math.max(0, Math.min(hole.left, mRight) - mLeft);
+        const leftWidth = Math.max(0, Math.min(hole.left, vRight) - vLeft);
         this.panels.left.style.top = midTop + 'px';
-        this.panels.left.style.left = mLeft + 'px';
+        this.panels.left.style.left = vLeft + 'px';
         this.panels.left.style.width = leftWidth + 'px';
         this.panels.left.style.height = midHeight + 'px';
 
-        const rightLeft = Math.max(hole.right, mLeft);
-        const rightWidth = Math.max(0, mRight - rightLeft);
+        const rightLeft = Math.max(hole.right, vLeft);
+        const rightWidth = Math.max(0, vRight - rightLeft);
         this.panels.right.style.top = midTop + 'px';
         this.panels.right.style.left = rightLeft + 'px';
         this.panels.right.style.width = rightWidth + 'px';
@@ -359,13 +360,14 @@
 
     ConsigneeOnboardingGuide.prototype.clearHighlight = function () {
         if (this.activeTarget) {
-            this.activeTarget.classList.remove('z-[10009]');
+            this.activeTarget.classList.remove('relative', 'z-[1000001]');
         }
     };
 
     ConsigneeOnboardingGuide.prototype.close = function (closeGenerateModal) {
         this.clearHighlight();
         this.setGuideModalBackdrop(false);
+        this.setGenerateModalLayer(false);
 
         if (this.overlay) {
             this.overlay.classList.add('hidden');

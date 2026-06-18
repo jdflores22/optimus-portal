@@ -7,6 +7,8 @@
         {% set status_class = 'badge-draft' %}
     {% elseif status|lower == 'pending' %}
         {% set status_class = 'badge-pending' %}
+    {% elseif status|lower == 'awaiting_final_approval' or status|lower == 'awaiting final approval' %}
+        {% set status_class = 'badge-pending' %}
     {% elseif status|lower == 'approved' %}
         {% set status_class = 'badge-approved' %}
     {% elseif status|lower == 'denied' %}

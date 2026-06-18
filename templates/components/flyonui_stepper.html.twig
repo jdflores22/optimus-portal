@@ -2,7 +2,7 @@
     FlyonUI-style horizontal stepper (Tailwind-safe sizing).
 
     steps: [{ label: 'Application' }, { label: 'Review' }, ...]
-    current: 1-based index of the active step
+    current: 1-based index of the active step; use steps|length + 1 when the workflow is fully complete
 #}
 <ul class="relative flex w-full items-start gap-2" aria-label="Application progress">
     {% for step in steps %}

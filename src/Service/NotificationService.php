@@ -106,6 +106,10 @@ class NotificationService
         }
 
         return match ($status) {
+            AccreditationStatus::AWAITING_FINAL_APPROVAL => [
+                'Awaiting final approval',
+                'Your application passed the first review and was sent to the shipping company for final approval. You will be notified when they complete their decision.',
+            ],
             AccreditationStatus::APPROVED => [
                 'Accreditation Approved',
                 'Your accreditation application has been approved. You now have full access to the OPTIMUS portal.',

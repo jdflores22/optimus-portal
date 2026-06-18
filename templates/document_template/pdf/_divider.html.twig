@@ -1,0 +1,38 @@
+{# Dompdf-safe divider rendering (SVG patterns are not reliably supported). #}
+{% set dividerStyle = element.dividerStyle|default('solid') %}
+{% set lineColor = style.color|default('#374151') %}
+{% set useWrapperMargin = not (freeLayout|default(false)) %}
+{% set marginTop = useWrapperMargin ? (style.marginTop|default(10)) : 0 %}
+{% set marginBottom = useWrapperMargin ? (style.marginBottom|default(10)) : 0 %}
+{% set wrapperStyle = 'margin: ' ~ marginTop ~ 'px 0 ' ~ marginBottom ~ 'px 0;' %}
+
+{% if dividerStyle == 'dots' %}
+    <hr style="border: none; border-top: 2px dotted {{ lineColor }}; {{ wrapperStyle }}">
+
+{% elseif dividerStyle == 'outline' %}
+    {% set barHeight = element.height|default(14) %}
+    {% set borderColor = style.borderColor|default(lineColor) %}
+    {% set borderWidth = style.borderWidth|default(1) %}
+    <div style="{{ wrapperStyle }} height: {{ barHeight }}px; border: {{ borderWidth }}px solid {{ borderColor }}; box-sizing: border-box; background: transparent;"></div>
+
+{% elseif dividerStyle == 'slash' %}
+    {% set barHeight = element.height|default(24) %}
+    {% set slashWeight = element.slashWeight|default('medium') %}
+    {% set slashCount = element.slashCount|default(5) %}
+    {% if slashCount < 1 %}{% set slashCount = 1 %}{% endif %}
+    {% if slashCount > 200 %}{% set slashCount = 200 %}{% endif %}
+    {% set slashThin = { fontSize: 10, fontWeight: 'normal' } %}
+    {% set slashMedium = { fontSize: 14, fontWeight: 'bold' } %}
+    {% set slashBold = { fontSize: 18, fontWeight: 'bold' } %}
+    {% set slashType = slashWeight == 'thin' ? slashThin : (slashWeight == 'bold' ? slashBold : slashMedium) %}
+    <table width="100%" cellpadding="0" cellspacing="0" style="border: none; border-collapse: collapse; height: {{ barHeight }}px; {{ wrapperStyle }}">
+        <tr>
+            {% for i in 0..(slashCount - 1) %}
+                <td align="center" valign="middle" style="border: none; padding: 0; font-family: DejaVu Sans, Arial, sans-serif; font-size: {{ slashType.fontSize }}pt; font-weight: {{ slashType.fontWeight }}; color: {{ lineColor }}; line-height: 1;">/</td>
+            {% endfor %}
+        </tr>
+    </table>
+
+{% else %}
+    <hr style="border: none; border-top: 1px solid {{ lineColor }}; {{ wrapperStyle }}">
+{% endif %}

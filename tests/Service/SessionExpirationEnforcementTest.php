@@ -8,6 +8,7 @@ use App\Entity\StaffUser;
 use App\Entity\Enum\AccountStatus;
 use App\Entity\Enum\UserRole;
 use App\EventListener\SessionTimeoutListener;
+use App\Service\SessionActivityManager;
 use App\Service\UserService;
 use Doctrine\ORM\EntityManagerInterface;
 use Eris\Generator;
@@ -117,7 +118,8 @@ class SessionExpirationEnforcementTest extends KernelTestCase
             $request->setSession($session);
             
             // Create session timeout listener
-            $listener = new SessionTimeoutListener($this->tokenStorage, $this->router);
+            $sessionActivityManager = new SessionActivityManager(static::getContainer()->getParameter('kernel.project_dir'));
+            $listener = new SessionTimeoutListener($this->tokenStorage, $this->router, $sessionActivityManager);
             
             // Create request event
             $kernel = static::getContainer()->get('kernel');
@@ -185,7 +187,8 @@ class SessionExpirationEnforcementTest extends KernelTestCase
             $request->setSession($session);
             
             // Create session timeout listener
-            $listener = new SessionTimeoutListener($this->tokenStorage, $this->router);
+            $sessionActivityManager = new SessionActivityManager(static::getContainer()->getParameter('kernel.project_dir'));
+            $listener = new SessionTimeoutListener($this->tokenStorage, $this->router, $sessionActivityManager);
             
             // Create request event
             $kernel = static::getContainer()->get('kernel');
@@ -246,7 +249,8 @@ class SessionExpirationEnforcementTest extends KernelTestCase
             $request->setSession($session);
             
             // Create session timeout listener
-            $listener = new SessionTimeoutListener($this->tokenStorage, $this->router);
+            $sessionActivityManager = new SessionActivityManager(static::getContainer()->getParameter('kernel.project_dir'));
+            $listener = new SessionTimeoutListener($this->tokenStorage, $this->router, $sessionActivityManager);
             
             // Create request event
             $kernel = static::getContainer()->get('kernel');

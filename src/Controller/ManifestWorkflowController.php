@@ -8,8 +8,10 @@ use App\Service\NOAService;
 use App\Service\BillingService;
 use App\Service\UserService;
 use App\Service\ManifestBLDocumentGenerator;
+use App\Service\ManifestWorkflowDisplayService;
+use App\Service\NOADocumentGenerator;
 use App\Service\SlStaffDashboardLocationService;
-use App\Entity\Enum\UserRole;
+use App\Service\FileStorageServiceInterface;
 use App\Entity\Enum\WorkflowState;
 use App\Entity\NOA;
 use App\Entity\User;
@@ -35,15 +37,23 @@ class ManifestWorkflowController extends AbstractController
         private SlStaffDashboardLocationService $slStaffDashboardLocationService,
         private \App\Service\InAppNotificationService $notificationService,
         private \App\Service\ManifestNotificationService $manifestNotificationService,
-        private \App\Service\AuditService $auditService
+        private \App\Service\AuditService $auditService,
+        private NOADocumentGenerator $noaDocumentGenerator,
+        private \App\Service\DocumentTemplateDeveloperSettingsService $documentTemplateDeveloperSettings,
+        private FileStorageServiceInterface $fileStorage,
+        private ManifestWorkflowDisplayService $manifestWorkflowDisplayService,
+        private \App\Service\EDODocumentGenerator $edoDocumentGenerator,
+        private \App\Service\EDOService $edoService,
     ) {
     }
 
     #[Route('', name: 'manifest_workflow_list', methods: ['GET'])]
     public function list(Request $request): Response
     {
-        // Only SL_STAFF and ACCOUNTING can access manifest workflow list
-        $this->denyAccessUnlessGranted('ROLE_SL_STAFF');
+        // SL Staff (and Shipping Admin via role hierarchy) plus Accounting can view the workflow list
+        if (!$this->isGranted('ROLE_SL_STAFF') && !$this->isGranted('ROLE_ACCOUNTING')) {
+            throw $this->createAccessDeniedException();
+        }
         
         // Clear entity manager to get fresh data from database
         $this->entityManager->clear();
@@ -78,20 +88,15 @@ class ManifestWorkflowController extends AbstractController
             'payment_verified' => 0,
             'edo_generated' => 0,
             'edo_released' => 0,
-            'edo_step' => 0,
         ];
         
         foreach ($allNoas as $noa) {
-            $manifest = $this->entityManager->getRepository(\App\Entity\Manifest::class)
-                ->findOneBy(['noa' => $noa]);
+            $manifest = $this->manifestService->getPrimaryManifestForNoa($noa);
             
             if ($manifest) {
                 $statusValue = $manifest->getWorkflowState()->value;
                 if (isset($stats[$statusValue])) {
                     $stats[$statusValue]++;
-                }
-                if (in_array($statusValue, ['payment_verified', 'edo_generated'], true)) {
-                    $stats['edo_step']++;
                 }
             } else {
                 $stats['noa_only']++;
@@ -137,6 +142,7 @@ class ManifestWorkflowController extends AbstractController
                 $qb->andWhere('m.id IS NULL OR m.workflowState = :noaGenerated')
                    ->setParameter('noaGenerated', WorkflowState::NOA_GENERATED);
             } elseif ($status === 'edo_step') {
+                // Backward compatibility for old filter links
                 $qb->andWhere('m.workflowState IN (:edoStates)')
                    ->setParameter('edoStates', [
                        WorkflowState::PAYMENT_VERIFIED,
@@ -162,8 +168,7 @@ class ManifestWorkflowController extends AbstractController
         // Get manifest information for each NOA to display status
         $noasWithManifests = [];
         foreach ($noas as $noa) {
-            $manifest = $this->entityManager->getRepository(\App\Entity\Manifest::class)
-                ->findOneBy(['noa' => $noa]);
+            $manifest = $this->manifestService->getPrimaryManifestForNoa($noa);
             
             // Count containers with eDOs for this NOA
             $totalContainers = $noa->getContainers()->count();
@@ -215,15 +220,20 @@ class ManifestWorkflowController extends AbstractController
         }
 
         $cyLocations = [];
+        $portLocations = [];
         $user = $this->getUser();
         if ($user instanceof \App\Entity\StaffUser && $user->getShippingLineScope()) {
             $cyLocations = $this->slStaffDashboardLocationService->buildCyEmptyReturnLocations(
+                $user->getShippingLineScope()
+            );
+            $portLocations = $this->slStaffDashboardLocationService->buildPortTerminalLocations(
                 $user->getShippingLineScope()
             );
         }
 
         return $this->render('manifest_workflow/upload.html.twig', [
             'cyLocations' => $cyLocations,
+            'portLocations' => $portLocations,
         ]);
     }
 
@@ -653,128 +663,140 @@ class ManifestWorkflowController extends AbstractController
     #[Route('/noa/{id}', name: 'manifest_workflow_noa_detail', methods: ['GET'])]
     public function noaDetail(int $id): Response
     {
-        $noa = $this->entityManager->getRepository(\App\Entity\NOA::class)->find($id);
-        
-        if (!$noa) {
-            throw $this->createNotFoundException('NOA not found');
-        }
-
-        $this->assertCanViewNoa($noa);
-
-        // Find associated manifest if it exists
-        $manifest = $this->entityManager->getRepository(\App\Entity\Manifest::class)
-            ->findOneBy(['noa' => $noa]);
-
-        // Fetch eDO payment status for each container
-        $containerPaymentStatus = [];
-        if ($noa->getContainers()) {
-            foreach ($noa->getContainers() as $container) {
-                $containerPaymentStatus[$container->getId()] = $this->getContainerEDOPaymentStatus($container);
+        try {
+            $noa = $this->entityManager->getRepository(\App\Entity\NOA::class)->find($id);
+            
+            if (!$noa) {
+                throw $this->createNotFoundException('NOA not found');
             }
-        }
 
-        // Fetch audit logs for this NOA and all related entities
-        $auditLogs = [];
-        
-        // 1. Get NOA audit logs
-        $noaLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
-            ->createQueryBuilder('a')
-            ->where('a.entityType = :entityType')
-            ->andWhere('a.entityId = :entityId')
-            ->setParameter('entityType', 'NOA')
-            ->setParameter('entityId', $id)
-            ->getQuery()
-            ->getResult();
-        $auditLogs = array_merge($auditLogs, $noaLogs);
-        
-        // 2. Get Manifest audit logs if manifest exists
-        if ($manifest) {
-            $manifestLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
+            $this->assertCanViewNoa($noa);
+            $user = $this->getUser();
+
+            // Find associated manifest if it exists
+            $manifest = $this->manifestService->getPrimaryManifestForNoa($noa);
+
+            // Fetch eDO payment status for each container
+            $containerPaymentStatus = [];
+            if ($noa->getContainers()) {
+                foreach ($noa->getContainers() as $container) {
+                    $containerPaymentStatus[$container->getId()] = $this->getContainerEDOPaymentStatus($container);
+                }
+            }
+
+            // Fetch audit logs for this NOA and all related entities
+            $auditLogs = [];
+            
+            // 1. Get NOA audit logs
+            $noaLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
                 ->createQueryBuilder('a')
                 ->where('a.entityType = :entityType')
                 ->andWhere('a.entityId = :entityId')
-                ->setParameter('entityType', 'Manifest')
-                ->setParameter('entityId', $manifest->getId())
+                ->setParameter('entityType', 'NOA')
+                ->setParameter('entityId', $id)
                 ->getQuery()
                 ->getResult();
-            $auditLogs = array_merge($auditLogs, $manifestLogs);
+            $auditLogs = array_merge($auditLogs, $noaLogs);
             
-            // 3. Get Payment audit logs
-            $payments = $manifest->getPayments();
-            if ($payments && count($payments) > 0) {
-                foreach ($payments as $payment) {
-                    $paymentLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
-                        ->createQueryBuilder('a')
-                        ->where('a.entityType = :entityType')
-                        ->andWhere('a.entityId = :entityId')
-                        ->setParameter('entityType', 'Payment')
-                        ->setParameter('entityId', $payment->getId())
-                        ->getQuery()
-                        ->getResult();
-                    $auditLogs = array_merge($auditLogs, $paymentLogs);
-                }
-            }
-            
-            // 4. Get EDO audit logs
-            $edos = $manifest->getEdos();
-            if ($edos && count($edos) > 0) {
-                foreach ($edos as $edo) {
-                    $edoLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
-                        ->createQueryBuilder('a')
-                        ->where('a.entityType = :entityType')
-                        ->andWhere('a.entityId = :entityId')
-                        ->setParameter('entityType', 'ElectronicDeliveryOrder')
-                        ->setParameter('entityId', $edo->getId())
-                        ->getQuery()
-                        ->getResult();
-                    $auditLogs = array_merge($auditLogs, $edoLogs);
-                }
-            }
-            
-            // 5. Get EDO Payment audit logs
-            $edoPayments = $manifest->getEdoPayments();
-            if ($edoPayments && count($edoPayments) > 0) {
-                foreach ($edoPayments as $edoPayment) {
-                    $edoPaymentLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
-                        ->createQueryBuilder('a')
-                        ->where('a.entityType = :entityType')
-                        ->andWhere('a.entityId = :entityId')
-                        ->setParameter('entityType', 'EDOPayment')
-                        ->setParameter('entityId', $edoPayment->getId())
-                        ->getQuery()
-                        ->getResult();
-                    $auditLogs = array_merge($auditLogs, $edoPaymentLogs);
-                }
-            }
-        }
-        
-        // 6. Get Container audit logs
-        $containers = $noa->getContainers();
-        if ($containers && count($containers) > 0) {
-            foreach ($containers as $container) {
-                $containerLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
+            // 2. Get Manifest audit logs if manifest exists
+            if ($manifest) {
+                $manifestLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
                     ->createQueryBuilder('a')
                     ->where('a.entityType = :entityType')
                     ->andWhere('a.entityId = :entityId')
-                    ->setParameter('entityType', 'Container')
-                    ->setParameter('entityId', $container->getId())
+                    ->setParameter('entityType', 'Manifest')
+                    ->setParameter('entityId', $manifest->getId())
                     ->getQuery()
                     ->getResult();
-                $auditLogs = array_merge($auditLogs, $containerLogs);
+                $auditLogs = array_merge($auditLogs, $manifestLogs);
+                
+                // 3. Get Payment audit logs
+                $payments = $manifest->getPayments();
+                if ($payments && count($payments) > 0) {
+                    foreach ($payments as $payment) {
+                        $paymentLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
+                            ->createQueryBuilder('a')
+                            ->where('a.entityType = :entityType')
+                            ->andWhere('a.entityId = :entityId')
+                            ->setParameter('entityType', 'Payment')
+                            ->setParameter('entityId', $payment->getId())
+                            ->getQuery()
+                            ->getResult();
+                        $auditLogs = array_merge($auditLogs, $paymentLogs);
+                    }
+                }
+                
+                // 4. Get EDO audit logs
+                $edos = $manifest->getEdos();
+                if ($edos && count($edos) > 0) {
+                    foreach ($edos as $edo) {
+                        $edoLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
+                            ->createQueryBuilder('a')
+                            ->where('a.entityType = :entityType')
+                            ->andWhere('a.entityId = :entityId')
+                            ->setParameter('entityType', 'ElectronicDeliveryOrder')
+                            ->setParameter('entityId', $edo->getId())
+                            ->getQuery()
+                            ->getResult();
+                        $auditLogs = array_merge($auditLogs, $edoLogs);
+                    }
+                }
+                
+                // 5. Get EDO Payment audit logs
+                $edoPayments = $manifest->getEdoPayments();
+                if ($edoPayments && count($edoPayments) > 0) {
+                    foreach ($edoPayments as $edoPayment) {
+                        $edoPaymentLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
+                            ->createQueryBuilder('a')
+                            ->where('a.entityType = :entityType')
+                            ->andWhere('a.entityId = :entityId')
+                            ->setParameter('entityType', 'EDOPayment')
+                            ->setParameter('entityId', $edoPayment->getId())
+                            ->getQuery()
+                            ->getResult();
+                        $auditLogs = array_merge($auditLogs, $edoPaymentLogs);
+                    }
+                }
             }
-        }
-        
-        // Sort all logs by timestamp descending (newest first)
-        usort($auditLogs, function($a, $b) {
-            return $b->getTimestamp() <=> $a->getTimestamp();
-        });
+            
+            // 6. Get Container audit logs
+            $containers = $noa->getContainers();
+            if ($containers && count($containers) > 0) {
+                foreach ($containers as $container) {
+                    $containerLogs = $this->entityManager->getRepository(\App\Entity\AuditLog::class)
+                        ->createQueryBuilder('a')
+                        ->where('a.entityType = :entityType')
+                        ->andWhere('a.entityId = :entityId')
+                        ->setParameter('entityType', 'Container')
+                        ->setParameter('entityId', $container->getId())
+                        ->getQuery()
+                        ->getResult();
+                    $auditLogs = array_merge($auditLogs, $containerLogs);
+                }
+            }
+            
+            // Sort all logs by timestamp descending (newest first)
+            usort($auditLogs, function($a, $b) {
+                return $b->getTimestamp() <=> $a->getTimestamp();
+            });
 
-        return $this->render('manifest_workflow/noa_detail.html.twig', [
-            'noa' => $noa,
-            'manifest' => $manifest,
-            'containerPaymentStatus' => $containerPaymentStatus,
-            'auditLogs' => $auditLogs,
-        ]);
+            return $this->render('manifest_workflow/noa_detail.html.twig', [
+                'noa' => $noa,
+                'manifest' => $manifest,
+                'containerPaymentStatus' => $containerPaymentStatus,
+                'auditLogs' => $auditLogs,
+                'noaPdfRegenerateEnabled' => $this->documentTemplateDeveloperSettings->isNoaPdfRegenerateEnabled(),
+                'manifestBlPdfRegenerateEnabled' => $this->documentTemplateDeveloperSettings->isManifestBlPdfRegenerateEnabled(),
+                'billingPdfRegenerateEnabled' => $this->documentTemplateDeveloperSettings->isBillingPdfRegenerateEnabled(),
+                'edoPdfRegenerateEnabled' => $this->documentTemplateDeveloperSettings->isEdoPdfRegenerateEnabled(),
+                'canEditNoa' => $this->isGranted(NOAVoter::EDIT, $noa),
+                'isWorkflowHub' => $user instanceof User
+                    && $this->manifestWorkflowDisplayService->usesNoaDetailAsWorkflowHub($user),
+            ]);
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Failed to load NOA detail: ' . $e->getMessage());
+            return $this->redirectToRoute('manifest_workflow_list');
+        }
     }
 
     #[Route('/noa/{id}/edit', name: 'manifest_workflow_noa_edit_page', methods: ['GET'])]
@@ -1042,8 +1064,7 @@ class ManifestWorkflowController extends AbstractController
     private function sendNoaUpdateNotifications(\App\Entity\NOA $noa, array $changes): void
     {
         // Find associated manifest
-        $manifest = $this->entityManager->getRepository(\App\Entity\Manifest::class)
-            ->findOneBy(['noa' => $noa]);
+        $manifest = $this->manifestService->getPrimaryManifestForNoa($noa);
 
         $changeText = implode(', ', $changes);
         $notificationMessage = "NOA {$noa->getNoaNumber()} has been updated. Changes: {$changeText}";
@@ -1153,6 +1174,12 @@ class ManifestWorkflowController extends AbstractController
             throw $this->createAccessDeniedException('Access denied');
         }
 
+        if ($user instanceof User && $this->manifestWorkflowDisplayService->shouldRedirectManifestDetailToNoa($manifest, $user)) {
+            return $this->redirectToRoute('manifest_workflow_noa_detail', [
+                'id' => $manifest->getNoa()->getId(),
+            ]);
+        }
+
         return $this->render('manifest_workflow/detail.html.twig', [
             'manifest' => $manifest,
         ]);
@@ -1247,34 +1274,460 @@ class ManifestWorkflowController extends AbstractController
         ]);
     }
 
+    #[Route('/{id}/generate-billing', name: 'manifest_workflow_generate_billing_submit', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function submitGenerateBilling(int $id, Request $request): Response
+    {
+        $this->denyAccessUnlessGranted('ROLE_ACCOUNTING');
+
+        $this->entityManager->clear();
+
+        $manifest = $this->manifestService->getManifestById($id);
+        if (!$manifest) {
+            throw $this->createNotFoundException('Manifest not found');
+        }
+
+        $securityUser = $this->getUser();
+        if (!$securityUser instanceof User || !$this->authorizationService->canViewManifest($manifest, $securityUser)) {
+            throw $this->createAccessDeniedException('Access denied');
+        }
+
+        // clear() detaches the security user; reload so audit/activity logs persist correctly
+        $user = $this->entityManager->find(User::class, $securityUser->getId());
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException('Access denied');
+        }
+
+        if (!$this->isCsrfTokenValid('generate_billing_' . $id, $request->request->getString('_token'))) {
+            $this->addFlash('error', 'Invalid security token. Please try again.');
+            return $this->redirectToRoute('manifest_workflow_generate_billing', ['id' => $id]);
+        }
+
+        try {
+            $currency = $request->request->getString('currency', 'PHP');
+            $exchangeRate = $request->request->get('exchange_rate');
+            $freightCharges = (float) $request->request->get('freight_charges', 0);
+            $thcCharges = (float) $request->request->get('thc_charges', 0);
+
+            $additionalCharges = json_decode($request->request->getString('additional_charges', '[]'), true);
+            if (!is_array($additionalCharges) || $additionalCharges === []) {
+                $additionalCharges = null;
+            }
+
+            if ($currency === 'USD' && $exchangeRate) {
+                $rate = (float) $exchangeRate;
+                $freightCharges *= $rate;
+                $thcCharges *= $rate;
+                if (is_array($additionalCharges)) {
+                    foreach ($additionalCharges as &$charge) {
+                        $charge['amount'] = ((float) ($charge['amount'] ?? 0)) * $rate;
+                    }
+                    unset($charge);
+                }
+            }
+
+            $chargeData = $this->billingService->normalizeChargeData([
+                'freightCharges' => $freightCharges,
+                'thcCharges' => $thcCharges,
+                'additionalCharges' => $additionalCharges,
+                'currency' => $currency,
+                'exchangeRate' => $currency === 'USD' ? (float) $exchangeRate : null,
+            ]);
+
+            $this->billingService->generateBilling($id, $chargeData, $user);
+
+            $this->addFlash('success', 'Billing statement generated successfully using the active document template.');
+
+            $noa = $manifest->getNoa();
+            if ($noa) {
+                return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $noa->getId()]);
+            }
+
+            return $this->redirectToRoute('manifest_workflow_detail', ['id' => $id]);
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Failed to generate billing: ' . $e->getMessage());
+            return $this->redirectToRoute('manifest_workflow_generate_billing', ['id' => $id]);
+        }
+    }
+
     #[Route('/noa/{id}/download-pdf', name: 'manifest_workflow_noa_download_pdf', methods: ['GET'])]
     public function downloadNoaPdf(int $id): Response
     {
+        try {
+            $noa = $this->entityManager->getRepository(\App\Entity\NOA::class)->find($id);
+
+            if (!$noa) {
+                throw $this->createNotFoundException('NOA not found');
+            }
+
+            $this->assertCanViewNoa($noa);
+
+            $fullPath = $this->resolveNoaPdfFullPath($noa);
+            if (!$fullPath) {
+                $this->addFlash('error', 'PDF file not found on server');
+                return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+            }
+
+            return $this->file($fullPath, 'NOA_' . $noa->getNoaNumber() . '.pdf');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Failed to download NOA PDF: ' . $e->getMessage());
+            return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+        }
+    }
+
+    #[Route('/api/noa/{noaNumber}/download', name: 'api_noa_download', methods: ['GET'])]
+    public function downloadNoaByNumber(string $noaNumber): Response
+    {
+        try {
+            $noa = $this->entityManager->getRepository(\App\Entity\NOA::class)
+                ->findOneBy(['noaNumber' => $noaNumber]);
+
+            if (!$noa) {
+                throw $this->createNotFoundException('NOA not found');
+            }
+
+            $this->assertCanViewNoa($noa);
+
+            $fullPath = $this->resolveNoaPdfFullPath($noa);
+            if (!$fullPath) {
+                throw $this->createNotFoundException('NOA PDF file not found on server');
+            }
+
+            return $this->file($fullPath, 'NOA_' . $noa->getNoaNumber() . '.pdf');
+        } catch (\Throwable $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
+        }
+    }
+
+    #[Route('/noa/{id}/regenerate-pdf', name: 'manifest_workflow_noa_regenerate_pdf', methods: ['POST'])]
+    public function regenerateNoaPdf(int $id, Request $request): Response
+    {
+        if (!$this->documentTemplateDeveloperSettings->isNoaPdfRegenerateEnabled()) {
+            throw $this->createNotFoundException();
+        }
+
         $noa = $this->entityManager->getRepository(\App\Entity\NOA::class)->find($id);
-        
+
+        if (!$noa) {
+            throw $this->createNotFoundException('NOA not found');
+        }
+
+        $this->assertCanEditNoa($noa);
+
+        if (!$this->isCsrfTokenValid('regenerate_noa_pdf_' . $id, $request->request->get('_token'))) {
+            $this->addFlash('error', 'Invalid security token. Please try again.');
+            return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+        }
+
+        try {
+            $pdfPath = $this->noaDocumentGenerator->generatePDF($noa);
+
+            // Keep legacy NOADocument records in sync so broker/consignee
+            // pages that still rely on legacy fields reflect regenerated PDFs.
+            $legacyNoaDocument = $this->entityManager
+                ->getRepository(\App\Entity\NOADocument::class)
+                ->findOneBy(['noaNumber' => $noa->getNoaNumber()]);
+            if ($legacyNoaDocument && $pdfPath) {
+                $legacyNoaDocument->setPdfPath($pdfPath);
+            }
+
+            $this->entityManager->flush();
+
+            $this->auditService->logAction(
+                $this->getUser(),
+                'noa_pdf_regenerated',
+                'NOA',
+                $noa->getId(),
+                ['noa_number' => $noa->getNoaNumber()]
+            );
+
+            $this->addFlash('success', 'NOA PDF regenerated successfully using the active document template.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Failed to regenerate NOA PDF: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+    }
+
+    #[Route('/noa/{id}/regenerate-manifest-pdf', name: 'manifest_workflow_manifest_regenerate_pdf', methods: ['POST'])]
+    public function regenerateManifestPdf(int $id, Request $request): Response
+    {
+        if (!$this->documentTemplateDeveloperSettings->isManifestBlPdfRegenerateEnabled()) {
+            throw $this->createNotFoundException();
+        }
+
+        $noa = $this->entityManager->getRepository(\App\Entity\NOA::class)->find($id);
+
+        if (!$noa) {
+            throw $this->createNotFoundException('NOA not found');
+        }
+
+        $this->assertCanEditNoa($noa);
+
+        if (!$this->isCsrfTokenValid('regenerate_manifest_pdf_' . $id, $request->request->get('_token'))) {
+            $this->addFlash('error', 'Invalid security token. Please try again.');
+            return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+        }
+
+        $manifest = $this->manifestService->getPrimaryManifestForNoa($noa);
+
+        if (!$manifest) {
+            $this->addFlash('error', 'No manifest exists for this NOA yet. Generate a manifest first.');
+            return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+        }
+
+        try {
+            $pdfPath = $this->manifestBLGenerator->generatePDF(
+                $noa,
+                $manifest->getManifestNumber(),
+                $manifest,
+            );
+            $manifest->setManifestFilePath($pdfPath);
+            $this->entityManager->flush();
+
+            $this->auditService->logAction(
+                $this->getUser(),
+                'manifest_bl_pdf_regenerated',
+                'Manifest',
+                $manifest->getId(),
+                [
+                    'manifest_number' => $manifest->getManifestNumber(),
+                    'noa_id' => $noa->getId(),
+                    'noa_number' => $noa->getNoaNumber(),
+                ]
+            );
+
+            $this->addFlash('success', 'Manifest/BL PDF regenerated successfully using the active document template.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Failed to regenerate Manifest/BL PDF: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+    }
+
+    #[Route('/noa/{id}/regenerate-edo-pdf', name: 'manifest_workflow_edo_regenerate_pdf', methods: ['POST'])]
+    public function regenerateEdoPdf(int $id, Request $request): Response
+    {
+        if (!$this->documentTemplateDeveloperSettings->isEdoPdfRegenerateEnabled()) {
+            throw $this->createNotFoundException();
+        }
+
+        $noa = $this->entityManager->getRepository(\App\Entity\NOA::class)->find($id);
+
+        if (!$noa) {
+            throw $this->createNotFoundException('NOA not found');
+        }
+
+        $this->assertCanEditNoa($noa);
+
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException('Access denied');
+        }
+
+        if (!$this->isCsrfTokenValid('regenerate_edo_pdf_' . $id, $request->request->get('_token'))) {
+            $this->addFlash('error', 'Invalid security token. Please try again.');
+            return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+        }
+
+        $manifest = $this->manifestService->getPrimaryManifestForNoa($noa);
+
+        if (!$manifest) {
+            $this->addFlash('error', 'No manifest exists for this NOA yet.');
+            return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+        }
+
+        if (!$this->authorizationService->canViewManifest($manifest, $user)) {
+            throw $this->createAccessDeniedException('Access denied');
+        }
+
+        $edos = [];
+        foreach ($manifest->getEdos() as $edo) {
+            if ($this->isRegeneratableEdoPdfPath($edo->getPdfPath())) {
+                $edos[] = $edo;
+            }
+        }
+
+        if ($edos === []) {
+            $this->addFlash('error', 'No eDO PDFs exist for this manifest yet. Generate eDOs first.');
+            return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+        }
+
+        usort($edos, static function (\App\Entity\ElectronicDeliveryOrder $a, \App\Entity\ElectronicDeliveryOrder $b): int {
+            $containerA = $a->getContainer()?->getContainerNumber() ?? $a->getEdoNumber();
+            $containerB = $b->getContainer()?->getContainerNumber() ?? $b->getEdoNumber();
+
+            return strcmp($containerA, $containerB);
+        });
+
+        try {
+            $bulkPdfPath = $this->edoDocumentGenerator->generateBulkPDF($edos, $user);
+            $generatorName = $user->getFullName() ?: $user->getEmail();
+
+            foreach ($edos as $edo) {
+                $edo->setPdfPath($bulkPdfPath);
+                $edo->setGeneratedByName($generatorName);
+                $this->edoService->invalidateEDOPDFCache($edo);
+            }
+
+            $this->entityManager->flush();
+
+            $this->auditService->logAction(
+                $user,
+                'edo_pdf_regenerated',
+                'Manifest',
+                $manifest->getId(),
+                [
+                    'manifest_number' => $manifest->getManifestNumber(),
+                    'noa_id' => $noa->getId(),
+                    'noa_number' => $noa->getNoaNumber(),
+                    'edo_count' => count($edos),
+                    'pdf_path' => $bulkPdfPath,
+                ]
+            );
+
+            $this->addFlash(
+                'success',
+                sprintf(
+                    'eDO PDF regenerated successfully for %d container(s) using the active document template.',
+                    count($edos)
+                )
+            );
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Failed to regenerate eDO PDF: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+    }
+
+    private function isRegeneratableEdoPdfPath(?string $pdfPath): bool
+    {
+        $pdfPath = trim((string) $pdfPath);
+
+        return $pdfPath !== '' && !in_array($pdfPath, ['pending', 'failed'], true);
+    }
+
+    #[Route('/noa/{id}/download-billing-pdf', name: 'manifest_workflow_billing_download_pdf', methods: ['GET'])]
+    public function downloadBillingPdf(int $id): Response
+    {
+        $noa = $this->entityManager->getRepository(\App\Entity\NOA::class)->find($id);
+
         if (!$noa) {
             throw $this->createNotFoundException('NOA not found');
         }
 
         $this->assertCanViewNoa($noa);
 
-        $pdfPath = $noa->getPdfPath();
-        
-        if (!$pdfPath) {
-            $this->addFlash('error', 'PDF not available for this NOA');
+        $manifest = $this->manifestService->getPrimaryManifestForNoa($noa);
+        if (!$manifest) {
+            $this->addFlash('error', 'No manifest exists for this NOA yet.');
             return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
         }
 
-        // Construct full file path
-        $fullPath = $this->getParameter('kernel.project_dir') . '/var/share/' . $pdfPath;
-        
-        if (!file_exists($fullPath)) {
-            $this->addFlash('error', 'PDF file not found on server');
+        $user = $this->getUser();
+        if (!$user instanceof User || !$this->authorizationService->canViewManifest($manifest, $user)) {
+            throw $this->createAccessDeniedException('Access denied');
+        }
+
+        $billing = $manifest->getBilling();
+        if (!$billing) {
+            $this->addFlash('error', 'No billing document exists for this manifest yet.');
             return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
         }
 
-        // Return file as download
-        return $this->file($fullPath, 'NOA_' . $noa->getNoaNumber() . '.pdf');
+        $fullPath = $this->resolveBillingPdfFullPath($billing);
+        if (!$fullPath) {
+            try {
+                $billing = $this->billingService->regenerateBillingPdf((int) $billing->getId());
+                $fullPath = $this->resolveBillingPdfFullPath($billing);
+            } catch (\Throwable $e) {
+                $this->addFlash('error', 'Failed to generate billing PDF: ' . $e->getMessage());
+                return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+            }
+        }
+
+        if (!$fullPath) {
+            $this->addFlash('error', 'Billing PDF file not found on server');
+            return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+        }
+
+        $this->auditService->logDocumentDownload($user, 'Billing', $billing->getId());
+
+        return $this->file(
+            $fullPath,
+            sprintf('Billing-%s.pdf', str_pad((string) $billing->getId(), 5, '0', STR_PAD_LEFT))
+        );
+    }
+
+    #[Route('/noa/{id}/regenerate-billing-pdf', name: 'manifest_workflow_billing_regenerate_pdf', methods: ['POST'])]
+    public function regenerateBillingPdf(int $id, Request $request): Response
+    {
+        if (!$this->documentTemplateDeveloperSettings->isBillingPdfRegenerateEnabled()) {
+            throw $this->createNotFoundException();
+        }
+
+        $noa = $this->entityManager->getRepository(\App\Entity\NOA::class)->find($id);
+
+        if (!$noa) {
+            throw $this->createNotFoundException('NOA not found');
+        }
+
+        $this->assertCanRegenerateBillingPdf($noa);
+
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException('Access denied');
+        }
+
+        if (!$this->isCsrfTokenValid('regenerate_billing_pdf_' . $id, $request->request->get('_token'))) {
+            $this->addFlash('error', 'Invalid security token. Please try again.');
+            return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+        }
+
+        $manifest = $this->manifestService->getPrimaryManifestForNoa($noa);
+
+        if (!$manifest) {
+            $this->addFlash('error', 'No manifest exists for this NOA yet.');
+            return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+        }
+
+        if (!$this->authorizationService->canViewManifest($manifest, $user)) {
+            throw $this->createAccessDeniedException('Access denied');
+        }
+
+        $billing = $manifest->getBilling();
+        if (!$billing) {
+            $this->addFlash('error', 'No billing exists for this manifest yet. Generate billing first.');
+            return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+        }
+
+        try {
+            $billing = $this->billingService->regenerateBillingPdf($billing->getId());
+            $savedPath = $billing->getPdfPath();
+
+            $this->auditService->logAction(
+                $this->getUser(),
+                'billing_pdf_regenerated',
+                'Billing',
+                $billing->getId(),
+                [
+                    'manifest_id' => $manifest->getId(),
+                    'manifest_number' => $manifest->getManifestNumber(),
+                    'noa_id' => $noa->getId(),
+                    'noa_number' => $noa->getNoaNumber(),
+                    'pdf_path' => $savedPath,
+                ]
+            );
+
+            $this->addFlash(
+                'success',
+                'Billing PDF regenerated and saved successfully.'
+                . ($savedPath ? ' You can download the updated file from Available Documents.' : '')
+            );
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Failed to regenerate Billing PDF: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
     }
 
     #[Route('/noa/{id}/generate-manifest', name: 'manifest_workflow_generate_manifest_form', methods: ['GET'])]
@@ -1288,7 +1741,12 @@ class ManifestWorkflowController extends AbstractController
 
         $this->assertCanEditNoa($noa);
 
-        // Check if manifest already generated
+        $existingManifest = $this->manifestService->getPrimaryManifestForNoa($noa);
+        if ($existingManifest && $this->manifestBlAlreadyGenerated($existingManifest)) {
+            $this->addFlash('info', 'Manifest/BL has already been generated for this NOA');
+            return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+        }
+
         if ($noa->getManifestPdfPath()) {
             $this->addFlash('info', 'Manifest/BL has already been generated for this NOA');
             return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
@@ -1332,12 +1790,18 @@ class ManifestWorkflowController extends AbstractController
                 $this->addFlash('error', 'Manifest/BL Number is required');
                 return $this->redirectToRoute('manifest_workflow_generate_manifest_form', ['id' => $id]);
             }
+
+            $linkedManifest = $this->manifestService->getPrimaryManifestForNoa($noa);
+            if ($linkedManifest && $this->manifestBlAlreadyGenerated($linkedManifest)) {
+                $this->addFlash('info', 'Manifest/BL has already been generated for this NOA');
+                return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
+            }
             
-            // Check if manifest number already exists
-            $existingManifest = $this->entityManager->getRepository(\App\Entity\Manifest::class)
+            // Check if manifest number already exists on a different manifest
+            $existingByNumber = $this->entityManager->getRepository(\App\Entity\Manifest::class)
                 ->findOneBy(['manifestNumber' => $manifestNumber]);
             
-            if ($existingManifest) {
+            if ($existingByNumber && (!$linkedManifest || $existingByNumber->getId() !== $linkedManifest->getId())) {
                 $this->addFlash('error', 'Manifest/BL Number already exists. Please use a unique number.');
                 return $this->redirectToRoute('manifest_workflow_generate_manifest_form', ['id' => $id]);
             }
@@ -1363,14 +1827,18 @@ class ManifestWorkflowController extends AbstractController
                 $pdfPath = $this->manifestBLGenerator->generatePDF($noa, $manifestNumber);
                 error_log('PDF generated successfully. Path: ' . $pdfPath);
                 
-                // Create Manifest record in manifests table
-                error_log('Creating Manifest record');
-                $manifest = new \App\Entity\Manifest();
+                if ($linkedManifest) {
+                    error_log('Updating existing manifest record for NOA ID: ' . $noa->getId());
+                    $manifest = $linkedManifest;
+                } else {
+                    error_log('Creating Manifest record');
+                    $manifest = new \App\Entity\Manifest();
+                    $manifest->setNoa($noa);
+                    $manifest->setWorkflowState(WorkflowState::NOA_GENERATED);
+                    $manifest->setCreatedBy($this->getUser());
+                }
                 
-                // Use the manifest number from the form
                 $manifest->setManifestNumber($manifestNumber);
-                
-                // Set basic information from NOA
                 $manifest->setConsignee($noa->getConsignee());
                 $manifest->setBlNumber($noa->getBlNumber());
                 $manifest->setVesselName($noa->getVesselNumber());
@@ -1381,7 +1849,7 @@ class ManifestWorkflowController extends AbstractController
                 $createdBy = $noa->getCreatedBy();
                 if ($createdBy instanceof \App\Entity\StaffUser && $createdBy->getShippingLineScope()) {
                     $manifest->setShippingLine($createdBy->getShippingLineScope());
-                } else {
+                } elseif (!$manifest->getShippingLine()) {
                     // Fallback: try to get shipping line from database
                     $shippingLine = $this->entityManager->getRepository(\App\Entity\ShippingLine::class)->findOneBy([]);
                     if ($shippingLine) {
@@ -1391,14 +1859,10 @@ class ManifestWorkflowController extends AbstractController
                     }
                 }
                 
-                $manifest->setCreatedBy($this->getUser());
-                $manifest->setNoa($noa);
-                // NOA already exists — manifest starts at NOA Generated before BL transition
-                $manifest->setWorkflowState(WorkflowState::NOA_GENERATED);
-                
-                // Persist manifest
-                $this->entityManager->persist($manifest);
-                error_log('Manifest record created with number: ' . $manifestNumber);
+                if (!$this->entityManager->contains($manifest)) {
+                    $this->entityManager->persist($manifest);
+                }
+                error_log('Manifest record ready with number: ' . $manifestNumber);
                 
                 // Persist the PDF path to database
                 $this->entityManager->flush();
@@ -1451,22 +1915,15 @@ class ManifestWorkflowController extends AbstractController
 
         $this->assertCanViewNoa($noa);
 
-        $pdfPath = $noa->getManifestPdfPath();
-        
-        if (!$pdfPath) {
-            $this->addFlash('error', 'Manifest/BL PDF not available');
-            return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
-        }
+        $manifest = $this->manifestService->getPrimaryManifestForNoa($noa);
 
-        // Construct full file path
-        $fullPath = $this->getParameter('kernel.project_dir') . '/var/share/' . $pdfPath;
+        $fullPath = $this->resolveManifestBlPdfFullPath($manifest, $noa);
         
-        if (!file_exists($fullPath)) {
+        if (!$fullPath) {
             $this->addFlash('error', 'Manifest/BL PDF file not found on server');
             return $this->redirectToRoute('manifest_workflow_noa_detail', ['id' => $id]);
         }
 
-        // Return file as download
         return $this->file($fullPath, 'MANIFEST_BL_' . $noa->getBlNumber() . '.pdf');
     }
 
@@ -1484,28 +1941,51 @@ class ManifestWorkflowController extends AbstractController
             throw $this->createAccessDeniedException('Access denied');
         }
 
-        // Get the NOA associated with this manifest
         $noa = $manifest->getNoa();
+        $fullPath = $this->resolveManifestBlPdfFullPath($manifest, $noa);
         
-        if (!$noa) {
-            return $this->json(['error' => 'NOA not found for this manifest'], Response::HTTP_NOT_FOUND);
-        }
-
-        $pdfPath = $noa->getManifestPdfPath();
-        
-        if (!$pdfPath) {
-            return $this->json(['error' => 'Manifest/BL PDF not available'], Response::HTTP_NOT_FOUND);
-        }
-
-        // Construct full file path
-        $fullPath = $this->getParameter('kernel.project_dir') . '/var/share/' . $pdfPath;
-        
-        if (!file_exists($fullPath)) {
+        if (!$fullPath) {
             return $this->json(['error' => 'Manifest/BL PDF file not found on server'], Response::HTTP_NOT_FOUND);
         }
 
-        // Return file as download
-        return $this->file($fullPath, 'MANIFEST_BL_' . $noa->getBlNumber() . '.pdf');
+        $documentNumber = $noa?->getBlNumber() ?: $manifest->getManifestNumber();
+        return $this->file($fullPath, 'MANIFEST_BL_' . $documentNumber . '.pdf');
+    }
+
+    /**
+     * Resolve the on-disk path for a Manifest/BL PDF from entity-stored relative paths.
+     */
+    private function resolveManifestBlPdfFullPath(?\App\Entity\Manifest $manifest, ?NOA $noa): ?string
+    {
+        $relativeCandidates = array_values(array_filter(array_unique([
+            $noa?->getManifestPdfPath(),
+            $manifest?->getManifestFilePath(),
+        ])));
+
+        if ($relativeCandidates === []) {
+            return null;
+        }
+
+        foreach ($relativeCandidates as $relativePath) {
+            if ($this->fileStorage->fileExists($relativePath)) {
+                return $this->fileStorage->getFullPath($relativePath);
+            }
+        }
+
+        $projectDir = $this->getParameter('kernel.project_dir');
+        foreach ($relativeCandidates as $relativePath) {
+            foreach ([
+                $projectDir . '/public/uploads/' . $relativePath,
+                $projectDir . '/var/share/' . $relativePath,
+                $relativePath,
+            ] as $fullPath) {
+                if (is_file($fullPath)) {
+                    return $fullPath;
+                }
+            }
+        }
+
+        return null;
     }
 
     #[Route('/bulk-import-manifests', name: 'manifest_workflow_bulk_import_manifests', methods: ['GET', 'POST'])]
@@ -1828,8 +2308,7 @@ class ManifestWorkflowController extends AbstractController
             
             // Check if manifest already exists for this NOA
             if ($progress['skipExisting']) {
-                $existingManifest = $this->entityManager->getRepository(\App\Entity\Manifest::class)
-                    ->findOneBy(['noa' => $noa]);
+                $existingManifest = $this->manifestService->getPrimaryManifestForNoa($noa);
                 
                 if ($existingManifest) {
                     $progress['skippedCount']++;
@@ -2085,8 +2564,7 @@ class ManifestWorkflowController extends AbstractController
             }
 
             // Check if manifest already exists for this NOA
-            $existingManifest = $this->entityManager->getRepository(\App\Entity\Manifest::class)
-                ->findOneBy(['noa' => $noa]);
+            $existingManifest = $this->manifestService->getPrimaryManifestForNoa($noa);
 
             if ($existingManifest && $skipExisting) {
                 $result['skipped'][] = [
@@ -2311,8 +2789,7 @@ class ManifestWorkflowController extends AbstractController
             return;
         }
 
-        $manifest = $this->entityManager->getRepository(\App\Entity\Manifest::class)
-            ->findOneBy(['noa' => $noa]);
+        $manifest = $this->manifestService->getPrimaryManifestForNoa($noa);
         if ($manifest && $this->authorizationService->canViewManifest($manifest, $user)) {
             return;
         }
@@ -2323,6 +2800,78 @@ class ManifestWorkflowController extends AbstractController
     private function assertCanEditNoa(NOA $noa): void
     {
         $this->denyAccessUnlessGranted(NOAVoter::EDIT, $noa);
+    }
+
+    private function manifestBlAlreadyGenerated(\App\Entity\Manifest $manifest): bool
+    {
+        return in_array($manifest->getWorkflowState(), [
+            WorkflowState::BL_GENERATED,
+            WorkflowState::BL_UPLOADED,
+            WorkflowState::BILLING_GENERATED,
+            WorkflowState::PAYMENT_SUBMITTED,
+            WorkflowState::PAYMENT_VERIFIED,
+            WorkflowState::EDO_GENERATED,
+            WorkflowState::EDO_RELEASED,
+        ], true);
+    }
+
+    private function assertCanRegenerateBillingPdf(NOA $noa): void
+    {
+        if ($this->isGranted(NOAVoter::EDIT, $noa) || $this->isGranted('ROLE_ACCOUNTING')) {
+            return;
+        }
+
+        throw $this->createAccessDeniedException('Access denied');
+    }
+
+    private function resolveNoaPdfFullPath(NOA $noa): ?string
+    {
+        $pdfPath = $noa->getPdfPath();
+        if (!$pdfPath) {
+            return null;
+        }
+
+        if ($this->fileStorage->fileExists($pdfPath)) {
+            return $this->fileStorage->getFullPath($pdfPath);
+        }
+
+        $projectDir = (string) $this->getParameter('kernel.project_dir');
+        foreach ([
+            $projectDir . '/public/uploads/' . $pdfPath,
+            $projectDir . '/var/share/' . $pdfPath,
+            $pdfPath,
+        ] as $candidatePath) {
+            if (is_file($candidatePath)) {
+                return $candidatePath;
+            }
+        }
+
+        return null;
+    }
+
+    private function resolveBillingPdfFullPath(\App\Entity\Billing $billing): ?string
+    {
+        $pdfPath = $billing->getPdfPath();
+        if (!$pdfPath) {
+            return null;
+        }
+
+        if ($this->fileStorage->fileExists($pdfPath)) {
+            return $this->fileStorage->getFullPath($pdfPath);
+        }
+
+        $projectDir = (string) $this->getParameter('kernel.project_dir');
+        foreach ([
+            $projectDir . '/public/uploads/' . $pdfPath,
+            $projectDir . '/var/share/' . $pdfPath,
+            $pdfPath,
+        ] as $candidatePath) {
+            if (is_file($candidatePath)) {
+                return $candidatePath;
+            }
+        }
+
+        return null;
     }
 }
 

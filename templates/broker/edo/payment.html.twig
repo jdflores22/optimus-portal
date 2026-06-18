@@ -1,334 +1,773 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}eDO Payment - {{ edoNumber }} - OPTIMUS{% endblock %}
+{% block page_title %}{% if rejectedPayment %}eDO Payment Resubmission{% else %}eDO Access Payment{% endif %}{% endblock %}
 
 {% block body %}
-<div class="min-h-screen bg-base-200">
-    <!-- Header Section -->
-    <div class="bg-base-100 shadow-sm">
-        <div class="px-4 sm:px-6 lg:px-8 py-4">
-            <a href="{{ path('broker_edo_list_page') }}" 
-               class="inline-flex items-center text-sm text-base-content/60 hover:text-base-content mb-2 gap-2">
-                <span class="icon-[tabler--arrow-left] size-4"></span>
-                Back to eDO List
-            </a>
-            <h1 class="text-2xl font-bold text-base-content">eDO Payment</h1>
-            <p class="mt-1 text-sm text-base-content/60">Submit payment for Electronic Delivery Order</p>
+<div class="max-w-7xl mx-auto w-full space-y-5 sm:space-y-6 pb-10">
+
+    {# Hero header #}
+    <div class="rounded-3xl border border-success/20 bg-gradient-to-br from-success/15 via-base-100 to-base-100 shadow-sm p-5 sm:p-7">
+        <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
+            <div class="space-y-3 min-w-0">
+                <div class="breadcrumbs text-xs">
+                    <ul>
+                        <li><a href="{{ path('app_broker_dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right] size-3.5"></span></li>
+                        <li><a href="{{ path('broker_manifest_list') }}">My Manifests</a></li>
+                        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right] size-3.5"></span></li>
+                        <li><a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}">{{ manifest.manifestNumber }}</a></li>
+                        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right] size-3.5"></span></li>
+                        <li aria-current="page">eDO Payment</li>
+                    </ul>
+                </div>
+
+                <span class="inline-flex items-center gap-2 rounded-full bg-success/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-success">
+                    <span class="icon-[tabler--file-certificate] size-3.5"></span>
+                    {% if rejectedPayment %}Payment Resubmission{% else %}eDO Access Payment{% endif %}
+                </span>
+
+                <div>
+                    <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-base-content leading-tight font-mono">
+                        {{ edoNumber }}
+                    </h1>
+                    <p class="mt-2 text-sm sm:text-base text-base-content/70 max-w-2xl">
+                        Pay the eDO access fee for container <span class="font-mono font-semibold">{{ containerNumber }}</span>,
+                        then upload your proof of payment for admin verification and release.
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="badge badge-success badge-soft badge-lg gap-2 font-mono">
+                        <span class="icon-[tabler--box] size-4"></span>
+                        {{ containerNumber }}
+                    </span>
+                    <span class="badge badge-ghost badge-lg gap-2 font-mono">
+                        <span class="icon-[tabler--file-text] size-4"></span>
+                        {{ manifestNumber }}
+                    </span>
+                    <span class="badge badge-primary badge-soft badge-lg gap-2 font-semibold">
+                        <span class="icon-[tabler--cash] size-4"></span>
+                        {{ feeAmount|format_money('PHP') }}
+                    </span>
+                    {% if rejectedPayment %}
+                        <span class="badge badge-error badge-lg gap-2">
+                            <span class="icon-[tabler--refresh] size-4"></span>
+                            Attempt #{{ rejectedPayment.version }}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 xl:justify-end shrink-0">
+                <a href="{{ path('broker_edo_detail_page', {id: edoId}) }}" class="btn btn-outline btn-success btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--eye] size-4"></span>
+                    View eDO
+                </a>
+                <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" class="btn btn-ghost btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--arrow-left] size-4"></span>
+                    Back to Manifest
+                </a>
+            </div>
         </div>
     </div>
 
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <!-- eDO Information Card -->
-        <div class="card bg-base-100 shadow-sm mb-6">
-            <div class="card-body p-6">
-                <h2 class="text-lg font-semibold text-base-content mb-6">eDO Information</h2>
-                
-                <div class="flex items-start {% if qrCodePath %}flex-col lg:flex-row{% endif %} gap-6">
-                    <div class="flex-1">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">eDO Number</label>
-                                <p class="text-lg font-bold text-base-content mt-1">{{ edoNumber }}</p>
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ type == 'error' ? 'error' : (type == 'success' ? 'success' : 'info') }} shadow-sm">
+                <span class="icon-[tabler--{{ type == 'success' ? 'circle-check' : 'info-circle' }}] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {% if rejectedPayment %}
+        <div class="alert alert-error shadow-sm border border-error/30">
+            <span class="icon-[tabler--circle-x] size-6 shrink-0"></span>
+            <div class="flex-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-2 mb-1">
+                    <p class="font-semibold">Previous payment was rejected</p>
+                    {% include 'components/payment_version_badge.html.twig' with {
+                        version: rejectedPayment.version,
+                        status: 'rejected',
+                        submittedAt: rejectedPayment.createdAt,
+                        size: 'sm'
+                    } %}
+                </div>
+                <p class="text-sm opacity-90"><strong>Reason:</strong> {{ rejectedPayment.rejectionReason }}</p>
+                {% if rejectedPayment.validatedAt %}
+                    <p class="text-xs mt-1 opacity-75">
+                        Rejected on {{ rejectedPayment.validatedAt|date('M j, Y g:i A') }}
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    {% elseif edoStatus == 'pending_release' %}
+        <div class="alert alert-warning shadow-sm border border-warning/30">
+            <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+            <div>
+                <p class="font-semibold text-sm">Payment required before release</p>
+                <p class="text-xs opacity-90 mt-0.5">Submit your receipt below. An admin will verify payment before the eDO is released for download.</p>
+            </div>
+        </div>
+    {% endif %}
+
+    {# Progress stepper #}
+    <div class="card card-border bg-base-100 shadow-sm">
+        <div class="card-body p-4 sm:p-5">
+            {% include 'components/flyonui_stepper.html.twig' with {
+                steps: [
+                    { label: 'Review eDO details' },
+                    { label: 'Pay & upload receipt' },
+                    { label: 'Await verification' }
+                ],
+                current: 2
+            } %}
+        </div>
+    </div>
+
+    {# Summary stats #}
+    <div class="stats stats-vertical sm:stats-horizontal w-full shadow-sm border border-base-300/50 bg-base-100 rounded-xl">
+        <div class="stat py-3 px-4 sm:py-4">
+            <div class="stat-figure text-success">
+                <span class="icon-[tabler--cash] size-5"></span>
+            </div>
+            <div class="stat-title text-xs">Amount due</div>
+            <div class="stat-value text-lg font-bold text-success">{{ feeAmount|format_money('PHP') }}</div>
+            <div class="stat-desc text-xs">eDO access fee</div>
+        </div>
+        <div class="stat py-3 px-4 sm:py-4">
+            <div class="stat-figure text-primary">
+                <span class="icon-[tabler--box] size-5"></span>
+            </div>
+            <div class="stat-title text-xs">Container</div>
+            <div class="stat-value text-lg font-bold font-mono">{{ containerNumber }}</div>
+            <div class="stat-desc text-xs font-mono">{{ edoNumber }}</div>
+        </div>
+        <div class="stat py-3 px-4 sm:py-4">
+            <div class="stat-figure text-info">
+                <span class="icon-[tabler--calendar-event] size-5"></span>
+            </div>
+            <div class="stat-title text-xs">Valid until</div>
+            <div class="stat-value text-lg font-bold text-info">
+                {% if edo.expiresAt %}{{ edo.expiresAt|date('M j, Y') }}{% else %}—{% endif %}
+            </div>
+            <div class="stat-desc text-xs">{{ edo.cyLocation ?: 'CY location pending' }}</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-5 gap-5 sm:gap-6 items-start">
+
+        {# Left — upload form #}
+        <div class="xl:col-span-2 space-y-5 sm:space-y-6">
+            <div class="card card-border bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-6">
+                    <h2 class="card-title text-base sm:text-lg gap-2 mb-1">
+                        <span class="icon-[tabler--upload] size-5 text-primary"></span>
+                        {% if rejectedPayment %}Resubmit payment receipt{% else %}Submit payment receipt{% endif %}
+                    </h2>
+                    <p class="text-sm text-base-content/60 mb-5">
+                        Pay exactly <strong>{{ feeAmount|format_money('PHP') }}</strong>, then upload proof of payment (PDF, JPG, or PNG).
+                    </p>
+
+                    <form id="paymentForm" class="space-y-5" novalidate>
+                        <input type="hidden" id="edoId" value="{{ edoId }}">
+
+                        <div>
+                            <label class="label-text font-medium mb-2 block" for="amount">Payment amount</label>
+                            <div class="join w-full">
+                                <span class="btn btn-soft btn-neutral join-item pointer-events-none">₱</span>
+                                <input type="text"
+                                       id="amount"
+                                       value="{{ feeAmount|format_money('PHP') }}"
+                                       readonly
+                                       disabled
+                                       class="input join-item w-full bg-base-200 cursor-not-allowed font-semibold">
                             </div>
-                            <div>
-                                <label class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Container Number</label>
-                                <p class="text-lg font-semibold text-base-content mt-1">{{ containerNumber }}</p>
-                            </div>
-                            <div>
-                                <label class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Manifest Number</label>
-                                <p class="text-base text-base-content mt-1">{{ manifestNumber }}</p>
-                            </div>
-                            <div>
-                                <label class="text-xs font-semibold text-base-content/50 uppercase tracking-wider">Payment Amount</label>
-                                <p class="text-2xl font-bold text-primary mt-1">{{ feeAmount|format_money('PHP') }}</p>
+                            <div class="alert alert-info mt-3 py-2 shadow-none">
+                                <span class="icon-[tabler--info-circle] size-4 shrink-0"></span>
+                                <span class="text-xs">Pay in <strong>Philippine Pesos</strong> using the QR code shown on the right.</span>
                             </div>
                         </div>
-                        
-                        {% if qrCodePath %}
-                            <div class="mt-4 flex items-center gap-2 text-sm text-info">
-                                <span class="icon-[tabler--info-circle] size-4"></span>
-                                <span>Scan the QR code to make payment</span>
+
+                        <div class="divider my-1"></div>
+
+                        <div>
+                            <label class="label-text font-medium mb-2 block">Payment receipt <span class="text-error">*</span></label>
+                            <input id="receiptFile"
+                                   name="receiptFile"
+                                   type="file"
+                                   accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                                   class="hidden">
+
+                            <div id="uploadArea"
+                                 class="bg-base-200/60 rounded-xl flex flex-col justify-center border-2 border-base-content/20 border-dashed hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
+                                <div class="text-center p-8 sm:p-10">
+                                    <span class="icon-[tabler--cloud-upload] size-10 text-primary/50 mx-auto block"></span>
+                                    <p class="text-base-content/50 mt-3 mb-3 text-sm">PDF, JPG, or PNG — max 5MB</p>
+                                    <span class="btn btn-soft btn-primary btn-sm gap-2 pointer-events-none">
+                                        <span class="icon-[tabler--paperclip] size-4"></span>
+                                        Drag &amp; drop or browse
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div id="fileSelectedArea" class="hidden mt-3 rounded-xl border border-success/30 bg-success/10 p-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="flex items-center flex-1 min-w-0 gap-3">
+                                        <div class="avatar avatar-placeholder">
+                                            <div class="bg-success/20 text-success size-10 rounded-full">
+                                                <span class="icon-[tabler--file-check] size-5" id="selectedFileIcon"></span>
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-medium text-base-content truncate" id="selectedFileName"></p>
+                                            <p class="text-xs text-base-content/60" id="selectedFileSize"></p>
+                                        </div>
+                                    </div>
+                                    <button type="button" id="changeFileBtn" class="btn btn-ghost btn-sm btn-circle shrink-0" title="Remove file">
+                                        <span class="icon-[tabler--x] size-4"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="noFileMessage" class="alert alert-warning shadow-sm hidden" role="alert">
+                            <span class="icon-[tabler--file-off] size-5 shrink-0"></span>
+                            <div>
+                                <p class="font-semibold text-sm">No receipt attached</p>
+                                <p class="text-xs opacity-90 mt-0.5">Upload your payment proof before submitting.</p>
+                            </div>
+                        </div>
+
+                        <div id="errorMessage" class="alert alert-error py-2 hidden">
+                            <span class="icon-[tabler--alert-circle] size-4 shrink-0"></span>
+                            <span class="text-sm" id="errorText"></span>
+                        </div>
+
+                        <div class="flex flex-col gap-2 pt-1">
+                            <button type="submit"
+                                    id="submitBtn"
+                                    class="btn btn-success btn-block gap-2">
+                                <span id="submitIcon" class="icon-[tabler--{{ rejectedPayment ? 'refresh' : 'send' }}] size-4"></span>
+                                <span id="loadingSpinner" class="loading loading-spinner loading-sm hidden"></span>
+                                <span id="btnText">{% if rejectedPayment %}Resubmit Payment{% else %}Submit Payment{% endif %}</span>
+                            </button>
+                            <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}"
+                               class="btn btn-ghost btn-block btn-sm">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% if rejectedPayment and rejectedPayment.receiptFilePath %}
+                <div class="card card-border bg-base-100 shadow-sm">
+                    <div class="card-body p-4 sm:p-6">
+                        <div class="flex items-center justify-between gap-3 mb-4">
+                            <h2 class="font-semibold text-base-content flex items-center gap-2">
+                                <span class="icon-[tabler--file-x] size-5 text-error"></span>
+                                Previous rejected receipt
+                            </h2>
+                            <a href="{{ path('broker_edo_view_receipt', {id: edoId, paymentId: rejectedPayment.id}) }}"
+                               target="_blank"
+                               rel="noopener"
+                               class="btn btn-ghost btn-sm gap-1">
+                                <span class="icon-[tabler--external-link] size-4"></span>
+                                Open
+                            </a>
+                        </div>
+                        <div class="rounded-xl border border-base-300/60 overflow-hidden bg-base-200/50" style="height: 280px;">
+                            <iframe src="{{ path('broker_edo_view_receipt', {id: edoId, paymentId: rejectedPayment.id}) }}"
+                                    class="w-full h-full border-0"
+                                    title="Rejected receipt preview"></iframe>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        {# Right — QR + eDO details #}
+        <div class="xl:col-span-3 space-y-5 sm:space-y-6">
+            {% if qrCodePath %}
+                <div class="card card-border bg-base-100 shadow-sm xl:sticky xl:top-4">
+                    <div class="card-body p-4 sm:p-6">
+                        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
+                            <div>
+                                <h2 class="font-semibold text-base-content flex items-center gap-2">
+                                    <span class="icon-[tabler--qrcode] size-5 text-success"></span>
+                                    Scan to pay
+                                </h2>
+                                <p class="text-xs text-base-content/60 mt-0.5">Use your banking or e-wallet app to transfer the exact amount</p>
+                            </div>
+                            <button type="button" onclick="showQrModal()" class="btn btn-outline btn-success btn-sm gap-2 shrink-0">
+                                <span class="icon-[tabler--zoom-in] size-4"></span>
+                                Enlarge QR
+                            </button>
+                        </div>
+
+                        <div class="flex flex-col lg:flex-row gap-6 items-center lg:items-start">
+                            <button type="button"
+                                    onclick="showQrModal()"
+                                    class="shrink-0 rounded-2xl border-2 border-success/25 bg-base-100 p-4 hover:border-success/50 hover:shadow-md transition-all cursor-pointer">
+                                <img src="{{ qrCodePath }}" alt="Payment QR Code" class="w-44 h-44 sm:w-52 sm:h-52 object-contain">
+                            </button>
+
+                            <div class="flex-1 w-full space-y-3">
+                                <div class="rounded-xl bg-success/10 border border-success/20 p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-success/80">Amount to pay</p>
+                                    <p class="text-3xl font-extrabold text-success mt-1">{{ feeAmount|format_money('PHP') }}</p>
+                                </div>
+
+                                <ol class="space-y-3 text-sm text-base-content/80">
+                                    <li class="flex gap-3">
+                                        <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-success/15 text-success text-xs font-bold">1</span>
+                                        <span>Scan the QR code and pay <strong>{{ feeAmount|format_money('PHP') }}</strong>.</span>
+                                    </li>
+                                    <li class="flex gap-3">
+                                        <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-success/15 text-success text-xs font-bold">2</span>
+                                        <span>Save or screenshot your payment confirmation.</span>
+                                    </li>
+                                    <li class="flex gap-3">
+                                        <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-success/15 text-success text-xs font-bold">3</span>
+                                        <span>Upload the receipt on the left and submit for admin verification.</span>
+                                    </li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-warning shadow-sm">
+                    <span class="icon-[tabler--alert-triangle] size-5"></span>
+                    <span class="text-sm">Payment QR code is not configured. Contact your shipping line administrator for payment instructions.</span>
+                </div>
+            {% endif %}
+
+            <div class="card card-border bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-6">
+                    <h2 class="font-semibold text-base-content flex items-center gap-2 mb-4">
+                        <span class="icon-[tabler--list-details] size-5 text-primary"></span>
+                        eDO details
+                    </h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        <div class="rounded-xl bg-base-200/60 p-3">
+                            <p class="text-xs text-base-content/50 uppercase tracking-wide">eDO number</p>
+                            <p class="font-mono font-semibold mt-1">{{ edoNumber }}</p>
+                        </div>
+                        <div class="rounded-xl bg-base-200/60 p-3">
+                            <p class="text-xs text-base-content/50 uppercase tracking-wide">Container</p>
+                            <p class="font-mono font-semibold mt-1">{{ containerNumber }}</p>
+                        </div>
+                        <div class="rounded-xl bg-base-200/60 p-3">
+                            <p class="text-xs text-base-content/50 uppercase tracking-wide">Manifest</p>
+                            <p class="font-mono font-semibold mt-1">{{ manifestNumber }}</p>
+                        </div>
+                        <div class="rounded-xl bg-base-200/60 p-3">
+                            <p class="text-xs text-base-content/50 uppercase tracking-wide">CY location</p>
+                            <p class="font-semibold mt-1">{{ edo.cyLocation ?: '—' }}</p>
+                        </div>
+                        {% if edo.expiresAt %}
+                            <div class="rounded-xl bg-base-200/60 p-3 sm:col-span-2">
+                                <p class="text-xs text-base-content/50 uppercase tracking-wide">eDO validity</p>
+                                <p class="font-semibold mt-1">Expires {{ edo.expiresAt|date('l, M j, Y') }}</p>
+                            </div>
+                        {% endif %}
+                        {% if edo.generatedByName %}
+                            <div class="rounded-xl bg-base-200/60 p-3 sm:col-span-2">
+                                <p class="text-xs text-base-content/50 uppercase tracking-wide">Generated by</p>
+                                <p class="font-semibold mt-1">{{ edo.generatedByName }}</p>
                             </div>
                         {% endif %}
                     </div>
-                    
-                    {% if qrCodePath %}
-                        <div class="flex-shrink-0 w-full lg:w-auto flex justify-center">
-                            <div class="bg-base-100 rounded-lg border-2 border-primary/20 p-3 cursor-pointer hover:border-primary/40 transition-colors" onclick="showQrModal()">
-                                <img src="{{ qrCodePath }}" alt="Payment QR Code" class="w-48 h-48 object-contain">
-                                <p class="mt-2 text-xs text-center text-base-content/60 flex items-center justify-center gap-1">
-                                    <span class="icon-[tabler--zoom-in] size-3"></span>
-                                    Click to enlarge
-                                </p>
-                            </div>
-                        </div>
-                    {% endif %}
+
+                    <div class="alert alert-info mt-4 py-2 shadow-none">
+                        <span class="icon-[tabler--lock] size-4 shrink-0"></span>
+                        <span class="text-xs">The eDO PDF will be available for download after your payment is verified and the document is released.</span>
+                    </div>
                 </div>
-
-                {% if edoStatus == 'pending_release' %}
-                    <div class="alert alert-warning mt-6">
-                        <span class="icon-[tabler--alert-triangle] size-5"></span>
-                        <div>
-                            <h3 class="font-semibold">Payment Required</h3>
-                            <p class="text-sm mt-1">Please submit payment to proceed with eDO release.</p>
-                        </div>
-                    </div>
-                {% endif %}
-
-                {% if rejectionReason %}
-                    <div class="alert alert-error mt-6">
-                        <span class="icon-[tabler--circle-x] size-5"></span>
-                        <div>
-                            <h3 class="font-semibold">Previous Payment Rejected</h3>
-                            <p class="text-sm mt-1">{{ rejectionReason }}</p>
-                            <p class="text-sm mt-2">Please submit a new payment with the correct information.</p>
-                        </div>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Payment Submission Form -->
-        <div class="card bg-base-100 shadow-sm">
-            <div class="card-body p-6">
-                <h2 class="text-lg font-semibold text-base-content mb-6">Submit Payment</h2>
-                
-                <form id="paymentForm" enctype="multipart/form-data">
-                    <input type="hidden" id="edoId" name="edoId" value="{{ edoId }}">
-                    
-                    <div class="mb-6">
-                        <label class="block text-sm font-semibold text-base-content mb-2">
-                            Payment Receipt <span class="text-error">*</span>
-                        </label>
-                        <p class="text-sm text-base-content/60 mb-3">Upload proof of payment (PDF, JPG, or PNG, max 5MB)</p>
-                        
-                        <!-- Drag and Drop Area -->
-                        <div id="dropZone" class="border-2 border-dashed border-base-300 rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer bg-base-200/50">
-                            <span class="icon-[tabler--cloud-upload] size-16 text-base-content/40 mx-auto block"></span>
-                            <p class="mt-3 text-base text-base-content">
-                                <span class="font-semibold text-primary hover:text-primary/80">Click to upload</span> or drag and drop
-                            </p>
-                            <p class="mt-2 text-sm text-base-content/60">PDF, JPG, or PNG (max 5MB)</p>
-                            <input type="file" id="receiptFile" name="receiptFile" accept=".pdf,.jpg,.jpeg,.png" class="hidden">
-                        </div>
-
-                        <!-- Selected File Display -->
-                        <div id="selectedFileInfo" class="hidden mt-4 p-4 bg-success/10 border border-success/20 rounded-lg">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center flex-1 min-w-0 gap-3">
-                                    <span class="icon-[tabler--file-check] size-8 text-success flex-shrink-0"></span>
-                                    <div class="flex-1 min-w-0">
-                                        <p id="fileName" class="text-base font-medium text-base-content truncate"></p>
-                                        <p id="fileSize" class="text-sm text-base-content/60"></p>
-                                    </div>
-                                </div>
-                                <button type="button" onclick="clearSelectedFile()" class="btn btn-ghost btn-sm btn-circle">
-                                    <span class="icon-[tabler--x] size-5"></span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Validation Error -->
-                        <div id="fileError" class="hidden mt-3 text-sm text-error flex items-center gap-2">
-                            <span class="icon-[tabler--alert-circle] size-4"></span>
-                            <span id="fileErrorText"></span>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-between pt-6 border-t border-base-300">
-                        <a href="{{ path('broker_edo_list_page') }}" class="btn btn-ghost rounded-lg gap-2">
-                            <span class="icon-[tabler--x] size-4"></span>
-                            Cancel
-                        </a>
-                        <button type="button" id="submitPaymentBtn" onclick="submitPayment()" class="btn btn-primary rounded-lg gap-2">
-                            <span class="icon-[tabler--credit-card] size-5"></span>
-                            <span id="submitBtnText">Submit Payment</span>
-                            <span id="submitBtnSpinner" class="loading loading-spinner loading-sm hidden"></span>
-                        </button>
-                    </div>
-                </form>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
-<!-- QR Code Full View Modal -->
+{% block page_modals %}
 {% if qrCodePath %}
-<div id="qrModal" class="hidden fixed inset-0 z-[9999] overflow-y-auto backdrop-blur-sm">
-    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <!-- Background overlay with blur -->
-        <div class="fixed inset-0 transition-opacity bg-black/70 backdrop-blur-sm" onclick="closeQrModal()"></div>
-
-        <!-- Center modal -->
-        <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-
-        <!-- Modal panel -->
-        <div class="inline-block align-bottom bg-base-100 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full relative z-10" onclick="event.stopPropagation()">
-            <!-- Modal Header -->
-            <div class="flex justify-between items-center px-6 py-4 border-b border-base-300">
-                <h3 class="text-lg font-semibold text-base-content">Payment QR Code</h3>
-                <button onclick="closeQrModal()" class="btn btn-ghost btn-sm btn-circle">
-                    <span class="icon-[tabler--x] size-5"></span>
-                </button>
+<div id="qrModal" class="hidden fixed inset-0 z-[999999] items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div class="absolute inset-0 bg-black/75 backdrop-blur-sm" onclick="closeQrModal()"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 border border-base-300/60 overflow-hidden" onclick="event.stopPropagation()">
+        <div class="flex justify-between items-center px-6 py-4 border-b border-base-300">
+            <h3 class="text-lg font-semibold">Payment QR Code</h3>
+            <button type="button" onclick="closeQrModal()" class="btn btn-ghost btn-sm btn-circle">
+                <span class="icon-[tabler--x] size-5"></span>
+            </button>
+        </div>
+        <div class="px-6 py-6 text-center">
+            <div class="flex justify-center bg-base-200 rounded-xl p-6">
+                <img src="{{ qrCodePath }}" alt="Payment QR Code" class="max-w-full h-auto max-h-[360px] object-contain">
             </div>
-            
-            <!-- Modal Body -->
-            <div class="px-6 py-6">
-                <div class="flex justify-center bg-base-200 rounded-lg p-8">
-                    <img src="{{ qrCodePath }}" alt="Payment QR Code" class="max-w-full h-auto" style="max-height: 500px;">
-                </div>
-                <div class="mt-4 text-center">
-                    <p class="text-sm text-base-content/60">Scan this QR code with your payment app</p>
-                    <p class="text-lg font-semibold text-primary mt-2">{{ feeAmount|format_money('PHP') }}</p>
-                </div>
-            </div>
-            
-            <!-- Modal Footer -->
-            <div class="flex justify-end px-6 py-4 border-t border-base-300 bg-base-200/50">
-                <button onclick="closeQrModal()" class="btn btn-ghost rounded-lg">Close</button>
-            </div>
+            <p class="text-sm text-base-content/60 mt-4">Scan with your payment app</p>
+            <p class="text-2xl font-bold text-success mt-2">{{ feeAmount|format_money('PHP') }}</p>
+        </div>
+        <div class="flex justify-end px-6 py-4 border-t border-base-300 bg-base-200/50">
+            <button type="button" onclick="closeQrModal()" class="btn btn-ghost">Close</button>
         </div>
     </div>
 </div>
-
-<script>
-function showQrModal() {
-    document.getElementById('qrModal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeQrModal() {
-    document.getElementById('qrModal').classList.add('hidden');
-    document.body.style.overflow = 'auto';
-}
-
-// Close modal on Escape key
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        closeQrModal();
-    }
-});
-</script>
 {% endif %}
 
+<div id="submitConfirmModal"
+     class="hidden fixed inset-0 z-[999999] items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true">
+    <div class="absolute inset-0 bg-black/75 backdrop-blur-sm" id="submitConfirmBackdrop"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 border border-base-300/60 overflow-hidden">
+        <div class="p-6">
+            <div class="flex items-start gap-4">
+                <div class="avatar avatar-placeholder shrink-0">
+                    <div class="bg-success/15 text-success size-12 rounded-full">
+                        <span class="icon-[tabler--send] size-6"></span>
+                    </div>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h3 class="text-lg font-bold">
+                        {% if rejectedPayment %}Confirm resubmission{% else %}Confirm payment submission{% endif %}
+                    </h3>
+                    <p class="text-sm text-base-content/60 mt-1">Verify the details before sending to admin review.</p>
+                </div>
+            </div>
+
+            <div class="mt-5 space-y-3 rounded-xl bg-base-200/50 border border-base-300/50 p-4 text-sm">
+                <div class="flex justify-between gap-4">
+                    <span class="text-base-content/60">eDO</span>
+                    <span class="font-mono font-medium">{{ edoNumber }}</span>
+                </div>
+                <div class="flex justify-between gap-4">
+                    <span class="text-base-content/60">Container</span>
+                    <span class="font-mono font-medium">{{ containerNumber }}</span>
+                </div>
+                <div class="flex justify-between gap-4">
+                    <span class="text-base-content/60">Amount</span>
+                    <span class="font-semibold text-success">{{ feeAmount|format_money('PHP') }}</span>
+                </div>
+                <div class="flex justify-between gap-4 items-start">
+                    <span class="text-base-content/60 shrink-0">Receipt</span>
+                    <span class="font-medium text-right truncate max-w-[12rem]" id="confirmFileName">—</span>
+                </div>
+            </div>
+
+            <div id="confirmModalError" class="alert alert-error py-2 mt-4 hidden">
+                <span class="icon-[tabler--alert-circle] size-4 shrink-0"></span>
+                <span class="text-sm" id="confirmModalErrorText">Please attach a payment receipt before submitting.</span>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button type="button" id="cancelConfirmBtn" class="btn btn-ghost flex-1">Cancel</button>
+                <button type="button" id="confirmSubmitBtn" class="btn btn-success flex-1 gap-2">
+                    <span id="confirmSubmitSpinner" class="loading loading-spinner loading-sm hidden"></span>
+                    <span id="confirmSubmitText">{% if rejectedPayment %}Resubmit{% else %}Submit{% endif %}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
 <script>
-const edoId = {{ edoId }};
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('receiptFile');
+document.addEventListener('DOMContentLoaded', function () {
+    const edoId = {{ edoId }};
+    const rejectedPaymentId = {{ rejectedPayment ? rejectedPayment.id : 'null' }};
+    const redirectUrl = '{{ path('broker_edo_detail_page', {id: edoId}) }}';
 
-// File upload handling
-dropZone.addEventListener('click', () => fileInput.click());
+    const fileInput = document.getElementById('receiptFile');
+    const uploadArea = document.getElementById('uploadArea');
+    const fileSelectedArea = document.getElementById('fileSelectedArea');
+    const selectedFileName = document.getElementById('selectedFileName');
+    const selectedFileSize = document.getElementById('selectedFileSize');
+    const selectedFileIcon = document.getElementById('selectedFileIcon');
+    const changeFileBtn = document.getElementById('changeFileBtn');
+    const noFileMessage = document.getElementById('noFileMessage');
+    const errorMessage = document.getElementById('errorMessage');
+    const errorText = document.getElementById('errorText');
+    const paymentForm = document.getElementById('paymentForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const submitIcon = document.getElementById('submitIcon');
 
-dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('border-primary', 'bg-primary/5');
-});
+    const confirmModal = document.getElementById('submitConfirmModal');
+    const confirmFileName = document.getElementById('confirmFileName');
+    const cancelConfirmBtn = document.getElementById('cancelConfirmBtn');
+    const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+    const confirmSubmitSpinner = document.getElementById('confirmSubmitSpinner');
+    const submitConfirmBackdrop = document.getElementById('submitConfirmBackdrop');
+    const confirmModalError = document.getElementById('confirmModalError');
+    const confirmModalErrorText = document.getElementById('confirmModalErrorText');
 
-dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('border-primary', 'bg-primary/5');
-});
-
-dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('border-primary', 'bg-primary/5');
-    
-    if (e.dataTransfer.files.length > 0) {
-        fileInput.files = e.dataTransfer.files;
-        handleFileSelect();
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     }
-});
 
-fileInput.addEventListener('change', handleFileSelect);
-
-function handleFileSelect() {
-    const file = fileInput.files[0];
-    if (!file) return;
-    
-    // Validate file
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
-    
-    if (!allowedTypes.includes(file.type)) {
-        showFileError('Please upload a PDF, JPG, or PNG file');
-        clearSelectedFile();
-        return;
+    function hideError() {
+        errorMessage?.classList.add('hidden');
     }
-    
-    if (file.size > maxSize) {
-        showFileError('File size must be less than 5MB');
-        clearSelectedFile();
-        return;
+
+    function showError(message) {
+        if (errorText) errorText.textContent = message;
+        errorMessage?.classList.remove('hidden');
     }
-    
-    // Show selected file
-    document.getElementById('fileName').textContent = file.name;
-    document.getElementById('fileSize').textContent = formatFileSize(file.size);
-    document.getElementById('selectedFileInfo').classList.remove('hidden');
-    document.getElementById('fileError').classList.add('hidden');
-}
 
-function clearSelectedFile() {
-    fileInput.value = '';
-    document.getElementById('selectedFileInfo').classList.add('hidden');
-    document.getElementById('fileError').classList.add('hidden');
-}
-
-function showFileError(message) {
-    document.getElementById('fileErrorText').textContent = message;
-    document.getElementById('fileError').classList.remove('hidden');
-}
-
-function formatFileSize(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-}
-
-async function submitPayment() {
-    const file = fileInput.files[0];
-    if (!file) {
-        showFileError('Please select a file');
-        return;
+    function hideConfirmModalError() {
+        confirmModalError?.classList.add('hidden');
     }
-    
-    const submitBtn = document.getElementById('submitPaymentBtn');
-    const submitBtnText = document.getElementById('submitBtnText');
-    const submitBtnSpinner = document.getElementById('submitBtnSpinner');
-    
-    // Disable button and show spinner
-    submitBtn.disabled = true;
-    submitBtnText.textContent = 'Submitting...';
-    submitBtnSpinner.classList.remove('hidden');
-    
-    try {
-        const formData = new FormData();
-        formData.append('receiptFile', file);
-        
-        const response = await fetch(`/broker/edos/${edoId}/payment`, {
-            method: 'POST',
-            body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            // Show success message
-            alert('Payment submitted successfully! Your payment is now pending validation.');
-            // Redirect to eDO list
-            window.location.href = '{{ path('broker_edo_list_page') }}';
-        } else {
-            showFileError(result.error.message || 'Failed to submit payment');
-            submitBtn.disabled = false;
-            submitBtnText.textContent = 'Submit Payment';
-            submitBtnSpinner.classList.add('hidden');
+
+    function showConfirmModalError(message) {
+        if (confirmModalErrorText) confirmModalErrorText.textContent = message;
+        confirmModalError?.classList.remove('hidden');
+    }
+
+    function getSelectedFile() {
+        return fileInput?.files?.[0] || null;
+    }
+
+    function isAllowedReceiptFile(file) {
+        const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+        const extension = (file.name.split('.').pop() || '').toLowerCase();
+        return allowedExtensions.includes(extension);
+    }
+
+    function validateFile(file) {
+        if (!file || file.size <= 0) {
+            return 'Please choose a payment receipt file.';
         }
-    } catch (error) {
-        console.error('Error submitting payment:', error);
-        showFileError('An error occurred while submitting payment');
-        submitBtn.disabled = false;
-        submitBtnText.textContent = 'Submit Payment';
-        submitBtnSpinner.classList.add('hidden');
+        if (!isAllowedReceiptFile(file)) {
+            return 'Please upload a PDF, JPG, or PNG file.';
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            return 'File size must be less than 5MB.';
+        }
+        return null;
     }
-}
+
+    function updateFileIcon(file) {
+        if (!selectedFileIcon) return;
+        const ext = (file.name.split('.').pop() || '').toLowerCase();
+        selectedFileIcon.className = ext === 'pdf'
+            ? 'icon-[tabler--file-type-pdf] size-5'
+            : 'icon-[tabler--photo] size-5';
+    }
+
+    function showFileSelected(file) {
+        if (selectedFileName) selectedFileName.textContent = file.name;
+        if (selectedFileSize) selectedFileSize.textContent = formatFileSize(file.size);
+        updateFileIcon(file);
+        uploadArea?.classList.add('hidden');
+        fileSelectedArea?.classList.remove('hidden');
+    }
+
+    function showUploadArea() {
+        uploadArea?.classList.remove('hidden');
+        fileSelectedArea?.classList.add('hidden');
+        if (fileInput) fileInput.value = '';
+        noFileMessage?.classList.add('hidden');
+        uploadArea?.classList.remove('border-error', 'border-solid', 'bg-error/5');
+        uploadArea?.classList.add('border-dashed', 'border-base-content/20');
+    }
+
+    function handleFileSelection(file) {
+        hideError();
+        hideConfirmModalError();
+        noFileMessage?.classList.add('hidden');
+
+        const validationError = validateFile(file);
+        if (validationError) {
+            showError(validationError);
+            showUploadArea();
+            return;
+        }
+
+        showFileSelected(file);
+    }
+
+    fileInput?.addEventListener('change', function (e) {
+        if (e.target.files && e.target.files.length > 0) {
+            handleFileSelection(e.target.files[0]);
+        }
+    });
+
+    changeFileBtn?.addEventListener('click', function (e) {
+        e.preventDefault();
+        showUploadArea();
+    });
+
+    uploadArea?.addEventListener('click', function (e) {
+        e.preventDefault();
+        fileInput?.click();
+    });
+
+    uploadArea?.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        uploadArea.classList.add('border-primary', 'bg-primary/10');
+    });
+
+    uploadArea?.addEventListener('dragleave', function (e) {
+        e.preventDefault();
+        uploadArea.classList.remove('border-primary', 'bg-primary/10');
+    });
+
+    uploadArea?.addEventListener('drop', function (e) {
+        e.preventDefault();
+        uploadArea.classList.remove('border-primary', 'bg-primary/10');
+
+        if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) {
+            return;
+        }
+
+        const file = e.dataTransfer.files[0];
+        if (typeof DataTransfer !== 'undefined' && fileInput) {
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+        }
+        handleFileSelection(file);
+    });
+
+    function openConfirmModal() {
+        const file = getSelectedFile();
+        const validationError = file ? validateFile(file) : 'Please choose a payment receipt file.';
+
+        if (!file || validationError) {
+            showError(validationError);
+            noFileMessage?.classList.remove('hidden');
+            uploadArea?.classList.add('border-error', 'border-solid', 'bg-error/5');
+            uploadArea?.classList.remove('border-dashed', 'border-base-content/20');
+            uploadArea?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+
+        hideConfirmModalError();
+        hideError();
+        if (confirmFileName) confirmFileName.textContent = file.name;
+        confirmModal?.classList.remove('hidden');
+        confirmModal?.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeConfirmModal() {
+        confirmModal?.classList.add('hidden');
+        confirmModal?.classList.remove('flex');
+        document.body.style.overflow = '';
+        hideConfirmModalError();
+    }
+
+    function isSuccessfulPaymentResponse(response, result) {
+        if (!response.ok || result.success === false) {
+            return false;
+        }
+        return result.success === true
+            || Boolean(result.paymentId)
+            || Boolean(result.data?.paymentId);
+    }
+
+    async function submitPayment() {
+        const file = getSelectedFile();
+        const validationError = file ? validateFile(file) : 'Please choose a payment receipt file.';
+
+        if (!file || validationError) {
+            showConfirmModalError(validationError);
+            return;
+        }
+
+        submitBtn.disabled = true;
+        confirmSubmitBtn.disabled = true;
+        loadingSpinner?.classList.remove('hidden');
+        confirmSubmitSpinner?.classList.remove('hidden');
+        submitIcon?.classList.add('hidden');
+        if (btnText) btnText.textContent = 'Submitting…';
+
+        try {
+            const formData = new FormData();
+            let response;
+
+            if (rejectedPaymentId) {
+                formData.append('receipt', file);
+                response = await fetch('/api/edo-payments/' + rejectedPaymentId + '/resubmit', {
+                    method: 'POST',
+                    body: formData,
+                });
+            } else {
+                formData.append('receiptFile', file);
+                response = await fetch('/broker/edos/' + edoId + '/payment', {
+                    method: 'POST',
+                    body: formData,
+                });
+            }
+
+            const result = await response.json().catch(function () { return {}; });
+
+            if (isSuccessfulPaymentResponse(response, result)) {
+                closeConfirmModal();
+                if (window.notyf) {
+                    window.notyf.success(result.message || 'Payment submitted successfully. Awaiting admin verification.');
+                }
+                setTimeout(function () { window.location.href = redirectUrl; }, 800);
+                return;
+            }
+
+            const message = result.error?.message || result.message || 'Failed to submit payment.';
+            showError(message);
+            showConfirmModalError(message);
+        } catch (error) {
+            console.error(error);
+            const message = 'An error occurred while submitting payment.';
+            showError(message);
+            showConfirmModalError(message);
+        } finally {
+            submitBtn.disabled = false;
+            confirmSubmitBtn.disabled = false;
+            loadingSpinner?.classList.add('hidden');
+            confirmSubmitSpinner?.classList.add('hidden');
+            submitIcon?.classList.remove('hidden');
+            if (btnText) btnText.textContent = rejectedPaymentId ? 'Resubmit Payment' : 'Submit Payment';
+        }
+    }
+
+    paymentForm?.addEventListener('submit', function (e) {
+        e.preventDefault();
+        openConfirmModal();
+    });
+    cancelConfirmBtn?.addEventListener('click', closeConfirmModal);
+    submitConfirmBackdrop?.addEventListener('click', closeConfirmModal);
+    confirmSubmitBtn?.addEventListener('click', submitPayment);
+
+    window.showQrModal = function () {
+        const modal = document.getElementById('qrModal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.closeQrModal = function () {
+        const modal = document.getElementById('qrModal');
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+    };
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeConfirmModal();
+            window.closeQrModal();
+        }
+    });
+});
 </script>
 {% endblock %}

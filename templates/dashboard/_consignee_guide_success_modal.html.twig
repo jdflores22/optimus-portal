@@ -1,55 +1,55 @@
-{% if show_guide_success_modal %}
-<div id="consigneeGuideSuccessModal"
-     class="hidden fixed inset-0 z-[10004] flex items-center justify-center p-4"
-     role="dialog"
-     aria-modal="true"
-     aria-labelledby="consigneeGuideSuccessTitle">
-    <div id="consigneeGuideSuccessBackdrop" class="absolute inset-0 bg-black/60"></div>
-
-    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10">
-        <div class="bg-primary px-6 py-8 text-primary-content text-center relative">
-            <button type="button"
-                    id="consigneeGuideSuccessCloseBtn"
-                    class="btn btn-text btn-circle btn-sm absolute end-3 top-3 text-primary-content"
-                    aria-label="Close tour completion message">
-                <span class="icon-[tabler--x] size-4"></span>
-            </button>
-            <div class="mx-auto mb-4 size-20 rounded-full bg-primary-content/20 flex items-center justify-center">
-                <span class="icon-[tabler--circle-check] size-12"></span>
-            </div>
-            <h2 id="consigneeGuideSuccessTitle" class="text-2xl font-bold">You're all set!</h2>
-            <p class="mt-2 text-sm opacity-90">You've completed the OPTIMUS portal tour</p>
-        </div>
-
-        <div class="px-6 py-6 space-y-4">
-            <p class="text-sm text-base-content/80">
-                You now know how to get accredited, link brokers, generate referral codes, and track manifests.
-                You're ready to manage your shipments from this dashboard.
-            </p>
-
-            <ul class="space-y-3 text-sm">
-                <li class="flex items-start gap-3">
-                    <span class="icon-[tabler--certificate] size-5 text-primary shrink-0 mt-0.5"></span>
-                    <span>Submit and manage <strong>shipping line accreditations</strong></span>
-                </li>
-                <li class="flex items-start gap-3">
-                    <span class="icon-[tabler--users] size-5 text-primary shrink-0 mt-0.5"></span>
-                    <span>Connect with <strong>brokers</strong> using referral codes</span>
-                </li>
-                <li class="flex items-start gap-3">
-                    <span class="icon-[tabler--file-text] size-5 text-primary shrink-0 mt-0.5"></span>
-                    <span>Monitor <strong>manifests and payments</strong> as they progress</span>
-                </li>
-            </ul>
-
-            <button type="button"
-                    id="consigneeGuideSuccessDismissBtn"
-                    class="btn btn-primary w-full gap-2">
-                Start exploring
-                <span class="icon-[tabler--arrow-right] size-4"></span>
-            </button>
-        </div>
-    </div>
-</div>
-{% endif %}
-
+{% if show_guide_success_modal %}
+<div id="consigneeGuideSuccessModal"
+     class="hidden fixed inset-0 z-[999999] flex items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="consigneeGuideSuccessTitle">
+    <div id="consigneeGuideSuccessBackdrop" class="absolute inset-0 bg-black/60 backdrop-blur-md"></div>
+
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden z-10">
+        <div class="bg-primary px-6 py-8 text-primary-content text-center relative">
+            <button type="button"
+                    id="consigneeGuideSuccessCloseBtn"
+                    class="btn btn-text btn-circle btn-sm absolute end-3 top-3 text-primary-content"
+                    aria-label="Close tour completion message">
+                <span class="icon-[tabler--x] size-4"></span>
+            </button>
+            <div class="mx-auto mb-4 size-20 rounded-full bg-primary-content/20 flex items-center justify-center">
+                <span class="icon-[tabler--circle-check] size-12"></span>
+            </div>
+            <h2 id="consigneeGuideSuccessTitle" class="text-2xl font-bold">You're all set!</h2>
+            <p class="mt-2 text-sm opacity-90">You've completed the OPTIMUS portal tour</p>
+        </div>
+
+        <div class="px-6 py-6 space-y-4">
+            <p class="text-sm text-base-content/80">
+                You now know how to get accredited, link brokers, generate referral codes, and track manifests.
+                You're ready to manage your shipments from this dashboard.
+            </p>
+
+            <ul class="space-y-3 text-sm">
+                <li class="flex items-start gap-3">
+                    <span class="icon-[tabler--certificate] size-5 text-primary shrink-0 mt-0.5"></span>
+                    <span>Submit and manage <strong>shipping line accreditations</strong></span>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="icon-[tabler--users] size-5 text-primary shrink-0 mt-0.5"></span>
+                    <span>Connect with <strong>brokers</strong> using referral codes</span>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="icon-[tabler--file-text] size-5 text-primary shrink-0 mt-0.5"></span>
+                    <span>Monitor <strong>manifests and payments</strong> as they progress</span>
+                </li>
+            </ul>
+
+            <button type="button"
+                    id="consigneeGuideSuccessDismissBtn"
+                    class="btn btn-primary w-full gap-2">
+                Start exploring
+                <span class="icon-[tabler--arrow-right] size-4"></span>
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
+

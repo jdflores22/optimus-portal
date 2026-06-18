@@ -1,31 +1,100 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}Final Payment - {{ manifest.manifestNumber }} - OPTIMUS{% endblock %}
+{% block page_title %}{% if rejectedPayment %}Payment Resubmission{% else %}Final Payment{% endif %}{% endblock %}
+
+{% set billingDownloadUrl = path('broker_manifest_billing_download', {id: manifest.id}) %}
+{% set currencySymbol = (0|format_money(billing.originalCurrency))|slice(0, -4) %}
+{% set paymentAmount = billing.originalCurrency == 'USD' ? billing.totalAmountUsd : billing.totalAmount %}
 
 {% block body %}
-<div class="w-full bg-base-200 min-h-screen">
-<div class="w-full px-4 sm:px-6 lg:px-8 py-8">
-    {# Header #}
-    <div class="mb-6">
-        <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" 
-           class="inline-flex items-center text-sm text-base-content/60 hover:text-base-content mb-4">
-            <span class="icon-[tabler--arrow-left] size-4 mr-2"></span>
-            Back to Manifest Details
-        </a>
-        <h1 class="text-3xl font-bold text-base-content">
-            {% if rejectedPayment %}Payment Resubmission{% else %}Final Payment Submission{% endif %}
-        </h1>
-        <p class="mt-2 text-base-content/60">{{ manifest.manifestNumber }}</p>
+<div class="max-w-7xl mx-auto w-full space-y-5 sm:space-y-6 pb-10">
+
+    {# ── Hero header ── #}
+    <div class="rounded-3xl border border-warning/20 bg-gradient-to-br from-warning/15 via-base-100 to-base-100 shadow-sm p-5 sm:p-7">
+        <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
+            <div class="space-y-3 min-w-0">
+                <div class="breadcrumbs text-xs">
+                    <ul>
+                        <li><a href="{{ path('app_broker_dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right] size-3.5"></span></li>
+                        <li><a href="{{ path('broker_manifest_list') }}">My Manifests</a></li>
+                        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right] size-3.5"></span></li>
+                        <li><a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}">{{ manifest.manifestNumber }}</a></li>
+                        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right] size-3.5"></span></li>
+                        <li aria-current="page">Final Payment</li>
+                    </ul>
+                </div>
+
+                <span class="inline-flex items-center gap-2 rounded-full bg-warning/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-warning">
+                    <span class="icon-[tabler--credit-card] size-3.5"></span>
+                    {% if rejectedPayment %}Payment Resubmission{% else %}Final Payment Submission{% endif %}
+                </span>
+
+                <div>
+                    <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-base-content leading-tight font-mono">
+                        {{ manifest.manifestNumber }}
+                    </h1>
+                    <p class="mt-2 text-sm sm:text-base text-base-content/70 max-w-2xl">
+                        Upload your payment receipt for the billing invoice below. Accounting will verify your payment before eDO release proceeds.
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="badge badge-warning badge-soft badge-lg gap-2">
+                        <span class="icon-[tabler--receipt] size-4"></span>
+                        Billing #{{ billing.id }}
+                    </span>
+                    <span class="badge badge-ghost badge-lg gap-2 font-semibold">
+                        <span class="icon-[tabler--cash] size-4"></span>
+                        {{ billing|format_billing }}
+                    </span>
+                    {% if billing.originalCurrency == 'USD' %}
+                        <span class="badge badge-warning badge-lg">Pay in USD</span>
+                    {% else %}
+                        <span class="badge badge-info badge-lg">Pay in PHP</span>
+                    {% endif %}
+                    {% if rejectedPayment %}
+                        <span class="badge badge-error badge-lg gap-2">
+                            <span class="icon-[tabler--refresh] size-4"></span>
+                            Attempt #{{ rejectedPayment.version }}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 xl:justify-end shrink-0">
+                {% if rejectedPayment %}
+                    <a href="{{ path('broker_payment_history', {id: manifest.id}) }}" class="btn btn-outline btn-warning btn-sm sm:btn-md gap-2">
+                        <span class="icon-[tabler--history] size-4"></span>
+                        My Submissions
+                    </a>
+                {% endif %}
+                <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" class="btn btn-ghost btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--arrow-left] size-4"></span>
+                    Back to Manifest
+                </a>
+            </div>
+        </div>
     </div>
 
-    {# Rejection Alert - Compact #}
+    {# Flash messages #}
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ type == 'error' ? 'error' : (type == 'success' ? 'success' : (type == 'warning' ? 'warning' : 'info')) }} shadow-sm">
+                <span class="icon-[tabler--{{ type == 'success' ? 'circle-check' : (type == 'error' ? 'circle-x' : 'info-circle') }}] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {# Rejection alert #}
     {% if rejectedPayment %}
-        <div class="alert alert-error mb-4">
-            <span class="icon-[tabler--circle-x] size-5"></span>
-            <div class="flex-1">
-                <div class="flex items-center gap-2 mb-1">
-                    <h3 class="font-bold">Payment Rejected</h3>
-                    {# Version Badge #}
+        <div class="alert alert-error shadow-sm border border-error/30">
+            <span class="icon-[tabler--circle-x] size-6 shrink-0"></span>
+            <div class="flex-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-2 mb-1">
+                    <p class="font-semibold">Previous payment was rejected</p>
                     {% include 'components/payment_version_badge.html.twig' with {
                         version: rejectedPayment.version,
                         status: rejectedPayment.status.value,
@@ -33,140 +102,174 @@
                         size: 'sm'
                     } %}
                 </div>
-                <p class="text-xs mt-1"><strong>Reason:</strong> {{ rejectedPayment.rejectionReason }}</p>
+                <p class="text-sm opacity-90"><strong>Reason:</strong> {{ rejectedPayment.rejectionReason }}</p>
                 {% if rejectedPayment.version > 1 %}
-                    <p class="text-xs mt-2">
-                        <span class="icon-[tabler--alert-triangle] size-3 inline-block"></span>
-                        This is attempt #{{ rejectedPayment.version }}. 
-                        <a href="{{ path('broker_payment_history', {id: manifest.id}) }}" class="link link-hover underline font-semibold">
-                            View all submissions
-                        </a>
+                    <p class="text-xs mt-2 opacity-80">
+                        <a href="{{ path('broker_payment_history', {id: manifest.id}) }}" class="link link-hover font-semibold">View all submission attempts</a>
                     </p>
                 {% endif %}
             </div>
         </div>
     {% endif %}
 
-    {# Compact 2-Column Layout #}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {# Left Column - Payment Form (1/3) #}
-        <div class="lg:col-span-1">
-            {# Payment Submission Form #}
-            <div class="card bg-base-100 shadow-lg">
-                <div class="card-body p-4">
-                    <h3 class="text-base font-bold mb-3">Submit Payment</h3>
+    {# Progress stepper #}
+    <div class="card card-border bg-base-100 shadow-sm">
+        <div class="card-body p-4 sm:p-5">
+            {% include 'components/flyonui_stepper.html.twig' with {
+                steps: [
+                    { label: 'Review billing' },
+                    { label: 'Upload receipt' },
+                    { label: 'Submit for review' }
+                ],
+                current: 2
+            } %}
+        </div>
+    </div>
 
-                    <form id="paymentForm" class="space-y-3">
-                        {# Amount Field - Compact #}
-                        <div class="form-control">
-                            <label class="label py-1">
-                                <span class="label-text text-xs font-medium">Amount</span>
-                            </label>
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <span class="text-base-content/60 text-sm">{{ (0|format_money(billing.originalCurrency))|slice(0, -4) }}</span>
-                                </div>
-                                <input type="number" 
-                                       id="amount" 
-                                       name="amount" 
-                                       value="{{ billing.originalCurrency == 'USD' ? billing.totalAmountUsd : billing.totalAmount }}" 
-                                       step="0.01" 
+    {# Payment summary — compact single stats bar #}
+    <div class="stats stats-vertical sm:stats-horizontal w-full shadow-sm border border-base-300/50 bg-base-100 rounded-xl">
+        <div class="stat py-3 px-4 sm:py-4">
+            <div class="stat-figure text-warning">
+                <span class="icon-[tabler--receipt-2] size-5"></span>
+            </div>
+            <div class="stat-title text-xs">Amount due</div>
+            <div class="stat-value text-lg font-bold text-warning">{{ billing|format_billing }}</div>
+            {% if billing.originalCurrency == 'USD' and billing.exchangeRate %}
+                <div class="stat-desc text-xs">≈ {{ (billing.totalAmountUsd * billing.exchangeRate)|format_money('PHP') }}</div>
+            {% endif %}
+        </div>
+        <div class="stat py-3 px-4 sm:py-4">
+            <div class="stat-figure text-info">
+                <span class="icon-[tabler--currency-dollar] size-5"></span>
+            </div>
+            <div class="stat-title text-xs">Payment currency</div>
+            <div class="stat-value text-lg font-bold text-info">{{ billing.originalCurrency }}</div>
+            <div class="stat-desc text-xs">{% if billing.originalCurrency == 'USD' %}US Dollars{% else %}Philippine Pesos{% endif %}</div>
+        </div>
+        <div class="stat py-3 px-4 sm:py-4">
+            <div class="stat-figure text-primary">
+                <span class="icon-[tabler--file-invoice] size-5"></span>
+            </div>
+            <div class="stat-title text-xs">Billing reference</div>
+            <div class="stat-value text-lg font-bold text-primary">#{{ billing.id }}</div>
+            <div class="stat-desc text-xs font-mono">{{ manifest.manifestNumber }}</div>
+        </div>
+    </div>
+
+    {# Main content grid #}
+    <div class="grid grid-cols-1 xl:grid-cols-5 gap-5 sm:gap-6 items-start">
+
+        {# Left — payment form + breakdown #}
+        <div class="xl:col-span-2 space-y-5 sm:space-y-6">
+
+            {# Payment form #}
+            <div class="card card-border bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-6">
+                    <h2 class="card-title text-base sm:text-lg gap-2 mb-1">
+                        <span class="icon-[tabler--upload] size-5 text-primary"></span>
+                        Submit payment receipt
+                    </h2>
+                    <p class="text-sm text-base-content/60 mb-5">Pay the exact amount shown, then upload proof of payment.</p>
+
+                    <form id="paymentForm" class="space-y-5" novalidate>
+                        {# Amount #}
+                        <div>
+                            <label class="label-text font-medium mb-2 block" for="amount">Payment amount</label>
+                            <div class="join w-full">
+                                <span class="btn btn-soft btn-neutral join-item pointer-events-none">{{ currencySymbol }}</span>
+                                <input type="number"
+                                       id="amount"
+                                       name="amount"
+                                       value="{{ billing.originalCurrency == 'USD' ? billing.totalAmountUsd : billing.totalAmount }}"
+                                       step="0.01"
                                        min="0.01"
-                                       required
                                        readonly
                                        disabled
-                                       class="input input-sm input-bordered pl-7 w-full bg-base-200 cursor-not-allowed">
+                                       class="input join-item w-full bg-base-200 cursor-not-allowed font-semibold">
                             </div>
-                            
-                            {# Currency Indicator Badge #}
+
                             {% if billing.originalCurrency == 'USD' %}
-                                <div class="mt-2 p-2 bg-warning/20 border border-warning/40 rounded-lg">
-                                    <div class="flex items-center gap-2">
-                                        <span class="badge badge-warning badge-lg font-bold">Amount in USD</span>
-                                    </div>
-                                    <p class="text-xs text-base-content/70 mt-1">
-                                        <span class="icon-[tabler--alert-triangle] size-3 inline-block"></span>
-                                        You must pay this amount in <strong>US Dollars</strong>. Do not convert to another currency.
-                                    </p>
+                                <div class="alert alert-warning mt-3 py-2 shadow-none">
+                                    <span class="icon-[tabler--alert-triangle] size-4 shrink-0"></span>
+                                    <span class="text-xs">Pay in <strong>US Dollars</strong> only — do not convert to another currency.</span>
                                 </div>
                             {% else %}
-                                <div class="mt-2 p-2 bg-info/20 border border-info/40 rounded-lg">
-                                    <div class="flex items-center gap-2">
-                                        <span class="badge badge-info badge-lg font-bold">Amount in PHP</span>
-                                    </div>
-                                    <p class="text-xs text-base-content/70 mt-1">
-                                        <span class="icon-[tabler--info-circle] size-3 inline-block"></span>
-                                        You must pay this amount in <strong>Philippine Pesos</strong>.
-                                    </p>
+                                <div class="alert alert-info mt-3 py-2 shadow-none">
+                                    <span class="icon-[tabler--info-circle] size-4 shrink-0"></span>
+                                    <span class="text-xs">Pay in <strong>Philippine Pesos</strong>.</span>
                                 </div>
                             {% endif %}
                         </div>
 
-                        {# Receipt Upload - Compact #}
-                        <div class="form-control">
-                            <label class="label py-1">
-                                <span class="label-text text-xs font-medium">Receipt</span>
-                            </label>
-                            
-                            <input id="receipt" name="receipt" type="file" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
-                            
-                            <div id="uploadArea" class="mt-1 flex justify-center px-4 py-4 border-2 border-dashed border-base-300 rounded-lg hover:border-primary transition-colors cursor-pointer">
-                                <div class="space-y-1 text-center">
-                                    <span class="icon-[tabler--upload] size-8 text-base-content/40 mx-auto block"></span>
-                                    <div class="text-xs text-base-content/60">
-                                        <span class="font-medium text-primary">Upload file</span>
-                                    </div>
-                                    <p class="text-[10px] text-base-content/50">PDF, JPG, PNG (5MB max)</p>
+                        <div class="divider my-1"></div>
+
+                        {# Receipt upload — PDF only #}
+                        <div>
+                            <label class="label-text font-medium mb-2 block">Payment receipt (PDF) <span class="text-error">*</span></label>
+                            <input id="receipt" name="receipt" type="file" accept="application/pdf,.pdf" class="hidden">
+
+                            <div id="uploadArea"
+                                 class="bg-base-200/60 rounded-xl flex flex-col justify-center border-2 border-base-content/20 border-dashed hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
+                                <div class="text-center p-8 sm:p-10">
+                                    <span class="icon-[tabler--file-type-pdf] size-10 text-error/60 mx-auto block"></span>
+                                    <p class="text-base-content/50 mt-3 mb-3 text-sm">PDF only — max 5MB</p>
+                                    <span class="btn btn-soft btn-primary btn-sm gap-2 pointer-events-none">
+                                        <span class="icon-[tabler--cloud-upload] size-4"></span>
+                                        Drag &amp; drop or browse
+                                    </span>
                                 </div>
                             </div>
 
-                            <div id="fileSelectedArea" class="hidden mt-1 border border-success bg-success/10 rounded-lg p-2">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center flex-1 min-w-0">
-                                        <span class="icon-[tabler--file] size-6 text-success flex-shrink-0"></span>
-                                        <div class="ml-2 flex-1 min-w-0">
-                                            <p class="text-xs font-medium text-base-content truncate" id="selectedFileName"></p>
-                                            <p class="text-[10px] text-base-content/60" id="selectedFileSize"></p>
+                            <div id="fileSelectedArea" class="hidden mt-3 rounded-xl border border-success/30 bg-success/10 p-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="flex items-center flex-1 min-w-0 gap-3">
+                                        <div class="avatar avatar-placeholder">
+                                            <div class="bg-success/20 text-success size-10 rounded-full">
+                                                <span class="icon-[tabler--file-type-pdf] size-5"></span>
+                                            </div>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-medium text-base-content truncate" id="selectedFileName"></p>
+                                            <p class="text-xs text-base-content/60" id="selectedFileSize"></p>
                                         </div>
                                     </div>
-                                    <button type="button" 
-                                            id="changeFileBtn"
-                                            class="btn btn-xs btn-ghost ml-2 flex-shrink-0">
-                                        Change
+                                    <button type="button" id="changeFileBtn" class="btn btn-ghost btn-sm btn-circle shrink-0" title="Remove file">
+                                        <span class="icon-[tabler--x] size-4"></span>
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        {# Error/Success Messages - Compact #}
+                        {# No file attached warning #}
+                        <div id="noFileMessage" class="alert alert-warning shadow-sm hidden" role="alert">
+                            <span class="icon-[tabler--file-off] size-5 shrink-0"></span>
+                            <div>
+                                <p class="font-semibold text-sm">No receipt attached</p>
+                                <p class="text-xs opacity-90 mt-0.5">Please upload a PDF payment receipt above before submitting your payment.</p>
+                            </div>
+                        </div>
+
+                        {# Feedback #}
                         <div id="errorMessage" class="alert alert-error py-2 hidden">
-                            <span class="icon-[tabler--alert-circle] size-4"></span>
-                            <span class="text-xs" id="errorText"></span>
+                            <span class="icon-[tabler--alert-circle] size-4 shrink-0"></span>
+                            <span class="text-sm" id="errorText"></span>
                         </div>
-
                         <div id="successMessage" class="alert alert-success py-2 hidden">
-                            <span class="icon-[tabler--circle-check] size-4"></span>
-                            <span class="text-xs">Payment submitted! Redirecting...</span>
+                            <span class="icon-[tabler--circle-check] size-4 shrink-0"></span>
+                            <span class="text-sm">Payment submitted successfully! Redirecting…</span>
                         </div>
 
-                        {# Submit Button - Compact #}
-                        <div class="flex flex-col gap-2 pt-2">
-                            <button type="submit" 
+                        {# Actions #}
+                        <div class="flex flex-col gap-2 pt-1">
+                            <button type="submit"
                                     id="submitBtn"
-                                    class="btn btn-primary btn-sm btn-block">
+                                    class="btn btn-primary btn-block gap-2">
                                 <span id="submitIcon" class="{% if rejectedPayment %}icon-[tabler--upload]{% else %}icon-[tabler--send]{% endif %} size-4"></span>
                                 <span id="loadingSpinner" class="loading loading-spinner loading-sm hidden"></span>
-                                <span id="btnText">{% if rejectedPayment %}Resubmit{% else %}Submit{% endif %}</span>
+                                <span id="btnText">{% if rejectedPayment %}Resubmit Payment{% else %}Submit Payment{% endif %}</span>
                             </button>
-                            {% if rejectedPayment %}
-                            <a href="{{ path('broker_payment_history', {id: manifest.id}) }}" 
-                               class="btn btn-ghost btn-xs btn-block">
-                                <span class="icon-[tabler--history] size-3"></span>
-                                View My Submissions
-                            </a>
-                            {% endif %}
-                            <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" 
-                               class="btn btn-ghost btn-xs btn-block">
+                            <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}"
+                               class="btn btn-ghost btn-block btn-sm">
                                 Cancel
                             </a>
                         </div>
@@ -174,78 +277,71 @@
                 </div>
             </div>
 
-            {# Billing Summary - Compact #}
-            <div class="card bg-base-100 shadow-lg mt-4">
-                <div class="card-body p-4">
-                    <h3 class="text-base font-bold mb-3">Billing Summary</h3>
-                    
-                    <div class="space-y-1.5">
-                        {# Freight #}
-                        <div class="flex justify-between py-1.5 border-b border-base-300">
-                            <span class="text-xs text-base-content/60">Freight</span>
+            {# Billing breakdown #}
+            <div class="card card-border bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-6">
+                    <h2 class="card-title text-base gap-2 mb-4">
+                        <span class="icon-[tabler--list-details] size-5 text-warning"></span>
+                        Charge breakdown
+                    </h2>
+
+                    <div class="space-y-0">
+                        <div class="flex justify-between items-center py-3 border-b border-base-300/60">
+                            <span class="text-sm text-base-content/70">Freight</span>
                             <div class="text-right">
                                 {% if billing.originalCurrency == 'USD' and billing.freightChargesUsd %}
-                                    <div class="text-xs font-medium">
-                                        <div>{{ billing|format_billing_charge(billing.freightCharges, billing.freightChargesUsd) }}</div>
-                                        {% if billing.exchangeRate %}
-                                            <div class="text-[10px] text-base-content/60">{{ (billing.freightChargesUsd * billing.exchangeRate)|format_money('PHP') }}</div>
-                                        {% endif %}
-                                    </div>
+                                    <div class="text-sm font-medium">{{ billing|format_billing_charge(billing.freightCharges, billing.freightChargesUsd) }}</div>
+                                    {% if billing.exchangeRate %}
+                                        <div class="text-xs text-base-content/50">{{ (billing.freightChargesUsd * billing.exchangeRate)|format_money('PHP') }}</div>
+                                    {% endif %}
                                 {% else %}
-                                    <span class="text-xs font-medium">{{ billing|format_billing_charge(billing.freightCharges, billing.freightChargesUsd) }}</span>
+                                    <span class="text-sm font-medium">{{ billing|format_billing_charge(billing.freightCharges, billing.freightChargesUsd) }}</span>
                                 {% endif %}
                             </div>
                         </div>
 
-                        {# THC #}
-                        <div class="flex justify-between py-1.5 border-b border-base-300">
-                            <span class="text-xs text-base-content/60">THC</span>
+                        <div class="flex justify-between items-center py-3 border-b border-base-300/60">
+                            <span class="text-sm text-base-content/70">THC</span>
                             <div class="text-right">
                                 {% if billing.originalCurrency == 'USD' and billing.thcChargesUsd %}
-                                    <div class="text-xs font-medium">
-                                        <div>{{ billing|format_billing_charge(billing.thcCharges, billing.thcChargesUsd) }}</div>
-                                        {% if billing.exchangeRate %}
-                                            <div class="text-[10px] text-base-content/60">{{ (billing.thcChargesUsd * billing.exchangeRate)|format_money('PHP') }}</div>
-                                        {% endif %}
-                                    </div>
+                                    <div class="text-sm font-medium">{{ billing|format_billing_charge(billing.thcCharges, billing.thcChargesUsd) }}</div>
+                                    {% if billing.exchangeRate %}
+                                        <div class="text-xs text-base-content/50">{{ (billing.thcChargesUsd * billing.exchangeRate)|format_money('PHP') }}</div>
+                                    {% endif %}
                                 {% else %}
-                                    <span class="text-xs font-medium">{{ billing|format_billing_charge(billing.thcCharges, billing.thcChargesUsd) }}</span>
+                                    <span class="text-sm font-medium">{{ billing|format_billing_charge(billing.thcCharges, billing.thcChargesUsd) }}</span>
                                 {% endif %}
                             </div>
                         </div>
 
-                        {# Additional Charges #}
                         {% if billing.additionalCharges %}
                             {% for charge in billing.additionalCharges %}
-                                <div class="flex justify-between py-1.5 border-b border-base-300">
-                                    <span class="text-xs text-base-content/60">{{ charge.description }}</span>
+                                <div class="flex justify-between items-center py-3 border-b border-base-300/60">
+                                    <span class="text-sm text-base-content/70">{{ charge.description }}</span>
                                     <div class="text-right">
                                         {% if billing.originalCurrency == 'USD' and charge.amountUsd %}
-                                            <div class="text-xs font-medium">
-                                                <div>{{ charge.amountUsd|format_money('USD') }}</div>
-                                                {% if billing.exchangeRate %}
-                                                    <div class="text-[10px] text-base-content/60">{{ (charge.amountUsd * billing.exchangeRate)|format_money('PHP') }}</div>
-                                                {% endif %}
-                                            </div>
+                                            <div class="text-sm font-medium">{{ charge.amountUsd|format_money('USD') }}</div>
+                                            {% if billing.exchangeRate %}
+                                                <div class="text-xs text-base-content/50">{{ (charge.amountUsd * billing.exchangeRate)|format_money('PHP') }}</div>
+                                            {% endif %}
                                         {% else %}
-                                            <span class="text-xs font-medium">{{ charge.amount|format_money(billing.originalCurrency) }}</span>
+                                            <span class="text-sm font-medium">{{ charge.amount|format_money(billing.originalCurrency) }}</span>
                                         {% endif %}
                                     </div>
                                 </div>
                             {% endfor %}
                         {% endif %}
 
-                        {# Total #}
-                        <div class="flex justify-between py-2 bg-primary/10 px-3 rounded-lg mt-2">
-                            <span class="text-sm font-semibold">Total</span>
+                        <div class="flex justify-between items-center py-4 mt-1 px-4 rounded-xl bg-warning/10 border border-warning/20">
+                            <span class="font-semibold text-base-content">Total due</span>
                             <div class="text-right">
                                 {% if billing.originalCurrency == 'USD' and billing.totalAmountUsd %}
-                                    <div class="text-base font-bold text-primary">{{ billing|format_billing }}</div>
+                                    <div class="text-xl font-bold text-warning">{{ billing|format_billing }}</div>
                                     {% if billing.exchangeRate %}
-                                        <div class="text-xs font-semibold text-base-content/70">{{ (billing.totalAmountUsd * billing.exchangeRate)|format_money('PHP') }}</div>
+                                        <div class="text-sm font-medium text-base-content/60">≈ {{ (billing.totalAmountUsd * billing.exchangeRate)|format_money('PHP') }}</div>
                                     {% endif %}
                                 {% else %}
-                                    <span class="text-base font-bold text-primary">{{ billing|format_billing }}</span>
+                                    <span class="text-xl font-bold text-warning">{{ billing|format_billing }}</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -254,31 +350,53 @@
             </div>
         </div>
 
-        {# Right Column - Billing Document (2/3) #}
-        <div class="lg:col-span-2">
-            <div class="card bg-base-100 shadow-lg sticky top-4">
-                <div class="card-body p-3">
-                    <div class="flex items-center justify-between mb-2">
-                        <h3 class="text-base font-bold">Billing Document</h3>
+        {# Right — billing document preview #}
+        <div class="xl:col-span-3">
+            <div class="card card-border bg-base-100 shadow-sm xl:sticky xl:top-4">
+                <div class="card-body p-0">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 sm:p-5 border-b border-base-300/60">
+                        <div>
+                            <h2 class="font-semibold text-base-content flex items-center gap-2">
+                                <span class="icon-[tabler--file-type-pdf] size-5 text-error"></span>
+                                Billing document
+                            </h2>
+                            <p class="text-xs text-base-content/60 mt-0.5">Review the invoice before submitting your receipt</p>
+                        </div>
                         {% if billing.pdfPath %}
-                            <a href="{{ path('api_billing_download', {billingId: billing.id, inline: 'false'}) }}" 
-                               target="_blank"
-                               class="btn btn-xs btn-ghost gap-1">
-                                <span class="icon-[tabler--external-link] size-3"></span>
-                                Open
-                            </a>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <a href="{{ billingDownloadUrl }}?inline=true"
+                                   target="_blank"
+                                   rel="noopener"
+                                   class="btn btn-ghost btn-sm gap-1">
+                                    <span class="icon-[tabler--external-link] size-4"></span>
+                                    Open
+                                </a>
+                                <a href="{{ billingDownloadUrl }}"
+                                   class="btn btn-warning btn-soft btn-sm gap-1">
+                                    <span class="icon-[tabler--download] size-4"></span>
+                                    Download
+                                </a>
+                            </div>
                         {% endif %}
                     </div>
-                    
+
                     {% if billing.pdfPath %}
-                        <div class="border border-base-300 rounded-lg overflow-hidden bg-base-200" style="height: 600px;">
-                            <iframe src="{{ path('api_billing_download', {billingId: billing.id, inline: 'true'}) }}" 
-                                    class="w-full h-full border-0"></iframe>
+                        <div class="bg-base-200/50 p-2 sm:p-3">
+                            <div class="rounded-xl border border-base-300/60 overflow-hidden bg-base-100 shadow-inner" style="height: min(72vh, 720px);">
+                                <iframe src="{{ billingDownloadUrl }}?inline=true"
+                                        class="w-full h-full border-0"
+                                        title="Billing document preview"></iframe>
+                            </div>
                         </div>
                     {% else %}
-                        <div class="flex flex-col items-center justify-center text-center bg-base-200 rounded-lg border border-dashed border-base-300" style="height: 600px;">
-                            <span class="icon-[tabler--file-off] size-12 text-base-content/20 mb-2"></span>
-                            <p class="text-xs text-base-content/60">Document not available</p>
+                        <div class="flex flex-col items-center justify-center text-center p-12 sm:p-16">
+                            <div class="avatar avatar-placeholder mb-4">
+                                <div class="bg-base-200 text-base-content/30 size-20 rounded-full">
+                                    <span class="icon-[tabler--file-off] size-10"></span>
+                                </div>
+                            </div>
+                            <p class="font-medium text-base-content">Billing PDF not available</p>
+                            <p class="text-sm text-base-content/60 mt-1 max-w-sm">The billing document has not been generated yet. Contact support if this persists.</p>
                         </div>
                     {% endif %}
                 </div>
@@ -286,8 +404,93 @@
         </div>
     </div>
 </div>
-</div>
+{% endblock %}
 
+{% block page_modals %}
+{# Full-viewport overlay — rendered at body level so sidebar/topnav are covered #}
+<div id="submitConfirmModal"
+     class="hidden fixed inset-0 z-[999999] items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="submitConfirmTitle">
+    <div class="absolute inset-0 bg-black/75 backdrop-blur-sm" id="submitConfirmBackdrop"></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10 border border-base-300/60 overflow-hidden">
+        {# Confirm step #}
+        <div id="submitConfirmContent" class="p-6">
+            <div class="flex items-start gap-4">
+                <div class="avatar avatar-placeholder shrink-0">
+                    <div class="bg-primary/15 text-primary size-12 rounded-full">
+                        <span class="icon-[tabler--send] size-6"></span>
+                    </div>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h3 id="submitConfirmTitle" class="text-lg font-bold text-base-content">
+                        {% if rejectedPayment %}Confirm payment resubmission{% else %}Confirm payment submission{% endif %}
+                    </h3>
+                    <p class="text-sm text-base-content/60 mt-1">Please verify the details below before submitting.</p>
+                </div>
+            </div>
+
+            <div class="mt-5 space-y-3 rounded-xl bg-base-200/50 border border-base-300/50 p-4 text-sm">
+                <div class="flex justify-between gap-4">
+                    <span class="text-base-content/60">Manifest</span>
+                    <span class="font-mono font-medium text-base-content">{{ manifest.manifestNumber }}</span>
+                </div>
+                <div class="flex justify-between gap-4">
+                    <span class="text-base-content/60">Amount</span>
+                    <span class="font-semibold text-warning">{{ billing|format_billing }}</span>
+                </div>
+                <div class="flex justify-between gap-4">
+                    <span class="text-base-content/60">Currency</span>
+                    <span class="font-medium">{{ billing.originalCurrency }}</span>
+                </div>
+                <div class="flex justify-between gap-4 items-start">
+                    <span class="text-base-content/60 shrink-0">Receipt file</span>
+                    <span class="font-medium text-right truncate max-w-[12rem]" id="confirmFileName">—</span>
+                </div>
+            </div>
+
+            <div class="alert alert-warning mt-4 py-2 shadow-none">
+                <span class="icon-[tabler--alert-triangle] size-4 shrink-0"></span>
+                <span class="text-xs">Submitted receipts cannot be changed while accounting reviews your payment.</span>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button type="button" id="cancelConfirmBtn" class="btn btn-ghost flex-1">Cancel</button>
+                <button type="button" id="confirmSubmitBtn" class="btn btn-primary flex-1 gap-2">
+                    <span id="confirmSubmitIcon" class="icon-[tabler--circle-check] size-4"></span>
+                    <span id="confirmSubmitSpinner" class="loading loading-spinner loading-sm hidden"></span>
+                    <span id="confirmSubmitText">{% if rejectedPayment %}Resubmit{% else %}Submit{% endif %}</span>
+                </button>
+            </div>
+        </div>
+
+        {# Loading step #}
+        <div id="submitLoadingState" class="hidden p-10 sm:p-12 text-center">
+            <span class="loading loading-spinner loading-lg text-primary"></span>
+            <p class="mt-5 text-base font-semibold text-base-content">Uploading payment receipt…</p>
+            <p class="mt-2 text-sm text-base-content/60">Please wait while we submit your payment.</p>
+        </div>
+
+        {# Success step #}
+        <div id="submitSuccessState" class="hidden p-10 sm:p-12 text-center">
+            <div class="avatar avatar-placeholder mx-auto mb-4">
+                <div class="bg-success/15 text-success size-20 rounded-full">
+                    <span class="icon-[tabler--circle-check] size-10"></span>
+                </div>
+            </div>
+            <p class="text-xl font-bold text-success">Payment submitted!</p>
+            <p class="mt-2 text-sm text-base-content/60">Your receipt was uploaded successfully. Accounting will review your payment shortly.</p>
+            <p class="mt-4 text-xs text-base-content/50 flex items-center justify-center gap-2">
+                <span class="loading loading-spinner loading-xs"></span>
+                Redirecting to manifest…
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('paymentForm');
@@ -304,8 +507,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const errorMessage = document.getElementById('errorMessage');
     const errorText = document.getElementById('errorText');
     const successMessage = document.getElementById('successMessage');
+    const submitConfirmModal = document.getElementById('submitConfirmModal');
+    const submitConfirmBackdrop = document.getElementById('submitConfirmBackdrop');
+    const cancelConfirmBtn = document.getElementById('cancelConfirmBtn');
+    const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+    const confirmFileName = document.getElementById('confirmFileName');
+    const submitConfirmContent = document.getElementById('submitConfirmContent');
+    const submitLoadingState = document.getElementById('submitLoadingState');
+    const submitSuccessState = document.getElementById('submitSuccessState');
+    const confirmSubmitIcon = document.getElementById('confirmSubmitIcon');
+    const confirmSubmitSpinner = document.getElementById('confirmSubmitSpinner');
+    const confirmSubmitText = document.getElementById('confirmSubmitText');
+    const noFileMessage = document.getElementById('noFileMessage');
+    const paymentAmountDisplay = {{ paymentAmount|json_encode }};
 
-    // Format file size
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+    const ALLOWED_MIME = 'application/pdf';
+
     function formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -314,7 +532,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
     }
 
-    // Show file selected UI
     function showFileSelected(file) {
         selectedFileName.textContent = file.name;
         selectedFileSize.textContent = formatFileSize(file.size);
@@ -322,58 +539,164 @@ document.addEventListener('DOMContentLoaded', function() {
         fileSelectedArea.classList.remove('hidden');
     }
 
-    // Show upload area UI
     function showUploadArea() {
         uploadArea.classList.remove('hidden');
         fileSelectedArea.classList.add('hidden');
-        receiptInput.value = ''; // Clear the file input
+        receiptInput.value = '';
+        hideNoFileWarning();
     }
 
-    // File input change handler
-    receiptInput.addEventListener('change', function(e) {
+    function showError(message) {
+        errorText.textContent = message;
+        errorMessage.classList.remove('hidden');
+    }
+
+    function hideError() {
+        errorMessage.classList.add('hidden');
+    }
+
+    function showNoFileWarning() {
+        hideError();
+        noFileMessage.classList.remove('hidden');
+        uploadArea.classList.add('border-error', 'border-solid', 'bg-error/5');
+        uploadArea.classList.remove('border-dashed', 'border-base-content/20');
+        uploadArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function hideNoFileWarning() {
+        noFileMessage.classList.add('hidden');
+        uploadArea.classList.remove('border-error', 'border-solid', 'bg-error/5');
+        uploadArea.classList.add('border-dashed', 'border-base-content/20');
+    }
+
+    async function validatePdfFile(file) {
+        if (!file) {
+            return 'Please select a PDF receipt before submitting.';
+        }
+
+        const fileName = file.name.toLowerCase();
+        if (!fileName.endsWith('.pdf')) {
+            return 'Only PDF files are allowed. Please upload a .pdf receipt.';
+        }
+
+        if (file.type && file.type !== ALLOWED_MIME) {
+            return 'Invalid file type. Only PDF files are allowed.';
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+            return 'File size must be less than 5MB.';
+        }
+
+        if (file.size < 100) {
+            return 'The selected file appears to be empty or invalid.';
+        }
+
+        try {
+            const buffer = await file.slice(0, 5).arrayBuffer();
+            const signature = String.fromCharCode(...new Uint8Array(buffer));
+            if (!signature.startsWith('%PDF')) {
+                return 'The file does not appear to be a valid PDF document.';
+            }
+        } catch (err) {
+            return 'Unable to read the selected file. Please try another PDF.';
+        }
+
+        return null;
+    }
+
+    async function handleFileSelection(file) {
+        const validationError = await validatePdfFile(file);
+        if (validationError) {
+            showError(validationError);
+            receiptInput.value = '';
+            showUploadArea();
+            return;
+        }
+
+        showFileSelected(file);
+        hideError();
+        hideNoFileWarning();
+    }
+
+    function resetModalState() {
+        submitConfirmContent.classList.remove('hidden');
+        submitLoadingState.classList.add('hidden');
+        submitSuccessState.classList.add('hidden');
+        cancelConfirmBtn.disabled = false;
+        confirmSubmitBtn.disabled = false;
+        confirmSubmitIcon.classList.remove('hidden');
+        confirmSubmitSpinner.classList.add('hidden');
+        confirmSubmitText.textContent = '{% if rejectedPayment %}Resubmit{% else %}Submit{% endif %}';
+        submitConfirmBackdrop.style.pointerEvents = '';
+    }
+
+    function showModalLoading() {
+        submitConfirmContent.classList.add('hidden');
+        submitLoadingState.classList.remove('hidden');
+        submitSuccessState.classList.add('hidden');
+        cancelConfirmBtn.disabled = true;
+        confirmSubmitBtn.disabled = true;
+        submitConfirmBackdrop.style.pointerEvents = 'none';
+    }
+
+    function showModalSuccess() {
+        submitConfirmContent.classList.add('hidden');
+        submitLoadingState.classList.add('hidden');
+        submitSuccessState.classList.remove('hidden');
+        submitConfirmBackdrop.style.pointerEvents = 'none';
+    }
+
+    function openConfirmModal(file) {
+        resetModalState();
+        confirmFileName.textContent = file.name;
+        submitConfirmModal.classList.remove('hidden');
+        submitConfirmModal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+        const appShell = document.querySelector('body > .flex.min-h-screen');
+        if (appShell) {
+            appShell.setAttribute('aria-hidden', 'true');
+            appShell.setAttribute('inert', '');
+        }
+    }
+
+    function closeConfirmModal() {
+        submitConfirmModal.classList.add('hidden');
+        submitConfirmModal.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+        resetModalState();
+        const appShell = document.querySelector('body > .flex.min-h-screen');
+        if (appShell) {
+            appShell.removeAttribute('aria-hidden');
+            appShell.removeAttribute('inert');
+        }
+    }
+
+    function resetSubmitButton() {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('btn-success');
+        submitBtn.classList.add('btn-primary');
+        submitIcon.classList.remove('hidden');
+        submitIcon.className = '{% if rejectedPayment %}icon-[tabler--upload]{% else %}icon-[tabler--send]{% endif %} size-4';
+        loadingSpinner.classList.add('hidden');
+        btnText.textContent = '{% if rejectedPayment %}Resubmit Payment{% else %}Submit Payment{% endif %}';
+        confirmSubmitBtn.disabled = false;
+    }
+
+    receiptInput.addEventListener('change', async function(e) {
         if (e.target.files.length > 0) {
-            const file = e.target.files[0];
-            
-            // Get file extension
-            const fileName = file.name.toLowerCase();
-            const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
-            const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
-            
-            // Validate file extension
-            if (!allowedExtensions.includes(fileExtension)) {
-                errorText.textContent = 'Invalid file type. Only PDF, JPG, and PNG files are allowed.';
-                errorMessage.classList.remove('hidden');
-                receiptInput.value = '';
-                showUploadArea();
-                return;
-            }
-            
-            // Validate file size (5MB max)
-            if (file.size > 5 * 1024 * 1024) {
-                errorText.textContent = 'File size must be less than 5MB';
-                errorMessage.classList.remove('hidden');
-                receiptInput.value = '';
-                showUploadArea();
-                return;
-            }
-            
-            showFileSelected(file);
-            errorMessage.classList.add('hidden');
+            await handleFileSelection(e.target.files[0]);
         }
     });
 
-    // Change file button handler
     changeFileBtn.addEventListener('click', function() {
         showUploadArea();
     });
 
-    // Click on upload area to trigger file input
     uploadArea.addEventListener('click', function(e) {
         e.preventDefault();
         receiptInput.click();
     });
 
-    // Drag and drop handlers
     uploadArea.addEventListener('dragover', function(e) {
         e.preventDefault();
         uploadArea.classList.add('border-primary', 'bg-primary/10');
@@ -384,46 +707,93 @@ document.addEventListener('DOMContentLoaded', function() {
         uploadArea.classList.remove('border-primary', 'bg-primary/10');
     });
 
-    uploadArea.addEventListener('drop', function(e) {
+    uploadArea.addEventListener('drop', async function(e) {
         e.preventDefault();
         uploadArea.classList.remove('border-primary', 'bg-primary/10');
-        
+
         if (e.dataTransfer.files.length > 0) {
-            receiptInput.files = e.dataTransfer.files;
-            const event = new Event('change', { bubbles: true });
-            receiptInput.dispatchEvent(event);
+            const file = e.dataTransfer.files[0];
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            receiptInput.files = dataTransfer.files;
+            await handleFileSelection(file);
         }
     });
 
-    // Form submission
+    cancelConfirmBtn.addEventListener('click', function() {
+        if (!submitLoadingState.classList.contains('hidden')) {
+            return;
+        }
+        closeConfirmModal();
+    });
+    submitConfirmBackdrop.addEventListener('click', function() {
+        if (!submitLoadingState.classList.contains('hidden') || !submitSuccessState.classList.contains('hidden')) {
+            return;
+        }
+        closeConfirmModal();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !submitConfirmModal.classList.contains('hidden')) {
+            if (!submitLoadingState.classList.contains('hidden') || !submitSuccessState.classList.contains('hidden')) {
+                return;
+            }
+            closeConfirmModal();
+        }
+    });
+
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+        hideError();
+        hideNoFileWarning();
+        successMessage.classList.add('hidden');
+
+        const file = receiptInput.files[0];
+        if (!file) {
+            showNoFileWarning();
+            return;
+        }
+
+        const validationError = await validatePdfFile(file);
+        if (validationError) {
+            showError(validationError);
+            return;
+        }
+
+        openConfirmModal(file);
+    });
+
+    confirmSubmitBtn.addEventListener('click', async function() {
+        const file = receiptInput.files[0];
+        const validationError = await validatePdfFile(file);
+        if (validationError) {
+            closeConfirmModal();
+            showError(validationError);
+            return;
+        }
+
+        await submitPayment(file);
+    });
+
+    async function submitPayment(file) {
         errorMessage.classList.add('hidden');
         successMessage.classList.add('hidden');
-        
-        // Show loading state
+        showModalLoading();
+
         submitBtn.disabled = true;
-        submitIcon.classList.add('hidden');
-        loadingSpinner.classList.remove('hidden');
-        btnText.textContent = 'Submitting...';
 
         const formData = new FormData();
-        formData.append('amount', document.getElementById('amount').value);
-        formData.append('receipt', receiptInput.files[0]);
+        formData.append('amount', paymentAmountDisplay);
+        formData.append('receipt', file);
 
         try {
-            // Check if this is a resubmission
             const isResubmission = {{ rejectedPayment ? 'true' : 'false' }};
             const rejectedPaymentId = {{ rejectedPayment ? rejectedPayment.id : 'null' }};
-            
+
             let url, method;
             if (isResubmission && rejectedPaymentId) {
-                // Use resubmit endpoint
                 url = `/api/payments/${rejectedPaymentId}/resubmit`;
                 method = 'POST';
             } else {
-                // Use regular submit endpoint
                 url = '/api/manifests/{{ manifest.id }}/payments/final';
                 method = 'POST';
             }
@@ -436,55 +806,42 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
 
             if (response.ok) {
+                showModalSuccess();
                 successMessage.classList.remove('hidden');
-                
-                // Change button to success state
+                submitIcon.classList.add('hidden');
                 loadingSpinner.classList.add('hidden');
-                submitIcon.classList.remove('hidden');
                 submitIcon.className = 'icon-[tabler--circle-check] size-4';
+                submitIcon.classList.remove('hidden');
                 btnText.textContent = 'Success!';
                 submitBtn.classList.remove('btn-primary');
                 submitBtn.classList.add('btn-success');
-                
-                // Redirect after showing success message
+
+                if (window.notyf) {
+                    window.notyf.success('Payment receipt uploaded successfully.');
+                }
+
                 setTimeout(() => {
                     window.location.href = '{{ path('broker_manifest_detail', {id: manifest.id}) }}';
-                }, 1500);
+                }, 2000);
             } else {
-                // Handle both error formats: {error: "message"} and {error: true, message: "message"}
                 let errorMsg = 'Failed to submit payment. Please try again.';
                 if (typeof data.error === 'string') {
                     errorMsg = data.error;
                 } else if (data.message) {
                     errorMsg = data.message;
                 }
-                errorText.textContent = errorMsg;
-                errorMessage.classList.remove('hidden');
-                
-                // Reset button state
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('btn-success');
-                submitBtn.classList.add('btn-primary');
-                submitIcon.classList.remove('hidden');
-                submitIcon.className = '{% if rejectedPayment %}icon-[tabler--upload]{% else %}icon-[tabler--send]{% endif %} size-4';
-                loadingSpinner.classList.add('hidden');
-                btnText.textContent = '{% if rejectedPayment %}Resubmit{% else %}Submit{% endif %}';
+                closeConfirmModal();
+                showError(errorMsg);
+
+                resetSubmitButton();
             }
         } catch (error) {
             console.error('Payment submission error:', error);
-            errorText.textContent = 'An error occurred while submitting payment. Please try again.';
-            errorMessage.classList.remove('hidden');
-            
-            // Reset button state
-            submitBtn.disabled = false;
-            submitBtn.classList.remove('btn-success');
-            submitBtn.classList.add('btn-primary');
-            submitIcon.classList.remove('hidden');
-            submitIcon.className = '{% if rejectedPayment %}icon-[tabler--upload]{% else %}icon-[tabler--send]{% endif %} size-4';
-            loadingSpinner.classList.add('hidden');
-            btnText.textContent = '{% if rejectedPayment %}Resubmit{% else %}Submit{% endif %}';
+            closeConfirmModal();
+            showError('An error occurred while submitting payment. Please try again.');
+            resetSubmitButton();
         }
-    });
+    }
 });
 </script>
 {% endblock %}

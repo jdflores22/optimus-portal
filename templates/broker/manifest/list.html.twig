@@ -1,270 +1,188 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}My Manifests - OPTIMUS{% endblock %}
+{% block page_title %}My Manifests{% endblock %}
 
 {% block body %}
-<div class="min-h-screen bg-base-200">
-    <!-- Header Section -->
-    <div class="bg-base-100 shadow-sm">
-        <div class="px-4 sm:px-6 lg:px-8 py-4">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                    <h1 class="text-2xl font-bold text-base-content">My Manifests</h1>
-                    <p class="text-sm text-base-content/60 mt-1">View and manage manifests</p>
+<div class="max-w-7xl mx-auto w-full space-y-5 sm:space-y-6 pb-10">
+
+    {# Hero #}
+    <div class="rounded-3xl border border-secondary/20 bg-gradient-to-br from-secondary/10 via-base-100 to-base-100 shadow-sm p-5 sm:p-7">
+        <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
+            <div class="space-y-3 min-w-0">
+                <div class="breadcrumbs text-xs">
+                    <ul>
+                        <li><a href="{{ path('app_broker_dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right] size-3.5"></span></li>
+                        <li aria-current="page">My Manifests</li>
+                    </ul>
                 </div>
-                
-                <!-- Active Workspace Badge -->
-                {% if app.session.get('active_workspace_consignee_id') %}
-                    <div class="flex items-center gap-2 bg-primary/10 rounded-xl px-4 py-3">
-                        <span class="icon-[tabler--briefcase] size-5 text-primary"></span>
-                        <div class="flex flex-col">
-                            <span class="text-xs text-primary/70 font-medium">Active Workspace</span>
-                            <span class="text-sm font-bold text-primary truncate max-w-[200px]">{{ app.session.get('active_workspace_consignee_name', 'Workspace') }}</span>
-                        </div>
-                    </div>
-                {% endif %}
+
+                <span class="inline-flex items-center gap-2 rounded-full bg-secondary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-secondary">
+                    <span class="icon-[tabler--file-text] size-3.5"></span>
+                    Manifest workflow
+                </span>
+
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-base-content leading-tight">My Manifests</h1>
+                    <p class="mt-2 text-sm sm:text-base text-base-content/70 max-w-2xl">
+                        Track workflow progress, payments, and eDO status for manifests in your active workspace.
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    {% if app.session.get('active_workspace_consignee_id') %}
+                        <span class="badge badge-primary badge-soft badge-lg gap-2 max-w-full">
+                            <span class="icon-[tabler--briefcase] size-4 shrink-0"></span>
+                            <span class="truncate">{{ app.session.get('active_workspace_consignee_name', 'Workspace') }}</span>
+                        </span>
+                    {% endif %}
+                    <span class="badge badge-secondary badge-soft badge-lg gap-2">
+                        <span class="icon-[tabler--activity] size-4"></span>
+                        {{ activeCount }} active
+                    </span>
+                    <span class="badge badge-ghost badge-lg gap-2">
+                        <span class="icon-[tabler--archive] size-4"></span>
+                        {{ completedCount }} completed
+                    </span>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 xl:justify-end shrink-0">
+                <a href="{{ path('broker_edo_list_page') }}" class="btn btn-outline btn-secondary btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--file-certificate] size-4"></span>
+                    My eDOs
+                </a>
+                <a href="{{ path('app_broker_dashboard') }}" class="btn btn-ghost btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--arrow-left] size-4"></span>
+                    Dashboard
+                </a>
             </div>
         </div>
     </div>
 
-    <div class="px-4 sm:px-6 lg:px-8 py-6">
-        {# Rejected Payments Alert #}
-        {% if rejectedPaymentsCount > 0 %}
-            <div class="alert alert-error mb-6 shadow-lg">
-                <span class="icon-[tabler--alert-triangle] size-6"></span>
-                <div class="flex-1">
-                    <h3 class="font-bold">Action Required: Rejected Payments</h3>
-                    <p class="text-sm">You have {{ rejectedPaymentsCount }} rejected payment{{ rejectedPaymentsCount > 1 ? 's' : '' }} that need to be resubmitted.</p>
-                </div>
-                <a href="{{ path('broker_payments_rejected') }}" class="btn btn-sm btn-ghost">
-                    <span class="icon-[tabler--arrow-right] size-4"></span>
-                    View & Resubmit
-                </a>
+    {% if rejectedPaymentsCount > 0 %}
+        <div class="alert alert-error shadow-sm border border-error/30">
+            <span class="icon-[tabler--alert-triangle] size-6 shrink-0"></span>
+            <div class="flex-1 min-w-0">
+                <p class="font-semibold">Action required: rejected payments</p>
+                <p class="text-sm opacity-90 mt-0.5">
+                    {{ rejectedPaymentsCount }} final payment{{ rejectedPaymentsCount > 1 ? 's need' : ' needs' }} to be resubmitted.
+                </p>
             </div>
-        {% endif %}
-        
-        <!-- Tabs -->
-        <div class="card bg-base-100 shadow-sm mb-6">
-            <div class="tabs tabs-boxed bg-base-200 p-2">
-                <a href="{{ path('broker_manifest_list', {tab: 'active'}) }}" 
-                   class="tab {% if currentTab == 'active' %}tab-active{% endif %} gap-2">
-                    Active
-                    {% if activeCount > 0 %}
-                        <span class="badge badge-sm">{{ activeCount }}</span>
-                    {% endif %}
-                </a>
-                <a href="{{ path('broker_manifest_list', {tab: 'completed'}) }}" 
-                   class="tab {% if currentTab == 'completed' %}tab-active{% endif %} gap-2">
-                    Completed
-                    {% if completedCount > 0 %}
-                        <span class="badge badge-sm">{{ completedCount }}</span>
-                    {% endif %}
-                </a>
-                <a href="{{ path('broker_manifest_list', {tab: 'all'}) }}" 
-                   class="tab {% if currentTab == 'all' %}tab-active{% endif %} gap-2">
-                    All
-                    <span class="badge badge-sm">{{ total }}</span>
-                </a>
-            </div>
+            <a href="{{ path('broker_payments_rejected') }}" class="btn btn-error btn-sm btn-soft gap-2 shrink-0">
+                View &amp; resubmit
+                <span class="icon-[tabler--arrow-right] size-4"></span>
+            </a>
+        </div>
+    {% endif %}
 
-            <!-- Filters -->
-            <div class="card-body p-4 bg-base-200">
-                <form method="GET" action="{{ path('broker_manifest_list') }}" class="space-y-3">
-                    <input type="hidden" name="tab" value="{{ currentTab }}">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <!-- Status Filter -->
-                        <div class="form-control">
-                            <label for="status" class="label">
-                                <span class="label-text">Status</span>
-                            </label>
-                            <select name="status" id="status" class="select select-bordered w-full">
-                                <option value="">All Statuses</option>
-                                {% for state in workflowStates %}
-                                    <option value="{{ state.value }}" {{ filters.status == state.value ? 'selected' : '' }}>
-                                        {{ state.getDisplayName() }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <!-- Date From -->
-                        <div class="form-control">
-                            <label for="date_from" class="label">
-                                <span class="label-text">Date From</span>
-                            </label>
-                            <input type="date" name="date_from" id="date_from" value="{{ filters.date_from }}" 
-                                   class="input input-bordered w-full">
-                        </div>
-
-                        <!-- Date To -->
-                        <div class="form-control">
-                            <label for="date_to" class="label">
-                                <span class="label-text">Date To</span>
-                            </label>
-                            <input type="date" name="date_to" id="date_to" value="{{ filters.date_to }}" 
-                                   class="input input-bordered w-full">
-                        </div>
-                    </div>
-
-                    <!-- Filter Buttons -->
-                    <div class="flex gap-2">
-                        <a href="{{ path('broker_manifest_list', {tab: currentTab}) }}" class="btn btn-ghost">
-                            Clear
-                        </a>
-                        <button type="submit" class="btn btn-primary">
-                            Apply Filters
-                        </button>
-                    </div>
-                </form>
+    {# Quick stats #}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div class="card card-border bg-base-100 shadow-sm">
+            <div class="card-body p-4">
+                <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide">Active</p>
+                <p class="text-2xl font-bold text-secondary mt-1">{{ activeCount }}</p>
             </div>
         </div>
+        <div class="card card-border bg-base-100 shadow-sm">
+            <div class="card-body p-4">
+                <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide">Completed</p>
+                <p class="text-2xl font-bold text-base-content mt-1">{{ completedCount }}</p>
+            </div>
+        </div>
+        <div class="card card-border bg-base-100 shadow-sm">
+            <div class="card-body p-4">
+                <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide">Showing</p>
+                <p class="text-2xl font-bold text-primary mt-1">{{ total }}</p>
+            </div>
+        </div>
+        <div class="card card-border bg-base-100 shadow-sm col-span-2 lg:col-span-1">
+            <div class="card-body p-4">
+                <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide">Current tab</p>
+                <p class="text-lg font-bold text-base-content mt-1 capitalize">{{ currentTab }}</p>
+            </div>
+        </div>
+    </div>
 
-        <!-- Manifest List -->
-        <div class="card bg-base-100 shadow-sm">
+    {# Filters + list #}
+    <div class="card card-border bg-base-100 shadow-sm">
+        <div class="card-body p-4 sm:p-6">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-5">
+                <div>
+                    <h2 class="text-base sm:text-lg font-semibold flex items-center gap-2">
+                        <span class="icon-[tabler--list] size-5 text-secondary"></span>
+                        Manifest list
+                    </h2>
+                    <p class="text-sm text-base-content/60 mt-1">Filter by status or date range.</p>
+                </div>
+            </div>
+
+            {# Tabs #}
+            <div class="flex flex-wrap gap-2 mb-5 p-1.5 rounded-2xl bg-base-200/50 border border-base-300/40">
+                <a href="{{ path('broker_manifest_list', {tab: 'active'}) }}"
+                   class="btn btn-sm gap-2 flex-1 sm:flex-none min-w-0 {{ currentTab == 'active' ? 'btn-secondary' : 'btn-ghost' }}">
+                    <span class="truncate">Active</span>
+                    <span class="badge badge-sm {{ currentTab == 'active' ? 'badge-neutral' : 'badge-secondary' }}">{{ activeCount }}</span>
+                </a>
+                <a href="{{ path('broker_manifest_list', {tab: 'completed'}) }}"
+                   class="btn btn-sm gap-2 flex-1 sm:flex-none min-w-0 {{ currentTab == 'completed' ? 'btn-secondary' : 'btn-ghost' }}">
+                    <span class="truncate">Completed</span>
+                    <span class="badge badge-sm {{ currentTab == 'completed' ? 'badge-neutral' : 'badge-ghost' }}">{{ completedCount }}</span>
+                </a>
+                <a href="{{ path('broker_manifest_list', {tab: 'all'}) }}"
+                   class="btn btn-sm gap-2 flex-1 sm:flex-none min-w-0 {{ currentTab == 'all' ? 'btn-secondary' : 'btn-ghost' }}">
+                    <span class="truncate">All</span>
+                    <span class="badge badge-sm {{ currentTab == 'all' ? 'badge-neutral' : 'badge-ghost' }}">{{ tabCounts.all }}</span>
+                </a>
+            </div>
+
+            {# Filters #}
+            <form method="GET" action="{{ path('broker_manifest_list') }}" class="rounded-xl border border-base-300/60 bg-base-200/30 p-4 mb-6">
+                <input type="hidden" name="tab" value="{{ currentTab }}">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="form-control">
+                        <label for="status" class="label py-1"><span class="label-text text-xs font-medium">Workflow status</span></label>
+                        <select name="status" id="status" class="select select-bordered select-sm w-full">
+                            <option value="">All statuses</option>
+                            {% for state in workflowStates %}
+                                <option value="{{ state.value }}" {{ filters.status == state.value ? 'selected' : '' }}>
+                                    {{ state.getDisplayName() }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label for="date_from" class="label py-1"><span class="label-text text-xs font-medium">From</span></label>
+                        <input type="date" name="date_from" id="date_from" value="{{ filters.date_from }}" class="input input-bordered input-sm w-full">
+                    </div>
+                    <div class="form-control">
+                        <label for="date_to" class="label py-1"><span class="label-text text-xs font-medium">To</span></label>
+                        <input type="date" name="date_to" id="date_to" value="{{ filters.date_to }}" class="input input-bordered input-sm w-full">
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary btn-sm btn-soft gap-2">
+                        <span class="icon-[tabler--filter] size-4"></span>
+                        Apply filters
+                    </button>
+                    <a href="{{ path('broker_manifest_list', {tab: currentTab}) }}" class="btn btn-ghost btn-sm">Clear</a>
+                </div>
+            </form>
+
             {% if manifests|length > 0 %}
-                <div class="card-body p-4 border-b border-base-300">
-                    <h3 class="text-sm font-semibold text-base-content">{{ total }} Manifest{{ total != 1 ? 's' : '' }}</h3>
-                </div>
-
-                <!-- Mobile: Card Layout -->
-                <div class="divide-y divide-base-300 lg:hidden">
-                    {% for item in manifests %}
-                        {% set manifest = item.manifest %}
-                        {% set statusValue = manifest.workflowState.value %}
-                        
-                        <div class="p-4 hover:bg-base-200 transition-colors">
-                            <div class="flex flex-col gap-3">
-                                <!-- Top: Manifest Number & Action Button -->
-                                <div class="flex items-start justify-between gap-2">
-                                    <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" 
-                                       class="text-sm font-bold text-base-content hover:text-primary">
-                                        {{ manifest.manifestNumber }}
-                                    </a>
-                                    
-                                    <div class="flex-shrink-0">
-                                        <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" 
-                                           class="btn btn-ghost btn-sm gap-2">
-                                            <span class="icon-[tabler--eye] size-4"></span>
-                                            View
-                                        </a>
-                                    </div>
-                                </div>
-                                
-                                <!-- Status Badges -->
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <!-- Containers/eDO Badge -->
-                                    {% if item.all_edos_paid %}
-                                        <span class="badge badge-success badge-sm gap-1">
-                                            <span class="icon-[tabler--circle-check] size-3"></span>
-                                            {{ item.containers_with_edo }}/{{ item.total_containers }} eDOs ✓ Paid
-                                        </span>
-                                    {% elseif item.all_edos_generated %}
-                                        <span class="badge badge-success badge-sm gap-1">
-                                            <span class="icon-[tabler--circle-check] size-3"></span>
-                                            {{ item.containers_with_edo }}/{{ item.total_containers }} eDOs
-                                        </span>
-                                        {% if item.edos_paid > 0 %}
-                                            <span class="badge badge-info badge-sm">
-                                                {{ item.edos_paid }} paid
-                                            </span>
-                                        {% endif %}
-                                    {% elseif item.containers_with_edo > 0 %}
-                                        <span class="badge badge-warning badge-sm">
-                                            {{ item.containers_with_edo }}/{{ item.total_containers }} eDOs
-                                        </span>
-                                        {% if item.edos_paid > 0 %}
-                                            <span class="badge badge-info badge-sm">
-                                                {{ item.edos_paid }} paid
-                                            </span>
-                                        {% endif %}
-                                    {% else %}
-                                        <span class="badge badge-info badge-sm">
-                                            {{ item.total_containers }} containers
-                                        </span>
-                                    {% endif %}
-                                    
-                                    <!-- Workflow Status Badge -->
-                                    {% if statusValue == 'manifest_uploaded' %}
-                                        <span class="badge badge-ghost badge-lg">Uploaded</span>
-                                    {% elseif statusValue == 'noa_generated' %}
-                                        <span class="badge badge-secondary badge-lg">NOA Generated</span>
-                                    {% elseif statusValue == 'bl_generated' %}
-                                        <span class="badge badge-info badge-lg">BL Generated</span>
-                                    {% elseif statusValue == 'bl_uploaded' %}
-                                        <span class="badge badge-info badge-lg">BL Uploaded</span>
-                                    {% elseif statusValue == 'billing_generated' %}
-                                        <span class="badge badge-warning badge-lg">Billing Generated</span>
-                                    {% elseif statusValue == 'payment_submitted' %}
-                                        <span class="badge badge-info badge-lg">Payment Submitted</span>
-                                    {% elseif statusValue == 'edo_generated' %}
-                                        <span class="badge badge-success badge-lg">eDO Generated</span>
-                                    {% elseif statusValue == 'edo_released' %}
-                                        <span class="badge badge-success badge-lg">eDO Released</span>
-                                    {% else %}
-                                        <span class="badge badge-ghost badge-lg">{{ manifest.workflowState.getDisplayName() }}</span>
-                                    {% endif %}
-                                    
-                                    <!-- Payment Status Badge -->
-                                    {% if item.containers_with_edo > 0 %}
-                                        {% if item.all_edos_paid %}
-                                            <span class="badge badge-success badge-lg gap-2">
-                                                <span class="icon-[tabler--check] size-3"></span>
-                                                All Paid
-                                            </span>
-                                        {% elseif item.edos_paid > 0 %}
-                                            <span class="badge badge-info badge-lg gap-2">
-                                                <span class="icon-[tabler--file-check] size-3"></span>
-                                                {{ item.edos_paid }}/{{ item.containers_with_edo }} Paid
-                                            </span>
-                                        {% else %}
-                                            <span class="badge badge-warning badge-lg gap-2">
-                                                <span class="icon-[tabler--clock] size-3"></span>
-                                                Pending
-                                            </span>
-                                        {% endif %}
-                                    {% else %}
-                                        <span class="badge badge-ghost badge-lg">N/A</span>
-                                    {% endif %}
-                                </div>
-                                
-                                <!-- Details -->
-                                <div class="grid grid-cols-1 gap-2 text-xs text-base-content/60">
-                                    {% if manifest.consignee %}
-                                        <div class="flex items-center gap-2">
-                                            <span class="icon-[tabler--briefcase] size-4"></span>
-                                            <span class="font-medium text-base-content truncate">{{ manifest.consignee.businessName }}</span>
-                                        </div>
-                                    {% endif %}
-                                    
-                                    {% if manifest.vesselName %}
-                                        <div class="flex items-center gap-2">
-                                            <span class="icon-[tabler--ship] size-4"></span>
-                                            <span class="truncate">{{ manifest.vesselName }}</span>
-                                        </div>
-                                    {% endif %}
-                                    
-                                    <div class="flex items-center gap-2">
-                                        <span class="icon-[tabler--calendar] size-4"></span>
-                                        <span>{{ manifest.createdAt|date('M j, Y') }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-
-                <!-- Desktop: Table Layout -->
-                <div class="hidden lg:block overflow-x-auto">
-                    <table class="table">
-                        <thead>
+                {# Desktop table #}
+                <div class="hidden lg:block overflow-x-auto rounded-xl border border-base-300/60">
+                    <table class="table table-zebra">
+                        <thead class="bg-base-200/60">
                             <tr>
-                                <th>Manifest #</th>
+                                <th>Manifest</th>
                                 <th>Consignee</th>
                                 <th>Vessel</th>
-                                <th>Containers/eDOs</th>
-                                <th>Status</th>
+                                <th>Containers / eDOs</th>
+                                <th>Workflow</th>
                                 <th>Payment</th>
-                                <th>Date</th>
+                                <th>Created</th>
                                 <th class="text-right">Action</th>
                             </tr>
                         </thead>
@@ -272,114 +190,64 @@
                             {% for item in manifests %}
                                 {% set manifest = item.manifest %}
                                 {% set statusValue = manifest.workflowState.value %}
-                                
-                                <tr class="hover">
+                                <tr>
                                     <td>
-                                        <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" 
-                                           class="font-semibold text-base-content hover:text-primary">
+                                        <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" class="font-mono font-semibold text-primary hover:underline">
                                             {{ manifest.manifestNumber }}
                                         </a>
                                     </td>
                                     <td>
                                         {% if manifest.consignee %}
-                                            <span class="text-sm text-base-content">{{ manifest.consignee.businessName }}</span>
+                                            <span class="text-sm truncate block max-w-[10rem]" title="{{ manifest.consignee.businessName }}">{{ manifest.consignee.businessName }}</span>
                                         {% else %}
-                                            <span class="text-sm text-base-content/40">-</span>
+                                            <span class="text-base-content/40">—</span>
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if manifest.vesselName %}
-                                            <span class="text-sm text-base-content">{{ manifest.vesselName }}</span>
+                                            <span class="text-sm">{{ manifest.vesselName }}</span>
                                         {% else %}
-                                            <span class="text-sm text-base-content/40">-</span>
+                                            <span class="text-base-content/40">—</span>
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if item.all_edos_paid %}
-                                            <div class="flex items-center gap-1.5">
-                                                <span class="badge badge-success badge-sm gap-1">
-                                                    <span class="icon-[tabler--circle-check] size-3"></span>
-                                                    {{ item.containers_with_edo }}/{{ item.total_containers }}
-                                                </span>
-                                                <span class="text-xs text-success font-medium">All Paid</span>
-                                            </div>
+                                            <span class="badge badge-success badge-soft badge-sm gap-1">
+                                                <span class="icon-[tabler--circle-check] size-3"></span>
+                                                {{ item.containers_with_edo }}/{{ item.total_containers }} paid
+                                            </span>
                                         {% elseif item.all_edos_generated %}
-                                            <div class="flex items-center gap-1.5">
-                                                <span class="badge badge-success badge-sm gap-1">
-                                                    <span class="icon-[tabler--circle-check] size-3"></span>
-                                                    {{ item.containers_with_edo }}/{{ item.total_containers }}
-                                                </span>
-                                                {% if item.edos_paid > 0 %}
-                                                    <span class="badge badge-info badge-xs">{{ item.edos_paid }} paid</span>
-                                                {% endif %}
-                                            </div>
+                                            <span class="badge badge-success badge-soft badge-sm gap-1">
+                                                {{ item.containers_with_edo }}/{{ item.total_containers }} eDOs
+                                            </span>
+                                            {% if item.edos_paid > 0 %}
+                                                <span class="badge badge-info badge-soft badge-xs ml-1">{{ item.edos_paid }} paid</span>
+                                            {% endif %}
                                         {% elseif item.containers_with_edo > 0 %}
-                                            <div class="flex flex-col gap-1">
-                                                <div class="flex items-center gap-1.5">
-                                                    <span class="badge badge-warning badge-sm">
-                                                        {{ item.containers_with_edo }}/{{ item.total_containers }} eDOs
-                                                    </span>
-                                                    {% if item.edos_paid > 0 %}
-                                                        <span class="badge badge-info badge-xs">{{ item.edos_paid }} paid</span>
-                                                    {% endif %}
-                                                </div>
-                                                <div class="w-16 bg-base-300 rounded-full h-1">
-                                                    <div class="bg-warning h-1 rounded-full" style="width: {{ item.edo_progress }}%"></div>
-                                                </div>
-                                            </div>
+                                            <span class="badge badge-warning badge-soft badge-sm">{{ item.containers_with_edo }}/{{ item.total_containers }} eDOs</span>
                                         {% else %}
-                                            <span class="badge badge-info badge-sm">{{ item.total_containers }}</span>
+                                            <span class="badge badge-ghost badge-sm">{{ item.total_containers }} containers</span>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if statusValue == 'manifest_uploaded' %}
-                                            <span class="badge badge-ghost badge-lg">Uploaded</span>
-                                        {% elseif statusValue == 'noa_generated' %}
-                                            <span class="badge badge-secondary badge-lg">NOA Generated</span>
-                                        {% elseif statusValue == 'bl_generated' %}
-                                            <span class="badge badge-info badge-lg">BL Generated</span>
-                                        {% elseif statusValue == 'bl_uploaded' %}
-                                            <span class="badge badge-info badge-lg">BL Uploaded</span>
-                                        {% elseif statusValue == 'billing_generated' %}
-                                            <span class="badge badge-warning badge-lg">Billing Generated</span>
-                                        {% elseif statusValue == 'payment_submitted' %}
-                                            <span class="badge badge-info badge-lg">Payment Submitted</span>
-                                        {% elseif statusValue == 'edo_generated' %}
-                                            <span class="badge badge-success badge-lg">eDO Generated</span>
-                                        {% elseif statusValue == 'edo_released' %}
-                                            <span class="badge badge-success badge-lg">eDO Released</span>
-                                        {% else %}
-                                            <span class="badge badge-ghost badge-lg">{{ manifest.workflowState.getDisplayName() }}</span>
-                                        {% endif %}
+                                        {% include 'broker/manifest/_workflow_status_badge.html.twig' with { statusValue: statusValue, manifest: manifest } %}
                                     </td>
                                     <td>
                                         {% if item.containers_with_edo > 0 %}
                                             {% if item.all_edos_paid %}
-                                                <span class="badge badge-success badge-lg gap-2">
-                                                    <span class="icon-[tabler--check] size-3"></span>
-                                                    All Paid
-                                                </span>
+                                                <span class="badge badge-success badge-soft badge-sm">All paid</span>
                                             {% elseif item.edos_paid > 0 %}
-                                                <span class="badge badge-info badge-lg gap-2">
-                                                    <span class="icon-[tabler--file-check] size-3"></span>
-                                                    {{ item.edos_paid }}/{{ item.containers_with_edo }} Paid
-                                                </span>
+                                                <span class="badge badge-info badge-soft badge-sm">{{ item.edos_paid }}/{{ item.containers_with_edo }} paid</span>
                                             {% else %}
-                                                <span class="badge badge-warning badge-lg gap-2">
-                                                    <span class="icon-[tabler--clock] size-3"></span>
-                                                    Pending
-                                                </span>
+                                                <span class="badge badge-warning badge-soft badge-sm">Pending</span>
                                             {% endif %}
                                         {% else %}
-                                            <span class="badge badge-ghost badge-lg">N/A</span>
+                                            <span class="text-xs text-base-content/40">N/A</span>
                                         {% endif %}
                                     </td>
-                                    <td>
-                                        <span class="text-sm text-base-content/60">{{ manifest.createdAt|date('M j, Y') }}</span>
-                                    </td>
+                                    <td class="text-sm text-base-content/70">{{ manifest.createdAt|date('M j, Y') }}</td>
                                     <td class="text-right">
-                                        <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" 
-                                           class="btn btn-ghost btn-sm gap-2">
+                                        <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" class="btn btn-secondary btn-soft btn-sm gap-1">
                                             <span class="icon-[tabler--eye] size-4"></span>
                                             View
                                         </a>
@@ -390,23 +258,67 @@
                     </table>
                 </div>
 
-                <!-- Pagination -->
+                {# Mobile cards #}
+                <div class="lg:hidden space-y-3">
+                    {% for item in manifests %}
+                        {% set manifest = item.manifest %}
+                        {% set statusValue = manifest.workflowState.value %}
+                        <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}"
+                           class="block rounded-xl border border-base-300/60 bg-base-200/20 p-4 space-y-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="font-mono font-bold text-primary truncate">{{ manifest.manifestNumber }}</p>
+                                    {% if manifest.consignee %}
+                                        <p class="text-xs text-base-content/60 truncate mt-0.5">{{ manifest.consignee.businessName }}</p>
+                                    {% endif %}
+                                </div>
+                                {% include 'broker/manifest/_workflow_status_badge.html.twig' with { statusValue: statusValue, manifest: manifest, size: 'sm' } %}
+                            </div>
+
+                            <div class="flex flex-wrap gap-2">
+                                {% if item.all_edos_paid %}
+                                    <span class="badge badge-success badge-soft badge-sm">{{ item.containers_with_edo }}/{{ item.total_containers }} paid</span>
+                                {% elseif item.containers_with_edo > 0 %}
+                                    <span class="badge badge-warning badge-soft badge-sm">{{ item.containers_with_edo }}/{{ item.total_containers }} eDOs</span>
+                                {% else %}
+                                    <span class="badge badge-ghost badge-sm">{{ item.total_containers }} containers</span>
+                                {% endif %}
+                                {% if item.containers_with_edo > 0 %}
+                                    {% if item.all_edos_paid %}
+                                        <span class="badge badge-success badge-soft badge-sm">All paid</span>
+                                    {% elseif item.edos_paid > 0 %}
+                                        <span class="badge badge-info badge-soft badge-sm">{{ item.edos_paid }} paid</span>
+                                    {% else %}
+                                        <span class="badge badge-warning badge-soft badge-sm">Payment pending</span>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+
+                            <div class="flex items-center justify-between text-xs text-base-content/60 pt-2 border-t border-base-300/50">
+                                <span class="flex items-center gap-1.5">
+                                    {% if manifest.vesselName %}
+                                        <span class="icon-[tabler--ship] size-3.5"></span>
+                                        <span class="truncate max-w-[8rem]">{{ manifest.vesselName }}</span>
+                                    {% endif %}
+                                </span>
+                                <span>{{ manifest.createdAt|date('M j, Y') }}</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+
                 {% if totalPages > 1 %}
-                    <div class="card-body p-4 border-t border-base-300 flex flex-col sm:flex-row items-center justify-between gap-3">
-                        <div class="text-sm text-base-content/60">
-                            Page {{ currentPage }} of {{ totalPages }}
-                        </div>
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6 pt-5 border-t border-base-300/50">
+                        <p class="text-sm text-base-content/60">Page {{ currentPage }} of {{ totalPages }} · {{ total }} manifest{{ total != 1 ? 's' : '' }}</p>
                         <div class="join">
                             {% if currentPage > 1 %}
-                                <a href="{{ path('broker_manifest_list', filters|merge({page: currentPage - 1, tab: currentTab})) }}" 
-                                   class="join-item btn btn-sm gap-2">
+                                <a href="{{ path('broker_manifest_list', filters|merge({page: currentPage - 1, tab: currentTab})) }}" class="join-item btn btn-sm btn-ghost gap-1">
                                     <span class="icon-[tabler--chevron-left] size-4"></span>
-                                    Previous
+                                    Prev
                                 </a>
                             {% endif %}
                             {% if currentPage < totalPages %}
-                                <a href="{{ path('broker_manifest_list', filters|merge({page: currentPage + 1, tab: currentTab})) }}" 
-                                   class="join-item btn btn-sm gap-2">
+                                <a href="{{ path('broker_manifest_list', filters|merge({page: currentPage + 1, tab: currentTab})) }}" class="join-item btn btn-sm btn-ghost gap-1">
                                     Next
                                     <span class="icon-[tabler--chevron-right] size-4"></span>
                                 </a>
@@ -415,16 +327,12 @@
                     </div>
                 {% endif %}
             {% else %}
-                <div class="card-body items-center text-center py-16">
-                    <div class="size-20 bg-base-200 rounded-full flex items-center justify-center mb-6">
-                        <span class="icon-[tabler--file-off] size-10 text-base-content/40"></span>
-                    </div>
-                    <h3 class="text-lg font-bold text-base-content mb-2">No manifests found</h3>
-                    <p class="text-sm text-base-content/60 mb-6">No manifests match your current filters.</p>
+                <div class="text-center py-14 rounded-xl border border-dashed border-base-300/60 bg-base-200/30">
+                    <span class="icon-[tabler--file-off] size-12 text-base-content/25 mx-auto block"></span>
+                    <p class="font-semibold text-base-content mt-4">No manifests found</p>
+                    <p class="text-sm text-base-content/60 mt-1">Try a different tab or clear your filters.</p>
                     {% if filters.status or filters.date_from or filters.date_to %}
-                        <a href="{{ path('broker_manifest_list', {tab: currentTab}) }}" class="btn btn-ghost">
-                            Clear Filters
-                        </a>
+                        <a href="{{ path('broker_manifest_list', {tab: currentTab}) }}" class="btn btn-ghost btn-sm mt-4">Clear filters</a>
                     {% endif %}
                 </div>
             {% endif %}

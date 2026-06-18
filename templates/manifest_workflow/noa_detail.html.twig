@@ -1,65 +1,208 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}NOA {{ noa.noaNumber }} - OPTIMUS{% endblock %}
+{% block page_title %}{{ noa.noaNumber }}{% endblock %}
+
+{% set state = manifest ? manifest.workflowState : null %}
+{% set workflowComplete = manifest ? manifest_workflow_is_complete(manifest) : false %}
+{% set currentStep = manifest ? manifest_workflow_current_step(manifest) : 1 %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/edo-generation-progress.css') }}">
+{% endblock %}
 
 {% block body %}
-<div class="min-h-screen bg-base-200">
-    <!-- Header Section -->
-    <div class="bg-base-100 shadow-md">
-        <div class="w-full px-4 sm:px-6 lg:px-8 py-4">
-            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                <div class="flex-1">
-                    <a href="{{ path('manifest_workflow_list') }}" 
-                       class="inline-flex items-center text-xs sm:text-sm text-base-content/60 hover:text-primary mb-2">
-                        <span class="icon-[tabler--arrow-left] size-4 mr-1.5"></span>
-                        Back to NOA List
-                    </a>
+<div class="max-w-7xl mx-auto w-full space-y-5 sm:space-y-6">
+
+    {# Hero header — centralized workflow hub for shipping lines hierarchy #}
+    <div class="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/15 via-base-100 to-base-100 shadow-sm p-5 sm:p-7">
+        <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
+            <div class="space-y-3 min-w-0">
+                <div class="breadcrumbs text-xs">
+                    <ul>
+                        {% if is_granted('ROLE_ACCOUNTING') and not is_granted('ROLE_SL_STAFF') %}
+                            <li><a href="{{ path('app_accounting_dashboard_new') }}">Accounting Dashboard</a></li>
+                        {% else %}
+                            <li><a href="{{ path('manifest_workflow_list') }}">NOA &amp; BL Workflow</a></li>
+                        {% endif %}
+                        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right] size-3.5"></span></li>
+                        <li aria-current="page">{{ noa.noaNumber }}</li>
+                    </ul>
+                </div>
+
+                <span class="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                    <span class="icon-[tabler--route] size-3.5"></span>
+                    {% if isWorkflowHub|default(false) %}
+                        Workflow Hub
+                    {% else %}
+                        NOA Workflow
+                    {% endif %}
+                </span>
+
+                <div>
                     <div class="flex flex-wrap items-center gap-3">
-                        <h1 class="text-xl sm:text-2xl font-bold text-base-content">{{ noa.noaNumber }}</h1>
-                        
-                        <!-- Edit Button -->
-                        <a href="{{ path('manifest_workflow_noa_edit_page', {id: noa.id}) }}"
-                           class="btn btn-sm btn-primary gap-1">
-                            <span class="icon-[tabler--edit] size-4"></span>
-                            Edit NOA
-                        </a>
-                        
-                        <!-- Status Badge -->
+                        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-base-content leading-tight font-mono">
+                            {{ noa.noaNumber }}
+                        </h1>
                         {% if manifest %}
-                            {% set state = manifest.workflowState %}
-                            {% if state.value == 'manifest_uploaded' %}
-                                <span class="badge badge-ghost">{{ state.getDisplayName() }}</span>
-                            {% elseif state.value == 'noa_generated' %}
-                                <span class="badge badge-primary">{{ state.getDisplayName() }}</span>
-                            {% elseif state.value == 'bl_generated' %}
-                                <span class="badge badge-info">{{ state.getDisplayName() }}</span>
-                            {% elseif state.value == 'bl_uploaded' %}
-                                <span class="badge badge-info">{{ state.getDisplayName() }}</span>
-                            {% elseif state.value == 'billing_generated' %}
-                                <span class="badge badge-warning">{{ state.getDisplayName() }}</span>
-                            {% elseif state.value == 'payment_submitted' %}
-                                <span class="badge badge-warning">{{ state.getDisplayName() }}</span>
-                            {% elseif state.value == 'edo_generated' %}
-                                <span class="badge badge-info">{{ state.getDisplayName() }}</span>
-                            {% elseif state.value == 'edo_released' %}
-                                <span class="badge badge-success">
-                                    <span class="icon-[tabler--circle-check] size-4 mr-1"></span>
+                            {% if state.value == 'edo_released' %}
+                                <span class="badge badge-success badge-lg gap-2">
+                                    <span class="icon-[tabler--circle-check] size-4"></span>
                                     {{ state.getDisplayName() }}
                                 </span>
+                            {% elseif state.value == 'edo_generated' %}
+                                <span class="badge badge-info badge-lg gap-2">{{ state.getDisplayName() }}</span>
+                            {% elseif state.value in ['billing_generated', 'payment_submitted'] %}
+                                <span class="badge badge-warning badge-lg">{{ state.getDisplayName() }}</span>
+                            {% elseif state.value in ['bl_generated', 'bl_uploaded'] %}
+                                <span class="badge badge-info badge-lg">{{ state.getDisplayName() }}</span>
+                            {% elseif state.value == 'noa_generated' %}
+                                <span class="badge badge-primary badge-lg">{{ state.getDisplayName() }}</span>
                             {% else %}
-                                <span class="badge badge-ghost">{{ state.getDisplayName() }}</span>
+                                <span class="badge badge-ghost badge-lg">{{ state.getDisplayName() }}</span>
                             {% endif %}
                         {% else %}
-                            <span class="badge badge-primary">NOA Created</span>
+                            <span class="badge badge-primary badge-lg">NOA Created</span>
                         {% endif %}
                     </div>
+                    <p class="mt-2 text-sm sm:text-base text-base-content/70 max-w-2xl">
+                        {% if isWorkflowHub|default(false) %}
+                            Centralized manifest workflow view for this shipment — NOA details, documents, containers, and eDO actions.
+                        {% else %}
+                            Notice of Arrival details, documents, and workflow status for this shipment.
+                        {% endif %}
+                    </p>
                 </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    {% if manifest %}
+                        {% if workflowComplete %}
+                            <span class="badge badge-success badge-soft badge-lg gap-2">
+                                <span class="icon-[tabler--circle-check] size-4"></span>
+                                Workflow complete
+                            </span>
+                        {% else %}
+                            <span class="badge badge-primary badge-soft badge-lg gap-2">
+                                <span class="icon-[tabler--list-numbers] size-4"></span>
+                                Step {{ currentStep }} of {{ manifest_workflow_total_steps() }}
+                            </span>
+                        {% endif %}
+                    {% endif %}
+                    {% if noa.vesselNumber %}
+                        <span class="badge badge-ghost badge-lg gap-2">
+                            <span class="icon-[tabler--ship] size-4"></span>
+                            {{ noa.vesselNumber }}
+                        </span>
+                    {% endif %}
+                    {% if noa.consignee %}
+                        <span class="badge badge-ghost badge-lg gap-2">
+                            <span class="icon-[tabler--building-store] size-4"></span>
+                            {{ noa.consignee.businessName }}
+                        </span>
+                    {% endif %}
+                    {% if manifest %}
+                        <span class="badge badge-ghost badge-lg gap-2 font-mono">
+                            <span class="icon-[tabler--file-description] size-4"></span>
+                            {{ manifest.manifestNumber }}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 xl:justify-end shrink-0">
+                {% if canEditNoa %}
+                    <a href="{{ path('manifest_workflow_noa_edit_page', {id: noa.id}) }}"
+                       class="btn btn-primary btn-sm sm:btn-md gap-2">
+                        <span class="icon-[tabler--edit] size-4"></span>
+                        Edit NOA
+                    </a>
+                {% endif %}
+                {% if manifest %}
+                    <a href="{{ path('audit_trail_manifest', {id: manifest.id}) }}"
+                       class="btn btn-outline btn-primary btn-sm sm:btn-md gap-2">
+                        <span class="icon-[tabler--history] size-4"></span>
+                        Audit Trail
+                    </a>
+                {% endif %}
+                {% if is_granted('ROLE_ACCOUNTING') and not is_granted('ROLE_SL_STAFF') %}
+                    <a href="{{ path('app_accounting_dashboard_new') }}"
+                       class="btn btn-ghost btn-sm sm:btn-md gap-2">
+                        <span class="icon-[tabler--arrow-left] size-4"></span>
+                        Back to Dashboard
+                    </a>
+                {% else %}
+                    <a href="{{ path('manifest_workflow_list') }}"
+                       class="btn btn-ghost btn-sm sm:btn-md gap-2">
+                        <span class="icon-[tabler--arrow-left] size-4"></span>
+                        Back to List
+                    </a>
+                {% endif %}
             </div>
         </div>
     </div>
 
-    <div class="w-full px-4 sm:px-6 lg:px-8 py-8">
-        <div class="flex flex-col lg:flex-row gap-4 sm:gap-6" style="align-items: flex-start;">
+    {# Flash messages #}
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success shadow-sm">
+            <span class="icon-[tabler--circle-check] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error shadow-sm">
+            <span class="icon-[tabler--circle-x] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('warning') %}
+        <div class="alert alert-warning shadow-sm">
+            <span class="icon-[tabler--alert-triangle] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('info') %}
+        <div class="alert alert-info shadow-sm">
+            <span class="icon-[tabler--info-circle] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+
+    {% if manifest %}
+    {# Workflow stepper #}
+    <div class="card card-border bg-base-100 shadow-sm">
+        <div class="card-body p-4 sm:p-6">
+            <div class="flex items-center justify-between gap-3 mb-5">
+                <h2 class="card-title text-base sm:text-lg">Workflow Progress</h2>
+                {% if workflowComplete %}
+                    <span class="badge badge-success badge-sm gap-1">
+                        <span class="icon-[tabler--circle-check] size-3"></span>
+                        Complete
+                    </span>
+                {% else %}
+                    <span class="badge badge-soft badge-primary badge-sm">Step {{ currentStep }} of {{ manifest_workflow_total_steps() }}</span>
+                {% endif %}
+            </div>
+            <div class="overflow-x-auto pb-1">
+                {% include 'components/flyonui_stepper.html.twig' with {
+                    steps: [
+                        { label: 'NOA' },
+                        { label: 'BL Gen' },
+                        { label: 'BL Upload' },
+                        { label: 'Billing' },
+                        { label: 'Payment' },
+                        { label: 'Validate' },
+                        { label: 'eDO' },
+                        { label: 'Release' }
+                    ],
+                    current: workflowComplete ? manifest_workflow_total_steps() + 1 : currentStep
+                } %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="flex flex-col lg:flex-row gap-4 sm:gap-6 items-start">
             <!-- Main Content (Left Column) -->
             <div class="flex-1 min-w-0 space-y-4 sm:space-y-6">
                 
@@ -460,10 +603,47 @@
             <div class="card bg-base-100 shadow-md w-full">
                 <div class="card-body p-4 sm:p-6">
                     <h3 class="card-title text-base sm:text-lg text-base-content">Available Documents</h3>
+                    {% if noaPdfRegenerateEnabled and canEditNoa %}
+                        <form method="POST" action="{{ path('manifest_workflow_noa_regenerate_pdf', {id: noa.id}) }}" class="mb-3">
+                            <input type="hidden" name="_token" value="{{ csrf_token('regenerate_noa_pdf_' ~ noa.id) }}">
+                            <button type="submit" class="btn btn-sm btn-warning btn-soft gap-2 w-full sm:w-auto">
+                                <span class="icon-[tabler--refresh] size-4"></span>
+                                Regenerate NOA PDF
+                            </button>
+                        </form>
+                    {% endif %}
+                    {% if manifestBlPdfRegenerateEnabled and canEditNoa and manifest %}
+                        <form method="POST" action="{{ path('manifest_workflow_manifest_regenerate_pdf', {id: noa.id}) }}" class="mb-3">
+                            <input type="hidden" name="_token" value="{{ csrf_token('regenerate_manifest_pdf_' ~ noa.id) }}">
+                            <button type="submit" class="btn btn-sm btn-warning btn-soft gap-2 w-full sm:w-auto">
+                                <span class="icon-[tabler--refresh] size-4"></span>
+                                Regenerate Manifest/BL PDF
+                            </button>
+                        </form>
+                    {% endif %}
+                    {% if billingPdfRegenerateEnabled and (canEditNoa or is_granted('ROLE_ACCOUNTING')) and manifest and manifest.billing %}
+                        <form method="POST" action="{{ path('manifest_workflow_billing_regenerate_pdf', {id: noa.id}) }}" class="mb-3">
+                            <input type="hidden" name="_token" value="{{ csrf_token('regenerate_billing_pdf_' ~ noa.id) }}">
+                            <button type="submit" class="btn btn-sm btn-warning btn-soft gap-2 w-full sm:w-auto">
+                                <span class="icon-[tabler--refresh] size-4"></span>
+                                Regenerate Billing PDF
+                            </button>
+                        </form>
+                    {% endif %}
+                    {% set regeneratableEdos = manifest ? manifest.edos|filter(edo => edo.pdfPath and edo.pdfPath not in ['pending', 'failed']) : [] %}
+                    {% if edoPdfRegenerateEnabled|default(false) and canEditNoa and regeneratableEdos|length > 0 %}
+                        <form method="POST" action="{{ path('manifest_workflow_edo_regenerate_pdf', {id: noa.id}) }}" class="mb-3">
+                            <input type="hidden" name="_token" value="{{ csrf_token('regenerate_edo_pdf_' ~ noa.id) }}">
+                            <button type="submit" class="btn btn-sm btn-warning btn-soft gap-2 w-full sm:w-auto">
+                                <span class="icon-[tabler--refresh] size-4"></span>
+                                Regenerate eDO PDF
+                            </button>
+                        </form>
+                    {% endif %}
                     <div class="space-y-2 sm:space-y-3">
                         {# Notice of Arrival (NOA) PDF #}
-                        {% if noa.pdfPath %}
-                            <div class="flex items-center justify-between p-3 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors">
+                        {% if noa.pdfPath or noaPdfRegenerateEnabled %}
+                            <div class="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
                                 <div class="flex items-center min-w-0 flex-1">
                                     <div class="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-lg flex items-center justify-center mr-2 sm:mr-3">
                                         <span class="icon-[tabler--file-text] size-5 sm:size-6 text-primary-content"></span>
@@ -476,17 +656,18 @@
                                         <div class="text-xs text-base-content/60 truncate">{{ noa.noaNumber }}</div>
                                     </div>
                                 </div>
-                                <a href="{{ path('api_noa_download', {noaNumber: noa.noaNumber}) }}" 
-                                   class="btn btn-sm btn-ghost text-primary ml-2 flex-shrink-0">
+                                <a href="{{ path('manifest_workflow_noa_download_pdf', {id: noa.id}) }}" 
+                                   class="btn btn-sm btn-primary btn-soft ml-2 flex-shrink-0 gap-1{% if not noa.pdfPath %} btn-disabled{% endif %}"
+                                   {% if not noa.pdfPath %}aria-disabled="true" tabindex="-1"{% endif %}>
                                     <span class="icon-[tabler--download] size-4 mr-1"></span>
                                     Download
                                 </a>
                             </div>
                         {% endif %}
 
-                        {# Manifest/BL Document - Show if manifest exists and has PDF #}
-                        {% if manifest and manifest.noa and manifest.noa.manifestPdfPath %}
-                            <div class="flex items-center justify-between p-3 bg-info/10 rounded-lg hover:bg-info/20 transition-colors">
+                        {# Manifest/BL Document #}
+                        {% if manifest and (noa.manifestPdfPath or manifest.manifestFilePath or manifestBlPdfRegenerateEnabled) %}
+                            <div class="flex items-center justify-between p-3 bg-info/10 rounded-lg">
                                 <div class="flex items-center min-w-0 flex-1">
                                     <div class="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-info rounded-lg flex items-center justify-center mr-2 sm:mr-3">
                                         <span class="icon-[tabler--file-text] size-5 sm:size-6 text-info-content"></span>
@@ -494,23 +675,27 @@
                                     <div class="min-w-0">
                                         <div class="flex items-center">
                                             <div class="text-xs sm:text-sm font-medium text-base-content truncate">Manifest/BL Document</div>
-                                            <span class="icon-[tabler--circle-check] size-4 text-success ml-1 flex-shrink-0"></span>
+                                            {% if noa.manifestPdfPath or manifest.manifestFilePath %}
+                                                <span class="icon-[tabler--circle-check] size-4 text-success ml-1 flex-shrink-0"></span>
+                                            {% endif %}
                                         </div>
                                         <div class="text-xs text-base-content/60 truncate">{{ manifest.manifestNumber }}</div>
                                     </div>
                                 </div>
-                                <a href="{{ path('api_manifest_download_by_id', {manifestId: manifest.id}) }}" 
-                                   target="_blank"
-                                   class="btn btn-sm btn-ghost text-info ml-2 flex-shrink-0">
-                                    <span class="icon-[tabler--download] size-4 mr-1"></span>
-                                    Download
-                                </a>
+                                {% if noa.manifestPdfPath or manifest.manifestFilePath %}
+                                    <a href="{{ path('api_manifest_download_by_id', {manifestId: manifest.id}) }}"
+                                       target="_blank"
+                                       class="btn btn-sm btn-info btn-soft ml-2 flex-shrink-0 gap-1">
+                                        <span class="icon-[tabler--download] size-4 mr-1"></span>
+                                        Download
+                                    </a>
+                                {% endif %}
                             </div>
                         {% endif %}
 
                         {# Bill of Lading - Show if BL exists #}
                         {% if manifest and manifest.blNumber and manifest.blFilePath %}
-                            <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors">
+                            <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
                                 <div class="flex items-center min-w-0 flex-1">
                                     <span class="icon-[tabler--file-description] size-6 sm:size-8 text-info mr-2 sm:mr-3 flex-shrink-0"></span>
                                     <div class="min-w-0">
@@ -520,23 +705,64 @@
                                 </div>
                                 <a href="/api/bl/{{ manifest.blNumber }}/download" 
                                    target="_blank"
-                                   class="btn btn-sm btn-ghost text-info ml-2 flex-shrink-0">Download</a>
+                                   class="btn btn-sm btn-info btn-soft ml-2 flex-shrink-0 gap-1">
+                                    <span class="icon-[tabler--download] size-4"></span>
+                                    Download
+                                </a>
                             </div>
                         {% endif %}
 
                         {# Billing Document - Show if billing exists #}
                         {% if manifest and manifest.billing %}
-                            <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors">
+                            <div class="flex items-center justify-between p-3 bg-warning/10 rounded-lg">
                                 <div class="flex items-center min-w-0 flex-1">
-                                    <span class="icon-[tabler--receipt] size-6 sm:size-8 text-warning mr-2 sm:mr-3 flex-shrink-0"></span>
+                                    <div class="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-warning rounded-lg flex items-center justify-center mr-2 sm:mr-3">
+                                        <span class="icon-[tabler--receipt] size-5 sm:size-6 text-warning-content"></span>
+                                    </div>
                                     <div class="min-w-0">
-                                        <div class="text-xs sm:text-sm font-medium text-base-content truncate">Billing Document</div>
+                                        <div class="flex items-center">
+                                            <div class="text-xs sm:text-sm font-medium text-base-content truncate">Billing Document</div>
+                                            {% if manifest.billing.pdfPath %}
+                                                <span class="icon-[tabler--circle-check] size-4 text-success ml-1 flex-shrink-0"></span>
+                                            {% endif %}
+                                        </div>
                                         <div class="text-xs text-base-content/60 truncate">Total: {{ manifest.billing|format_billing }}</div>
                                     </div>
                                 </div>
-                                <a href="/api/billing/{{ manifest.billing.id }}/download" 
+                                <a href="{{ path('manifest_workflow_billing_download_pdf', {id: noa.id}) }}"
+                                   class="btn btn-sm btn-warning btn-soft ml-2 flex-shrink-0 gap-1{% if not manifest.billing.pdfPath %} btn-disabled{% endif %}"
+                                   {% if not manifest.billing.pdfPath %}aria-disabled="true" tabindex="-1"{% endif %}>
+                                    <span class="icon-[tabler--download] size-4 mr-1"></span>
+                                    Download
+                                </a>
+                            </div>
+                        {% endif %}
+
+                        {# eDO Document - Show when eDOs with PDF exist #}
+                        {% if regeneratableEdos|length > 0 %}
+                            {% set firstRegeneratableEdo = regeneratableEdos|first %}
+                            <div class="flex items-center justify-between p-3 bg-success/10 rounded-lg">
+                                <div class="flex items-center min-w-0 flex-1">
+                                    <div class="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-success rounded-lg flex items-center justify-center mr-2 sm:mr-3">
+                                        <span class="icon-[tabler--file-certificate] size-5 sm:size-6 text-success-content"></span>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center">
+                                            <div class="text-xs sm:text-sm font-medium text-base-content truncate">Electronic Delivery Order (eDO)</div>
+                                            <span class="icon-[tabler--circle-check] size-4 text-success ml-1 flex-shrink-0"></span>
+                                        </div>
+                                        <div class="text-xs text-base-content/60 truncate">
+                                            {{ regeneratableEdos|length }} container{{ regeneratableEdos|length != 1 ? 's' : '' }}
+                                            {% if firstRegeneratableEdo.edoNumber %}· {{ firstRegeneratableEdo.edoNumber }}{% if regeneratableEdos|length > 1 %} + others{% endif %}{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <a href="/api/edos/{{ firstRegeneratableEdo.edoNumber }}/download"
                                    target="_blank"
-                                   class="btn btn-sm btn-ghost text-info ml-2 flex-shrink-0">Download</a>
+                                   class="btn btn-sm btn-success btn-soft ml-2 flex-shrink-0 gap-1">
+                                    <span class="icon-[tabler--download] size-4 mr-1"></span>
+                                    Download
+                                </a>
                             </div>
                         {% endif %}
 
@@ -550,7 +776,7 @@
                             {% endfor %}
                             
                             {% if finalPayment and finalPayment.officialReceiptPath %}
-                                <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors">
+                                <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
                                     <div class="flex items-center min-w-0 flex-1">
                                         <span class="icon-[tabler--circle-check] size-6 sm:size-8 text-success mr-2 sm:mr-3 flex-shrink-0"></span>
                                         <div class="min-w-0">
@@ -560,12 +786,15 @@
                                     </div>
                                     <a href="{{ finalPayment.officialReceiptPath }}" 
                                        target="_blank"
-                                       class="btn btn-sm btn-ghost text-info ml-2 flex-shrink-0">Download</a>
+                                       class="btn btn-sm btn-success btn-soft ml-2 flex-shrink-0 gap-1">
+                                        <span class="icon-[tabler--download] size-4"></span>
+                                        Download
+                                    </a>
                                 </div>
                             {% endif %}
                         {% endif %}
 
-                        {% if not noa.pdfPath and (not manifest or not manifest.noa or not manifest.noa.manifestPdfPath) %}
+                        {% if not noa.pdfPath and (not manifest or (not noa.manifestPdfPath and not manifest.manifestFilePath)) %}
                             <p class="text-sm text-base-content/60">No documents available yet</p>
                         {% endif %}
                     </div>
@@ -687,7 +916,7 @@
                                                 {% endif %}
                                             {% endfor %}
                                             
-                                            {% if finalPaymentVerified and manifest.workflowState.value in ['payment_verified', 'edo_generated', 'edo_released'] %}
+                                            {% if finalPaymentVerified and not allEdosGenerated and manifest.workflowState.value in ['payment_verified', 'edo_generated', 'edo_released'] %}
                                                 <button type="button" 
                                                         onclick="openEDOGenerationModal()"
                                                         class="btn btn-info w-full text-sm sm:text-base">
@@ -711,39 +940,18 @@
 
                                     <!-- Workflow Timeline -->
                                     <div class="mt-6 pt-6 border-t border-base-content/10">
-                                        {% if manifest %}
-                                            {% set state = manifest.workflowState %}
-                                            {% set currentStep = 0 %}
-                                            {% if state.value == 'noa_generated' %}
-                                                {% set currentStep = 1 %}
-                                            {% elseif state.value == 'bl_generated' %}
-                                                {% set currentStep = 2 %}
-                                            {% elseif state.value == 'bl_uploaded' %}
-                                                {% set currentStep = 3 %}
-                                            {% elseif state.value == 'billing_generated' %}
-                                                {% set currentStep = 4 %}
-                                            {% elseif state.value == 'payment_submitted' %}
-                                                {% set currentStep = 5 %}
-                                            {% elseif state.value == 'payment_verified' %}
-                                                {% set currentStep = 6 %}
-                                            {% elseif state.value == 'edo_generated' %}
-                                                {% set currentStep = 6 %}
-                                            {% elseif state.value == 'edo_released' %}
-                                                {% set currentStep = 7 %}
-                                            {% endif %}
-                                        {% else %}
-                                            {% set currentStep = 1 %}
-                                        {% endif %}
+                                        {% set currentStep = manifest_workflow_current_step(manifest) %}
+                                        {% set totalSteps = manifest_workflow_total_steps() %}
 
                                         <div class="flex items-center justify-between mb-4">
                                             <h4 class="text-sm font-medium text-base-content">Workflow Timeline</h4>
-                                            {% if currentStep >= 7 %}
+                                            {% if manifest_workflow_is_complete(manifest) %}
                                                 <span class="badge badge-success badge-sm gap-1">
                                                     <span class="icon-[tabler--circle-check] size-3"></span>
                                                     Complete
                                                 </span>
                                             {% else %}
-                                                <span class="text-xs text-base-content/40">Step {{ currentStep }} of 7</span>
+                                                <span class="text-xs text-base-content/40">Step {{ currentStep }} of {{ totalSteps }}</span>
                                             {% endif %}
                                         </div>
                                         
@@ -825,16 +1033,10 @@
                                                 <div class="timeline-end">
                                                     <div class="text-xs font-medium text-base-content">Submit Payment</div>
                                                     <div class="text-xs text-base-content/60">
-                                                        {% if manifest and (state.value == 'payment_verified' or currentStep >= 6) %}
-                                                            {% set verifiedPayment = null %}
-                                                            {% for p in manifest.payments %}
-                                                                {% if p.paymentType.value == 'final_payment' and p.status.value == 'verified' %}
-                                                                    {% set verifiedPayment = p %}
-                                                                {% endif %}
-                                                            {% endfor %}
-                                                            Verified{% if verifiedPayment and verifiedPayment.validatedAt %} · {{ verifiedPayment.validatedAt|date('M j, Y') }}{% endif %}
-                                                        {% elseif manifest and state.value == 'payment_submitted' %}
-                                                            Submitted · awaiting verification
+                                                        {% if manifest and manifest.workflowState.value == 'payment_submitted' %}
+                                                            Submitted · awaiting validation
+                                                        {% elseif currentStep >= 6 %}
+                                                            Submitted
                                                         {% else %}
                                                             Pending
                                                         {% endif %}
@@ -843,42 +1045,76 @@
                                                 <hr class="{% if currentStep > 5 %}bg-success{% endif %}" />
                                             </li>
 
-                                            <!-- Step 6: eDO Generated -->
+                                            <!-- Step 6: Validate Payment -->
                                             <li>
                                                 <hr class="{% if currentStep > 5 %}bg-success{% endif %}" />
                                                 <div class="timeline-middle">
-                                                    <span class="{% if currentStep >= 6 %}bg-info/20{% else %}bg-base-content/20{% endif %} flex size-3 items-center justify-center rounded-full">
-                                                        <span class="badge {% if currentStep >= 6 %}badge-info{% else %}badge-ghost{% endif %} size-2 rounded-full p-0"></span>
+                                                    <span class="{% if currentStep >= 6 %}bg-accent/20{% else %}bg-base-content/20{% endif %} flex size-3 items-center justify-center rounded-full">
+                                                        <span class="badge {% if currentStep >= 6 %}badge-accent{% else %}badge-ghost{% endif %} size-2 rounded-full p-0"></span>
                                                     </span>
                                                 </div>
                                                 <div class="timeline-end">
-                                                    <div class="text-xs font-medium text-base-content">eDO Generated</div>
+                                                    <div class="text-xs font-medium text-base-content">Validate Payment</div>
                                                     <div class="text-xs text-base-content/60">
-                                                        {% if currentStep >= 6 and manifest and manifest.edoBillings is not empty %}{{ manifest.edoBillings|first.createdAt|date('M j, Y') }}{% elseif currentStep >= 6 %}Completed{% else %}Pending{% endif %}
+                                                        {% if currentStep >= 6 and manifest %}
+                                                            {% set verifiedPayment = null %}
+                                                            {% for p in manifest.payments %}
+                                                                {% if p.paymentType.value == 'final_payment' and p.status.value == 'verified' %}
+                                                                    {% set verifiedPayment = p %}
+                                                                {% endif %}
+                                                            {% endfor %}
+                                                            Verified{% if verifiedPayment and verifiedPayment.validatedAt %} · {{ verifiedPayment.validatedAt|date('M j, Y') }}{% endif %}
+                                                        {% else %}
+                                                            Pending
+                                                        {% endif %}
                                                     </div>
                                                 </div>
                                                 <hr class="{% if currentStep > 6 %}bg-success{% endif %}" />
                                             </li>
 
-                                            <!-- Step 7: eDO Released -->
+                                            <!-- Step 7: eDO Generated -->
                                             <li>
                                                 <hr class="{% if currentStep > 6 %}bg-success{% endif %}" />
                                                 <div class="timeline-middle">
-                                                    <span class="{% if currentStep >= 7 %}bg-success/20{% else %}bg-base-content/20{% endif %} flex size-3 items-center justify-center rounded-full">
-                                                        <span class="badge {% if currentStep >= 7 %}badge-success{% else %}badge-ghost{% endif %} size-2 rounded-full p-0"></span>
+                                                    <span class="{% if currentStep >= 7 %}bg-info/20{% else %}bg-base-content/20{% endif %} flex size-3 items-center justify-center rounded-full">
+                                                        <span class="badge {% if currentStep >= 7 %}badge-info{% else %}badge-ghost{% endif %} size-2 rounded-full p-0"></span>
+                                                    </span>
+                                                </div>
+                                                <div class="timeline-end">
+                                                    <div class="text-xs font-medium text-base-content">eDO Generated</div>
+                                                    <div class="text-xs text-base-content/60">
+                                                        {% set firstEdo = (manifest and manifest.edos is not empty) ? (manifest.edos|first) : null %}
+                                                        {% if currentStep >= 7 and firstEdo and firstEdo.createdAt %}
+                                                            {{ firstEdo.createdAt|date('M j, Y') }}
+                                                        {% elseif currentStep >= 7 %}
+                                                            Completed
+                                                        {% else %}
+                                                            Pending
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                <hr class="{% if currentStep > 7 %}bg-success{% endif %}" />
+                                            </li>
+
+                                            <!-- Step 8: eDO Released -->
+                                            <li>
+                                                <hr class="{% if currentStep > 7 %}bg-success{% endif %}" />
+                                                <div class="timeline-middle">
+                                                    <span class="{% if currentStep >= 8 %}bg-success/20{% else %}bg-base-content/20{% endif %} flex size-3 items-center justify-center rounded-full">
+                                                        <span class="badge {% if currentStep >= 8 %}badge-success{% else %}badge-ghost{% endif %} size-2 rounded-full p-0"></span>
                                                     </span>
                                                 </div>
                                                 <div class="timeline-end">
                                                     <div class="text-xs font-medium text-base-content">eDO Released</div>
                                                     <div class="text-xs text-base-content/60">
-                                                        {% if currentStep >= 7 and manifest and manifest.completedAt %}{{ manifest.completedAt|date('M j, Y') }}{% elseif currentStep >= 7 %}Completed{% else %}Pending{% endif %}
+                                                        {% if currentStep >= 8 and manifest and manifest.completedAt %}{{ manifest.completedAt|date('M j, Y') }}{% elseif currentStep >= 8 %}Completed{% else %}Pending{% endif %}
                                                     </div>
                                                 </div>
                                                 <hr />
                                             </li>
                                         </ul>
 
-                                        {% if currentStep >= 7 %}
+                                        {% if manifest_workflow_is_complete(manifest) %}
                                             <div class="mt-4 flex items-center gap-2 p-3 rounded-lg bg-success/10 border border-success/20">
                                                 <span class="icon-[tabler--rosette-discount-check] size-5 text-success flex-shrink-0"></span>
                                                 <div>
@@ -1055,7 +1291,9 @@
     </div>
 </div>
 
-<!-- CY Reassignment Modal -->
+{% endblock %}
+
+{% block page_modals %}
 <div id="cyReassignmentModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/60" onclick="closeCYReassignmentModal()"></div>
     <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-md z-10">
@@ -1278,7 +1516,9 @@
         </form>
     </div>
 </div>
+{% endblock %}
 
+{% block page_scripts %}
 <script>
 // Edit NOA Modal Functions
 function openEditNoaModal() {
@@ -1671,50 +1911,4 @@ function showSuccessMessage(message) {
         });
     });
 </script>
-
-{# Show flash messages as toast notifications #}
-<script>
-    // Wait for both DOM and Notyf to be ready
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('[NOA Detail] Checking for flash messages...');
-        
-        // Wait a bit for Notyf to initialize
-        setTimeout(function() {
-            {% for message in app.flashes('success') %}
-                console.log('[NOA Detail] Success message:', '{{ message|e('js') }}');
-                if (window.notyf) {
-                    notyf.success('{{ message|e('js') }}');
-                } else {
-                    console.error('[NOA Detail] Notyf not initialized!');
-                }
-            {% endfor %}
-            
-            {% for message in app.flashes('error') %}
-                console.log('[NOA Detail] Error message:', '{{ message|e('js') }}');
-                if (window.notyf) {
-                    notyf.error('{{ message|e('js') }}');
-                } else {
-                    console.error('[NOA Detail] Notyf not initialized!');
-                }
-            {% endfor %}
-            
-            {% for message in app.flashes('warning') %}
-                console.log('[NOA Detail] Warning message:', '{{ message|e('js') }}');
-                if (window.notyf) {
-                    notyf.open({
-                        type: 'warning',
-                        message: '{{ message|e('js') }}',
-                        background: '#f59e0b',
-                        icon: false
-                    });
-                } else {
-                    console.error('[NOA Detail] Notyf not initialized!');
-                }
-            {% endfor %}
-            
-            console.log('[NOA Detail] Flash message check complete');
-        }, 100);
-    });
-</script>
-
 {% endblock %}

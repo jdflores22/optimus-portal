@@ -1,92 +1,193 @@
 {% extends 'base.html.twig' %}
-{% from 'components/card.html.twig' import card %}
-{% from 'components/badge.html.twig' import status_badge %}
-{% from 'components/button.html.twig' import button %}
-{% from 'components/alert.html.twig' import flash_messages %}
 
 {% block title %}Evaluator Dashboard - OPTIMUS{% endblock %}
 
 {% block body %}
-<div class="min-h-screen bg-meta-gray-100">
-    <!-- Top Navigation -->
-    <nav class="topnav">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    {% include 'components/optimus_logo.html.twig' with { size: 'sm', align: 'start' } %}
-                    <span class="ml-4 text-meta-text-secondary">Evaluator Dashboard</span>
+<div class="min-h-screen bg-base-200">
+    <!-- Header -->
+    <div class="bg-base-100 border-b border-base-300">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl font-bold text-base-content flex items-center gap-2">
+                            <span class="icon-[tabler--clipboard-check] size-7"></span>
+                            Accreditation Applications
+                        </h1>
+                        <p class="mt-2 text-sm text-base-content/60">Review and evaluate pending applications</p>
+                    </div>
+                    {% if pendingApplications|length > 0 %}
+                        <div class="hidden sm:flex items-center gap-2">
+                            <span class="badge badge-warning badge-lg gap-2">
+                                <span class="icon-[tabler--clock] size-4"></span>
+                                {{ pendingApplications|length }} Pending
+                            </span>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
-    </nav>
+    </div>
 
-    <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         <!-- Flash Messages -->
-        {{ flash_messages(app.flashes) }}
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success shadow-sm mb-6">
+                <span class="icon-[tabler--circle-check] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-error shadow-sm mb-6">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
 
-        <!-- Page Header -->
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-meta-text-primary">Pending Applications</h1>
-            <p class="mt-2 text-meta-text-secondary">Review and evaluate accreditation applications</p>
-        </div>
-
-        <!-- Applications Grid -->
-        {% if pendingApplications|length > 0 %}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {% for application in pendingApplications %}
-                    <div class="card-hover card-md">
-                        <!-- Status Badge -->
-                        <div class="flex items-center justify-between mb-4">
-                            {{ status_badge(application.status.value, 'sm') }}
-                            <span class="text-xs text-meta-text-tertiary">
-                                {{ application.submittedAt|date('M d, Y') }}
-                            </span>
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Main Content - Applications (3/4 width) -->
+            <div class="lg:col-span-3 space-y-6">
+                {% if pendingApplications|length > 0 %}
+                    <!-- Mobile: Pending Count -->
+                    <div class="sm:hidden">
+                        <div class="alert alert-warning">
+                            <span class="icon-[tabler--clock] size-5"></span>
+                            <span>{{ pendingApplications|length }} application(s) awaiting review</span>
                         </div>
-
-                        <!-- Applicant Info -->
-                        <div class="mb-4">
-                            <h3 class="text-lg font-semibold text-meta-text-primary mb-1">
-                                {{ application.applicant.email }}
-                            </h3>
-                            <p class="text-sm text-meta-text-secondary">
-                                Type: 
-                                <span class="font-medium">
-                                    {{ application.applicant.role.value }}
-                                </span>
-                            </p>
-                            {% if application.applicant.role.value == 'BROKER' %}
-                                <p class="text-sm text-meta-text-secondary mt-1">
-                                    Full Name: {{ application.applicant.fullName }}
-                                </p>
-                            {% elseif application.applicant.role.value == 'CONSIGNEE' %}
-                                <p class="text-sm text-meta-text-secondary mt-1">
-                                    Business: {{ application.applicant.businessName }}
-                                </p>
-                            {% endif %}
-                        </div>
-
-                        <!-- Form Info -->
-                        <div class="mb-4 pb-4 border-b border-meta-gray-200">
-                            <p class="text-xs text-meta-text-tertiary">
-                                Form: {{ application.formConfig.name }} (v{{ application.formConfig.version }})
-                            </p>
-                        </div>
-
-                        <!-- Action Button -->
-                        {{ button('Review Application', 'primary', 'md', path('app_evaluator_application_detail', {id: application.id}), null, false, null, 'w-full') }}
                     </div>
-                {% endfor %}
+
+                    <!-- Applications List -->
+                    <div class="space-y-4">
+                        {% for application in pendingApplications %}
+                            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-all border-l-4 border-warning">
+                                <div class="card-body p-5 sm:p-6">
+                                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                                        <!-- Left: Application Info -->
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-start gap-3 mb-3">
+                                                <div class="avatar placeholder shrink-0">
+                                                    <div class="bg-warning text-warning-content rounded-full size-12">
+                                                        <span class="text-lg font-bold">{{ application.applicant.email|slice(0, 1)|upper }}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="min-w-0 flex-1">
+                                                    <h3 class="text-lg font-bold text-base-content mb-1 truncate">
+                                                        {% if application.applicant.role.value == 'BROKER' %}
+                                                            {{ application.applicant.fullName }}
+                                                        {% else %}
+                                                            {{ application.applicant.businessName }}
+                                                        {% endif %}
+                                                    </h3>
+                                                    <p class="text-sm text-base-content/70 flex items-center gap-2">
+                                                        <span class="icon-[tabler--mail] size-4"></span>
+                                                        {{ application.applicant.email }}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                                                <div class="rounded-lg bg-base-200/50 p-3">
+                                                    <p class="text-xs text-base-content/60 mb-1">Type</p>
+                                                    <span class="badge badge-secondary badge-sm">
+                                                        {{ application.applicant.role.value|replace({'_': ' '}) }}
+                                                    </span>
+                                                </div>
+                                                <div class="rounded-lg bg-base-200/50 p-3">
+                                                    <p class="text-xs text-base-content/60 mb-1">Submitted</p>
+                                                    <p class="font-medium">{{ application.submittedAt|date('M d, Y') }}</p>
+                                                </div>
+                                                <div class="rounded-lg bg-base-200/50 p-3">
+                                                    <p class="text-xs text-base-content/60 mb-1">Form</p>
+                                                    <p class="font-medium text-xs">v{{ application.formConfig.version }}</p>
+                                                </div>
+                                                <div class="rounded-lg bg-base-200/50 p-3">
+                                                    <p class="text-xs text-base-content/60 mb-1">Status</p>
+                                                    <span class="badge badge-warning badge-sm gap-1">
+                                                        <span class="icon-[tabler--clock] size-3"></span>
+                                                        Pending
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Right: Action Button -->
+                                        <div class="shrink-0">
+                                            <a href="{{ path('app_evaluator_application_detail', {id: application.id}) }}" 
+                                               class="btn btn-primary gap-2 w-full sm:w-auto">
+                                                <span class="icon-[tabler--eye] size-5"></span>
+                                                Review Application
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <!-- Empty State -->
+                    <div class="card bg-base-100 shadow-sm">
+                        <div class="card-body items-center text-center py-16">
+                            <div class="size-20 bg-success/10 rounded-full flex items-center justify-center mb-6">
+                                <span class="icon-[tabler--circle-check] size-10 text-success"></span>
+                            </div>
+                            <h3 class="text-xl font-bold text-base-content mb-2">All Clear!</h3>
+                            <p class="text-base-content/60 max-w-md">
+                                No pending applications at the moment. All submissions have been reviewed.
+                            </p>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
-        {% else %}
-            <div class="card-lg text-center">
-                <svg class="mx-auto h-12 w-12 text-meta-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <h3 class="mt-4 text-lg font-medium text-meta-text-primary">No pending applications</h3>
-                <p class="mt-2 text-sm text-meta-text-secondary">All applications have been reviewed</p>
+
+            <!-- Sidebar - Analytics (1/4 width) -->
+            <div class="lg:col-span-1">
+                <div class="space-y-6 lg:sticky lg:top-24">
+                    <!-- Quick Stats -->
+                    <div class="card bg-base-100 shadow-sm">
+                        <div class="card-body p-5">
+                            <h2 class="font-semibold text-base text-base-content mb-4 flex items-center gap-2">
+                                <span class="icon-[tabler--chart-bar] size-5 text-primary"></span>
+                                Quick Stats
+                            </h2>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between p-3 rounded-lg bg-warning/10">
+                                    <span class="text-sm text-base-content/70">Pending</span>
+                                    <span class="font-bold text-lg text-warning">{{ pendingApplications|length }}</span>
+                                </div>
+                                <div class="flex items-center justify-between p-3 rounded-lg bg-base-200">
+                                    <span class="text-sm text-base-content/70">Today</span>
+                                    <span class="font-bold text-lg">{{ pendingApplications|filter(app => app.submittedAt|date('Y-m-d') == 'now'|date('Y-m-d'))|length }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Info Card -->
+                    <div class="card bg-info/5 border border-info/20">
+                        <div class="card-body p-5">
+                            <h3 class="font-semibold text-sm text-info mb-2 flex items-center gap-2">
+                                <span class="icon-[tabler--info-circle] size-4"></span>
+                                Evaluation Process
+                            </h3>
+                            <ul class="space-y-2 text-xs text-info/90">
+                                <li class="flex items-start gap-2">
+                                    <span class="icon-[tabler--check] size-4 shrink-0 mt-0.5"></span>
+                                    <span>Review submitted documents</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="icon-[tabler--check] size-4 shrink-0 mt-0.5"></span>
+                                    <span>Verify applicant information</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="icon-[tabler--check] size-4 shrink-0 mt-0.5"></span>
+                                    <span>Forward for final approval or request compliance</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
-        {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}

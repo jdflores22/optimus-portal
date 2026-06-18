@@ -1,256 +1,566 @@
 {% extends 'base.html.twig' %}
 
+
+
 {% block title %}SAS - Secured Accreditation System - OPTIMUS{% endblock %}
 
+
+
 {% block body %}
-<!-- Toast Notification Container -->
+
 <div class="toast toast-top toast-end z-50">
+
     {% for type, messages in app.flashes %}
+
         {% for message in messages %}
-            <div class="alert {% if type == 'success' %}alert-success{% elseif type == 'error' %}alert-error{% elseif type == 'warning' %}alert-warning{% else %}alert-info{% endif %}">
+
+            <div class="alert {% if type == 'success' %}alert-success{% elseif type == 'error' %}alert-error{% elseif type == 'warning' %}alert-warning{% else %}alert-info{% endif %} shadow-md">
+
                 <span>{{ message }}</span>
+
             </div>
+
         {% endfor %}
+
     {% endfor %}
+
 </div>
 
-<div class="min-h-screen bg-base-200">
-    <!-- Header -->
-    <div class="bg-base-100 shadow-sm">
-        <div class="px-4 sm:px-6 lg:px-8 py-6">
-            <div class="flex items-center gap-3 mb-2">
-                <h1 class="text-3xl font-bold text-base-content">SAS - Secured Accreditation System</h1>
-                <span class="badge badge-primary badge-lg">Multi-Tenant</span>
+
+
+<div class="space-y-6 max-w-7xl mx-auto w-full">
+
+
+
+    {# Page header #}
+
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+
+        <div class="min-w-0">
+
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+
+                <h1 class="text-2xl sm:text-3xl font-bold text-base-content">Secured Accreditation System</h1>
+
+                <span class="badge badge-primary badge-sm sm:badge-md">SAS</span>
+
             </div>
-            <p class="text-base-content/60 mt-2">Apply for secured accreditation with shipping lines to access their services</p>
+
+            <p class="mt-1 text-sm text-base-content/60 max-w-2xl">
+
+                Apply for accreditation with each shipping line to access their services on OPTIMUS.
+
+            </p>
+
         </div>
+
     </div>
 
-    <!-- Main Content -->
-    <div class="px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Broker Linkage Warning for Consignees -->
-        {% if app.user.role.value == 'CONSIGNEE' and not hasActiveBroker|default(false) %}
-            <div class="alert alert-warning mb-6">
-                <span class="icon-[tabler--alert-triangle] size-5"></span>
-                <div class="flex-1">
-                    <p class="font-semibold">Broker Linkage Required</p>
-                    <p class="text-sm">You must link an approved broker before submitting SAS applications.</p>
-                </div>
-                <a href="{{ path('accreditation_broker_select') }}" class="btn btn-sm btn-warning gap-2">
-                    <span class="icon-[tabler--link] size-4"></span>
-                    Select a Broker
-                </a>
-            </div>
-        {% endif %}
 
-        <!-- Shipping Line Cards Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {% for item in shippingLines %}
-                {% set shippingLine = item.entity %}
-                {% set submission = item.submission %}
-                {% set status = item.status %}
-                
-                <div class="card bg-base-100 shadow-sm hover:shadow-lg transition-shadow">
-                    <!-- Card Header with Logo -->
-                    <div class="card-body p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            {% set logoUrl = shippingLine.logoPath ? asset('uploads/shipping-lines/' ~ shippingLine.logoPath) : (shippingLine.portalConfig.logoUrl ?? null) %}
-                            {% if logoUrl %}
-                                <img src="{{ logoUrl }}" 
-                                     alt="{{ shippingLine.brandName }} logo" 
-                                     class="h-16 w-auto object-contain">
-                            {% else %}
-                                <div class="size-16 bg-gradient-to-br from-primary to-primary-focus rounded-xl flex items-center justify-center">
-                                    <span class="text-2xl font-bold text-primary-content">{{ shippingLine.brandName|slice(0, 2)|upper }}</span>
-                                </div>
-                            {% endif %}
-                            
-                            <!-- Status Badge -->
-                            {% if status == 'APPROVED' %}
-                                <span class="badge badge-success badge-lg gap-2">
-                                    <span class="icon-[tabler--circle-check] size-4"></span>
-                                    Approved
-                                </span>
-                            {% elseif status == 'PENDING' %}
-                                <span class="badge badge-warning badge-lg gap-2">
-                                    <span class="icon-[tabler--clock] size-4"></span>
-                                    Pending
-                                </span>
-                            {% elseif status == 'REJECTED' or status == 'DENIED' %}
-                                <span class="badge badge-error badge-lg gap-2">
-                                    <span class="icon-[tabler--x] size-4"></span>
-                                    Rejected
-                                </span>
-                            {% elseif status == 'COMPLIANCE_REQUIRED' %}
-                                <span class="badge badge-warning badge-lg gap-2">
-                                    <span class="icon-[tabler--alert-triangle] size-4"></span>
-                                    Compliance Required
-                                </span>
-                            {% else %}
-                                <span class="badge badge-ghost badge-lg">Not Applied</span>
-                            {% endif %}
-                        </div>
-                        
-                        <h3 class="text-xl font-semibold text-base-content mb-2">{{ shippingLine.brandName }}</h3>
-                        
-                        {% set brandColor = shippingLine.brandColor ?? (shippingLine.portalConfig.primaryColor ?? null) %}
-                        {% if brandColor %}
-                            <div class="flex items-center text-sm text-base-content/60 mb-4">
-                                <div class="size-4 rounded-full mr-2" style="background-color: {{ brandColor }}"></div>
-                                <span>Brand Color</span>
-                            </div>
-                        {% endif %}
-                        
-                        <div class="divider my-4"></div>
-                        
-                        {% if status == 'APPROVED' %}
-                            <p class="text-sm text-base-content/70 mb-4">
-                                Your SAS accreditation is approved. You can access all services for this shipping line.
-                            </p>
-                            {% if submission %}
-                                <div class="text-xs text-base-content/50 mb-4">
-                                    Approved on {{ submission.evaluatedAt|date('M j, Y') }}
-                                </div>
-                            {% endif %}
-                            <a href="{{ path('accreditation_detail', {id: submission.id}) }}" 
-                               class="btn btn-ghost w-full gap-2">
-                                <span class="icon-[tabler--eye] size-4"></span>
-                                View Details
-                            </a>
-                        {% elseif status == 'PENDING' %}
-                            <p class="text-sm text-base-content/70 mb-4">
-                                Your SAS application is under review. You'll be notified once it's evaluated.
-                            </p>
-                            {% if submission %}
-                                <div class="text-xs text-base-content/50 mb-4">
-                                    Submitted on {{ submission.submittedAt|date('M j, Y') }}
-                                </div>
-                            {% endif %}
-                            <a href="{{ path('accreditation_detail', {id: submission.id}) }}" 
-                               class="btn btn-ghost w-full gap-2">
-                                <span class="icon-[tabler--file-text] size-4"></span>
-                                View Application
-                            </a>
-                        {% elseif status == 'COMPLIANCE_REQUIRED' %}
-                            <p class="text-sm text-base-content/70 mb-4">
-                                Additional documents or corrections are required before your application can continue.
-                            </p>
-                            {% if item.complianceFields|default([])|length > 0 %}
-                                <div class="mb-4">
-                                    {% include 'accreditation/_compliance_fields_list.html.twig' with {
-                                        fieldsToCorrect: item.complianceFields
-                                    } %}
-                                </div>
-                            {% elseif submission and submission.denialReason %}
-                                <div class="alert alert-warning mb-4 text-left">
-                                    <span class="icon-[tabler--alert-triangle] size-4 shrink-0"></span>
-                                    <div>
-                                        <p class="text-xs font-semibold uppercase tracking-wide mb-1">Required actions</p>
-                                        <p class="text-sm whitespace-pre-wrap">{{ submission.denialReason }}</p>
+
+    {% include 'accreditation/_onboarding_workflow_banner.html.twig' %}
+
+    {% include 'accreditation/_account_pending_notice.html.twig' %}
+
+
+
+    {% if app.user.role.value == 'CONSIGNEE' and not hasActiveBroker|default(false) %}
+
+        <div class="alert alert-warning shadow-sm flex-col sm:flex-row items-start sm:items-center gap-3">
+
+            <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+
+            <div class="flex-1 min-w-0">
+
+                <p class="font-semibold">Broker linkage required</p>
+
+                <p class="text-sm">Link an approved broker before submitting SAS applications.</p>
+
+            </div>
+
+            <a href="{{ path('accreditation_broker_select') }}" class="btn btn-sm btn-warning gap-2 w-full sm:w-auto shrink-0">
+
+                <span class="icon-[tabler--link] size-4"></span>
+
+                Select a broker
+
+            </a>
+
+        </div>
+
+    {% endif %}
+
+
+
+    {# Shipping line cards #}
+
+    {% if shippingLines|length > 0 %}
+
+        <div>
+
+            <div class="flex items-center justify-between gap-3 mb-4">
+
+                <h2 class="text-lg font-semibold text-base-content">Shipping lines</h2>
+
+                <span class="badge badge-ghost">{{ shippingLines|length }} available</span>
+
+            </div>
+
+
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+
+                {% for item in shippingLines %}
+
+                    {% set shippingLine = item.entity %}
+
+                    {% set submission = item.submission %}
+
+                    {% set status = item.status %}
+
+                    {% set logoUrl = shippingLine.logoPath ? asset('uploads/shipping-lines/' ~ shippingLine.logoPath) : (shippingLine.portalConfig.logoUrl ?? null) %}
+
+
+
+                    <div class="card bg-base-100 shadow-sm border border-base-300/60 hover:shadow-md transition-shadow h-full">
+
+                        <div class="card-body p-5 sm:p-6 flex flex-col h-full gap-0">
+
+
+
+                            {# Header: logo + status #}
+
+                            <div class="flex items-start justify-between gap-3 mb-4">
+
+                                {% if logoUrl %}
+
+                                    <img src="{{ logoUrl }}"
+
+                                         alt="{{ shippingLine.brandName }} logo"
+
+                                         class="h-12 sm:h-14 w-auto max-w-[140px] object-contain shrink-0">
+
+                                {% else %}
+
+                                    <div class="size-12 sm:size-14 bg-gradient-to-br from-primary to-primary-focus rounded-xl flex items-center justify-center shrink-0">
+
+                                        <span class="text-lg font-bold text-primary-content">{{ shippingLine.brandName|slice(0, 2)|upper }}</span>
+
                                     </div>
+
+                                {% endif %}
+
+
+
+                                {% if status == 'APPROVED' %}
+
+                                    <span class="badge badge-success badge-sm gap-1 shrink-0 max-w-[11rem] whitespace-normal text-center h-auto min-h-6 py-1">
+
+                                        <span class="icon-[tabler--circle-check] size-3.5 shrink-0"></span>
+
+                                        Approved
+
+                                    </span>
+
+                                {% elseif status == 'AWAITING_FINAL_APPROVAL' %}
+
+                                    <span class="badge badge-info badge-sm gap-1 shrink-0 max-w-[11rem] whitespace-normal text-center h-auto min-h-6 py-1">
+
+                                        <span class="icon-[tabler--hourglass] size-3.5 shrink-0"></span>
+
+                                        Awaiting final approval
+
+                                    </span>
+
+                                {% elseif status == 'PENDING' %}
+
+                                    <span class="badge badge-warning badge-sm gap-1 shrink-0">
+
+                                        <span class="icon-[tabler--clock] size-3.5 shrink-0"></span>
+
+                                        Pending
+
+                                    </span>
+
+                                {% elseif status == 'REJECTED' or status == 'DENIED' %}
+
+                                    <span class="badge badge-error badge-sm gap-1 shrink-0">
+
+                                        <span class="icon-[tabler--x] size-3.5 shrink-0"></span>
+
+                                        Rejected
+
+                                    </span>
+
+                                {% elseif status == 'COMPLIANCE_REQUIRED' %}
+
+                                    <span class="badge badge-warning badge-sm gap-1 shrink-0 max-w-[11rem] whitespace-normal text-center h-auto min-h-6 py-1">
+
+                                        <span class="icon-[tabler--alert-triangle] size-3.5 shrink-0"></span>
+
+                                        Compliance required
+
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge badge-ghost badge-sm shrink-0">Not applied</span>
+
+                                {% endif %}
+
+                            </div>
+
+
+
+                            <h3 class="text-lg font-semibold text-base-content leading-tight">{{ shippingLine.brandName }}</h3>
+
+
+
+                            {% set brandColor = shippingLine.brandColor ?? (shippingLine.portalConfig.primaryColor ?? null) %}
+
+                            {% if brandColor %}
+
+                                <div class="flex items-center text-xs text-base-content/50 mt-1.5 mb-3">
+
+                                    <div class="size-3 rounded-full mr-2 shrink-0" style="background-color: {{ brandColor }}"></div>
+
+                                    <span>Brand color</span>
+
                                 </div>
-                            {% endif %}
-                            {% if submission %}
-                                <div class="text-xs text-base-content/50 mb-4">
-                                    Requested on {{ submission.evaluatedAt|date('M j, Y') }}
-                                </div>
-                            {% endif %}
-                            <a href="{{ path('accreditation_submit', {shippingLineId: shippingLine.id}) }}"
-                               class="btn btn-warning w-full gap-2 mb-2">
-                                <span class="icon-[tabler--upload] size-4"></span>
-                                Resubmit Compliance
-                            </a>
-                            {% if submission %}
-                                <a href="{{ path('accreditation_detail', {id: submission.id}) }}"
-                                   class="btn btn-ghost w-full gap-2">
-                                    <span class="icon-[tabler--eye] size-4"></span>
-                                    View Application
-                                </a>
-                            {% endif %}
-                        {% elseif status == 'REJECTED' or status == 'DENIED' %}
-                            <p class="text-sm text-base-content/70 mb-4">
-                                Your SAS application was rejected. Please review the feedback and reapply.
-                            </p>
-                            {% if submission and submission.denialReason %}
-                                <div class="alert alert-error mb-4">
-                                    <span class="text-xs">{{ submission.denialReason }}</span>
-                                </div>
-                            {% endif %}
-                            <a href="{{ path('accreditation_submit', {shippingLineId: shippingLine.id}) }}" 
-                               class="btn btn-warning w-full gap-2">
-                                <span class="icon-[tabler--refresh] size-4"></span>
-                                Reapply for SAS
-                            </a>
-                        {% else %}
-                            <p class="text-sm text-base-content/70 mb-4">
-                                Apply for SAS accreditation to access services and manage shipments with this shipping line.
-                            </p>
-                            {% if app.user.role.value == 'CONSIGNEE' and hasActiveBroker|default(false) %}
-                                <a href="{{ path('accreditation_submit', {shippingLineId: shippingLine.id}) }}" 
-                                   class="btn btn-primary w-full gap-2">
-                                    <span class="icon-[tabler--send] size-4"></span>
-                                    Apply for SAS
-                                </a>
-                            {% elseif app.user.role.value == 'CONSIGNEE' %}
-                                <button disabled class="btn btn-disabled w-full">
-                                    Link Broker First
-                                </button>
+
                             {% else %}
-                                <a href="{{ path('accreditation_submit', {shippingLineId: shippingLine.id}) }}" 
-                                   class="btn btn-primary w-full gap-2">
-                                    <span class="icon-[tabler--send] size-4"></span>
-                                    Apply for SAS
-                                </a>
+
+                                <div class="mb-3"></div>
+
                             {% endif %}
-                        {% endif %}
+
+
+
+                            <div class="divider my-0"></div>
+
+
+
+                            <div class="flex-1 flex flex-col pt-4">
+
+                                {% if status == 'APPROVED' %}
+
+                                    <p class="text-sm text-base-content/70 mb-3">
+
+                                        Your SAS accreditation is approved. You can access all services for this shipping line.
+
+                                    </p>
+
+                                    {% if submission and submission.approvedAt %}
+
+                                        <p class="text-xs text-base-content/50 mb-4">Approved on {{ submission.approvedAt|date('M j, Y') }}</p>
+
+                                    {% elseif submission and submission.evaluatedAt %}
+
+                                        <p class="text-xs text-base-content/50 mb-4">Approved on {{ submission.evaluatedAt|date('M j, Y') }}</p>
+
+                                    {% endif %}
+
+                                    <a href="{{ path('accreditation_detail', {id: submission.id}) }}"
+
+                                       class="btn btn-ghost btn-sm w-full gap-2 mt-auto">
+
+                                        <span class="icon-[tabler--eye] size-4"></span>
+
+                                        View details
+
+                                    </a>
+
+
+
+                                {% elseif status == 'AWAITING_FINAL_APPROVAL' %}
+
+                                    <p class="text-sm text-base-content/70 mb-3">
+
+                                        Passed evaluator review — waiting for Shipping Lines Admin final approval.
+
+                                    </p>
+
+                                    {% if submission and submission.evaluatedAt %}
+
+                                        <p class="text-xs text-base-content/50 mb-4">Evaluator approved on {{ submission.evaluatedAt|date('M j, Y') }}</p>
+
+                                    {% endif %}
+
+                                    <a href="{{ path('accreditation_detail', {id: submission.id}) }}"
+
+                                       class="btn btn-ghost btn-sm w-full gap-2 mt-auto">
+
+                                        <span class="icon-[tabler--eye] size-4"></span>
+
+                                        View application
+
+                                    </a>
+
+
+
+                                {% elseif status == 'PENDING' %}
+
+                                    <p class="text-sm text-base-content/70 mb-3">
+
+                                        Your application is under review. You'll be notified when it's evaluated.
+
+                                    </p>
+
+                                    {% if submission %}
+
+                                        <p class="text-xs text-base-content/50 mb-4">Submitted on {{ submission.submittedAt|date('M j, Y') }}</p>
+
+                                    {% endif %}
+
+                                    <a href="{{ path('accreditation_detail', {id: submission.id}) }}"
+
+                                       class="btn btn-ghost btn-sm w-full gap-2 mt-auto">
+
+                                        <span class="icon-[tabler--file-text] size-4"></span>
+
+                                        View application
+
+                                    </a>
+
+
+
+                                {% elseif status == 'COMPLIANCE_REQUIRED' %}
+
+                                    <p class="text-sm text-base-content/70 mb-3">
+
+                                        Additional documents or corrections are required before your application can continue.
+
+                                    </p>
+
+                                    {% if item.complianceFields|default([])|length > 0 %}
+
+                                        <div class="mb-3 text-sm">
+
+                                            {% include 'accreditation/_compliance_fields_list.html.twig' with {
+
+                                                fieldsToCorrect: item.complianceFields
+
+                                            } %}
+
+                                        </div>
+
+                                    {% elseif submission and submission.denialReason %}
+
+                                        <div class="alert alert-warning alert-sm mb-3 text-left py-2">
+
+                                            <span class="icon-[tabler--alert-triangle] size-4 shrink-0"></span>
+
+                                            <div class="min-w-0">
+
+                                                <p class="text-xs font-semibold uppercase tracking-wide mb-0.5">Required actions</p>
+
+                                                <p class="text-xs whitespace-pre-wrap break-words">{{ submission.denialReason }}</p>
+
+                                            </div>
+
+                                        </div>
+
+                                    {% endif %}
+
+                                    {% if submission and submission.evaluatedAt %}
+
+                                        <p class="text-xs text-base-content/50 mb-3">Requested on {{ submission.evaluatedAt|date('M j, Y') }}</p>
+
+                                    {% endif %}
+
+                                    <div class="mt-auto space-y-2">
+
+                                        <a href="{{ path('accreditation_submit', {shippingLineId: shippingLine.id}) }}"
+
+                                           class="btn btn-warning btn-sm w-full gap-2">
+
+                                            <span class="icon-[tabler--upload] size-4"></span>
+
+                                            Resubmit compliance
+
+                                        </a>
+
+                                        {% if submission %}
+
+                                            <a href="{{ path('accreditation_detail', {id: submission.id}) }}"
+
+                                               class="btn btn-ghost btn-sm w-full gap-2">
+
+                                                <span class="icon-[tabler--eye] size-4"></span>
+
+                                                View application
+
+                                            </a>
+
+                                        {% endif %}
+
+                                    </div>
+
+
+
+                                {% elseif status == 'REJECTED' or status == 'DENIED' %}
+
+                                    <p class="text-sm text-base-content/70 mb-3">
+
+                                        Your application was rejected. Review the feedback and reapply when ready.
+
+                                    </p>
+
+                                    {% if submission and submission.denialReason %}
+
+                                        <div class="alert alert-error alert-sm mb-3 py-2">
+
+                                            <span class="text-xs break-words">{{ submission.denialReason }}</span>
+
+                                        </div>
+
+                                    {% endif %}
+
+                                    <a href="{{ path('accreditation_submit', {shippingLineId: shippingLine.id}) }}"
+
+                                       class="btn btn-warning btn-sm w-full gap-2 mt-auto">
+
+                                        <span class="icon-[tabler--refresh] size-4"></span>
+
+                                        Reapply for SAS
+
+                                    </a>
+
+
+
+                                {% else %}
+
+                                    <p class="text-sm text-base-content/70 mb-4">
+
+                                        Apply for SAS accreditation to access services and manage shipments with this shipping line.
+
+                                    </p>
+
+                                    {% if app.user.role.value == 'CONSIGNEE' and hasActiveBroker|default(false) %}
+
+                                        <a href="{{ path('accreditation_submit', {shippingLineId: shippingLine.id}) }}"
+
+                                           class="btn btn-primary btn-sm w-full gap-2 mt-auto">
+
+                                            <span class="icon-[tabler--send] size-4"></span>
+
+                                            Apply for SAS
+
+                                        </a>
+
+                                    {% elseif app.user.role.value == 'CONSIGNEE' %}
+
+                                        <button type="button" disabled class="btn btn-disabled btn-sm w-full mt-auto">
+
+                                            Link broker first
+
+                                        </button>
+
+                                    {% else %}
+
+                                        <a href="{{ path('accreditation_submit', {shippingLineId: shippingLine.id}) }}"
+
+                                           class="btn btn-primary btn-sm w-full gap-2 mt-auto">
+
+                                            <span class="icon-[tabler--send] size-4"></span>
+
+                                            Apply for SAS
+
+                                        </a>
+
+                                    {% endif %}
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
                     </div>
-                </div>
-            {% endfor %}
+
+                {% endfor %}
+
+            </div>
+
         </div>
 
-        <!-- Empty State -->
-        {% if shippingLines|length == 0 %}
-            <div class="card bg-base-100 shadow-sm">
-                <div class="card-body items-center text-center py-16">
-                    <div class="size-20 bg-base-200 rounded-full flex items-center justify-center mb-6">
-                        <span class="icon-[tabler--package-off] size-10 text-base-content/40"></span>
-                    </div>
-                    <h3 class="text-xl font-bold text-base-content mb-2">No shipping lines available</h3>
-                    <p class="text-base-content/60">Please contact support if you need access to shipping line services.</p>
-                </div>
-            </div>
-        {% endif %}
+    {% else %}
 
-        <!-- Help Section -->
-        <div class="card bg-info/10 shadow-sm mt-8">
-            <div class="card-body p-6">
-                <div class="flex items-start gap-3">
-                    <span class="icon-[tabler--info-circle] size-6 text-info flex-shrink-0"></span>
-                    <div>
-                        <h3 class="font-bold text-info mb-2">About SAS (Secured Accreditation System)</h3>
-                        <p class="text-sm text-info/80">
-                            Each shipping line requires separate SAS accreditation. You can apply for multiple shipping lines independently. 
-                            Once approved, you'll have full secured access to that shipping line's services and features.
-                        </p>
-                    </div>
+        <div class="card bg-base-100 shadow-sm border border-base-300/60">
+
+            <div class="card-body items-center text-center py-12 sm:py-16">
+
+                <div class="size-16 sm:size-20 bg-base-200 rounded-full flex items-center justify-center mb-4">
+
+                    <span class="icon-[tabler--package-off] size-8 sm:size-10 text-base-content/40"></span>
+
                 </div>
+
+                <h3 class="text-lg font-bold text-base-content mb-2">No shipping lines available</h3>
+
+                <p class="text-sm text-base-content/60 max-w-md">Contact support if you need access to shipping line services.</p>
+
             </div>
+
         </div>
+
+    {% endif %}
+
+
+
+    <div class="card bg-info/10 border border-info/20 shadow-sm">
+
+        <div class="card-body p-4 sm:p-5">
+
+            <div class="flex items-start gap-3">
+
+                <span class="icon-[tabler--info-circle] size-5 text-info flex-shrink-0 mt-0.5"></span>
+
+                <div class="min-w-0">
+
+                    <h3 class="font-semibold text-info text-sm sm:text-base mb-1">About SAS</h3>
+
+                    <p class="text-xs sm:text-sm text-info/90 leading-relaxed">
+
+                        Each shipping line requires separate accreditation. You can apply for multiple lines independently.
+
+                        Once fully approved, you have secured access to that line's manifest, billing, and payment services.
+
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
     </div>
+
 </div>
+
+
 
 <script>
-    // Auto-dismiss flash messages after 5 seconds
+
     document.addEventListener('DOMContentLoaded', function() {
-        const alerts = document.querySelectorAll('.toast .alert');
-        alerts.forEach(alert => {
-            setTimeout(() => {
+
+        document.querySelectorAll('.toast .alert').forEach(function(alert) {
+
+            setTimeout(function() {
+
                 alert.style.opacity = '0';
+
                 alert.style.transition = 'opacity 0.3s ease';
-                setTimeout(() => alert.remove(), 300);
+
+                setTimeout(function() { alert.remove(); }, 300);
+
             }, 5000);
+
         });
+
     });
+
 </script>
 
 {% endblock %}
+

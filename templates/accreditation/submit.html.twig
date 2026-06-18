@@ -141,8 +141,9 @@
                         {% include 'components/flyonui_stepper.html.twig' with {
                             steps: [
                                 { label: 'Application' },
-                                { label: isComplianceResubmit ? 'Compliance' : 'Review' },
-                                { label: 'Evaluation' }
+                                { label: 'Evaluator Review' },
+                                { label: 'Final Approval' },
+                                { label: 'Complete' }
                             ],
                             current: isComplianceResubmit ? 2 : 1
                         } %}
@@ -394,6 +395,7 @@
 {% endblock %}
 
 {% block page_scripts %}
+{% set sortedFields = formConfig ? (formConfig.fields.fields ?? [])|sort((a, b) => (a.order ?? 0) <=> (b.order ?? 0)) : [] %}
 {% set visibleFormFields = isComplianceResubmit ? sortedFields|filter(f => f.id in complianceFieldIds) : sortedFields %}
 {% set hasGeolocationField = visibleFormFields|filter(f => f.type == 'geolocation')|length > 0 %}
 {% if hasGeolocationField %}
@@ -404,6 +406,14 @@
 <script src="{{ asset('js/form-address-picker.js') }}"></script>
 <script src="{{ asset('js/form-file-preview.js') }}"></script>
 <script src="{{ asset('js/form-conditional.js') }}"></script>
+<script src="{{ asset('js/form-field-restrictions.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (window.FormFieldRestrictions) {
+        window.FormFieldRestrictions.init(document.getElementById('accreditationSubmitForm') || document);
+    }
+});
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('accreditationSubmitForm');
@@ -436,7 +446,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         const previous = parseCompliancePreviousValue(block.dataset.previousValue || '');
         const current = extractFieldValue(block, fieldType, fieldId);
-        return !complianceValuesEqual(previous, current);
+        return !complianceValuesEqual(previous, current, fieldType);
     }
 
     function updateComplianceChecklist() {
@@ -501,14 +511,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            if (fieldType === 'address') {
-                const region = block.querySelector('.address-region')?.value || '';
-                const province = block.querySelector('.address-province')?.value || '';
-                const city = block.querySelector('.address-city')?.value || '';
-                const barangay = block.querySelector('.address-barangay')?.value || '';
-                if (region && province && city && barangay) filled++;
-                return;
+        if (fieldType === 'address') {
+            const region = block.querySelector('.address-region')?.value || '';
+            const province = block.querySelector('.address-province')?.value || '';
+            const city = block.querySelector('.address-city')?.value || '';
+            const barangay = block.querySelector('.address-barangay')?.value || '';
+            if (region && province && city && barangay) {
+                filled++;
             }
+            return;
+        }
 
             if (fieldType === 'multi_select') {
                 const select = block.querySelector('select[multiple]');
@@ -743,11 +755,40 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function complianceValuesEqual(a, b) {
-        if (Array.isArray(a) || Array.isArray(b) || (typeof a === 'object' && a !== null) || (typeof b === 'object' && b !== null)) {
-            return JSON.stringify(a ?? '') === JSON.stringify(b ?? '');
+    function complianceValuesEqual(a, b, fieldType) {
+        const normalizedA = normalizeComparableValue(a, fieldType);
+        const normalizedB = normalizeComparableValue(b, fieldType);
+
+        if (Array.isArray(normalizedA) || Array.isArray(normalizedB) || (typeof normalizedA === 'object' && normalizedA !== null) || (typeof normalizedB === 'object' && normalizedB !== null)) {
+            return JSON.stringify(normalizedA ?? '') === JSON.stringify(normalizedB ?? '');
         }
-        return String(a ?? '').trim() === String(b ?? '').trim();
+        return String(normalizedA ?? '').trim() === String(normalizedB ?? '').trim();
+    }
+
+    function normalizeComparableValue(value, fieldType) {
+        if (fieldType === 'address') {
+            if (typeof value === 'string') {
+                return { legacy_text: value.trim() };
+            }
+            if (!value || typeof value !== 'object') {
+                return value || '';
+            }
+            const normalized = {};
+            ['region_id', 'province_id', 'city_id', 'barangay_id', 'street'].forEach(function (key) {
+                const part = String(value[key] ?? '').trim();
+                if (part !== '') {
+                    normalized[key] = part;
+                }
+            });
+            return normalized;
+        }
+        if (fieldType === 'geolocation' && value && typeof value === 'object') {
+            return {
+                latitude: String(value.latitude ?? '').trim(),
+                longitude: String(value.longitude ?? '').trim(),
+            };
+        }
+        return value;
     }
 
     function extractFieldValue(block, fieldType, fieldId) {
@@ -757,10 +798,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (fieldType === 'address') {
             return {
-                region: block.querySelector('.address-region')?.value || '',
-                province: block.querySelector('.address-province')?.value || '',
-                city: block.querySelector('.address-city')?.value || '',
-                barangay: block.querySelector('.address-barangay')?.value || '',
+                region_id: block.querySelector('.address-region')?.value || '',
+                province_id: block.querySelector('.address-province')?.value || '',
+                city_id: block.querySelector('.address-city')?.value || '',
+                barangay_id: block.querySelector('.address-barangay')?.value || '',
+                street: block.querySelector('.address-street')?.value?.trim() || '',
             };
         }
         if (fieldType === 'multi_select') {
@@ -796,7 +838,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         const previous = parseCompliancePreviousValue(block.dataset.previousValue || '');
         const current = extractFieldValue(block, fieldType, fieldId);
-        if (complianceValuesEqual(previous, current)) {
+        if (complianceValuesEqual(previous, current, fieldType)) {
             errors.push({ message: fieldLabel + ' must be corrected before resubmitting', block: block });
         }
     }
@@ -969,6 +1011,19 @@ document.addEventListener('DOMContentLoaded', function () {
             } catch (e) {
                 // ignore invalid pattern
             }
+        } else if (block.dataset.inputRestriction) {
+            const restrictionPatterns = {
+                numeric: /^[0-9]+$/,
+                alpha: /^[A-Za-z]+$/,
+                alphanumeric: /^[A-Za-z0-9]+$/,
+            };
+            const regex = restrictionPatterns[block.dataset.inputRestriction];
+            if (regex && !regex.test(value)) {
+                errors.push({
+                    message: block.dataset.validationMessage || (fieldLabel + ' format is invalid'),
+                    block: block
+                });
+            }
         }
 
         return errors;
@@ -1033,6 +1088,25 @@ document.addEventListener('DOMContentLoaded', function () {
         openOverlayModal(confirmModal);
     }
 
+    function enableAddressFieldsForSubmit() {
+        form?.querySelectorAll('.form-address-picker select:disabled').forEach(function (select) {
+            select.disabled = false;
+        });
+    }
+
+    form?.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (pendingSubmit) {
+            return;
+        }
+        const errors = validateForm();
+        if (errors.length > 0) {
+            showValidationErrors(errors);
+            return;
+        }
+        openConfirmModal();
+    });
+
     if (form && submitBtn) {
         submitBtn.addEventListener('click', function () {
             if (pendingSubmit) return;
@@ -1050,6 +1124,7 @@ document.addEventListener('DOMContentLoaded', function () {
             pendingSubmit = true;
             closeOverlayModal(confirmModal);
             setSubmittingState(true);
+            enableAddressFieldsForSubmit();
             form.submit();
         });
 
@@ -1061,7 +1136,7 @@ document.addEventListener('DOMContentLoaded', function () {
     {% if errors|default([])|length > 0 %}
     const serverErrors = [
         {% for fieldId, error in errors %}
-        { message: {{ error|json_encode|raw }}, block: form?.querySelector('[data-field-id="{{ fieldId|e('js') }}"]') } },
+        { message: {{ error|json_encode|raw }}, block: form?.querySelector('[data-field-id="{{ fieldId|e('js') }}"]') },
         {% endfor %}
     ].filter(function (e) { return e.message; });
 

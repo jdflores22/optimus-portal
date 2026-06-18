@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\Manifest;
+use App\Entity\NOA;
 use App\Entity\User;
 use App\Entity\Consignee;
 use App\Entity\Enum\WorkflowState;
@@ -246,6 +247,14 @@ class ManifestService implements ManifestServiceInterface
         /** @var \App\Repository\ManifestRepository $repo */
         $repo = $this->entityManager->getRepository(Manifest::class);
         return $repo->findWithRelations($id);
+    }
+
+    public function getPrimaryManifestForNoa(NOA $noa): ?Manifest
+    {
+        /** @var \App\Repository\ManifestRepository $repo */
+        $repo = $this->entityManager->getRepository(Manifest::class);
+
+        return $repo->findPrimaryForNoa($noa);
     }
 
     /**

@@ -95,7 +95,7 @@ class ProfileController extends AbstractController
                 if ($user->getProfilePhoto()) {
                     // Delete the photo file using role-based path
                     $userRole = strtolower($user->getRole()->value);
-                    $uploadsDirectory = $this->getParameter('kernel.project_dir').'/public/uploads/'.$userRole.'/profile-picture';
+                    $uploadsDirectory = $this->getParameter('kernel.project_dir').'/uploads/'.$userRole.'/profile-picture';
                     $photoPath = $uploadsDirectory.'/'.$user->getProfilePhoto();
                     if (file_exists($photoPath)) {
                         unlink($photoPath);

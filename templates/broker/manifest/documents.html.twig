@@ -19,7 +19,8 @@
 
     <!-- Documents Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Manifest Document -->
+        <!-- Manifest/BL Document -->
+        {% if manifest.noa and (manifest.noa.manifestPdfPath or manifest.manifestFilePath) %}
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div class="flex items-center mb-4">
                 <div class="flex-shrink-0">
@@ -28,7 +29,7 @@
                     </svg>
                 </div>
                 <div class="ml-4">
-                    <h3 class="text-lg font-medium text-gray-900">Manifest</h3>
+                    <h3 class="text-lg font-medium text-gray-900">Manifest/BL Document</h3>
                     <p class="text-sm text-gray-500">{{ manifest.manifestNumber }}</p>
                 </div>
             </div>
@@ -39,19 +40,18 @@
                 {% endif %}
             </div>
             <div class="mt-4">
-                <a href="/api/manifests/{{ manifest.id }}/download" 
+                <a href="{{ path('broker_manifest_bl_download', {id: manifest.id}) }}"
                    target="_blank"
-                   class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
+                   class="btn btn-info btn-sm btn-soft gap-2">
+                    <span class="icon-[tabler--download] size-4"></span>
                     Download
                 </a>
             </div>
         </div>
+        {% endif %}
 
         <!-- NOA Document -->
-        {% if manifest.noaDocument %}
+        {% if (manifest.noa and manifest.noa.pdfPath) or (manifest.noaDocument and manifest.noaDocument.pdfPath) %}
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div class="flex items-center mb-4">
                     <div class="flex-shrink-0">
@@ -61,22 +61,20 @@
                     </div>
                     <div class="ml-4">
                         <h3 class="text-lg font-medium text-gray-900">Notice of Arrival</h3>
-                        <p class="text-sm text-gray-500">{{ manifest.noaDocument.noaNumber }}</p>
+                        <p class="text-sm text-gray-500">{{ manifest.noa ? manifest.noa.noaNumber : manifest.noaDocument.noaNumber }}</p>
                     </div>
                 </div>
                 <div class="space-y-2">
-                    <p class="text-sm text-gray-600">Generated: {{ manifest.noaDocument.createdAt|date('M j, Y g:i A') }}</p>
+                    <p class="text-sm text-gray-600">Generated: {{ manifest.noa ? manifest.noa.createdAt|date('M j, Y g:i A') : manifest.noaDocument.createdAt|date('M j, Y g:i A') }}</p>
                     {% if manifest.arrivalDate %}
                         <p class="text-sm text-gray-600">Arrival: {{ manifest.arrivalDate|date('M j, Y g:i A') }}</p>
                     {% endif %}
                 </div>
                 <div class="mt-4">
-                    <a href="/api/noa/{{ manifest.noaDocument.noaNumber }}/download" 
+                    <a href="{{ path('broker_manifest_noa_download', {id: manifest.id}) }}"
                        target="_blank"
-                       class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
+                       class="btn btn-primary btn-sm btn-soft gap-2">
+                        <span class="icon-[tabler--download] size-4"></span>
                         Download
                     </a>
                 </div>
@@ -114,12 +112,9 @@
                     {% endif %}
                 </div>
                 <div class="mt-4">
-                    <a href="/api/bl/{{ manifest.blNumber }}/download" 
-                       target="_blank"
-                       class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
+                    <a href="{{ path('broker_manifest_bl_file_download', {id: manifest.id}) }}"
+                       class="btn btn-info btn-sm btn-soft gap-2">
+                        <span class="icon-[tabler--download] size-4"></span>
                         Download
                     </a>
                 </div>
@@ -155,12 +150,9 @@
                     <p class="text-sm text-gray-600">Total Amount: <span class="font-medium text-green-600">{{ manifest.billing|format_billing }}</span></p>
                 </div>
                 <div class="mt-4">
-                    <a href="/api/billing/{{ manifest.billing.id }}/download" 
-                       target="_blank"
-                       class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
+                    <a href="{{ path('broker_manifest_billing_download', {id: manifest.id}) }}"
+                       class="btn btn-warning btn-sm btn-soft gap-2">
+                        <span class="icon-[tabler--download] size-4"></span>
                         Download
                     </a>
                 </div>
@@ -175,6 +167,103 @@
                     <p class="mt-1 text-sm text-gray-500">Not yet generated</p>
                 </div>
             </div>
+        {% endif %}
+
+        {% if latestFinalPayment is defined %}
+        <!-- Payment Receipt -->
+        {% if latestFinalPayment and latestFinalPayment.receiptFilePath %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center mb-4">
+                    <div class="flex-shrink-0">
+                        <span class="icon-[tabler--receipt] size-10 text-emerald-500"></span>
+                    </div>
+                    <div class="ml-4 min-w-0">
+                        <h3 class="text-lg font-medium text-gray-900">Payment Receipt</h3>
+                        <p class="text-sm text-gray-500">Version {{ latestFinalPayment.version }} · {{ latestFinalPayment|format_payment }}</p>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <p class="text-sm text-gray-600">Submitted: {{ latestFinalPayment.createdAt|date('M j, Y g:i A') }}</p>
+                    <p class="text-sm text-gray-600">
+                        Status:
+                        {% if latestFinalPayment.status.value == 'verified' %}
+                            <span class="badge badge-success badge-sm">Verified</span>
+                        {% elseif latestFinalPayment.status.value == 'rejected' %}
+                            <span class="badge badge-error badge-sm">Rejected</span>
+                        {% else %}
+                            <span class="badge badge-warning badge-sm">Pending review</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <a href="{{ path('broker_payment_receipt', {id: latestFinalPayment.id}) }}?inline=false"
+                       class="btn btn-success btn-sm btn-soft gap-2">
+                        <span class="icon-[tabler--download] size-4"></span>
+                        Download
+                    </a>
+                    {% if finalPayments|length > 1 %}
+                        <a href="{{ path('broker_payment_history', {id: manifest.id}) }}"
+                           class="btn btn-ghost btn-sm gap-2">
+                            <span class="icon-[tabler--history] size-4"></span>
+                            All versions
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 p-6">
+                <div class="text-center">
+                    <span class="icon-[tabler--receipt-off] size-10 text-gray-400 mx-auto block"></span>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">Payment Receipt</h3>
+                    <p class="mt-1 text-sm text-gray-500">Not yet submitted</p>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Official Receipt -->
+        {% if verifiedFinalPayment and verifiedFinalPayment.officialReceiptPath %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center mb-4">
+                    <div class="flex-shrink-0">
+                        <span class="icon-[tabler--file-certificate] size-10 text-green-600"></span>
+                    </div>
+                    <div class="ml-4 min-w-0">
+                        <h3 class="text-lg font-medium text-gray-900">Official Receipt</h3>
+                        <p class="text-sm text-gray-500">Issued after payment verification</p>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <p class="text-sm text-gray-600">
+                        Verified: {{ verifiedFinalPayment.validatedAt|date('M j, Y g:i A') }}
+                    </p>
+                    {% if verifiedFinalPayment.validatedBy %}
+                        <p class="text-sm text-gray-600">By: {{ verifiedFinalPayment.validatedBy.fullName }}</p>
+                    {% endif %}
+                </div>
+                <div class="mt-4">
+                    <a href="{{ path('broker_payment_receipt', {id: verifiedFinalPayment.id, type: 'official'}) }}?inline=false"
+                       class="btn btn-success btn-sm btn-soft gap-2">
+                        <span class="icon-[tabler--download] size-4"></span>
+                        Download
+                    </a>
+                </div>
+            </div>
+        {% else %}
+            <div class="bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 p-6">
+                <div class="text-center">
+                    <span class="icon-[tabler--file-certificate] size-10 text-gray-400 mx-auto block"></span>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">Official Receipt</h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        {% if latestFinalPayment and latestFinalPayment.status.value == 'pending_validation' %}
+                            Available after accounting approves your payment
+                        {% else %}
+                            Not yet issued
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+
         {% endif %}
 
         <!-- eDO Document -->
@@ -199,12 +288,9 @@
                 </div>
                 <div class="mt-4">
                     {% if manifest.edo.status.value == 'released' %}
-                        <a href="/api/edos/{{ manifest.edo.edoNumber }}/download" 
-                           target="_blank"
-                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-purple-600 hover:bg-purple-700">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
+                        <a href="{{ path('broker_edo_download', {id: manifest.edo.id}) }}"
+                           class="btn btn-success btn-sm btn-soft gap-2">
+                            <span class="icon-[tabler--download] size-4"></span>
                             Download
                         </a>
                     {% elseif manifest.edo.status.value == 'pending_release' %}

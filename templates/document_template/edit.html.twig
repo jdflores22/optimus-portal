@@ -1,0 +1,563 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Template — {{ template.name }} - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200" id="doc-template-builder"
+     data-template-id="{{ template.id }}"
+     data-save-url="{{ path('document_template_save_layout', {id: template.id}) }}"
+     data-upload-url="{{ path('document_template_upload_image', {id: template.id}) }}"
+     data-preview-url="{{ path('document_template_preview_pdf', {id: template.id}) }}"
+     data-layout="{{ template.layout|json_encode|e('html_attr') }}"
+     data-paper-size="{{ template.paperSize }}"
+     data-orientation="{{ template.orientation }}"
+     data-placeholders="{{ placeholders|json_encode|e('html_attr') }}">
+
+    <div class="bg-base-100 shadow-sm border-b border-base-300">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div class="min-w-0">
+                    <div class="breadcrumbs text-xs mb-1">
+                        <ul>
+                            <li><a href="{{ path('document_template_list') }}">Document Templates</a></li>
+                            <li>{{ template.name }}</li>
+                        </ul>
+                    </div>
+                    <h1 class="text-2xl font-bold truncate">{{ template.name }}</h1>
+                    <div class="flex flex-wrap items-center gap-2 mt-2">
+                        <span class="badge badge-primary badge-sm">{{ template.documentType.getLabel() }}</span>
+                        <span class="text-sm text-base-content/60">Version {{ template.version }}</span>
+                        {% include 'document_template/_status_badge.html.twig' %}
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" id="dt-save-btn" class="btn btn-primary btn-sm gap-2">
+                        <span id="dt-save-spinner" class="loading loading-spinner loading-xs hidden"></span>
+                        <span class="icon-[tabler--device-floppy] size-4"></span>
+                        Save
+                    </button>
+                    <button type="button" id="dt-preview-btn" class="btn btn-ghost btn-sm gap-2">
+                        <span class="icon-[tabler--external-link] size-4"></span>
+                        Preview PDF
+                    </button>
+                    <a href="{{ path('document_template_preview', {id: template.id}) }}" class="btn btn-ghost btn-sm gap-2" target="_blank">
+                        <span class="icon-[tabler--eye] size-4"></span>
+                        Full Preview
+                    </a>
+                    {% include 'document_template/_status_actions.html.twig' with { template: template, btnSize: 'sm', showLabels: true } %}
+                    <a href="{{ path('document_template_list') }}" class="btn btn-ghost btn-sm gap-2">
+                        <span class="icon-[tabler--arrow-left] size-4"></span>
+                        Back
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            {# Left: Element palette + used elements list #}
+            <div class="xl:col-span-2 xl:sticky xl:top-24 xl:self-start space-y-4 xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto xl:overscroll-contain xl:pr-1">
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-4">
+                        <h3 class="font-semibold text-sm mb-3">Add Elements</h3>
+                        <div class="space-y-3 max-h-[70vh] overflow-y-auto">
+                            {% for groupName, blocks in blockGroups %}
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50 mb-2">{{ groupName }}</p>
+                                    <div class="space-y-1">
+                                        {% for blockType, block in blocks %}
+                                            <button type="button" class="block-palette-btn w-full text-left rounded-lg bg-base-200/50 hover:bg-primary/10 px-3 py-2 transition-colors text-sm flex items-center gap-2"
+                                                    data-block-type="{{ blockType }}">
+                                                <span class="{{ block.icon }} size-4 text-base-content/50"></span>
+                                                {{ block.name }}
+                                            </button>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-semibold text-sm">On This Template</h3>
+                            <span id="dt-used-elements-count" class="badge badge-ghost badge-sm">{{ template.elements|length }}</span>
+                        </div>
+                        <p class="text-xs text-base-content/60 mb-3">Click an item to select it on the canvas.</p>
+                        <div id="dt-used-elements-list" class="space-y-1 max-h-[40vh] overflow-y-auto"></div>
+                        <p id="dt-used-elements-empty" class="text-sm text-base-content/50 text-center py-4 {% if template.elements|length > 0 %}hidden{% endif %}">No elements on the canvas yet</p>
+                    </div>
+                </div>
+            </div>
+
+            {# Center: Canvas #}
+            <div class="xl:col-span-6">
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold">Canvas</h3>
+                            <span id="dt-element-count" class="text-sm text-base-content/60">{{ template.elements|length }} elements</span>
+                        </div>
+                        <p class="text-xs text-base-content/60 mb-3">Drag elements to position them. Use <strong>Field Label</strong> and <strong>Field Value</strong> as separate blocks for precise alignment. Logo, QR, and header blocks stay fixed. The container table and footer stack dynamically in the PDF.</p>
+                        <div class="bg-base-300 rounded-xl p-4 sm:p-6 overflow-auto">
+                            <div id="dt-canvas" class="bg-white shadow-xl mx-auto relative"
+                                 style="width: 100%; max-width: 794px; aspect-ratio: 794 / 1123; border: 2px solid #1e3a5f;">
+                                <div id="dt-canvas-inner" class="relative w-full h-full">
+                                    <div id="dt-paper-guides" class="absolute inset-0 z-[5] pointer-events-none" aria-hidden="true">
+                                        <div id="dt-margin-zone-top" class="dt-margin-zone"></div>
+                                        <div id="dt-margin-zone-right" class="dt-margin-zone"></div>
+                                        <div id="dt-margin-zone-bottom" class="dt-margin-zone"></div>
+                                        <div id="dt-margin-zone-left" class="dt-margin-zone"></div>
+                                        <div id="dt-margin-frame"></div>
+                                        <div id="dt-paper-label" class="dt-paper-label"></div>
+                                    </div>
+                                    <div id="dt-elements-list" class="absolute inset-0 z-[10]">
+                                        {# Populated by JS #}
+                                    </div>
+                                    <div id="dt-canvas-guides" class="dt-canvas-guides" aria-hidden="true">
+                                        <div id="dt-guide-v-center"></div>
+                                        <div id="dt-guide-h-center"></div>
+                                        <div id="dt-guide-center-dot"></div>
+                                    </div>
+                                    <div id="dt-canvas-empty" class="absolute inset-0 z-[2] flex flex-col items-center justify-center text-base-content/40 pointer-events-none {% if template.elements|length > 0 %}hidden{% endif %}">
+                                        <span class="icon-[tabler--certificate] size-12 mx-auto"></span>
+                                        <p class="mt-3 text-sm">Add elements from the palette to design your document</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Right: Properties + Placeholders + Canvas settings (single sticky column) #}
+            <div class="xl:col-span-4 xl:sticky xl:top-24 xl:self-start space-y-4 xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto xl:overscroll-contain xl:pr-1">
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-4">
+                        <h3 class="font-semibold text-sm mb-3">Properties</h3>
+                        <div id="dt-properties-panel">
+                            <p class="text-sm text-base-content/50">Select an element on the canvas to edit its properties</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-4">
+                        <h3 class="font-semibold text-sm mb-3">Dynamic Fields</h3>
+                        <p class="text-xs text-base-content/60 mb-3">Click to copy placeholder key for use in elements</p>
+                        <div class="space-y-3 max-h-48 overflow-y-auto">
+                            {% for groupName, fields in placeholders %}
+                                <div>
+                                    <p class="text-xs font-semibold text-base-content/50 mb-1">{{ groupName }}</p>
+                                    <div class="flex flex-wrap gap-1">
+                                        {% for key, label in fields %}
+                                            <button type="button" class="placeholder-chip btn btn-xs btn-ghost font-mono text-xs"
+                                                    data-placeholder="{{ key }}" title="{{ label }}">
+                                                {{ key }}
+                                            </button>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-4">
+                        <h3 class="font-semibold text-sm mb-1">Developer Controls</h3>
+                        <p class="text-xs text-base-content/60 mb-3">System-wide switches for document workflow tooling. Changes apply immediately across the app.</p>
+                        <div class="rounded-lg border border-warning/30 bg-warning/5 p-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium">NOA PDF Regenerate</p>
+                                    <p class="text-xs text-base-content/60 mt-1">Shows the regenerate button on manifest workflow NOA detail pages so staff can rebuild the PDF from the active template.</p>
+                                </div>
+                                <input type="checkbox"
+                                       id="dt-noa-regenerate-toggle"
+                                       class="toggle toggle-warning toggle-sm mt-1 flex-shrink-0"
+                                       {% if noaPdfRegenerateEnabled %}checked{% endif %}>
+                            </div>
+                            <p id="dt-noa-regenerate-status" class="text-xs mt-2 {% if noaPdfRegenerateEnabled %}text-success{% else %}text-base-content/50{% endif %}">
+                                {% if noaPdfRegenerateEnabled %}Enabled — regenerate button is visible on NOA pages.{% else %}Disabled — regenerate button is hidden on NOA pages.{% endif %}
+                            </p>
+                        </div>
+                        <div class="rounded-lg border border-warning/30 bg-warning/5 p-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium">Manifest/BL PDF Regenerate</p>
+                                    <p class="text-xs text-base-content/60 mt-1">Shows the regenerate button on NOA detail pages when a manifest already exists, so staff can rebuild the Manifest/BL PDF from the active template.</p>
+                                </div>
+                                <input type="checkbox"
+                                       id="dt-manifest-bl-regenerate-toggle"
+                                       class="toggle toggle-warning toggle-sm mt-1 flex-shrink-0"
+                                       {% if manifestBlPdfRegenerateEnabled %}checked{% endif %}>
+                            </div>
+                            <p id="dt-manifest-bl-regenerate-status" class="text-xs mt-2 {% if manifestBlPdfRegenerateEnabled %}text-success{% else %}text-base-content/50{% endif %}">
+                                {% if manifestBlPdfRegenerateEnabled %}Enabled — regenerate button is visible when a manifest exists.{% else %}Disabled — regenerate button is hidden on manifest workflow pages.{% endif %}
+                            </p>
+                        </div>
+                        <div class="rounded-lg border border-warning/30 bg-warning/5 p-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium">Billing PDF Regenerate</p>
+                                    <p class="text-xs text-base-content/60 mt-1">Shows the regenerate button on manifest workflow NOA detail pages and accounting final payment review pages when billing already exists.</p>
+                                </div>
+                                <input type="checkbox"
+                                       id="dt-billing-regenerate-toggle"
+                                       class="toggle toggle-warning toggle-sm mt-1 flex-shrink-0"
+                                       {% if billingPdfRegenerateEnabled %}checked{% endif %}>
+                            </div>
+                            <p id="dt-billing-regenerate-status" class="text-xs mt-2 {% if billingPdfRegenerateEnabled %}text-success{% else %}text-base-content/50{% endif %}">
+                                {% if billingPdfRegenerateEnabled %}Enabled — regenerate button is visible on manifest workflow and accounting payment pages.{% else %}Disabled — regenerate button is hidden on manifest workflow and accounting payment pages.{% endif %}
+                            </p>
+                        </div>
+                        <div class="rounded-lg border border-warning/30 bg-warning/5 p-3 mt-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium">Official Receipt PDF Regenerate</p>
+                                    <p class="text-xs text-base-content/60 mt-1">Shows the regenerate button on accounting final payment review pages for approved payments, so staff can rebuild the official receipt from the active template.</p>
+                                </div>
+                                <input type="checkbox"
+                                       id="dt-official-receipt-regenerate-toggle"
+                                       class="toggle toggle-warning toggle-sm mt-1 flex-shrink-0"
+                                       {% if officialReceiptPdfRegenerateEnabled %}checked{% endif %}>
+                            </div>
+                            <p id="dt-official-receipt-regenerate-status" class="text-xs mt-2 {% if officialReceiptPdfRegenerateEnabled %}text-success{% else %}text-base-content/50{% endif %}">
+                                {% if officialReceiptPdfRegenerateEnabled %}Enabled — regenerate button is visible on accounting payment pages.{% else %}Disabled — regenerate button is hidden on accounting payment pages.{% endif %}
+                            </p>
+                        </div>
+                        <div class="rounded-lg border border-warning/30 bg-warning/5 p-3 mt-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium">eDO PDF Regenerate</p>
+                                    <p class="text-xs text-base-content/60 mt-1">Shows the regenerate button on manifest workflow NOA detail pages when eDOs already exist, so SL Staff can rebuild the bulk eDO PDF from the active template.</p>
+                                </div>
+                                <input type="checkbox"
+                                       id="dt-edo-regenerate-toggle"
+                                       class="toggle toggle-warning toggle-sm mt-1 flex-shrink-0"
+                                       {% if edoPdfRegenerateEnabled %}checked{% endif %}>
+                            </div>
+                            <p id="dt-edo-regenerate-status" class="text-xs mt-2 {% if edoPdfRegenerateEnabled %}text-success{% else %}text-base-content/50{% endif %}">
+                                {% if edoPdfRegenerateEnabled %}Enabled — regenerate button is visible on manifest workflow pages.{% else %}Disabled — regenerate button is hidden on manifest workflow pages.{% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-4">
+                        <h3 class="font-semibold text-sm mb-3">Canvas Settings</h3>
+                        <div class="space-y-3">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="form-control">
+                                    <label class="label py-0"><span class="label-text text-xs">Paper size</span></label>
+                                    <select id="dt-paper-size" class="select select-bordered select-sm w-full">
+                                        <option value="A4">A4</option>
+                                        <option value="letter">Letter (US)</option>
+                                        <option value="legal">Legal (US)</option>
+                                    </select>
+                                </div>
+                                <div class="form-control">
+                                    <label class="label py-0"><span class="label-text text-xs">Orientation</span></label>
+                                    <select id="dt-orientation" class="select select-bordered select-sm w-full">
+                                        <option value="portrait">Portrait</option>
+                                        <option value="landscape">Landscape</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Page margins (px)</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="form-control">
+                                    <label class="label py-0"><span class="label-text text-xs">Top</span></label>
+                                    <input type="number" id="dt-margin-top" class="input input-bordered input-sm" value="48" min="0" max="200">
+                                </div>
+                                <div class="form-control">
+                                    <label class="label py-0"><span class="label-text text-xs">Bottom</span></label>
+                                    <input type="number" id="dt-margin-bottom" class="input input-bordered input-sm" value="48" min="0" max="200">
+                                </div>
+                                <div class="form-control">
+                                    <label class="label py-0"><span class="label-text text-xs">Left</span></label>
+                                    <input type="number" id="dt-margin-left" class="input input-bordered input-sm" value="48" min="0" max="200">
+                                </div>
+                                <div class="form-control">
+                                    <label class="label py-0"><span class="label-text text-xs">Right</span></label>
+                                    <input type="number" id="dt-margin-right" class="input input-bordered input-sm" value="48" min="0" max="200">
+                                </div>
+                            </div>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="dt-show-margin-guides" class="checkbox checkbox-sm checkbox-primary" checked>
+                                <span class="text-sm">Show margin guides</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="dt-show-border" class="checkbox checkbox-sm checkbox-primary" checked>
+                                <span class="text-sm">Show page border</span>
+                            </label>
+                            <div class="form-control">
+                                <label class="label py-0"><span class="label-text text-xs">Border color</span></label>
+                                <input type="color" id="dt-border-color" value="#1e3a5f" class="input input-bordered input-sm w-full h-8">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .dt-canvas-guides {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 40;
+        }
+        .dt-margin-zone {
+            position: absolute;
+            background-image: radial-gradient(circle, rgba(148, 163, 184, 0.45) 1px, transparent 1px);
+            background-size: 10px 10px;
+            background-color: rgba(241, 245, 249, 0.55);
+        }
+        #dt-margin-frame {
+            position: absolute;
+            box-sizing: border-box;
+            border: 2px dotted rgba(100, 116, 139, 0.9);
+            pointer-events: none;
+        }
+        .dt-paper-label {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            color: rgba(71, 85, 105, 0.95);
+            background: rgba(255, 255, 255, 0.92);
+            padding: 3px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            z-index: 2;
+            line-height: 1.3;
+            text-align: right;
+        }
+        .dt-used-element-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            width: 100%;
+            text-align: left;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.625rem;
+            border: 1px solid transparent;
+            transition: background-color 0.15s, border-color 0.15s;
+        }
+        .dt-used-element-item:hover {
+            background: #f1f5f9;
+            border-color: #e2e8f0;
+        }
+        .dt-used-element-item.is-selected {
+            background: rgba(30, 58, 95, 0.08);
+            border-color: rgba(30, 58, 95, 0.35);
+        }
+        .dt-element-item {
+            box-sizing: border-box;
+        }
+        .dt-element-body {
+            position: relative;
+        }
+        .dt-element-preview {
+            line-height: 1.45;
+        }
+        .dt-resize-handles {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 25;
+        }
+        .dt-element-item.border-primary .dt-resize-handles {
+            pointer-events: auto;
+        }
+        .dt-element-item.is-resizing {
+            transition: none;
+        }
+        .dt-resize-handle {
+            position: absolute;
+            width: 11px;
+            height: 11px;
+            background: #1e3a5f;
+            border: 2px solid #ffffff;
+            border-radius: 3px;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.25);
+            pointer-events: auto;
+        }
+        .dt-resize-w {
+            left: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: ew-resize;
+        }
+        .dt-resize-e {
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: ew-resize;
+        }
+        .dt-resize-s {
+            left: 50%;
+            bottom: -6px;
+            transform: translateX(-50%);
+            cursor: ns-resize;
+        }
+        .dt-resize-sw {
+            left: -6px;
+            bottom: -6px;
+            cursor: nesw-resize;
+        }
+        .dt-resize-se {
+            right: -6px;
+            bottom: -6px;
+            cursor: nwse-resize;
+        }
+        .dt-table-preview--interactive .dt-table-wrap,
+        .dt-table-preview--interactive .dt-table-col-resize {
+            pointer-events: auto;
+        }
+        .dt-table-wrap {
+            position: relative;
+        }
+        .dt-table-col-resizers {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 34px;
+            pointer-events: none;
+            z-index: 6;
+        }
+        .dt-table-col-resize {
+            position: absolute;
+            top: 0;
+            width: 10px;
+            height: 100%;
+            margin-left: -5px;
+            cursor: col-resize;
+            pointer-events: auto;
+            border-radius: 2px;
+        }
+        .dt-table-col-resize:hover,
+        .dt-table-col-resize.is-active {
+            background: rgba(37, 99, 235, 0.35);
+        }
+        .dt-col-widths-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.5rem;
+        }
+    </style>
+{% endblock %}
+
+{% block page_modals %}
+    {% include 'document_template/_status_modals.html.twig' %}
+{% endblock %}
+
+{% block page_scripts %}
+    {% include 'document_template/_status_scripts.html.twig' %}
+    <script src="{{ asset('js/document-template-builder.js') }}"></script>
+    <script>
+        (function () {
+            const csrfToken = '{{ csrf_token('document_template_dev_settings') }}';
+
+            function bindDeveloperToggle(toggleId, statusId, url, enabledText, disabledText) {
+                const toggle = document.getElementById(toggleId);
+                const status = document.getElementById(statusId);
+                if (!toggle) return;
+
+                toggle.addEventListener('change', function () {
+                    const enabled = toggle.checked;
+                    toggle.disabled = true;
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-Token': csrfToken,
+                        },
+                        body: JSON.stringify({ enabled }),
+                    })
+                        .then((response) => response.json())
+                        .then((result) => {
+                            if (!result.success) {
+                                throw new Error(result.message || 'Failed to update setting');
+                            }
+
+                            if (status) {
+                                status.textContent = enabled ? enabledText : disabledText;
+                                status.classList.toggle('text-success', enabled);
+                                status.classList.toggle('text-base-content/50', !enabled);
+                            }
+
+                            if (typeof dtToast === 'function') {
+                                dtToast(result.message, 'success');
+                            }
+                        })
+                        .catch((error) => {
+                            toggle.checked = !enabled;
+                            if (typeof dtToast === 'function') {
+                                dtToast(error.message || 'Failed to update setting', 'error');
+                            }
+                        })
+                        .finally(() => {
+                            toggle.disabled = false;
+                        });
+                });
+            }
+
+            bindDeveloperToggle(
+                'dt-noa-regenerate-toggle',
+                'dt-noa-regenerate-status',
+                '{{ path('document_template_toggle_noa_regenerate') }}',
+                'Enabled — regenerate button is visible on NOA pages.',
+                'Disabled — regenerate button is hidden on NOA pages.'
+            );
+
+            bindDeveloperToggle(
+                'dt-manifest-bl-regenerate-toggle',
+                'dt-manifest-bl-regenerate-status',
+                '{{ path('document_template_toggle_manifest_bl_regenerate') }}',
+                'Enabled — regenerate button is visible when a manifest exists.',
+                'Disabled — regenerate button is hidden on manifest workflow pages.'
+            );
+
+            bindDeveloperToggle(
+                'dt-billing-regenerate-toggle',
+                'dt-billing-regenerate-status',
+                '{{ path('document_template_toggle_billing_regenerate') }}',
+                'Enabled — regenerate button is visible on manifest workflow and accounting payment pages.',
+                'Disabled — regenerate button is hidden on manifest workflow and accounting payment pages.'
+            );
+
+            bindDeveloperToggle(
+                'dt-official-receipt-regenerate-toggle',
+                'dt-official-receipt-regenerate-status',
+                '{{ path('document_template_toggle_official_receipt_regenerate') }}',
+                'Enabled — regenerate button is visible on accounting payment pages.',
+                'Disabled — regenerate button is hidden on accounting payment pages.'
+            );
+
+            bindDeveloperToggle(
+                'dt-edo-regenerate-toggle',
+                'dt-edo-regenerate-status',
+                '{{ path('document_template_toggle_edo_regenerate') }}',
+                'Enabled — regenerate button is visible on manifest workflow pages.',
+                'Disabled — regenerate button is hidden on manifest workflow pages.'
+            );
+        })();
+    </script>
+{% endblock %}

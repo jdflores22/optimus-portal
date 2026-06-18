@@ -1,0 +1,857 @@
+{% extends 'base.html.twig' %}
+
+{% set fileDownloadRoute = 'app_shipping_admin_accreditation_file_download' %}
+{% set approveRoute = 'app_shipping_admin_accreditation_approve' %}
+{% set listRoute = 'app_shipping_admin_accreditations' %}
+{% set applicantCompanyName = submission.submittedData.business_name|default('') ?: (submission.applicant.role.value == 'BROKER' ? submission.applicant.fullName : submission.applicant.businessName) %}
+
+{% block title %}Application Review #{{ submission.id }} - OPTIMUS{% endblock %}
+{% block page_title %}Final Approval Review{% endblock %}
+
+{% block body %}
+{% set sortedFields = submission.formConfig and submission.formConfig.fields.fields is defined
+    ? submission.formConfig.fields.fields|sort((a, b) => (a.order ?? 0) <=> (b.order ?? 0))
+    : [] %}
+{% set complianceFlaggedIds = complianceFieldsToCorrect|default([])|column('id') %}
+{% set complianceNotesByField = {} %}
+{% for item in complianceFieldsToCorrect|default([]) %}
+    {% if item.note|default('') %}
+        {% set complianceNotesByField = complianceNotesByField|merge({ (item.id): item.note }) %}
+    {% endif %}
+{% endfor %}
+{% set logoUrl = submission.shippingLine and submission.shippingLine.logoPath
+    ? asset('uploads/shipping-lines/' ~ submission.shippingLine.logoPath)
+    : (submission.shippingLine.portalConfig.logoUrl ?? null) %}
+
+{% set isComplianceRequired = submission.status.value == 'COMPLIANCE_REQUIRED' %}
+{% set isApproved = submission.status.value == 'APPROVED' %}
+{% set isAwaitingFinal = submission.status.value == 'AWAITING_FINAL_APPROVAL' %}
+{% set isDenied = submission.status.value in ['DENIED', 'REJECTED'] %}
+{% if isApproved %}
+    {% set stepperCurrent = 5 %}
+{% elseif isAwaitingFinal %}
+    {% set stepperCurrent = 3 %}
+{% elseif isComplianceRequired %}
+    {% set stepperCurrent = 2 %}
+{% elseif submission.evaluatedAt %}
+    {% set stepperCurrent = isDenied ? 3 : 2 %}
+{% elseif submission.status.value == 'PENDING' %}
+    {% set stepperCurrent = 2 %}
+{% else %}
+    {% set stepperCurrent = 1 %}
+{% endif %}
+
+{% set statusBadge = 'badge-ghost' %}
+{% set statusIcon = 'help-circle' %}
+{% if submission.status.value == 'AWAITING_FINAL_APPROVAL' %}
+    {% set statusBadge = 'badge-info' %}
+    {% set statusIcon = 'hourglass' %}
+{% elseif submission.status.value == 'APPROVED' %}
+    {% set statusBadge = 'badge-success' %}
+    {% set statusIcon = 'circle-check' %}
+{% elseif submission.status.value in ['DENIED', 'REJECTED'] %}
+    {% set statusBadge = 'badge-error' %}
+    {% set statusIcon = 'x' %}
+{% elseif submission.status.value == 'PENDING' %}
+    {% set statusBadge = 'badge-warning' %}
+    {% set statusIcon = 'clock' %}
+{% elseif submission.status.value == 'COMPLIANCE_REQUIRED' %}
+    {% set statusBadge = 'badge-info' %}
+    {% set statusIcon = 'alert-triangle' %}
+{% endif %}
+
+<div class="min-h-screen bg-base-200">
+    <div class="bg-base-100 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="flex items-start gap-3">
+                    <a href="{{ path(listRoute) }}" class="btn btn-ghost btn-sm btn-circle mt-0.5 shrink-0" aria-label="Back to accreditations">
+                        <span class="icon-[tabler--arrow-left] size-5"></span>
+                    </a>
+                    <div>
+                        <div class="breadcrumbs text-xs mb-1">
+                            <ul>
+                                <li><a href="{{ path('app_shipping_admin_dashboard') }}">Dashboard</a></li>
+                                <li><a href="{{ path(listRoute) }}">Accreditations</a></li>
+                                <li>#{{ submission.id }}</li>
+                            </ul>
+                        </div>
+                        <h1 class="text-2xl font-bold text-base-content">Final Approval Review</h1>
+                        <p class="text-sm text-base-content/60 mt-1">
+                            Submitted {{ submission.submittedAt|date('F j, Y \\a\\t g:i A') }}
+                            {% if submission.shippingLine %} · {{ submission.shippingLine.brandName }}{% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% if submission.shippingLine %}
+                    <div class="flex items-center gap-3 sm:max-w-xs">
+                        {% if logoUrl %}
+                            <img src="{{ logoUrl }}" alt="{{ submission.shippingLine.brandName }} logo" class="h-10 w-auto object-contain shrink-0">
+                        {% else %}
+                            <div class="avatar placeholder shrink-0">
+                                <div class="bg-primary text-primary-content rounded-xl size-10">
+                                    <span class="text-sm font-bold">{{ submission.shippingLine.brandName|slice(0, 2)|upper }}</span>
+                                </div>
+                            </div>
+                        {% endif %}
+                        <div class="min-w-0">
+                            <p class="font-semibold text-base-content truncate">{{ submission.shippingLine.brandName }}</p>
+                            <span class="badge {{ statusBadge }} badge-sm mt-1">{{ submission.status.displayName }}</span>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 space-y-6">
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success shadow-sm">
+                <span class="icon-[tabler--circle-check] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-error shadow-sm">
+                <span class="icon-[tabler--alert-circle] size-5"></span>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+
+        {% if submission.status.value == 'AWAITING_FINAL_APPROVAL' %}
+            <div class="alert alert-info shadow-sm">
+                <span class="icon-[tabler--gavel] size-6"></span>
+                <div>
+                    <h3 class="font-bold">Awaiting Your Final Decision</h3>
+                    <p class="text-sm">The evaluator forwarded this application for your sign-off. Review the details below, then approve or deny on the right.</p>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-5 sm:p-6">
+                        {% include 'components/flyonui_stepper.html.twig' with {
+                            steps: [
+                                { label: 'Application' },
+                                { label: 'Evaluator Review' },
+                                { label: 'Final Approval' },
+                                { label: isApproved ? 'Approved' : (isDenied ? 'Decision' : 'Complete') }
+                            ],
+                            current: stepperCurrent
+                        } %}
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-5 sm:p-6">
+                        <h2 class="font-semibold text-lg text-base-content flex items-center gap-2 mb-4">
+                            <span class="icon-[tabler--user] size-5 text-primary"></span>
+                            Applicant Information
+                        </h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="rounded-xl bg-base-200/50 p-4">
+                                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-1">Email</p>
+                                <a href="mailto:{{ submission.applicant.email }}" class="text-sm link link-primary">{{ submission.applicant.email }}</a>
+                            </div>
+                            <div class="rounded-xl bg-base-200/50 p-4">
+                                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-1">Role</p>
+                                <span class="badge badge-primary badge-soft">{{ submission.applicant.role.value|replace({'_': ' '})|title }}</span>
+                            </div>
+                            {% if submission.applicant.role.value == 'BROKER' %}
+                                <div class="rounded-xl bg-base-200/50 p-4">
+                                    <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-1">Full Name</p>
+                                    <p class="text-sm font-medium">{{ submission.applicant.fullName }}</p>
+                                </div>
+                            {% elseif submission.applicant.role.value == 'CONSIGNEE' %}
+                                <div class="rounded-xl bg-base-200/50 p-4">
+                                    <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-1">Business Name</p>
+                                    <p class="text-sm font-medium">{{ submission.applicant.businessName }}</p>
+                                </div>
+                            {% endif %}
+                            {% if submission.applicant.role.value == 'CONSIGNEE' and submission.applicant.linkedBroker %}
+                                <div class="rounded-xl bg-base-200/50 p-4">
+                                    <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-1">Linked Broker</p>
+                                    <p class="text-sm font-medium">{{ submission.applicant.linkedBroker.fullName }}</p>
+                                </div>
+                            {% endif %}
+                            <div class="rounded-xl bg-base-200/50 p-4">
+                                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-1">Account Status</p>
+                                {% set acctBadge = submission.applicant.status.value == 'APPROVED' ? 'badge-success' : (submission.applicant.status.value == 'PENDING' ? 'badge-warning' : 'badge-error') %}
+                                <span class="badge {{ acctBadge }} badge-soft">{{ submission.applicant.status.value|title }}</span>
+                            </div>
+                            <div class="rounded-xl bg-base-200/50 p-4">
+                                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-1">Member Since</p>
+                                <p class="text-sm font-medium">{{ submission.applicant.createdAt|date('M j, Y') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-body p-5 sm:p-6">
+                        <h2 class="font-semibold text-lg text-base-content flex items-center gap-2 mb-5">
+                            <span class="icon-[tabler--clipboard-list] size-5 text-primary"></span>
+                            Submitted Application
+                        </h2>
+
+                        {% if sortedFields|length > 0 and submission.submittedData %}
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {% for field in sortedFields %}
+                                    {% include 'accreditation/_detail_field.html.twig' with {
+                                        field: field,
+                                        submittedData: submission.submittedData,
+                                        showFileDownload: true,
+                                        fileDownloadRoute: fileDownloadRoute,
+                                        complianceFlagged: field.id in complianceFlaggedIds,
+                                        complianceNote: complianceNotesByField[field.id]|default('')
+                                    } %}
+                                {% endfor %}
+                            </div>
+                        {% elseif submission.submittedData %}
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {% for key, value in submission.submittedData %}
+                                    {% if key not in ['_files', '_csrf_token', '_token', '_resubmitted_after_compliance'] %}
+                                        <div class="rounded-xl bg-base-200/50 p-4">
+                                            <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-2">{{ key|replace({'_': ' '})|title }}</p>
+                                            <p class="text-sm text-base-content">{{ value is iterable ? value|json_encode : value }}</p>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-sm text-base-content/50">No application data available.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if submission.evaluator and submission.evaluatedAt %}
+                    <div class="card bg-base-100 shadow-sm">
+                        <div class="card-body p-5 sm:p-6">
+                            <h2 class="font-semibold text-lg text-base-content flex items-center gap-2 mb-4">
+                                <span class="icon-[tabler--user-check] size-5 text-primary"></span>
+                                Evaluator Recommendation
+                            </h2>
+                            <div class="flex items-center gap-3 rounded-xl bg-base-200/50 p-4">
+                                <div class="avatar placeholder">
+                                    <div class="bg-secondary text-secondary-content rounded-full size-10">
+                                        <span class="text-xs font-bold">{{ submission.evaluator.email|slice(0, 2)|upper }}</span>
+                                    </div>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-medium truncate">{{ submission.evaluator.email }}</p>
+                                    <p class="text-xs text-base-content/60">Evaluated {{ submission.evaluatedAt|date('F j, Y \\a\\t g:i A') }}</p>
+                                </div>
+                                <span class="badge badge-info badge-soft shrink-0">Forwarded for approval</span>
+                            </div>
+                            {% if submission.denialReason %}
+                                <div class="rounded-xl bg-info/5 border border-info/20 p-4 mt-4">
+                                    <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-2">Evaluator Comments</p>
+                                    <p class="text-sm whitespace-pre-wrap">{{ submission.denialReason }}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="lg:col-span-1">
+                {% if submission.status.value == 'AWAITING_FINAL_APPROVAL' and submission.evaluator and not submission.finalApprover %}
+                    <div class="card bg-base-100 shadow-sm lg:sticky lg:top-24">
+                        <div class="card-body p-5 sm:p-6 space-y-5">
+                            <div>
+                                <h2 class="font-semibold text-lg text-base-content flex items-center gap-2">
+                                    <span class="icon-[tabler--gavel] size-5 text-primary"></span>
+                                    Final Decision
+                                </h2>
+                                <p class="text-xs text-base-content/60 mt-1">Application #{{ submission.id }}</p>
+                            </div>
+
+                            <div class="rounded-xl bg-base-200/50 p-4 space-y-2 text-sm">
+                                <div class="flex justify-between gap-3">
+                                    <span class="text-base-content/60">Documents</span>
+                                    <span class="font-medium">{{ submission.submittedData._files|default({})|length }}</span>
+                                </div>
+                                {% if submission.formConfig %}
+                                    <div class="flex justify-between gap-3">
+                                        <span class="text-base-content/60">Form version</span>
+                                        <span class="font-medium">v{{ submission.formConfig.version }}</span>
+                                    </div>
+                                {% endif %}
+                                {% if submission.evaluator %}
+                                    <div class="flex justify-between gap-3">
+                                        <span class="text-base-content/60">Evaluator</span>
+                                        <span class="font-medium truncate max-w-[10rem]" title="{{ submission.evaluator.email }}">{{ submission.evaluator.email }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <form method="POST" action="{{ path(approveRoute, {id: submission.id}) }}" id="finalApprovalForm" class="space-y-4">
+                                <input type="hidden" name="_token" value="{{ csrf_token('admin_approve') }}">
+
+                                <div id="finalDecisionFormError" class="alert alert-error hidden" role="alert">
+                                    <span class="icon-[tabler--alert-circle] size-5 shrink-0"></span>
+                                    <span id="finalDecisionFormErrorText" class="text-sm"></span>
+                                </div>
+
+                                <div class="form-control">
+                                    <label for="decision" class="label py-1">
+                                        <span class="label-text font-medium">Decision <span class="text-error">*</span></span>
+                                    </label>
+                                    <select id="decision" name="decision" required class="select select-bordered w-full">
+                                        <option value="">Select a decision...</option>
+                                        <option value="approve">Approve — Grant full system access</option>
+                                        <option value="deny">Deny — Reject application</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-control">
+                                    <label for="reason" class="label py-1">
+                                        <span class="label-text font-medium">Comments <span id="reasonRequiredMark" class="text-error hidden">*</span></span>
+                                    </label>
+                                    <textarea id="reason"
+                                              name="reason"
+                                              rows="3"
+                                              class="textarea textarea-bordered w-full"
+                                              placeholder="Optional comments for approval, or required reason for denial..."></textarea>
+                                    <label class="label py-1">
+                                        <span class="label-text-alt text-base-content/50">Required when denying the application.</span>
+                                    </label>
+                                </div>
+
+                                <div class="space-y-2 pt-1">
+                                    <button type="button" id="submitBtn" class="btn btn-primary w-full gap-2">
+                                        <span id="submitText">Submit Final Decision</span>
+                                        <span id="loadingText" class="hidden loading loading-spinner loading-sm"></span>
+                                    </button>
+                                    <a href="{{ path(listRoute) }}" class="btn btn-ghost w-full">Cancel</a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="card bg-base-100 shadow-sm lg:sticky lg:top-24">
+                        <div class="card-body p-5 sm:p-6 space-y-5">
+                            <div>
+                                <h2 class="font-semibold text-lg text-base-content flex items-center gap-2">
+                                    <span class="icon-[tabler--info-circle] size-5"></span>
+                                    Approval Status
+                                </h2>
+                            </div>
+
+                            <div class="flex flex-col items-center text-center p-5 bg-base-200 rounded-xl">
+                                <div class="size-14 {{ statusBadge }} rounded-full flex items-center justify-center mb-3">
+                                    <span class="icon-[tabler--{{ statusIcon }}] size-7"></span>
+                                </div>
+                                <p class="text-xl font-bold text-base-content">{{ submission.status.displayName }}</p>
+                            </div>
+
+                            <ul class="timeline timeline-vertical timeline-compact">
+                                <li>
+                                    <div class="timeline-start text-xs text-base-content/60">{{ submission.submittedAt|date('M j') }}</div>
+                                    <div class="timeline-middle">
+                                        <span class="icon-[tabler--circle-check] size-4 text-info"></span>
+                                    </div>
+                                    <div class="timeline-end timeline-box text-xs py-2">
+                                        <p class="font-medium">Submitted</p>
+                                    </div>
+                                    {% if submission.evaluatedAt or submission.finalApprover %}<hr class="bg-base-content/10" />{% endif %}
+                                </li>
+                                {% if submission.evaluatedAt %}
+                                    <li>
+                                        <hr class="bg-base-content/10" />
+                                        <div class="timeline-start text-xs text-base-content/60">{{ submission.evaluatedAt|date('M j') }}</div>
+                                        <div class="timeline-middle">
+                                            <span class="icon-[tabler--circle-check] size-4 text-secondary"></span>
+                                        </div>
+                                        <div class="timeline-end timeline-box text-xs py-2">
+                                            <p class="font-medium">Evaluator Review</p>
+                                            <p class="text-base-content/60">{{ submission.evaluatedAt|date('g:i A') }}</p>
+                                        </div>
+                                        {% if submission.finalApprover %}<hr class="bg-base-content/10" />{% endif %}
+                                    </li>
+                                {% endif %}
+                                {% if submission.finalApprover %}
+                                    <li>
+                                        <hr class="bg-base-content/10" />
+                                        <div class="timeline-start text-xs text-base-content/60">{{ submission.approvedAt ? submission.approvedAt|date('M j') : '—' }}</div>
+                                        <div class="timeline-middle">
+                                            <span class="icon-[tabler--circle-check] size-4 text-success"></span>
+                                        </div>
+                                        <div class="timeline-end timeline-box text-xs py-2">
+                                            <p class="font-medium">Final Decision</p>
+                                            {% if submission.approvedAt %}
+                                                <p class="text-base-content/60">{{ submission.approvedAt|date('g:i A') }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </li>
+                                {% endif %}
+                            </ul>
+
+                            {% if submission.evaluator and submission.evaluatedAt %}
+                                <div class="flex items-center gap-3 rounded-xl bg-base-200/50 p-4">
+                                    <div class="avatar placeholder">
+                                        <div class="bg-secondary text-secondary-content rounded-full size-10">
+                                            <span class="text-xs font-bold">{{ submission.evaluator.email|slice(0, 2)|upper }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium truncate">{{ submission.evaluator.email }}</p>
+                                        <p class="text-xs text-base-content/60">Evaluator</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            {% if submission.finalApprover %}
+                                <div class="flex items-center gap-3 rounded-xl bg-base-200/50 p-4">
+                                    <div class="avatar placeholder">
+                                        <div class="bg-primary text-primary-content rounded-full size-10">
+                                            <span class="text-xs font-bold">{{ submission.finalApprover.email|slice(0, 2)|upper }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium truncate">{{ submission.finalApprover.email }}</p>
+                                        <p class="text-xs text-base-content/60">Final approver</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            {% if submission.denialReason %}
+                                <div class="rounded-xl bg-warning/5 border border-warning/20 p-4">
+                                    <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-2">Comments</p>
+                                    <p class="text-sm whitespace-pre-wrap">{{ submission.denialReason }}</p>
+                                </div>
+                            {% endif %}
+
+                            <a href="{{ path(listRoute) }}" class="btn btn-ghost w-full gap-2">
+                                <span class="icon-[tabler--arrow-left] size-4"></span>
+                                Back to Accreditations
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_modals %}
+<div id="shippingAdminDocumentModal"
+     class="hidden fixed inset-0 z-[999999] items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="shippingAdminDocumentModalTitle">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-shipping-doc-dismiss></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col z-10" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between px-5 py-4 shrink-0 border-b border-base-300">
+            <h3 id="shippingAdminDocumentModalTitle" class="font-semibold text-base text-base-content flex items-center gap-2">
+                <span class="icon-[tabler--file-text] size-5"></span>
+                Document Viewer
+            </h3>
+            <button type="button" data-shipping-doc-dismiss class="btn btn-ghost btn-sm btn-circle" aria-label="Close">
+                <span class="icon-[tabler--x] size-4"></span>
+            </button>
+        </div>
+        <div class="flex-1 p-5 overflow-auto min-h-0">
+            <div id="shippingAdminDocumentContent" class="flex items-center justify-center min-h-[400px] bg-base-200/50 rounded-xl">
+                <div class="text-center">
+                    <span class="loading loading-spinner loading-lg text-primary"></span>
+                    <p class="mt-3 text-sm text-base-content/60">Loading document...</p>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center justify-end gap-2 px-5 py-4 shrink-0 border-t border-base-300">
+            <a id="shippingAdminDocumentDownloadLink" href="#" target="_blank" rel="noopener" class="btn btn-primary btn-sm gap-2">
+                <span class="icon-[tabler--download] size-4"></span>
+                Download
+            </a>
+            <button type="button" data-shipping-doc-dismiss class="btn btn-ghost btn-sm">Close</button>
+        </div>
+    </div>
+</div>
+
+<div id="finalDecisionConfirmModal"
+     class="hidden fixed inset-0 z-[10001] items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="finalDecisionConfirmTitle">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" data-final-decision-dismiss></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg z-10" onclick="event.stopPropagation()">
+        <div class="p-6">
+            <h3 id="finalDecisionConfirmTitle" class="font-bold text-lg flex items-center gap-2">
+                <span id="finalDecisionConfirmIcon" class="icon-[tabler--gavel] size-5 text-primary"></span>
+                <span id="finalDecisionConfirmHeading">Confirm final decision?</span>
+            </h3>
+            <p id="finalDecisionConfirmMessage" class="py-3 text-sm text-base-content/70">
+                You are about to submit your final decision for application #{{ submission.id }}.
+            </p>
+            <div class="rounded-xl bg-base-200 p-4 text-sm space-y-2">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-base-content/60">Decision</span>
+                    <span id="finalDecisionConfirmChoice" class="font-medium">—</span>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-base-content/60">Company</span>
+                    <span class="font-medium truncate max-w-[14rem]" title="{{ applicantCompanyName }}">{{ applicantCompanyName }}</span>
+                </div>
+                {% if submission.shippingLine %}
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-base-content/60">Shipping line</span>
+                    <span class="font-medium truncate max-w-[14rem]">{{ submission.shippingLine.brandName }}</span>
+                </div>
+                {% endif %}
+            </div>
+            <div id="finalDecisionConfirmCommentsWrap" class="hidden mt-3 rounded-xl border border-warning/20 bg-warning/5 p-3">
+                <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50 mb-1">Denial reason</p>
+                <p id="finalDecisionConfirmComments" class="text-sm whitespace-pre-wrap text-base-content/80"></p>
+            </div>
+            <p id="finalDecisionConfirmNote" class="text-xs text-base-content/50 mt-3">
+                This action cannot be undone. The applicant will be notified of your decision.
+            </p>
+            <div class="flex justify-end gap-2 mt-6">
+                <button type="button" class="btn btn-ghost" data-final-decision-dismiss>Go back</button>
+                <button type="button" id="confirmFinalDecisionBtn" class="btn btn-primary gap-1">
+                    <span class="icon-[tabler--check] size-4"></span>
+                    <span id="confirmFinalDecisionBtnText">Yes, submit decision</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+(function () {
+    const fileUrlTemplate = '{{ path(fileDownloadRoute, {fileId: '__FILE_ID__'}) }}';
+    const modal = document.getElementById('shippingAdminDocumentModal');
+    const modalTitle = document.getElementById('shippingAdminDocumentModalTitle');
+    const documentContent = document.getElementById('shippingAdminDocumentContent');
+    const downloadLink = document.getElementById('shippingAdminDocumentDownloadLink');
+
+    if (modal && documentContent) {
+        function getFileUrl(fileId) {
+            return fileUrlTemplate.replace('__FILE_ID__', encodeURIComponent(fileId));
+        }
+
+        function openDocumentModal() {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDocumentModal() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            if (!document.getElementById('finalDecisionConfirmModal')?.classList.contains('flex')) {
+                document.body.style.overflow = '';
+            }
+
+            const iframe = documentContent.querySelector('iframe');
+            const img = documentContent.querySelector('img');
+            if (iframe && iframe.src.startsWith('blob:')) URL.revokeObjectURL(iframe.src);
+            if (img && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+
+            documentContent.innerHTML = '<div class="text-center"><span class="loading loading-spinner loading-lg text-primary"></span><p class="mt-3 text-sm text-base-content/60">Loading document...</p></div>';
+        }
+
+        function showDocumentError(message, fileUrl, documentName) {
+            documentContent.innerHTML =
+                '<div class="text-center py-8 px-4">' +
+                '<span class="icon-[tabler--alert-circle] size-12 text-error block mx-auto mb-3"></span>' +
+                '<p class="font-medium text-error">Unable to load document</p>' +
+                '<p class="text-sm text-base-content/60 mt-2">' + (message || 'Unknown error') + '</p>' +
+                '<a href="' + fileUrl + '" target="_blank" rel="noopener" class="btn btn-primary btn-sm gap-2 mt-4">Download ' + documentName + '</a></div>';
+        }
+
+        function showUnsupportedFormat(fileUrl, documentName) {
+            documentContent.innerHTML =
+                '<div class="text-center py-8 px-4">' +
+                '<span class="icon-[tabler--file-off] size-12 text-base-content/30 block mx-auto mb-3"></span>' +
+                '<p class="font-medium">Preview not available</p>' +
+                '<p class="text-sm text-base-content/60 mt-2">Download this file to view it.</p>' +
+                '<a href="' + fileUrl + '" target="_blank" rel="noopener" class="btn btn-primary btn-sm gap-2 mt-4">Download ' + documentName + '</a></div>';
+        }
+
+        function renderImage(url, documentName) {
+            documentContent.innerHTML = '<div class="w-full flex items-center justify-center p-4"><img src="' + url + '" alt="' + documentName + '" class="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"></div>';
+        }
+
+        function renderPdf(url) {
+            documentContent.innerHTML = '<iframe src="' + url + '" class="w-full rounded-lg border-0" style="height:70vh;min-height:400px" title="Document preview"></iframe>';
+        }
+
+        function viewDocument(fileId, documentName) {
+            if (!fileId) {
+                return;
+            }
+
+            const fileUrl = getFileUrl(fileId);
+            const safeName = documentName || 'Document';
+
+            if (modalTitle) {
+                modalTitle.innerHTML = '<span class="icon-[tabler--file-text] size-5"></span> ' + safeName;
+            }
+            if (downloadLink) {
+                downloadLink.href = fileUrl;
+                downloadLink.setAttribute('download', '');
+            }
+            openDocumentModal();
+
+            documentContent.innerHTML = '<div class="text-center"><span class="loading loading-spinner loading-lg text-primary"></span><p class="mt-3 text-sm text-base-content/60">Loading document...</p></div>';
+
+            fetch(fileUrl, { credentials: 'same-origin' })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error('Document not found or access denied');
+                    }
+                    return response.blob();
+                })
+                .then(function (blob) {
+                    const url = URL.createObjectURL(blob);
+                    const contentType = blob.type || '';
+                    const lowerName = safeName.toLowerCase();
+
+                    if (contentType.startsWith('image/') || lowerName.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/)) {
+                        renderImage(url, safeName);
+                    } else if (contentType.includes('pdf') || lowerName.endsWith('.pdf')) {
+                        renderPdf(url);
+                    } else {
+                        URL.revokeObjectURL(url);
+                        showUnsupportedFormat(fileUrl, safeName);
+                    }
+                })
+                .catch(function (error) {
+                    showDocumentError(error.message, fileUrl, safeName);
+                });
+        }
+
+        document.querySelectorAll('[data-shipping-doc-dismiss]').forEach(function (el) {
+            el.addEventListener('click', closeDocumentModal);
+        });
+
+        document.addEventListener('click', function (e) {
+            const button = e.target.closest('.view-document-btn');
+            if (!button) {
+                return;
+            }
+            e.preventDefault();
+            viewDocument(button.getAttribute('data-file-id'), button.getAttribute('data-document-name'));
+        });
+
+        window.__closeShippingAdminDocumentModal = closeDocumentModal;
+    }
+
+    const finalApprovalForm = document.getElementById('finalApprovalForm');
+    const decisionSelect = document.getElementById('decision');
+    const reasonInput = document.getElementById('reason');
+    const reasonRequiredMark = document.getElementById('reasonRequiredMark');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitText = document.getElementById('submitText');
+    const loadingText = document.getElementById('loadingText');
+    const confirmModal = document.getElementById('finalDecisionConfirmModal');
+    const confirmBtn = document.getElementById('confirmFinalDecisionBtn');
+    const confirmBtnText = document.getElementById('confirmFinalDecisionBtnText');
+    const confirmHeading = document.getElementById('finalDecisionConfirmHeading');
+    const confirmMessage = document.getElementById('finalDecisionConfirmMessage');
+    const confirmChoice = document.getElementById('finalDecisionConfirmChoice');
+    const confirmCommentsWrap = document.getElementById('finalDecisionConfirmCommentsWrap');
+    const confirmComments = document.getElementById('finalDecisionConfirmComments');
+    const confirmNote = document.getElementById('finalDecisionConfirmNote');
+    const confirmIcon = document.getElementById('finalDecisionConfirmIcon');
+    const formError = document.getElementById('finalDecisionFormError');
+    const formErrorText = document.getElementById('finalDecisionFormErrorText');
+    let pendingFinalSubmit = false;
+
+    function showFormError(message) {
+        if (!formError || !formErrorText) {
+            return;
+        }
+        formErrorText.textContent = message;
+        formError.classList.remove('hidden');
+        formError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function clearFormError() {
+        formError?.classList.add('hidden');
+        if (formErrorText) {
+            formErrorText.textContent = '';
+        }
+        decisionSelect?.classList.remove('select-error');
+        reasonInput?.classList.remove('textarea-error');
+    }
+
+    function updateReasonRequirement() {
+        if (!decisionSelect || !reasonRequiredMark) return;
+        reasonRequiredMark.classList.toggle('hidden', decisionSelect.value !== 'deny');
+        if (decisionSelect.value) {
+            clearFormError();
+        }
+    }
+
+    function openOverlayModal(modalEl) {
+        if (!modalEl) return;
+        modalEl.classList.remove('hidden');
+        modalEl.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeOverlayModal(modalEl) {
+        if (!modalEl) return;
+        modalEl.classList.add('hidden');
+        modalEl.classList.remove('flex');
+        const docOpen = modal && !modal.classList.contains('hidden');
+        if (!docOpen) {
+            document.body.classList.remove('overflow-hidden');
+        }
+    }
+
+    function setSubmittingState(isSubmitting) {
+        if (!submitBtn) return;
+        submitBtn.disabled = isSubmitting;
+        if (isSubmitting) {
+            submitText?.classList.add('hidden');
+            loadingText?.classList.remove('hidden');
+        } else {
+            submitText?.classList.remove('hidden');
+            loadingText?.classList.add('hidden');
+        }
+    }
+
+    function validateFinalDecisionForm() {
+        const decision = decisionSelect?.value || '';
+        const reason = reasonInput?.value.trim() || '';
+
+        clearFormError();
+
+        if (!decision) {
+            showFormError('Please select a decision before submitting.');
+            decisionSelect?.classList.add('select-error');
+            decisionSelect?.focus();
+            return false;
+        }
+
+        if (decision === 'deny' && !reason) {
+            showFormError('Please provide a reason for denial.');
+            reasonInput?.classList.add('textarea-error');
+            reasonInput?.focus();
+            return false;
+        }
+
+        return true;
+    }
+
+    function populateConfirmModal() {
+        const decision = decisionSelect?.value || '';
+        const reason = reasonInput?.value.trim() || '';
+        const isApprove = decision === 'approve';
+
+        if (confirmHeading) {
+            confirmHeading.textContent = isApprove ? 'Approve this application?' : 'Deny this application?';
+        }
+        if (confirmMessage) {
+            confirmMessage.textContent = isApprove
+                ? 'You are about to grant this applicant full system access for application #{{ submission.id }}.'
+                : 'You are about to reject application #{{ submission.id }}. The applicant will be notified.';
+        }
+        if (confirmChoice) {
+            confirmChoice.textContent = isApprove ? 'Approve — Grant full access' : 'Deny — Reject application';
+            confirmChoice.className = 'font-medium ' + (isApprove ? 'text-success' : 'text-error');
+        }
+        if (confirmIcon) {
+            confirmIcon.className = isApprove
+                ? 'icon-[tabler--circle-check] size-5 text-success'
+                : 'icon-[tabler--x] size-5 text-error';
+        }
+        if (confirmBtn) {
+            confirmBtn.className = 'btn gap-1 ' + (isApprove ? 'btn-success' : 'btn-error');
+        }
+        if (confirmBtnText) {
+            confirmBtnText.textContent = isApprove ? 'Yes, approve application' : 'Yes, deny application';
+        }
+        if (confirmCommentsWrap && confirmComments) {
+            if (!isApprove && reason) {
+                confirmCommentsWrap.classList.remove('hidden');
+                confirmComments.textContent = reason;
+            } else {
+                confirmCommentsWrap.classList.add('hidden');
+                confirmComments.textContent = '';
+            }
+        }
+        if (confirmNote) {
+            confirmNote.textContent = isApprove
+                ? 'The applicant will receive full access immediately after approval.'
+                : 'This denial will be recorded and the applicant will be notified.';
+        }
+    }
+
+    function openConfirmModal() {
+        populateConfirmModal();
+        openOverlayModal(confirmModal);
+    }
+
+    if (decisionSelect) {
+        decisionSelect.addEventListener('change', updateReasonRequirement);
+        updateReasonRequirement();
+    }
+
+    reasonInput?.addEventListener('input', function () {
+        if (reasonInput.value.trim()) {
+            reasonInput.classList.remove('textarea-error');
+            if (decisionSelect?.value) {
+                clearFormError();
+            }
+        }
+    });
+
+    document.querySelectorAll('[data-final-decision-dismiss]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            closeOverlayModal(confirmModal);
+        });
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') {
+            return;
+        }
+        if (confirmModal && !confirmModal.classList.contains('hidden')) {
+            closeOverlayModal(confirmModal);
+        } else if (typeof window.__closeShippingAdminDocumentModal === 'function' && modal && !modal.classList.contains('hidden')) {
+            window.__closeShippingAdminDocumentModal();
+        }
+    });
+
+    if (finalApprovalForm && submitBtn) {
+        finalApprovalForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (pendingFinalSubmit) {
+                return;
+            }
+            if (!validateFinalDecisionForm()) {
+                return;
+            }
+            openConfirmModal();
+        });
+
+        submitBtn.addEventListener('click', function () {
+            if (pendingFinalSubmit) {
+                return;
+            }
+            if (!validateFinalDecisionForm()) {
+                return;
+            }
+            openConfirmModal();
+        });
+
+        confirmBtn?.addEventListener('click', function () {
+            pendingFinalSubmit = true;
+            closeOverlayModal(confirmModal);
+            setSubmittingState(true);
+            finalApprovalForm.submit();
+        });
+    }
+})();
+</script>
+{% endblock %}

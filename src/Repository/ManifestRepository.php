@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Manifest;
+use App\Entity\NOA;
 use App\Entity\Enum\WorkflowState;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -17,6 +18,75 @@ class ManifestRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Manifest::class);
+    }
+
+    /**
+     * Resolve the canonical manifest for an NOA when multiple rows exist.
+     * Prefers the most advanced workflow state, then billing, then recency.
+     */
+    public function findPrimaryForNoa(NOA $noa): ?Manifest
+    {
+        /** @var Manifest[] $manifests */
+        $manifests = $this->createQueryBuilder('m')
+            ->leftJoin('m.billing', 'bill')
+            ->addSelect('bill')
+            ->leftJoin('m.payments', 'p')
+            ->addSelect('p')
+            ->leftJoin('m.broker', 'b')
+            ->addSelect('b')
+            ->leftJoin('m.consignee', 'c')
+            ->addSelect('c')
+            ->where('m.noa = :noa')
+            ->setParameter('noa', $noa)
+            ->getQuery()
+            ->getResult();
+
+        if ($manifests === []) {
+            return null;
+        }
+
+        if (count($manifests) === 1) {
+            return $manifests[0];
+        }
+
+        usort($manifests, fn (Manifest $a, Manifest $b): int => $this->compareWorkflowPriority($b, $a));
+
+        return $manifests[0];
+    }
+
+    private function compareWorkflowPriority(Manifest $a, Manifest $b): int
+    {
+        $stepCompare = $this->workflowStepRank($a) <=> $this->workflowStepRank($b);
+        if ($stepCompare !== 0) {
+            return $stepCompare;
+        }
+
+        $billingCompare = ($a->getBilling() !== null ? 1 : 0) <=> ($b->getBilling() !== null ? 1 : 0);
+        if ($billingCompare !== 0) {
+            return $billingCompare;
+        }
+
+        $updatedA = $a->getUpdatedAt()?->getTimestamp() ?? 0;
+        $updatedB = $b->getUpdatedAt()?->getTimestamp() ?? 0;
+        if ($updatedA !== $updatedB) {
+            return $updatedA <=> $updatedB;
+        }
+
+        return ($a->getId() ?? 0) <=> ($b->getId() ?? 0);
+    }
+
+    private function workflowStepRank(Manifest $manifest): int
+    {
+        return match ($manifest->getWorkflowState()) {
+            WorkflowState::MANIFEST_UPLOADED, WorkflowState::NOA_GENERATED => 1,
+            WorkflowState::BL_GENERATED => 2,
+            WorkflowState::BL_UPLOADED => 3,
+            WorkflowState::BILLING_GENERATED => 4,
+            WorkflowState::PAYMENT_SUBMITTED => 5,
+            WorkflowState::PAYMENT_VERIFIED => 6,
+            WorkflowState::EDO_GENERATED => 7,
+            WorkflowState::EDO_RELEASED => 8,
+        };
     }
 
     /**

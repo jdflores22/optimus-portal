@@ -1,0 +1,103 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Document Templates - OPTIMUS{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-base-200">
+    <div class="bg-base-100 border-b border-base-300">
+        <div class="container mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold">Document Templates</h1>
+                    <p class="mt-1 text-sm text-base-content/70">Design certificates and document layouts for NOA, eDO, billing, and more</p>
+                </div>
+                <a href="{{ path('document_template_create') }}" class="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto gap-2">
+                    <span class="icon-[tabler--plus] size-4"></span>
+                    Create Template
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-3 sm:px-6 lg:px-8 py-6">
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success mb-4"><span class="icon-[tabler--check] size-5"></span><span>{{ message }}</span></div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-error mb-4"><span class="icon-[tabler--alert-circle] size-5"></span><span>{{ message }}</span></div>
+        {% endfor %}
+
+        <div class="card bg-base-100 shadow-sm">
+            {% if templates|length > 0 %}
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Document Type</th>
+                                <th>Version</th>
+                                <th>Status</th>
+                                <th>Elements</th>
+                                <th>Created</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for template in templates %}
+                                <tr class="hover">
+                                    <td class="font-medium">{{ template.name }}</td>
+                                    <td><span class="badge badge-primary badge-sm">{{ template.documentType.getLabel() }}</span></td>
+                                    <td class="text-sm text-base-content/70">v{{ template.version }}</td>
+                                    <td>{% include 'document_template/_status_badge.html.twig' with { template: template } %}</td>
+                                    <td class="text-sm text-base-content/70">{{ template.elements|length }} elements</td>
+                                    <td class="text-sm text-base-content/70">{{ template.createdAt|date('Y-m-d') }}</td>
+                                    <td>
+                                        <div class="flex items-center justify-end gap-1">
+                                            <a href="{{ path('document_template_edit', {id: template.id}) }}" class="btn btn-xs btn-primary" title="Edit">
+                                                <span class="icon-[tabler--edit] size-3"></span>
+                                            </a>
+                                            <a href="{{ path('document_template_preview', {id: template.id}) }}" class="btn btn-xs btn-ghost" title="Preview">
+                                                <span class="icon-[tabler--eye] size-3"></span>
+                                            </a>
+                                            {% include 'document_template/_status_actions.html.twig' with { template: template, btnSize: 'xs' } %}
+                                            {% if template.status.value in ['PUBLISHED', 'ACTIVE', 'INACTIVE'] %}
+                                                <form method="POST" action="{{ path('document_template_new_version', {id: template.id}) }}" class="inline">
+                                                    <button type="submit" class="btn btn-xs btn-secondary" title="New Version">
+                                                        <span class="icon-[tabler--versions] size-3"></span>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                            <button type="button" class="delete-template-btn btn btn-xs btn-error"
+                                                    data-template-id="{{ template.id }}" data-template-name="{{ template.name }}" title="Delete">
+                                                <span class="icon-[tabler--trash] size-3"></span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-16 p-6">
+                    <span class="icon-[tabler--certificate] size-12 text-base-content/40 mx-auto"></span>
+                    <h3 class="mt-4 text-base font-medium">No document templates yet</h3>
+                    <p class="mt-2 text-sm text-base-content/70">Create your first template to design NOA certificates and other documents</p>
+                    <a href="{{ path('document_template_create') }}" class="btn btn-primary mt-6 gap-2">
+                        <span class="icon-[tabler--plus] size-4"></span>
+                        Create Template
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_modals %}
+    {% include 'document_template/_status_modals.html.twig' %}
+{% endblock %}
+
+{% block page_scripts %}
+    {% include 'document_template/_status_scripts.html.twig' %}
+{% endblock %}

@@ -36,5 +36,7 @@ interface BillingServiceInterface
     /**
      * Regenerate billing PDF
      */
-    public function regenerateBillingPdf(int $billingId): Billing;
+    public function regenerateBillingPdf(int $billingId, bool $markAsPaid = false): Billing;
+    
+    public function ensureBillingPdfIsCurrent(Billing $billing): Billing;
 }

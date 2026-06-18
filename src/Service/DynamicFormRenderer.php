@@ -124,14 +124,34 @@ class DynamicFormRenderer
         $required = $field['required'] ?? false;
         $requiredMark = $required ? '<span class="text-error">*</span>' : '';
 
-        $html = '<div class="form-control mb-4">';
+        $html = '<div class="form-control mb-4" data-field-block data-field-id="' . $fieldId . '"';
+        $html .= ' data-field-type="' . htmlspecialchars($type) . '"';
+        if (!empty($field['validation']['inputRestriction'])) {
+            $html .= ' data-input-restriction="' . htmlspecialchars($field['validation']['inputRestriction']) . '"';
+        }
+        [$minLength, $maxLength] = $this->resolveStringLengthConstraints($field['validation'] ?? []);
+        if ($minLength !== null) {
+            $html .= ' data-min-length="' . $minLength . '"';
+        }
+        if ($maxLength !== null) {
+            $html .= ' data-max-length="' . $maxLength . '"';
+        }
+        $html .= '>';
         $html .= "<label for=\"{$fieldId}\" class=\"label py-1\">";
         $html .= "<span class=\"label-text font-medium\">{$label} {$requiredMark}</span>";
         $html .= '</label>';
 
         switch ($type) {
             case 'text':
-                $html .= $this->renderTextField($field);
+            case 'email':
+            case 'url':
+                $html .= $this->renderTextField($field, $type);
+                break;
+            case 'phone':
+                $html .= $this->renderTextField($field, 'tel');
+                break;
+            case 'textarea':
+                $html .= $this->renderTextareaField($field);
                 break;
             case 'number':
                 $html .= $this->renderNumberField($field);
@@ -196,13 +216,51 @@ HTML;
     /**
      * Render a text input field
      */
-    private function renderTextField(array $field): string
+    private function renderTextField(array $field, string $inputType = 'text'): string
     {
         $fieldId = htmlspecialchars($field['id']);
         $required = $field['required'] ? 'required' : '';
-        
-        return "<input type=\"text\" id=\"{$fieldId}\" name=\"{$fieldId}\" {$required} " .
+        $attrs = $this->buildStringInputAttributes($field, $inputType);
+
+        return "<input type=\"{$inputType}\" id=\"{$fieldId}\" name=\"{$fieldId}\" {$required} {$attrs} " .
                "class=\"input input-bordered w-full\" />";
+    }
+
+    private function renderTextareaField(array $field): string
+    {
+        $fieldId = htmlspecialchars($field['id']);
+        $required = $field['required'] ? 'required' : '';
+        $attrs = $this->buildStringInputAttributes($field, 'textarea');
+
+        return "<textarea id=\"{$fieldId}\" name=\"{$fieldId}\" rows=\"4\" {$required} {$attrs} " .
+               "class=\"textarea textarea-bordered w-full\"></textarea>";
+    }
+
+    private function buildStringInputAttributes(array $field, string $inputType): string
+    {
+        $validation = $field['validation'] ?? [];
+        $attrs = [];
+
+        if (!empty($field['placeholder'])) {
+            $attrs[] = 'placeholder="' . htmlspecialchars($field['placeholder']) . '"';
+        }
+
+        if (!empty($validation['inputRestriction'])) {
+            $attrs[] = 'data-input-restriction="' . htmlspecialchars($validation['inputRestriction']) . '"';
+            if ($validation['inputRestriction'] === 'numeric') {
+                $attrs[] = 'inputmode="numeric"';
+            }
+        }
+
+        [$minLength, $maxLength] = $this->resolveStringLengthConstraints($validation);
+        if ($minLength !== null) {
+            $attrs[] = 'minlength="' . $minLength . '"';
+        }
+        if ($maxLength !== null) {
+            $attrs[] = 'maxlength="' . $maxLength . '"';
+        }
+
+        return implode(' ', $attrs);
     }
 
     /**

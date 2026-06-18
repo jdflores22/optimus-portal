@@ -10,6 +10,9 @@ let consignees = [];
 let cyAllocations = [];
 let selectedAllocation = null;
 let selectedConsignee = null;
+const containerValidationTimers = new Map();
+let pendingNoaFormData = null;
+let isSubmittingNoa = false;
 
 document.addEventListener('DOMContentLoaded', function() {
     loadCYAllocations();
@@ -29,6 +32,59 @@ function initializeEventListeners() {
     addContainerBtn.addEventListener('click', addContainer);
     consigneeSearch.addEventListener('input', handleConsigneeSearch);
     clearConsigneeBtn.addEventListener('click', clearConsigneeSelection);
+
+    const confirmModal = document.getElementById('noaConfirmModal');
+    const confirmBtn = document.getElementById('confirmNoaCreateBtn');
+    const cancelConfirmBtn = document.getElementById('cancelNoaConfirmBtn');
+
+    confirmBtn?.addEventListener('click', function () {
+        if (!pendingNoaFormData || isSubmittingNoa) {
+            return;
+        }
+        const formData = pendingNoaFormData;
+        closeNoaConfirmModal({ keepPending: true });
+        submitNoaCreation(formData);
+    });
+
+    cancelConfirmBtn?.addEventListener('click', closeNoaConfirmModal);
+
+    document.querySelectorAll('[data-close-modal="noaConfirmModal"]').forEach(function (el) {
+        el.addEventListener('click', closeNoaConfirmModal);
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') {
+            return;
+        }
+        const confirmModal = document.getElementById('noaConfirmModal');
+        const successModal = document.getElementById('successModal');
+        const errorModal = document.getElementById('errorModal');
+        if (successModal && !successModal.classList.contains('hidden')) {
+            closeSuccessModal();
+            return;
+        }
+        if (errorModal && !errorModal.classList.contains('hidden')) {
+            closeErrorModal();
+            return;
+        }
+        if (confirmModal && !confirmModal.classList.contains('hidden')) {
+            closeNoaConfirmModal();
+        }
+    });
+
+    document.getElementById('successModalCloseBtn')?.addEventListener('click', closeSuccessModal);
+    document.getElementById('successDismissBtn')?.addEventListener('click', function () {
+        window.location.href = window.location.pathname;
+    });
+    document.getElementById('successViewWorkflowBtn')?.addEventListener('click', redirectToWorkflow);
+    document.querySelectorAll('[data-close-modal="successModal"]').forEach(function (el) {
+        el.addEventListener('click', closeSuccessModal);
+    });
+
+    document.getElementById('errorModalCloseBtn')?.addEventListener('click', closeErrorModal);
+    document.querySelectorAll('[data-close-modal="errorModal"]').forEach(function (el) {
+        el.addEventListener('click', closeErrorModal);
+    });
     
     // Close search results when clicking outside
     document.addEventListener('click', function(e) {
@@ -166,16 +222,24 @@ function handleConsigneeSearch(e) {
     );
     
     if (filtered.length === 0) {
-        resultsDiv.innerHTML = '<div class="p-4 text-sm" style="color: var(--fallback-bc, oklch(var(--bc))) !important;">No consignees found</div>';
+        resultsDiv.innerHTML = `
+            <div class="p-4 text-sm text-base-content/60 flex items-center gap-2 bg-base-100">
+                <span class="icon-[tabler--search-off] size-4"></span>
+                No consignees found
+            </div>
+        `;
         resultsDiv.classList.remove('hidden');
         return;
     }
     
     resultsDiv.innerHTML = filtered.map(c => `
-        <div class="p-3 hover:bg-base-300 cursor-pointer border-b border-base-300 last:border-b-0 transition-colors" 
-             onclick="selectConsignee(${c.id})">
-            <div class="font-semibold" style="color: var(--fallback-bc, oklch(var(--bc))) !important;">${c.businessName || c.fullName || c.email}</div>
-            <div class="text-sm" style="color: var(--fallback-bc, oklch(var(--bc) / 0.7)) !important;">${c.email}</div>
+        <div role="button"
+             tabindex="0"
+             class="w-full text-left cursor-pointer border-b border-base-content/10 last:border-b-0 px-4 py-3 hover:bg-base-200/60 transition-colors"
+             onclick="selectConsignee(${c.id})"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectConsignee(${c.id});}">
+            <div class="font-semibold text-base-content truncate">${c.businessName || c.fullName || c.email}</div>
+            <div class="text-xs text-base-content/60 truncate mt-0.5">${c.email}</div>
         </div>
     `).join('');
     
@@ -246,8 +310,10 @@ function addContainer() {
                    name="containers[${index}][number]"
                    required
                    maxlength="20"
-                   class="input input-bordered input-sm w-full"
+                   class="container-number-input input input-bordered input-sm w-full"
+                   data-index="${index}"
                    placeholder="e.g., ABCD1234567">
+            <div class="container-number-error text-error text-xs mt-1 hidden"></div>
         </td>
         <td class="px-4 py-3">
             <select name="containers[${index}][sizeId]"
@@ -272,7 +338,7 @@ function addContainer() {
             </select>
         </td>
         <td class="px-4 py-3 text-sm text-base-content">
-            <span class="teu-display badge badge-ghost" data-index="${index}">—</span>
+            <span class="teu-display badge badge-soft badge-primary" data-index="${index}">—</span>
         </td>
         <td class="px-4 py-3">
             <select name="containers[${index}][cyAllocationId]"
@@ -294,7 +360,96 @@ function addContainer() {
     `;
     
     tbody.appendChild(row);
+    attachContainerNumberValidation(index);
     updateCYAllocation();
+}
+
+function normalizeContainerNumber(containerNumber) {
+    return (containerNumber || '')
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '');
+}
+
+function setContainerNumberValidationState(input, isInvalid, message = '') {
+    const errorElement = input.parentElement?.querySelector('.container-number-error');
+    if (isInvalid) {
+        input.classList.add('input-error');
+        if (errorElement) {
+            errorElement.textContent = message || 'Container number already exists.';
+            errorElement.classList.remove('hidden');
+        }
+    } else {
+        input.classList.remove('input-error');
+        if (errorElement) {
+            errorElement.textContent = '';
+            errorElement.classList.add('hidden');
+        }
+    }
+}
+
+function checkContainerNumberAgainstInventory(input) {
+    const rawValue = input.value.trim();
+    const normalizedValue = normalizeContainerNumber(rawValue);
+
+    if (!rawValue || normalizedValue.length < 5) {
+        setContainerNumberValidationState(input, false);
+        return;
+    }
+
+    fetch('/noa/validate-container-number', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ containerNumber: rawValue }),
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                if (data.message || data.error) {
+                    setContainerNumberValidationState(
+                        input,
+                        true,
+                        data.message || data.error
+                    );
+                }
+                return;
+            }
+
+            if (data.exists) {
+                setContainerNumberValidationState(
+                    input,
+                    true,
+                    `Container number already exists in inventory (${data.matchedContainerNumber || rawValue}).`
+                );
+            } else {
+                setContainerNumberValidationState(input, false);
+            }
+        })
+        .catch(() => {
+            // Keep form usable even if live validation endpoint fails.
+        });
+}
+
+function attachContainerNumberValidation(index) {
+    const input = document.querySelector(`[name="containers[${index}][number]"]`);
+    if (!input) return;
+
+    input.addEventListener('input', function () {
+        const currentIndex = String(index);
+        const existingTimer = containerValidationTimers.get(currentIndex);
+        if (existingTimer) {
+            clearTimeout(existingTimer);
+        }
+
+        setContainerNumberValidationState(input, false);
+
+        const timer = setTimeout(() => {
+            checkContainerNumberAgainstInventory(input);
+        }, 350);
+
+        containerValidationTimers.set(currentIndex, timer);
+    });
 }
 
 function updateContainerTEU(index) {
@@ -485,64 +640,317 @@ function updateCYAllocation() {
         }
     });
     
-    // Calculate total TEU across all containers
+    // Calculate total TEU and required TEU per selected CY allocation
     let totalTeu = 0;
+    const requiredTeuByAllocation = {};
+
     containerRows.forEach(row => {
         const index = row.dataset.index;
         const sizeSelect = row.querySelector(`[name="containers[${index}][sizeId]"]`);
+        const cySelect = row.querySelector(`[name="containers[${index}][cyAllocationId]"]`);
         const selectedOption = sizeSelect?.options[sizeSelect.selectedIndex];
-        
+        const allocationId = cySelect?.value;
+
         if (selectedOption && selectedOption.dataset.teu) {
-            totalTeu += parseFloat(selectedOption.dataset.teu);
+            const teuValue = parseFloat(selectedOption.dataset.teu);
+            totalTeu += teuValue;
+
+            if (allocationId) {
+                requiredTeuByAllocation[allocationId] = (requiredTeuByAllocation[allocationId] || 0) + teuValue;
+            }
+        }
+    });
+
+    let availableTeuCapacity = 0;
+    let remainingCapacity = 0;
+    let hasSelectedCy = false;
+    let hasInsufficientCapacity = false;
+
+    Object.entries(requiredTeuByAllocation).forEach(([allocationId, requiredTeu]) => {
+        const allocation = cyAllocations.find(a => String(a.id) === String(allocationId));
+        if (!allocation) {
+            return;
+        }
+
+        hasSelectedCy = true;
+        const available = parseFloat(allocation.available_teu) || 0;
+        availableTeuCapacity += available;
+        remainingCapacity += Math.max(0, available - requiredTeu);
+
+        if (requiredTeu > available) {
+            hasInsufficientCapacity = true;
         }
     });
     
     // Show allocation display if containers exist
+    const summaryPanel = document.getElementById('cyAllocationDisplay');
+    const availableEl = document.getElementById('availableTeuCapacity');
+    const remainingEl = document.getElementById('remainingCapacity');
+    const capacityWarning = document.getElementById('capacityWarning');
+
     if (totalTeu > 0) {
-        document.getElementById('cyAllocationDisplay').classList.remove('hidden');
+        summaryPanel.classList.remove('hidden');
         document.getElementById('totalTeuRequired').textContent = totalTeu.toFixed(1);
+        availableEl.textContent = hasSelectedCy ? availableTeuCapacity.toFixed(1) : '0';
+        remainingEl.textContent = hasSelectedCy ? remainingCapacity.toFixed(1) : '0';
+
+        if (capacityWarning) {
+            capacityWarning.classList.toggle('hidden', !hasInsufficientCapacity);
+        }
     } else {
-        document.getElementById('cyAllocationDisplay').classList.add('hidden');
+        summaryPanel.classList.add('hidden');
+        availableEl.textContent = '0';
+        remainingEl.textContent = '0';
+        if (capacityWarning) {
+            capacityWarning.classList.add('hidden');
+        }
     }
 }
 
-function handleFormSubmit(e) {
-    e.preventDefault();
-    
-    // Clear previous errors
-    clearErrors();
-    
-    // Collect form data
+function collectFormData() {
+    const selectedPortLocation = document.querySelector('input[name="portLocation"]:checked')?.value
+        || document.getElementById('portLocationFallback')?.value?.trim()
+        || '';
+
     const formData = {
-        blNumber: document.getElementById('blNumber').value,
-        vesselNumber: document.getElementById('vesselNumber').value,
+        blNumber: document.getElementById('blNumber').value.trim(),
+        vesselNumber: document.getElementById('vesselNumber').value.trim(),
         eta: document.getElementById('eta').value,
+        portLocation: selectedPortLocation,
         consigneeId: document.getElementById('consigneeId').value,
         containers: []
     };
-    
-    // Collect container data
+
     const containerRows = document.querySelectorAll('.container-row');
     containerRows.forEach(row => {
         const index = row.dataset.index;
-        const container = {
+        formData.containers.push({
             number: row.querySelector(`[name="containers[${index}][number]"]`).value,
             typeId: row.querySelector(`[name="containers[${index}][typeId]"]`).value,
             sizeId: row.querySelector(`[name="containers[${index}][sizeId]"]`).value,
             cyAllocationId: row.querySelector(`[name="containers[${index}][cyAllocationId]"]`).value
-        };
-        formData.containers.push(container);
+        });
     });
+
+    return formData;
+}
+
+function formatConfirmEta(etaValue) {
+    if (!etaValue) {
+        return '—';
+    }
+    const date = new Date(etaValue);
+    if (Number.isNaN(date.getTime())) {
+        return etaValue;
+    }
+    return date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+function calculateTotalTeuFromForm(formData) {
+    let totalTeu = 0;
+    formData.containers.forEach(container => {
+        const size = containerSizes[container.sizeId];
+        if (size?.teuValue) {
+            totalTeu += parseFloat(size.teuValue);
+        }
+    });
+    return totalTeu;
+}
+
+function openNoaConfirmModal(formData) {
+    const consigneeName = selectedConsignee
+        ? (selectedConsignee.businessName || selectedConsignee.fullName || selectedConsignee.email)
+        : '—';
+    const totalTeu = calculateTotalTeuFromForm(formData);
+
+    document.getElementById('confirmConsigneeName').textContent = consigneeName;
+    document.getElementById('confirmBlNumber').textContent = formData.blNumber || '—';
+    document.getElementById('confirmVesselNumber').textContent = formData.vesselNumber || '—';
+    document.getElementById('confirmPortLocation').textContent = formData.portLocation || '—';
+    document.getElementById('confirmEta').textContent = formatConfirmEta(formData.eta);
+    document.getElementById('confirmContainerCount').textContent = String(formData.containers.length);
+    document.getElementById('confirmTotalTeu').textContent = totalTeu > 0 ? totalTeu.toFixed(1) : '—';
+
+    const modal = document.getElementById('noaConfirmModal');
+    if (!modal) {
+        return;
+    }
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeNoaConfirmModal(options = {}) {
+    const modal = document.getElementById('noaConfirmModal');
+    if (!modal) {
+        return;
+    }
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    if (!isSubmittingNoa) {
+        document.body.classList.remove('overflow-hidden');
+    }
+    if (!isSubmittingNoa && !options.keepPending) {
+        pendingNoaFormData = null;
+    }
+}
+
+function setSubmittingState(isSubmitting) {
+    const submitBtn = document.getElementById('submitBtn');
+    const submitBtnText = document.getElementById('submitBtnText');
+    const submitBtnSpinner = document.getElementById('submitBtnSpinner');
+    const loadingModal = document.getElementById('loadingModal');
+
+    isSubmittingNoa = isSubmitting;
+    if (submitBtn) {
+        submitBtn.disabled = isSubmitting;
+    }
+    if (submitBtnText) {
+        submitBtnText.textContent = isSubmitting ? 'Creating...' : 'Create NOA';
+    }
+    if (submitBtnSpinner) {
+        submitBtnSpinner.classList.toggle('hidden', !isSubmitting);
+    }
+    if (loadingModal) {
+        loadingModal.classList.toggle('hidden', !isSubmitting);
+        loadingModal.classList.toggle('flex', isSubmitting);
+    }
+    if (isSubmitting) {
+        document.body.classList.add('overflow-hidden');
+    } else if (!isAnyNoaModalOpen()) {
+        document.body.classList.remove('overflow-hidden');
+    }
+}
+
+function isAnyNoaModalOpen() {
+    return ['noaConfirmModal', 'successModal', 'errorModal', 'loadingModal'].some(function (id) {
+        const modal = document.getElementById(id);
+        return modal && !modal.classList.contains('hidden');
+    });
+}
+
+function handleFormSubmit(e) {
+    e.preventDefault();
+
+    if (isSubmittingNoa) {
+        return;
+    }
+    
+    // Clear previous errors
+    clearErrors();
+    
+    const formData = collectFormData();
     
     // Validate
     if (!validateForm(formData)) {
         return;
     }
-    
-    // Submit
-    const submitBtn = document.getElementById('submitBtn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Creating...';
+
+    pendingNoaFormData = formData;
+    openNoaConfirmModal(formData);
+}
+
+function openSuccessModal(responseData) {
+    const noa = responseData?.noa || {};
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = value;
+        }
+    };
+
+    setText('successNoaNumber', noa.noaNumber || '—');
+    setText('successBlNumber', noa.blNumber || '—');
+    setText('successVesselNumber', noa.vesselNumber || '—');
+    setText('successContainerCount', noa.containerCount != null ? String(noa.containerCount) : '—');
+    setText('successPdfStatus', noa.pdfPath ? 'Generated' : 'Pending');
+
+    const modal = document.getElementById('successModal');
+    if (!modal) {
+        return;
+    }
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeSuccessModal() {
+    const modal = document.getElementById('successModal');
+    if (!modal) {
+        return;
+    }
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    if (!isAnyNoaModalOpen()) {
+        document.body.classList.remove('overflow-hidden');
+    }
+}
+
+function redirectToWorkflow() {
+    window.location.href = '/manifest-workflow';
+}
+
+function openErrorModal(message, title = 'Could not create NOA') {
+    const titleEl = document.getElementById('errorModalTitle');
+    const messageEl = document.getElementById('errorMessage');
+    const subtitleEl = document.getElementById('errorModalSubtitle');
+    const suggestionsEl = document.getElementById('errorSuggestions');
+
+    if (titleEl) {
+        titleEl.textContent = title;
+    }
+    if (messageEl) {
+        messageEl.textContent = message;
+    }
+    if (subtitleEl) {
+        subtitleEl.textContent = 'Please review the details below and try again.';
+    }
+    if (suggestionsEl) {
+        suggestionsEl.classList.add('hidden');
+    }
+
+    const modal = document.getElementById('errorModal');
+    if (!modal) {
+        return;
+    }
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeErrorModal() {
+    const modal = document.getElementById('errorModal');
+    if (!modal) {
+        return;
+    }
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    if (!isAnyNoaModalOpen()) {
+        document.body.classList.remove('overflow-hidden');
+    }
+}
+
+function getApiErrorMessage(data, fallback = 'Failed to create NOA') {
+    if (!data || typeof data !== 'object') {
+        return fallback;
+    }
+    if (typeof data.message === 'string' && data.message.trim()) {
+        return data.message;
+    }
+    if (typeof data.error === 'string' && data.error.trim()) {
+        return data.error;
+    }
+    return fallback;
+}
+
+function submitNoaCreation(formData) {
+    setSubmittingState(true);
     
     fetch('/noa/create', {
         method: 'POST',
@@ -551,27 +959,28 @@ function handleFormSubmit(e) {
         },
         body: JSON.stringify(formData)
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('NOA created successfully!');
-            window.location.href = '/manifest-workflow';
+    .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        setSubmittingState(false);
+        pendingNoaFormData = null;
+
+        if (response.ok && data.success) {
+            openSuccessModal(data);
         } else {
-            alert('Error: ' + (data.error || 'Failed to create NOA'));
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Create NOA';
+            openErrorModal(getApiErrorMessage(data));
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('An error occurred while creating the NOA');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Create NOA';
+        setSubmittingState(false);
+        pendingNoaFormData = null;
+        openErrorModal('An unexpected error occurred while creating the NOA. Please try again.');
     });
 }
 
 function validateForm(formData) {
     let isValid = true;
+    const seenContainerNumbers = new Set();
     
     if (!formData.blNumber) {
         showError('blNumberError', 'BL number is required');
@@ -587,6 +996,11 @@ function validateForm(formData) {
         showError('etaError', 'ETA is required');
         isValid = false;
     }
+
+    if (!formData.portLocation) {
+        showError('portLocationError', 'Port location is required');
+        isValid = false;
+    }
     
     if (!formData.consigneeId) {
         showError('consigneeIdError', 'Consignee is required');
@@ -600,11 +1014,28 @@ function validateForm(formData) {
     
     // Validate each container has a CY allocation
     formData.containers.forEach((container, idx) => {
+        const normalizedNumber = (container.number || '').trim().toUpperCase();
+        if (normalizedNumber) {
+            container.number = normalizedNumber;
+            if (seenContainerNumbers.has(normalizedNumber)) {
+                showError('containersError', `Container ${idx + 1} is duplicated. Container numbers must be unique.`);
+                isValid = false;
+            } else {
+                seenContainerNumbers.add(normalizedNumber);
+            }
+        }
+
         if (!container.cyAllocationId) {
             showError('containersError', `Container ${idx + 1} requires a CY location`);
             isValid = false;
         }
     });
+
+    const duplicateInventoryInputs = document.querySelectorAll('.container-number-input.input-error');
+    if (duplicateInventoryInputs.length > 0) {
+        showError('containersError', 'One or more container numbers already exist in inventory.');
+        isValid = false;
+    }
     
     // Validate capacity for each CY allocation
     const capacityValidation = validateCYCapacity(formData.containers);

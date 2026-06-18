@@ -213,7 +213,7 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <a href="{{ path('manifest_workflow_detail', {id: payment.manifest.id}) }}" class="font-medium link link-hover">
+                                        <a href="{{ manifest_workflow_detail_path(payment.manifest) }}" class="font-medium link link-hover">
                                             {{ payment.manifest.manifestNumber }}
                                         </a>
                                         {% if payment.manifest.consignee %}

@@ -154,7 +154,7 @@ final class ComplianceRequestService
 
             $newValue = $formData[$fieldId] ?? null;
             $oldValue = $previousData[$fieldId] ?? null;
-            if (self::valuesEqual($newValue, $oldValue)) {
+            if (self::valuesEqual($newValue, $oldValue, $type)) {
                 $errors[$fieldId] = $label . ' must be corrected before resubmitting';
             }
         }
@@ -162,13 +162,45 @@ final class ComplianceRequestService
         return $errors;
     }
 
-    public static function valuesEqual(mixed $a, mixed $b): bool
+    public static function valuesEqual(mixed $a, mixed $b, ?string $fieldType = null): bool
     {
+        $a = self::normalizeComparableValue($a, $fieldType);
+        $b = self::normalizeComparableValue($b, $fieldType);
+
         if (is_array($a) || is_array($b)) {
             return json_encode($a ?? []) === json_encode($b ?? []);
         }
 
         return trim((string) ($a ?? '')) === trim((string) ($b ?? ''));
+    }
+
+    private static function normalizeComparableValue(mixed $value, ?string $fieldType): mixed
+    {
+        if ($fieldType === 'address') {
+            if (is_string($value)) {
+                return ['legacy_text' => trim($value)];
+            }
+            if (!is_array($value)) {
+                return $value;
+            }
+
+            return array_filter([
+                'region_id' => trim((string) ($value['region_id'] ?? '')),
+                'province_id' => trim((string) ($value['province_id'] ?? '')),
+                'city_id' => trim((string) ($value['city_id'] ?? '')),
+                'barangay_id' => trim((string) ($value['barangay_id'] ?? '')),
+                'street' => trim((string) ($value['street'] ?? '')),
+            ], static fn (string $part): bool => $part !== '');
+        }
+
+        if ($fieldType === 'geolocation' && is_array($value)) {
+            return [
+                'latitude' => trim((string) ($value['latitude'] ?? '')),
+                'longitude' => trim((string) ($value['longitude'] ?? '')),
+            ];
+        }
+
+        return $value;
     }
 
     private static function humanizeFieldId(string $fieldId): string

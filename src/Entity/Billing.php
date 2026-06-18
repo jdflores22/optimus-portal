@@ -67,6 +67,9 @@ class Billing
     #[ORM\Column(type: 'string', length: 500, nullable: true)]
     private ?string $pdfPath = null;
 
+    #[ORM\Column(type: 'string', length: 64, nullable: true)]
+    private ?string $pdfTemplateHash = null;
+
     #[ORM\Column(type: 'string', length: 500, nullable: true)]
     private ?string $receiptFilePath = null;
 
@@ -223,6 +226,17 @@ class Billing
     public function setPdfPath(?string $pdfPath): self
     {
         $this->pdfPath = $pdfPath;
+        return $this;
+    }
+
+    public function getPdfTemplateHash(): ?string
+    {
+        return $this->pdfTemplateHash;
+    }
+
+    public function setPdfTemplateHash(?string $pdfTemplateHash): self
+    {
+        $this->pdfTemplateHash = $pdfTemplateHash;
         return $this;
     }
 

@@ -2,6 +2,10 @@
 
 namespace App\Controller\Accounting;
 
+use App\Service\BillingServiceInterface;
+use App\Service\DocumentTemplateDeveloperSettingsService;
+use App\Service\FileStorageServiceInterface;
+use App\Service\OfficialReceiptDocumentGenerator;
 use App\Service\PaymentService;
 use App\Entity\Enum\PaymentType;
 use App\Entity\Enum\PaymentStatus;
@@ -9,6 +13,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -18,7 +23,11 @@ class AccountingPaymentController extends AbstractController
 {
     public function __construct(
         private PaymentService $paymentService,
-        private EntityManagerInterface $entityManager
+        private EntityManagerInterface $entityManager,
+        private BillingServiceInterface $billingService,
+        private FileStorageServiceInterface $fileStorage,
+        private OfficialReceiptDocumentGenerator $officialReceiptDocumentGenerator,
+        private DocumentTemplateDeveloperSettingsService $documentTemplateDeveloperSettings,
     ) {
     }
 
@@ -136,6 +145,8 @@ class AccountingPaymentController extends AbstractController
             'billing' => $billing,
             'discrepancy' => $discrepancy,
             'validationHistory' => $validationHistory,
+            'billingPdfRegenerateEnabled' => $this->documentTemplateDeveloperSettings->isBillingPdfRegenerateEnabled(),
+            'officialReceiptPdfRegenerateEnabled' => $this->documentTemplateDeveloperSettings->isOfficialReceiptPdfRegenerateEnabled(),
         ]);
     }
 
@@ -206,6 +217,149 @@ class AccountingPaymentController extends AbstractController
         }
 
         return $response;
+    }
+
+    #[Route('/final/{id}/billing/download', name: 'accounting_payment_billing_download', methods: ['GET'])]
+    public function downloadBilling(int $id, Request $request): Response
+    {
+        $payment = $this->entityManager->getRepository(\App\Entity\Payment::class)->find($id);
+
+        if (!$payment || $payment->getPaymentType() !== PaymentType::FINAL_PAYMENT) {
+            throw $this->createNotFoundException('Payment not found');
+        }
+
+        $billing = $payment->getManifest()->getBilling();
+        if (!$billing) {
+            throw $this->createNotFoundException('Billing not found for this manifest');
+        }
+
+        $fullPath = $billing->getPdfPath()
+            ? $this->resolveStoredPdfPath($billing->getPdfPath())
+            : null;
+
+        if (!$fullPath) {
+            try {
+                $billing = $this->billingService->regenerateBillingPdf((int) $billing->getId());
+                $pdfPath = $billing->getPdfPath();
+                $fullPath = $pdfPath ? $this->resolveStoredPdfPath($pdfPath) : null;
+            } catch (\Throwable $e) {
+                throw $this->createNotFoundException('Failed to generate billing PDF: ' . $e->getMessage());
+            }
+        }
+
+        if (!$fullPath) {
+            throw $this->createNotFoundException('Billing PDF file not found on server');
+        }
+
+        $inline = $request->query->get('inline', 'false') === 'true';
+        $filename = sprintf('Billing-%s.pdf', str_pad((string) $billing->getId(), 5, '0', STR_PAD_LEFT));
+        $disposition = $inline ? ResponseHeaderBag::DISPOSITION_INLINE : ResponseHeaderBag::DISPOSITION_ATTACHMENT;
+
+        $response = $this->file($fullPath, $filename, $disposition);
+        $response->headers->set('Content-Type', 'application/pdf');
+
+        if ($inline) {
+            $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
+            $response->headers->set('Content-Security-Policy', "frame-ancestors 'self'");
+        }
+
+        return $response;
+    }
+
+    #[Route('/final/{id}/billing/regenerate', name: 'accounting_payment_billing_regenerate', methods: ['POST'])]
+    public function regenerateBilling(int $id, Request $request): Response
+    {
+        if (!$this->documentTemplateDeveloperSettings->isBillingPdfRegenerateEnabled()) {
+            $this->addFlash('error', 'Billing PDF regeneration is disabled in document template developer settings.');
+            return $this->redirectToRoute('accounting_payment_final_detail', ['id' => $id]);
+        }
+
+        if (!$this->isCsrfTokenValid('regenerate_billing_' . $id, (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid security token.');
+        }
+
+        $payment = $this->findFinalPayment($id);
+        $billing = $payment->getManifest()->getBilling();
+        if (!$billing) {
+            $this->addFlash('error', 'Billing not found for this payment.');
+            return $this->redirectToRoute('accounting_payment_final_detail', ['id' => $id]);
+        }
+
+        try {
+            $markAsPaid = $payment->getStatus() === PaymentStatus::VERIFIED;
+            $this->billingService->regenerateBillingPdf((int) $billing->getId(), $markAsPaid);
+            $this->addFlash(
+                'success',
+                $markAsPaid
+                    ? 'Billing statement regenerated with PAID status.'
+                    : 'Billing statement regenerated.'
+            );
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Failed to regenerate billing statement: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('accounting_payment_final_detail', ['id' => $id]);
+    }
+
+    #[Route('/final/{id}/official-receipt/regenerate', name: 'accounting_payment_official_receipt_regenerate', methods: ['POST'])]
+    public function regenerateOfficialReceipt(int $id, Request $request): Response
+    {
+        if (!$this->documentTemplateDeveloperSettings->isOfficialReceiptPdfRegenerateEnabled()) {
+            $this->addFlash('error', 'Official receipt regeneration is disabled in document template developer settings.');
+            return $this->redirectToRoute('accounting_payment_final_detail', ['id' => $id]);
+        }
+
+        if (!$this->isCsrfTokenValid('regenerate_official_receipt_' . $id, (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid security token.');
+        }
+
+        $payment = $this->findFinalPayment($id);
+        if ($payment->getStatus() !== PaymentStatus::VERIFIED) {
+            $this->addFlash('error', 'Official receipt can only be generated for approved payments.');
+            return $this->redirectToRoute('accounting_payment_final_detail', ['id' => $id]);
+        }
+
+        try {
+            $officialReceiptPath = $this->officialReceiptDocumentGenerator->generateOfficialReceipt($payment);
+            $payment->setOfficialReceiptPath($officialReceiptPath);
+            $this->entityManager->flush();
+            $this->addFlash('success', 'Official receipt regenerated successfully.');
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Failed to regenerate official receipt: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('accounting_payment_final_detail', ['id' => $id]);
+    }
+
+    private function findFinalPayment(int $id): \App\Entity\Payment
+    {
+        $payment = $this->entityManager->getRepository(\App\Entity\Payment::class)->find($id);
+
+        if (!$payment || $payment->getPaymentType() !== PaymentType::FINAL_PAYMENT) {
+            throw $this->createNotFoundException('Payment not found');
+        }
+
+        return $payment;
+    }
+
+    private function resolveStoredPdfPath(string $relativePath): ?string
+    {
+        if ($this->fileStorage->fileExists($relativePath)) {
+            return $this->fileStorage->getFullPath($relativePath);
+        }
+
+        $projectDir = (string) $this->getParameter('kernel.project_dir');
+        foreach ([
+            $projectDir . '/public/uploads/' . $relativePath,
+            $projectDir . '/var/share/' . $relativePath,
+            $relativePath,
+        ] as $candidatePath) {
+            if (is_file($candidatePath)) {
+                return $candidatePath;
+            }
+        }
+
+        return null;
     }
 
     private function getPaymentStatistics(): array

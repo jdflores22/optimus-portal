@@ -18,6 +18,7 @@ use App\Exception\NOAValidationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use App\Repository\NOARepository;
+use App\Repository\ContainerRepository;
 
 class NOAService implements NOAServiceInterface
 {
@@ -71,12 +72,17 @@ class NOAService implements NOAServiceInterface
             }
             
             // Check for duplicate container number in database
-            $existingContainer = $this->entityManager->getRepository(Container::class)
-                ->findOneBy(['containerNumber' => $containerData['number']]);
+            $normalizedNumber = ContainerRepository::normalizeContainerNumber($containerData['number']);
+            /** @var ContainerRepository $containerRepository */
+            $containerRepository = $this->entityManager->getRepository(Container::class);
+            $existingContainer = $containerRepository->findOneInventoryMatchByNormalizedNumber($normalizedNumber);
             
             if ($existingContainer) {
                 throw new NOAValidationException(
-                    sprintf('Container number "%s" already exists in the system', $containerData['number'])
+                    sprintf(
+                        'Container number "%s" already exists in the system',
+                        $existingContainer['container_number'] ?? $containerData['number']
+                    )
                 );
             }
         }
@@ -277,6 +283,12 @@ class NOAService implements NOAServiceInterface
     public function getNOAByNumber(string $noaNumber): ?NOADocument
     {
         return $this->entityManager->getRepository(NOADocument::class)
+            ->findOneBy(['noaNumber' => $noaNumber]);
+    }
+
+    public function getWorkflowNOAByNumber(string $noaNumber): ?NOA
+    {
+        return $this->entityManager->getRepository(NOA::class)
             ->findOneBy(['noaNumber' => $noaNumber]);
     }
 

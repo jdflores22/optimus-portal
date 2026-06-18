@@ -1,0 +1,33 @@
+{% set size = btnSize|default('xs') %}
+
+{% if template.status.value == 'DRAFT' %}
+    <form method="POST" action="{{ path('document_template_publish', {id: template.id}) }}" class="inline">
+        <button type="submit" class="btn btn-{{ size }} btn-success gap-1" title="Publish">
+            <span class="icon-[tabler--cloud-upload] size-3"></span>
+            {% if showLabels|default(false) %}Publish{% endif %}
+        </button>
+    </form>
+{% elseif template.status.value == 'PUBLISHED' %}
+    <button type="button" class="unpublish-template-btn btn btn-{{ size }} btn-warning gap-1"
+            data-template-id="{{ template.id }}" data-template-name="{{ template.name }}" title="Unpublish">
+        <span class="icon-[tabler--cloud-off] size-3"></span>
+        {% if showLabels|default(false) %}Unpublish{% endif %}
+    </button>
+    <button type="button" class="activate-template-btn btn btn-{{ size }} btn-info gap-1"
+            data-template-id="{{ template.id }}" data-template-name="{{ template.name }}" title="Activate">
+        <span class="icon-[tabler--circle-check] size-3"></span>
+        {% if showLabels|default(false) %}Activate{% endif %}
+    </button>
+{% elseif template.status.value == 'INACTIVE' %}
+    <button type="button" class="activate-template-btn btn btn-{{ size }} btn-info gap-1"
+            data-template-id="{{ template.id }}" data-template-name="{{ template.name }}" title="Activate">
+        <span class="icon-[tabler--circle-check] size-3"></span>
+        {% if showLabels|default(false) %}Activate{% endif %}
+    </button>
+{% elseif template.status.value == 'ACTIVE' %}
+    <button type="button" class="deactivate-template-btn btn btn-{{ size }} btn-warning gap-1"
+            data-template-id="{{ template.id }}" data-template-name="{{ template.name }}" title="Deactivate">
+        <span class="icon-[tabler--circle-x] size-3"></span>
+        {% if showLabels|default(false) %}Deactivate{% endif %}
+    </button>
+{% endif %}

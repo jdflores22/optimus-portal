@@ -12,6 +12,7 @@
                 <p class="mt-2 text-base-content/60">Manage Notice of Arrivals (NOA) and Bill of Lading (BL) workflow</p>
             </div>
             <div class="flex gap-2">
+                {% if is_granted('ROLE_SL_STAFF') %}
                 <a href="{{ path('manifest_workflow_bulk_import') }}" 
                    class="btn btn-soft btn-info btn-lg gap-2 rounded-full">
                     <span class="icon-[tabler--file-upload] size-5"></span>
@@ -27,21 +28,21 @@
                     <span class="icon-[tabler--plus] size-5"></span>
                     Create NOA
                 </a>
+                {% elseif is_granted('ROLE_ACCOUNTING') %}
+                <a href="{{ path('accounting_payment_final_list') }}" 
+                   class="btn btn-secondary btn-lg gap-2 rounded-full">
+                    <span class="icon-[tabler--credit-card] size-5"></span>
+                    Validate Payments
+                </a>
+                {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Workflow Order -->
-    <div class="flex items-start gap-3 p-4 mb-6 rounded-xl bg-info/10 border border-info/20 text-sm text-info">
-        <span class="icon-[tabler--info-circle] size-5 flex-shrink-0 mt-0.5"></span>
-        <div>
-            <span class="font-semibold">Workflow Order</span> —
-            1. Create NOA → 2. Generate BL → 3. Upload BL → 4. Generate Billing → 5. Submit Payment → 6. Generate eDO → 7. Release eDO
-        </div>
-    </div>
+    {% include 'manifest_workflow/_workflow_order_banner.html.twig' %}
 
     <!-- Analytics Cards - Clickable Filters -->
-    <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4 mb-8">
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-4 mb-8">
         <!-- Total NOAs -->
         <a href="{{ path('manifest_workflow_list', filters|merge({status: '', page: 1})) }}" 
            class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer {% if filters.status == '' or filters.status is null %}ring-2 ring-primary{% endif %}">
@@ -108,38 +109,61 @@
         </a>
 
         <!-- Step 5: Submit Payment -->
-        <a href="{{ path('manifest_workflow_list', filters|merge({status: 'payment_submitted', page: 1})) }}" 
+        {% if is_granted('ROLE_ACCOUNTING') and not is_granted('ROLE_SL_STAFF') %}
+        <a href="{{ path('accounting_payment_final_list') }}"
+           class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer">
+        {% else %}
+        <a href="{{ path('manifest_workflow_list', filters|merge({status: 'payment_submitted', page: 1})) }}"
            class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer {% if filters.status == 'payment_submitted' %}ring-2 ring-secondary{% endif %}">
+        {% endif %}
             <div class="card-body p-4">
                 <div class="flex items-center gap-2 mb-2">
                     <span class="icon-[tabler--credit-card] size-5 text-secondary"></span>
                     <h3 class="text-xs font-medium text-base-content/70">5. Submit Payment</h3>
                 </div>
                 <p class="text-3xl font-bold text-base-content">{{ stats.payment_submitted }}</p>
-                <p class="text-xs text-secondary mt-1">{{ stats.payment_verified }} verified</p>
+                <p class="text-xs text-secondary mt-1">Awaiting validation</p>
             </div>
         </a>
 
-        <!-- Step 6: Generate eDO -->
-        <a href="{{ path('manifest_workflow_list', filters|merge({status: 'edo_step', page: 1})) }}" 
-           class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer {% if filters.status == 'edo_step' %}ring-2 ring-success{% endif %}">
+        <!-- Step 6: Validate Payment -->
+        {% if is_granted('ROLE_ACCOUNTING') and not is_granted('ROLE_SL_STAFF') %}
+        <a href="{{ path('accounting_payment_final_list') }}"
+           class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer">
+        {% else %}
+        <a href="{{ path('manifest_workflow_list', filters|merge({status: 'payment_verified', page: 1})) }}"
+           class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer {% if filters.status == 'payment_verified' %}ring-2 ring-accent{% endif %}">
+        {% endif %}
+            <div class="card-body p-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="icon-[tabler--shield-check] size-5 text-accent"></span>
+                    <h3 class="text-xs font-medium text-base-content/70">6. Validate Payment</h3>
+                </div>
+                <p class="text-3xl font-bold text-base-content">{{ stats.payment_verified }}</p>
+                <p class="text-xs text-accent mt-1">Ready for eDO</p>
+            </div>
+        </a>
+
+        <!-- Step 7: Generate eDO -->
+        <a href="{{ path('manifest_workflow_list', filters|merge({status: 'edo_generated', page: 1})) }}"
+           class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer {% if filters.status == 'edo_generated' %}ring-2 ring-success{% endif %}">
             <div class="card-body p-4">
                 <div class="flex items-center gap-2 mb-2">
                     <span class="icon-[tabler--file-certificate] size-5 text-success"></span>
-                    <h3 class="text-xs font-medium text-base-content/70">6. Generate eDO</h3>
+                    <h3 class="text-xs font-medium text-base-content/70">7. Generate eDO</h3>
                 </div>
-                <p class="text-3xl font-bold text-base-content">{{ stats.edo_step }}</p>
-                <p class="text-xs text-success mt-1">{{ stats.edo_generated }} generated</p>
+                <p class="text-3xl font-bold text-base-content">{{ stats.edo_generated }}</p>
+                <p class="text-xs text-success mt-1">Awaiting release</p>
             </div>
         </a>
 
-        <!-- Step 7: Release eDO -->
-        <a href="{{ path('manifest_workflow_list', filters|merge({status: 'edo_released', page: 1})) }}" 
+        <!-- Step 8: Release eDO -->
+        <a href="{{ path('manifest_workflow_list', filters|merge({status: 'edo_released', page: 1})) }}"
            class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer {% if filters.status == 'edo_released' %}ring-2 ring-success{% endif %}">
             <div class="card-body p-4">
                 <div class="flex items-center gap-2 mb-2">
                     <span class="icon-[tabler--circle-check-filled] size-5 text-success"></span>
-                    <h3 class="text-xs font-medium text-base-content/70">7. Release eDO</h3>
+                    <h3 class="text-xs font-medium text-base-content/70">8. Release eDO</h3>
                 </div>
                 <p class="text-3xl font-bold text-base-content">{{ stats.edo_released }}</p>
                 <p class="text-xs text-success mt-1">Complete</p>

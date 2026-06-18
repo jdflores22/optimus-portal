@@ -41,7 +41,7 @@
                 <div class="min-w-0">
                     <div class="breadcrumbs text-xs mb-2">
                         <ul>
-                            <li><a href="{{ path('manifest_workflow_detail', {id: manifest.id}) }}">{{ manifest.manifestNumber }}</a></li>
+                            <li><a href="{{ manifest_workflow_detail_path(manifest) }}">{{ manifest.manifestNumber }}</a></li>
                             <li>Audit trail</li>
                         </ul>
                     </div>
@@ -72,7 +72,7 @@
                             </ul>
                         </div>
                     {% endif %}
-                    <a href="{{ path('manifest_workflow_detail', {id: manifest.id}) }}" class="btn btn-primary btn-sm gap-2">
+                    <a href="{{ manifest_workflow_detail_path(manifest) }}" class="btn btn-primary btn-sm gap-2">
                         <span class="icon-[tabler--arrow-left] size-4"></span>
                         Back to manifest
                     </a>

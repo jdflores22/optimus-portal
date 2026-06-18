@@ -597,6 +597,7 @@ class EmailNotificationService
     public function sendAccreditationStatusChange(User $user, AccreditationStatus $status, ?string $reason = null, array $complianceFields = []): void
     {
         [$template, $subject] = match ($status) {
+            AccreditationStatus::AWAITING_FINAL_APPROVAL => ['emails/accreditation_status_change.html.twig', 'Application Forwarded for Final Approval - OPTIMUS Portal'],
             AccreditationStatus::APPROVED => ['emails/accreditation_approved.html.twig', 'Accreditation Approved - OPTIMUS Portal'],
             AccreditationStatus::DENIED, AccreditationStatus::REJECTED => ['emails/accreditation_denied.html.twig', 'Accreditation Denied - OPTIMUS Portal'],
             AccreditationStatus::COMPLIANCE_REQUIRED => ['emails/accreditation_compliance.html.twig', 'Compliance Required - OPTIMUS Portal'],

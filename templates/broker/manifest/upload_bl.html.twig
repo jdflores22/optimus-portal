@@ -1,504 +1,569 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}Upload Bill of Lading - {{ manifest.manifestNumber }} - OPTIMUS{% endblock %}
+{% block page_title %}Upload BL{% endblock %}
+
+{% set noa = manifest.noa %}
+{% set state = manifest.workflowState %}
+{% set workflowComplete = manifest_workflow_is_complete(manifest) %}
+{% set currentStep = manifest_workflow_current_step(manifest) %}
 
 {% block body %}
-<div class="min-h-screen bg-base-200">
-    <!-- Header Section -->
-    <div class="bg-base-100 shadow-sm">
-        <div class="px-4 sm:px-6 lg:px-8 py-4">
-            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                <div class="flex-1">
-                    <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" 
-                       class="inline-flex items-center text-sm text-base-content/60 hover:text-base-content mb-2 gap-2">
-                        <span class="icon-[tabler--arrow-left] size-4"></span>
-                        Back to Manifest Details
-                    </a>
-                    <h1 class="text-2xl font-bold text-base-content">Upload Bill of Lading</h1>
-                    <p class="text-sm text-base-content/60 mt-0.5">{{ manifest.manifestNumber }}</p>
+<div class="max-w-7xl mx-auto w-full space-y-5 sm:space-y-6">
+
+    {# Hero header — matches broker manifest detail / accounting dashboard #}
+    <div class="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/15 via-base-100 to-base-100 shadow-sm p-5 sm:p-7">
+        <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
+            <div class="space-y-3 min-w-0">
+                <div class="breadcrumbs text-xs">
+                    <ul>
+                        <li><a href="{{ path('app_broker_dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right] size-3.5"></span></li>
+                        <li><a href="{{ path('broker_manifest_list') }}">My Manifests</a></li>
+                        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right] size-3.5"></span></li>
+                        <li><a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}">{{ manifest.manifestNumber }}</a></li>
+                        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right] size-3.5"></span></li>
+                        <li aria-current="page">Upload BL</li>
+                    </ul>
                 </div>
-                
-                <!-- Active Workspace Badge -->
-                {% if app.session.get('active_workspace_consignee_id') %}
-                    <div class="flex items-center gap-2 bg-primary/10 rounded-xl px-4 py-3">
-                        <span class="icon-[tabler--briefcase] size-5 text-primary"></span>
-                        <div class="flex flex-col">
-                            <span class="text-xs text-primary/70 font-medium">Active Workspace</span>
-                            <span class="text-sm font-bold text-primary truncate max-w-[200px]">{{ app.session.get('active_workspace_consignee_name', 'Workspace') }}</span>
-                        </div>
+
+                <span class="inline-flex items-center gap-2 rounded-full bg-info/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-info">
+                    <span class="icon-[tabler--upload] size-3.5"></span>
+                    BL Upload
+                </span>
+
+                <div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-base-content leading-tight">
+                            Upload Bill of Lading
+                        </h1>
+                        <span class="badge badge-info badge-lg font-mono">{{ manifest.manifestNumber }}</span>
                     </div>
-                {% endif %}
+                    <p class="mt-2 text-sm sm:text-base text-base-content/70 max-w-2xl">
+                        Verify the BL number issued by the shipping line, then upload your signed copy to continue the workflow toward billing.
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="badge badge-primary badge-soft badge-lg gap-2">
+                        <span class="icon-[tabler--list-numbers] size-4"></span>
+                        Step {{ currentStep }} of {{ manifest_workflow_total_steps() }}
+                    </span>
+                    {% if manifest.blNumber %}
+                        <span class="badge badge-warning badge-soft badge-lg gap-2 font-mono">
+                            <span class="icon-[tabler--file-invoice] size-4"></span>
+                            Expected: {{ manifest.blNumber }}
+                        </span>
+                    {% endif %}
+                    {% if manifest.vesselName %}
+                        <span class="badge badge-ghost badge-lg gap-2">
+                            <span class="icon-[tabler--ship] size-4"></span>
+                            {{ manifest.vesselName }}
+                        </span>
+                    {% endif %}
+                    {% if app.session.get('active_workspace_consignee_id') %}
+                        <span class="badge badge-ghost badge-lg gap-2">
+                            <span class="icon-[tabler--briefcase] size-4"></span>
+                            {{ app.session.get('active_workspace_consignee_name', 'Workspace') }}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 xl:justify-end shrink-0">
+                <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}"
+                   class="btn btn-outline btn-primary btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--file-text] size-4"></span>
+                    View Manifest
+                </a>
+                <a href="{{ path('broker_manifest_documents', {id: manifest.id}) }}"
+                   class="btn btn-outline btn-primary btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--folder] size-4"></span>
+                    Documents
+                </a>
+                <a href="{{ path('broker_manifest_list') }}"
+                   class="btn btn-ghost btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--arrow-left] size-4"></span>
+                    Back
+                </a>
             </div>
         </div>
     </div>
 
-    <div class="px-4 sm:px-6 lg:px-8 py-6">
-        <!-- Toast Notification Container -->
-        <div id="toastContainer" class="w-full max-w-7xl mx-auto mb-4"></div>
+    {# Flash messages #}
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success shadow-sm">
+            <span class="icon-[tabler--circle-check] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error shadow-sm">
+            <span class="icon-[tabler--circle-x] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('warning') %}
+        <div class="alert alert-warning shadow-sm">
+            <span class="icon-[tabler--alert-triangle] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('info') %}
+        <div class="alert alert-info shadow-sm">
+            <span class="icon-[tabler--info-circle] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
 
-        <!-- 2 Column Layout -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-            
-            <!-- Left Column - Information (1/3 width) -->
-            <div class="lg:col-span-1 space-y-4">
-                <!-- Manifest Info Card -->
-                <div class="card bg-info text-info-content shadow-sm">
-                    <div class="card-body p-4">
-                        <div class="flex items-start gap-3">
-                            <span class="icon-[tabler--info-circle] size-6 flex-shrink-0"></span>
-                            <div>
-                                <h3 class="font-semibold text-base mb-2">Bill of Lading Generated</h3>
-                                <p class="text-sm opacity-90">
-                                    The shipping line has generated the Bill of Lading. Please verify the BL number and upload your copy for confirmation to proceed with billing generation.
-                                </p>
-                            </div>
+    <div id="toastContainer" class="w-full"></div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 items-start">
+
+        {# Left column — context #}
+        <div class="lg:col-span-1 space-y-4 sm:space-y-6">
+            <div class="card card-border bg-info/10 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <div class="flex items-start gap-3">
+                        <span class="icon-[tabler--info-circle] size-6 text-info shrink-0"></span>
+                        <div>
+                            <h2 class="font-semibold text-base text-base-content mb-2">Bill of Lading Generated</h2>
+                            <p class="text-sm text-base-content/70">
+                                The shipping line has generated the Bill of Lading. Verify the BL number and upload your copy for confirmation to proceed with billing generation.
+                            </p>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Manifest Details Card -->
-                <div class="card bg-base-100 shadow-sm">
-                    <div class="card-body p-4">
-                        <h3 class="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-3">Manifest Details</h3>
-                        <dl class="space-y-3">
-                            <div>
-                                <dt class="text-xs text-base-content/60 font-medium">Manifest Number</dt>
-                                <dd class="text-sm font-mono font-semibold text-base-content mt-0.5">{{ manifest.manifestNumber }}</dd>
-                            </div>
-                            {% if manifest.vesselName %}
-                            <div>
-                                <dt class="text-xs text-base-content/60 font-medium">Vessel Name</dt>
-                                <dd class="text-sm text-base-content mt-0.5">{{ manifest.vesselName }}</dd>
-                            </div>
-                            {% endif %}
-                            {% if manifest.voyageNumber %}
-                            <div>
-                                <dt class="text-xs text-base-content/60 font-medium">Voyage Number</dt>
-                                <dd class="text-sm text-base-content mt-0.5">{{ manifest.voyageNumber }}</dd>
-                            </div>
-                            {% endif %}
-                            {% if manifest.arrivalDate %}
-                            <div>
-                                <dt class="text-xs text-base-content/60 font-medium">Arrival Date</dt>
-                                <dd class="text-sm text-base-content mt-0.5">{{ manifest.arrivalDate|date('M j, Y g:i A') }}</dd>
-                            </div>
-                            {% endif %}
-                        </dl>
-                    </div>
-                </div>
-
-                <!-- Expected BL Number Card -->
-                <div class="card bg-warning/10 border border-warning/30 shadow-sm">
-                    <div class="card-body p-4">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="icon-[tabler--file-invoice] size-5 text-warning"></span>
-                            <h3 class="text-sm font-semibold text-base-content">Expected BL Number</h3>
-                        </div>
-                        <p class="text-lg font-mono font-bold text-warning">{{ manifest.blNumber }}</p>
-                        <p class="text-xs text-base-content/60 mt-2">Please enter this exact number to verify</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Column - Upload Form (2/3 width) -->
-            <div class="lg:col-span-2">
-                <div class="card bg-base-100 shadow-sm">
-                    <div class="card-body p-6">
-                        <h3 class="text-lg font-semibold text-base-content mb-4">Bill of Lading Details</h3>
-
-                <form id="blUploadForm" class="space-y-6">
-                    <!-- BL Number Verification -->
-                    <div>
-                        <label for="blNumber" class="label">
-                            <span class="label-text">BL Number Verification <span class="text-error">*</span></span>
-                        </label>
-                        <div class="relative">
-                            <input type="text" 
-                                   id="blNumber" 
-                                   name="blNumber" 
-                                   placeholder="Enter BL Number to verify"
-                                   required
-                                   class="input input-bordered w-full pr-10">
-                            <!-- Verification Status Icon -->
-                            <div id="verificationIcon" class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none hidden">
-                                <!-- Success Icon -->
-                                <span id="successIcon" class="icon-[tabler--circle-check-filled] size-5 text-success hidden"></span>
-                                <!-- Error Icon -->
-                                <span id="errorIcon" class="icon-[tabler--circle-x-filled] size-5 text-error hidden"></span>
-                            </div>
+            <div class="card card-border bg-base-100 shadow-sm">
+                <div class="card-body p-4 sm:p-5">
+                    <h2 class="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-3">Manifest Details</h2>
+                    <dl class="space-y-3">
+                        <div>
+                            <dt class="text-xs text-base-content/60 font-medium">Manifest Number</dt>
+                            <dd class="text-sm font-mono font-semibold text-base-content mt-0.5">{{ manifest.manifestNumber }}</dd>
                         </div>
-                        <label class="label">
-                            <span class="label-text-alt">Enter the BL number from the shipping line to verify before uploading</span>
-                        </label>
-                        <input type="hidden" id="blVerified" value="false">
+                        {% if manifest.vesselName %}
+                            <div>
+                                <dt class="text-xs text-base-content/60 font-medium">Vessel Name</dt>
+                                <dd class="text-sm text-base-content mt-0.5">{{ manifest.vesselName }}</dd>
+                            </div>
+                        {% endif %}
+                        {% if manifest.voyageNumber %}
+                            <div>
+                                <dt class="text-xs text-base-content/60 font-medium">Voyage Number</dt>
+                                <dd class="text-sm text-base-content mt-0.5">{{ manifest.voyageNumber }}</dd>
+                            </div>
+                        {% endif %}
+                        {% if manifest.arrivalDate %}
+                            <div>
+                                <dt class="text-xs text-base-content/60 font-medium">Arrival Date</dt>
+                                <dd class="text-sm text-base-content mt-0.5">{{ manifest.arrivalDate|date('M j, Y g:i A') }}</dd>
+                            </div>
+                        {% endif %}
+                        {% if manifest.consignee %}
+                            <div>
+                                <dt class="text-xs text-base-content/60 font-medium">Consignee</dt>
+                                <dd class="text-sm text-base-content mt-0.5">{{ manifest.consignee.businessName }}</dd>
+                            </div>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+
+            {% if manifest.blNumber %}
+                <div class="card card-border bg-warning/10 border-warning/30 shadow-sm">
+                    <div class="card-body p-4 sm:p-5">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="icon-[tabler--file-invoice] size-5 text-warning"></span>
+                            <h2 class="text-sm font-semibold text-base-content">Expected BL Number</h2>
+                        </div>
+                        <p class="text-lg font-mono font-bold text-warning">{{ manifest.blNumber }}</p>
+                        <p class="text-xs text-base-content/60 mt-2">Enter this exact number to unlock the file upload.</p>
                     </div>
+                </div>
+            {% endif %}
+        </div>
 
-                    <!-- BL File Upload -->
-                    <div id="fileUploadSection" class="opacity-50 pointer-events-none">
-                        <label class="label">
-                            <span class="label-text">BL Document <span class="text-error">*</span></span>
-                        </label>
-                        <label class="label">
-                            <span class="label-text-alt">Please verify BL number first before uploading the document</span>
-                        </label>
-                        
-                        <!-- Hidden file input -->
-                        <input id="blFile" name="blFile" type="file" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
-                        
-                        <!-- File Upload Area (shown when no file selected) -->
-                        <div id="uploadArea" class="flex justify-center px-6 py-8 border-2 border-dashed border-base-300 rounded-lg hover:border-primary/50 transition-colors cursor-pointer">
-                            <div class="space-y-2 text-center">
-                                <span class="icon-[tabler--cloud-upload] size-12 text-base-content/40 mx-auto"></span>
-                                <div class="flex text-sm text-base-content/60 justify-center gap-1">
-                                    <span class="font-medium text-primary hover:text-primary/80">Upload a file</span>
-                                    <span>or drag and drop</span>
+        {# Right column — upload form #}
+        <div class="lg:col-span-2">
+            <div class="card card-border bg-base-100 shadow-sm relative">
+                <div id="uploadOverlay"
+                     class="hidden absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 rounded-[inherit] bg-base-100/80 backdrop-blur-[2px]">
+                    <span class="loading loading-spinner loading-lg text-primary"></span>
+                    <div class="text-center px-6">
+                        <p class="text-sm font-semibold text-base-content">Uploading BL document…</p>
+                        <p class="text-xs text-base-content/60 mt-1">Please keep this page open until the upload completes.</p>
+                    </div>
+                </div>
+                <div class="card-body p-4 sm:p-6">
+                    <h2 class="card-title text-base sm:text-lg mb-4">Bill of Lading Details</h2>
+
+                    <form id="blUploadForm" class="space-y-6">
+                        <div class="form-control w-full">
+                            <label for="blNumber" class="label pb-1">
+                                <span class="label-text font-medium">BL Number Verification <span class="text-error">*</span></span>
+                            </label>
+                            <div class="relative">
+                                <input type="text"
+                                       id="blNumber"
+                                       name="blNumber"
+                                       placeholder="Enter BL Number to verify"
+                                       required
+                                       class="input input-bordered w-full pr-10">
+                                <div id="verificationIcon" class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none hidden">
+                                    <span id="successIcon" class="icon-[tabler--circle-check-filled] size-5 text-success hidden"></span>
+                                    <span id="errorIcon" class="icon-[tabler--circle-x-filled] size-5 text-error hidden"></span>
                                 </div>
-                                <p class="text-xs text-base-content/50">PDF, JPG, PNG up to 10MB</p>
                             </div>
+                            <label class="label pt-1">
+                                <span class="label-text-alt text-base-content/60">Enter the BL number from the shipping line to verify before uploading</span>
+                            </label>
+                            <input type="hidden" id="blVerified" value="false">
                         </div>
 
-                        <!-- File Selected Area (shown when file is selected) -->
-                        <div id="fileSelectedArea" class="hidden border-2 border-success/30 bg-success/10 rounded-lg p-4">
-                            <div class="flex items-center justify-between gap-4">
-                                <div class="flex items-center flex-1 min-w-0 gap-3">
-                                    <span class="icon-[tabler--file-text] size-10 text-success flex-shrink-0"></span>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-base-content truncate" id="selectedFileName"></p>
-                                        <p class="text-sm text-base-content/60" id="selectedFileSize"></p>
+                        <div id="fileUploadSection" class="form-control w-full opacity-50 pointer-events-none">
+                            <label class="label pb-1">
+                                <span class="label-text font-medium">BL Document <span class="text-error">*</span></span>
+                            </label>
+                            <label class="label pt-0 pb-2">
+                                <span class="label-text-alt text-base-content/60">Verify the BL number first, then upload your document</span>
+                            </label>
+
+                            <input id="blFile" name="blFile" type="file" accept=".pdf,.jpg,.jpeg,.png" required class="hidden">
+
+                            <div id="uploadArea" class="flex justify-center px-6 py-10 border-2 border-dashed border-base-300 rounded-xl hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
+                                <div class="space-y-2 text-center">
+                                    <span class="icon-[tabler--cloud-upload] size-12 text-base-content/40 mx-auto"></span>
+                                    <div class="flex text-sm text-base-content/60 justify-center gap-1">
+                                        <span class="font-medium text-primary">Upload a file</span>
+                                        <span>or drag and drop</span>
                                     </div>
+                                    <p class="text-xs text-base-content/50">PDF, JPG, PNG up to 10MB</p>
                                 </div>
-                                <button type="button" 
-                                        id="changeFileBtn"
-                                        class="btn btn-sm btn-outline gap-2 flex-shrink-0">
-                                    <span class="icon-[tabler--refresh] size-4"></span>
-                                    Change File
-                                </button>
+                            </div>
+
+                            <div id="fileSelectedArea" class="hidden border-2 border-success/30 bg-success/10 rounded-xl p-4">
+                                <div class="flex items-center justify-between gap-4">
+                                    <div class="flex items-center flex-1 min-w-0 gap-3">
+                                        <span class="icon-[tabler--file-text] size-10 text-success shrink-0"></span>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium text-base-content truncate" id="selectedFileName"></p>
+                                            <p class="text-sm text-base-content/60" id="selectedFileSize"></p>
+                                        </div>
+                                    </div>
+                                    <button type="button"
+                                            id="changeFileBtn"
+                                            class="btn btn-sm btn-outline gap-2 shrink-0">
+                                        <span class="icon-[tabler--refresh] size-4"></span>
+                                        Change File
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Error Message -->
-                    <div id="errorMessage" class="alert alert-error hidden">
-                        <span class="icon-[tabler--alert-circle] size-5"></span>
-                        <span id="errorText"></span>
-                    </div>
+                        <div id="errorMessage" class="alert alert-error hidden">
+                            <span class="icon-[tabler--alert-circle] size-5"></span>
+                            <span id="errorText"></span>
+                        </div>
 
-                    <!-- Success Message -->
-                    <div id="successMessage" class="alert alert-success hidden">
-                        <span class="icon-[tabler--circle-check] size-5"></span>
-                        <span>BL uploaded successfully! Redirecting...</span>
-                    </div>
+                        <div id="successMessage" class="alert alert-success hidden">
+                            <span class="icon-[tabler--circle-check] size-5"></span>
+                            <span>BL uploaded successfully! Redirecting...</span>
+                        </div>
 
-                    <!-- Submit Button -->
-                    <div class="flex items-center justify-end gap-3">
-                        <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}" 
-                           id="cancelBtn"
-                           class="btn btn-ghost">
-                            Cancel
-                        </a>
-                        <button type="submit" 
-                                id="submitBtn"
-                                class="btn btn-primary gap-2">
-                            <span id="uploadIcon" class="icon-[tabler--upload] size-4"></span>
-                            <span id="loadingSpinner" class="loading loading-spinner loading-sm hidden"></span>
-                            <span id="btnText">Upload BL</span>
-                        </button>
-                    </div>
-                </form>
-                    </div>
+                        <div class="flex flex-wrap items-center justify-end gap-3 pt-2">
+                            <a href="{{ path('broker_manifest_detail', {id: manifest.id}) }}"
+                               id="cancelBtn"
+                               class="btn btn-ghost">
+                                Cancel
+                            </a>
+                            <button type="submit"
+                                    id="submitBtn"
+                                    class="btn btn-primary gap-2 min-w-[9.5rem]">
+                                <span id="uploadIcon" class="icon-[tabler--upload] size-4"></span>
+                                <span id="loadingSpinner" class="loading loading-spinner loading-sm text-primary-content hidden"></span>
+                                <span id="btnText">Upload BL</span>
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('blUploadForm');
-    const blFileInput = document.getElementById('blFile');
-    const blNumberInput = document.getElementById('blNumber');
-    const uploadArea = document.getElementById('uploadArea');
-    const fileSelectedArea = document.getElementById('fileSelectedArea');
-    const selectedFileName = document.getElementById('selectedFileName');
-    const selectedFileSize = document.getElementById('selectedFileSize');
-    const changeFileBtn = document.getElementById('changeFileBtn');
-    const submitBtn = document.getElementById('submitBtn');
-    const cancelBtn = document.getElementById('cancelBtn');
-    const uploadIcon = document.getElementById('uploadIcon');
-    const loadingSpinner = document.getElementById('loadingSpinner');
-    const btnText = document.getElementById('btnText');
-    const errorMessage = document.getElementById('errorMessage');
-    const errorText = document.getElementById('errorText');
-    const successMessage = document.getElementById('successMessage');
-    const fileUploadSection = document.getElementById('fileUploadSection');
-    const verificationIcon = document.getElementById('verificationIcon');
-    const successIcon = document.getElementById('successIcon');
-    const errorIcon = document.getElementById('errorIcon');
-    const blVerified = document.getElementById('blVerified');
-    const toastContainer = document.getElementById('toastContainer');
+{% block page_scripts %}
+    {{ parent() }}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('blUploadForm');
+        const blFileInput = document.getElementById('blFile');
+        const blNumberInput = document.getElementById('blNumber');
+        const uploadArea = document.getElementById('uploadArea');
+        const fileSelectedArea = document.getElementById('fileSelectedArea');
+        const selectedFileName = document.getElementById('selectedFileName');
+        const selectedFileSize = document.getElementById('selectedFileSize');
+        const changeFileBtn = document.getElementById('changeFileBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const uploadIcon = document.getElementById('uploadIcon');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const btnText = document.getElementById('btnText');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const successMessage = document.getElementById('successMessage');
+        const fileUploadSection = document.getElementById('fileUploadSection');
+        const verificationIcon = document.getElementById('verificationIcon');
+        const successIcon = document.getElementById('successIcon');
+        const errorIcon = document.getElementById('errorIcon');
+        const blVerified = document.getElementById('blVerified');
+        const toastContainer = document.getElementById('toastContainer');
+        const uploadOverlay = document.getElementById('uploadOverlay');
 
-    const expectedBLNumber = '{{ manifest.blNumber }}';
-    let verificationTimeout = null;
+        const expectedBLNumber = '{{ manifest.blNumber }}';
+        let verificationTimeout = null;
 
-    // Toast notification function (no auto-dismiss)
-    function showToast(message, type = 'error') {
-        // Clear all existing toasts before showing new one
-        toastContainer.innerHTML = '';
-        
-        const toast = document.createElement('div');
-        toast.className = 'alert shadow-lg w-full flex items-center justify-between ' + (type === 'success' ? 'alert-success' : 'alert-error');
-        
-        // Create left content wrapper (icon + message)
-        const leftContent = document.createElement('div');
-        leftContent.className = 'flex items-center gap-3';
-        
-        // Create icon element
-        const iconSpan = document.createElement('span');
-        iconSpan.className = 'size-5';
-        iconSpan.classList.add('icon-[tabler--' + (type === 'success' ? 'circle-check' : 'alert-circle') + ']');
-        
-        // Create message element
-        const messageSpan = document.createElement('span');
-        messageSpan.className = 'text-sm font-medium';
-        messageSpan.textContent = message;
-        
-        // Append icon and message to left content
-        leftContent.appendChild(iconSpan);
-        leftContent.appendChild(messageSpan);
-        
-        // Create close button
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'btn btn-sm btn-ghost btn-circle ml-auto';
-        closeBtn.onclick = function() { this.parentElement.remove(); };
-        
-        const closeIcon = document.createElement('span');
-        closeIcon.className = 'icon-[tabler--x] size-4';
-        closeBtn.appendChild(closeIcon);
-        
-        // Append elements to toast
-        toast.appendChild(leftContent);
-        toast.appendChild(closeBtn);
-        
-        toastContainer.appendChild(toast);
-        
-        // No auto-remove - user must click X to dismiss
-    }
-
-    // BL Number verification
-    blNumberInput.addEventListener('input', function(e) {
-        const value = e.target.value.trim().toUpperCase();
-        e.target.value = value;
-        
-        // Clear previous timeout
-        if (verificationTimeout) {
-            clearTimeout(verificationTimeout);
-        }
-        
-        // Reset verification state
-        verificationIcon.classList.add('hidden');
-        successIcon.classList.add('hidden');
-        errorIcon.classList.add('hidden');
-        blVerified.value = 'false';
-        fileUploadSection.classList.add('opacity-50', 'pointer-events-none');
-        blNumberInput.classList.remove('input-success', 'input-error');
-        
-        if (value.length === 0) {
-            return;
-        }
-        
-        // Verify after 500ms delay
-        verificationTimeout = setTimeout(() => {
-            verificationIcon.classList.remove('hidden');
-            
-            if (value === expectedBLNumber) {
-                // Success - BL number matches
-                successIcon.classList.remove('hidden');
-                errorIcon.classList.add('hidden');
-                blVerified.value = 'true';
-                blNumberInput.classList.add('input-success');
-                blNumberInput.classList.remove('input-error');
-                fileUploadSection.classList.remove('opacity-50', 'pointer-events-none');
-                showToast('BL Number verified successfully! You can now upload the document.', 'success');
-            } else {
-                // Error - BL number doesn't match
-                errorIcon.classList.remove('hidden');
-                successIcon.classList.add('hidden');
-                blVerified.value = 'false';
-                blNumberInput.classList.add('input-error');
-                blNumberInput.classList.remove('input-success');
-                fileUploadSection.classList.add('opacity-50', 'pointer-events-none');
-                showToast('BL Number does not match. Please verify and enter the correct BL number.', 'error');
-            }
-        }, 500);
-    });
-
-    // Format file size
-    function formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-    }
-
-    // Show file selected UI
-    function showFileSelected(file) {
-        selectedFileName.textContent = file.name;
-        selectedFileSize.textContent = formatFileSize(file.size);
-        uploadArea.classList.add('hidden');
-        fileSelectedArea.classList.remove('hidden');
-    }
-
-    // Show upload area UI
-    function showUploadArea() {
-        uploadArea.classList.remove('hidden');
-        fileSelectedArea.classList.add('hidden');
-        blFileInput.value = ''; // Clear the file input
-    }
-
-    // File input change handler
-    blFileInput.addEventListener('change', function(e) {
-        if (e.target.files.length > 0) {
-            const file = e.target.files[0];
-            
-            // Get file extension
-            const fileName = file.name.toLowerCase();
-            const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
-            const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
-            
-            // Validate file extension
-            if (!allowedExtensions.includes(fileExtension)) {
-                showToast('Invalid file type. Only PDF, JPG, and PNG files are allowed.', 'error');
-                blFileInput.value = '';
-                showUploadArea();
+        function setUploadingState(isUploading) {
+            if (isUploading) {
+                uploadOverlay.classList.remove('hidden');
+                uploadOverlay.classList.add('flex');
+                submitBtn.disabled = true;
+                cancelBtn.classList.add('btn-disabled', 'pointer-events-none');
+                changeFileBtn.disabled = true;
+                blNumberInput.disabled = true;
+                blFileInput.disabled = true;
+                uploadIcon.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+                btnText.textContent = 'Uploading…';
                 return;
             }
-            
-            // Validate file size (10MB max)
-            if (file.size > 10 * 1024 * 1024) {
-                showToast('File size must be less than 10MB', 'error');
-                blFileInput.value = '';
-                showUploadArea();
-                return;
-            }
-            
-            showFileSelected(file);
-            errorMessage.classList.add('hidden');
-        }
-    });
 
-    // Change file button handler
-    changeFileBtn.addEventListener('click', function() {
-        showUploadArea();
-    });
-
-    // Click on upload area to trigger file input
-    uploadArea.addEventListener('click', function(e) {
-        e.preventDefault();
-        if (blVerified.value === 'true') {
-            blFileInput.click();
-        }
-    });
-
-    // Drag and drop handlers
-    uploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        if (blVerified.value === 'true') {
-            uploadArea.classList.add('border-primary', 'bg-primary/5');
-        }
-    });
-
-    uploadArea.addEventListener('dragleave', function(e) {
-        e.preventDefault();
-        uploadArea.classList.remove('border-primary', 'bg-primary/5');
-    });
-
-    uploadArea.addEventListener('drop', function(e) {
-        e.preventDefault();
-        uploadArea.classList.remove('border-primary', 'bg-primary/5');
-        
-        if (blVerified.value === 'true' && e.dataTransfer.files.length > 0) {
-            blFileInput.files = e.dataTransfer.files;
-            const event = new Event('change', { bubbles: true });
-            blFileInput.dispatchEvent(event);
-        }
-    });
-
-    // Form submission
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        // Verify BL number before submission
-        if (blVerified.value !== 'true') {
-            showToast('Please verify the BL number before uploading', 'error');
-            return;
-        }
-        
-        if (!blFileInput.files || blFileInput.files.length === 0) {
-            showToast('Please select a file to upload', 'error');
-            return;
-        }
-        
-        errorMessage.classList.add('hidden');
-        successMessage.classList.add('hidden');
-        
-        // Show loading state
-        submitBtn.disabled = true;
-        cancelBtn.classList.add('btn-disabled');
-        uploadIcon.classList.add('hidden');
-        loadingSpinner.classList.remove('hidden');
-        btnText.textContent = 'Uploading...';
-
-        const formData = new FormData();
-        formData.append('blNumber', blNumberInput.value);
-        formData.append('blFile', blFileInput.files[0]);
-
-        try {
-            const response = await fetch('/api/manifests/{{ manifest.id }}/bl', {
-                method: 'POST',
-                body: formData
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                successMessage.classList.remove('hidden');
-                showToast('BL uploaded successfully! Redirecting...', 'success');
-                
-                // Change button to success state
-                loadingSpinner.classList.add('hidden');
-                btnText.innerHTML = '<span class="icon-[tabler--circle-check] size-5"></span> Success!';
-                submitBtn.classList.remove('btn-primary');
-                submitBtn.classList.add('btn-success');
-                
-                // Redirect after 1 second
-                setTimeout(() => {
-                    window.location.href = '{{ path('broker_manifest_detail', {id: manifest.id}) }}';
-                }, 1000);
-            } else {
-                // Handle error response - prioritize message over error field
-                const errorMsg = data.message || data.error || 'Failed to upload BL. Please try again.';
-                showToast(errorMsg, 'error');
-                
-                // Reset button state
-                submitBtn.disabled = false;
-                cancelBtn.classList.remove('btn-disabled');
-                uploadIcon.classList.remove('hidden');
-                loadingSpinner.classList.add('hidden');
-                btnText.textContent = 'Upload BL';
-            }
-        } catch (error) {
-            console.error('Upload error:', error);
-            showToast('An error occurred while uploading. Please try again.', 'error');
-            
-            // Reset button state
+            uploadOverlay.classList.add('hidden');
+            uploadOverlay.classList.remove('flex');
             submitBtn.disabled = false;
-            cancelBtn.classList.remove('btn-disabled');
+            cancelBtn.classList.remove('btn-disabled', 'pointer-events-none');
+            changeFileBtn.disabled = false;
+            blNumberInput.disabled = false;
+            blFileInput.disabled = false;
             uploadIcon.classList.remove('hidden');
             loadingSpinner.classList.add('hidden');
             btnText.textContent = 'Upload BL';
         }
+
+        function showToast(message, type = 'error') {
+            toastContainer.innerHTML = '';
+
+            const toast = document.createElement('div');
+            toast.className = 'alert shadow-sm w-full flex items-center justify-between ' + (type === 'success' ? 'alert-success' : 'alert-error');
+
+            const leftContent = document.createElement('div');
+            leftContent.className = 'flex items-center gap-3';
+
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'size-5 icon-[tabler--' + (type === 'success' ? 'circle-check' : 'alert-circle') + ']';
+
+            const messageSpan = document.createElement('span');
+            messageSpan.className = 'text-sm font-medium';
+            messageSpan.textContent = message;
+
+            leftContent.appendChild(iconSpan);
+            leftContent.appendChild(messageSpan);
+
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'btn btn-sm btn-ghost btn-circle ml-auto';
+            closeBtn.onclick = function() { this.parentElement.remove(); };
+
+            const closeIcon = document.createElement('span');
+            closeIcon.className = 'icon-[tabler--x] size-4';
+            closeBtn.appendChild(closeIcon);
+
+            toast.appendChild(leftContent);
+            toast.appendChild(closeBtn);
+            toastContainer.appendChild(toast);
+        }
+
+        blNumberInput.addEventListener('input', function(e) {
+            const value = e.target.value.trim().toUpperCase();
+            e.target.value = value;
+
+            if (verificationTimeout) {
+                clearTimeout(verificationTimeout);
+            }
+
+            verificationIcon.classList.add('hidden');
+            successIcon.classList.add('hidden');
+            errorIcon.classList.add('hidden');
+            blVerified.value = 'false';
+            fileUploadSection.classList.add('opacity-50', 'pointer-events-none');
+            blNumberInput.classList.remove('input-success', 'input-error');
+
+            if (value.length === 0) {
+                return;
+            }
+
+            verificationTimeout = setTimeout(() => {
+                verificationIcon.classList.remove('hidden');
+
+                if (value === expectedBLNumber) {
+                    successIcon.classList.remove('hidden');
+                    errorIcon.classList.add('hidden');
+                    blVerified.value = 'true';
+                    blNumberInput.classList.add('input-success');
+                    blNumberInput.classList.remove('input-error');
+                    fileUploadSection.classList.remove('opacity-50', 'pointer-events-none');
+                    showToast('BL Number verified successfully! You can now upload the document.', 'success');
+                } else {
+                    errorIcon.classList.remove('hidden');
+                    successIcon.classList.add('hidden');
+                    blVerified.value = 'false';
+                    blNumberInput.classList.add('input-error');
+                    blNumberInput.classList.remove('input-success');
+                    fileUploadSection.classList.add('opacity-50', 'pointer-events-none');
+                    showToast('BL Number does not match. Please verify and enter the correct BL number.', 'error');
+                }
+            }, 500);
+        });
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function showFileSelected(file) {
+            selectedFileName.textContent = file.name;
+            selectedFileSize.textContent = formatFileSize(file.size);
+            uploadArea.classList.add('hidden');
+            fileSelectedArea.classList.remove('hidden');
+        }
+
+        function showUploadArea() {
+            uploadArea.classList.remove('hidden');
+            fileSelectedArea.classList.add('hidden');
+            blFileInput.value = '';
+        }
+
+        blFileInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                const fileName = file.name.toLowerCase();
+                const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
+                const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
+
+                if (!allowedExtensions.includes(fileExtension)) {
+                    showToast('Invalid file type. Only PDF, JPG, and PNG files are allowed.', 'error');
+                    blFileInput.value = '';
+                    showUploadArea();
+                    return;
+                }
+
+                if (file.size > 10 * 1024 * 1024) {
+                    showToast('File size must be less than 10MB', 'error');
+                    blFileInput.value = '';
+                    showUploadArea();
+                    return;
+                }
+
+                showFileSelected(file);
+                errorMessage.classList.add('hidden');
+            }
+        });
+
+        changeFileBtn.addEventListener('click', function() {
+            showUploadArea();
+        });
+
+        uploadArea.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (blVerified.value === 'true') {
+                blFileInput.click();
+            }
+        });
+
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            if (blVerified.value === 'true') {
+                uploadArea.classList.add('border-primary', 'bg-primary/5');
+            }
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('border-primary', 'bg-primary/5');
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('border-primary', 'bg-primary/5');
+
+            if (blVerified.value === 'true' && e.dataTransfer.files.length > 0) {
+                blFileInput.files = e.dataTransfer.files;
+                const event = new Event('change', { bubbles: true });
+                blFileInput.dispatchEvent(event);
+            }
+        });
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            if (blVerified.value !== 'true') {
+                showToast('Please verify the BL number before uploading', 'error');
+                return;
+            }
+
+            if (!blFileInput.files || blFileInput.files.length === 0) {
+                showToast('Please select a file to upload', 'error');
+                return;
+            }
+
+            errorMessage.classList.add('hidden');
+            successMessage.classList.add('hidden');
+
+            setUploadingState(true);
+
+            const formData = new FormData();
+            formData.append('blNumber', blNumberInput.value);
+            formData.append('blFile', blFileInput.files[0]);
+
+            try {
+                const response = await fetch('/api/manifests/{{ manifest.id }}/bl', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    successMessage.classList.remove('hidden');
+                    showToast('BL uploaded successfully! Redirecting...', 'success');
+
+                    uploadOverlay.classList.add('hidden');
+                    uploadOverlay.classList.remove('flex');
+                    loadingSpinner.classList.add('hidden');
+                    btnText.innerHTML = 'Success!';
+                    submitBtn.classList.remove('btn-primary');
+                    submitBtn.classList.add('btn-success');
+                    submitBtn.disabled = true;
+
+                    setTimeout(() => {
+                        window.location.href = '{{ path('broker_manifest_detail', {id: manifest.id}) }}';
+                    }, 1000);
+                } else {
+                    const errorMsg = data.message || data.error || 'Failed to upload BL. Please try again.';
+                    showToast(errorMsg, 'error');
+                    setUploadingState(false);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showToast('An error occurred while uploading. Please try again.', 'error');
+                setUploadingState(false);
+            }
+        });
     });
-});
-</script>
+    </script>
 {% endblock %}

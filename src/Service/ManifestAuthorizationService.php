@@ -24,8 +24,8 @@ class ManifestAuthorizationService implements ManifestAuthorizationServiceInterf
             
             $role = $user->getRole()->value;
 
-            // SL_STAFF, SYSTEM_ADMIN, and ACCOUNTING can always view
-            if (in_array($role, ['SL_STAFF', 'SYSTEM_ADMIN', 'ACCOUNTING'])) {
+            // SL_STAFF, shipping lines hierarchy, SYSTEM_ADMIN, and ACCOUNTING can view
+            if (in_array($role, ['SL_STAFF', 'SHIPPING_LINES_ADMIN', 'EVALUATOR', 'TERMINAL_TEAM', 'SYSTEM_ADMIN', 'ACCOUNTING'])) {
                 return true;
             }
 

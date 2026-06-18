@@ -4,338 +4,130 @@
 
 {% block stylesheets %}
     {{ parent() }}
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 {% endblock %}
 
 {% block javascripts %}
     {{ parent() }}
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="{{ asset('js/edo-generation-progress.js') }}"></script>
 {% endblock %}
 
 {% block body %}
 <div class="min-h-screen">
-    <!-- Header -->
-    <div class="bg-base-100 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="py-6 flex items-start sm:items-center justify-between gap-4">
-                <div>
-                    <h1 class="text-2xl sm:text-3xl font-bold text-base-content">SL-Staff Dashboard</h1>
-                    <p class="mt-2 text-base-content/70">Manage your Notice of Arrival (NOA) activities</p>
+    <div class="bg-base-200/50 border-b border-base-content/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/15 via-base-100 to-base-100 shadow-sm p-5 sm:p-7">
+                <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
+                    <div class="space-y-3">
+                        <span class="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                            <span class="icon-[tabler--layout-dashboard] size-3.5"></span>
+                            SL Staff Operations
+                        </span>
+                        <div>
+                            <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-base-content leading-tight">SL Staff Dashboard</h1>
+                            <p class="mt-2 text-sm sm:text-base text-base-content/70 max-w-2xl">
+                                Manage daily shipping-line operations from one place: NOA activity, terminal/CY visibility, and utilization trends.
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="badge badge-primary badge-lg gap-2">
+                                <span class="icon-[tabler--activity] size-4"></span>
+                                {{ stats.pending_edo_count }} ready
+                            </span>
+                            <span class="badge badge-success badge-soft badge-lg gap-2">
+                                <span class="icon-[tabler--calendar-check] size-4"></span>
+                                {{ stats.my_shipments_today }} created today
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 xl:justify-end">
+                        <a href="{{ path('manifest_workflow_create') }}" class="btn btn-success btn-sm sm:btn-md gap-2">
+                            <span class="icon-[tabler--plus] size-4"></span>
+                            New NOA
+                        </a>
+                        <a href="{{ path('manifest_workflow_list') }}" class="btn btn-outline btn-primary btn-sm sm:btn-md gap-2">
+                            <span class="icon-[tabler--file-text] size-4"></span>
+                            NOA List
+                        </a>
+                        <a href="{{ path('app_sl_staff_dashboard') }}" class="btn btn-ghost btn-sm sm:btn-md gap-2">
+                            <span class="icon-[tabler--refresh] size-4"></span>
+                            Refresh
+                        </a>
+                    </div>
                 </div>
-                <a href="{{ path('manifest_workflow_create') }}"
-                   class="btn btn-success btn-sm sm:btn-md flex-shrink-0 gap-1.5 whitespace-nowrap">
-                    <span class="icon-[tabler--plus] size-4"></span>
-                    <span class="hidden xs:inline">Create </span>NOA
-                </a>
             </div>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Shipment Statistics - 4 Cards in Responsive Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <!-- Total Shipments -->
-            <div class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300">
-                <div class="card-body p-6">
-                    <div class="flex items-center gap-2 mb-6">
-                        <span class="icon-[tabler--ship] size-6 text-info"></span>
-                        <h3 class="text-sm font-medium text-base-content">Total Shipments</h3>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div class="card bg-base-100 shadow-sm border border-primary/15">
+                <div class="card-body p-5">
+                    <p class="text-xs uppercase tracking-wide text-base-content/60">Total NOAs</p>
+                    <div class="mt-2 flex items-end justify-between">
+                        <p class="text-4xl font-bold">{{ stats.my_shipments_total }}</p>
+                        <span class="icon-[tabler--ship] size-8 text-primary/70"></span>
                     </div>
-                    <p class="text-5xl font-bold text-base-content mb-3">{{ stats.my_shipments_total }}</p>
-                    <p class="text-sm text-info">All time</p>
+                    <p class="text-xs text-base-content/50 mt-2">All time</p>
                 </div>
             </div>
-
-            <!-- Today's Shipments -->
-            <div class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300">
-                <div class="card-body p-6">
-                    <div class="flex items-center gap-2 mb-6">
-                        <span class="icon-[tabler--clock] size-6 text-success"></span>
-                        <h3 class="text-sm font-medium text-base-content">Created Today</h3>
+            <div class="card bg-base-100 shadow-sm border border-success/15">
+                <div class="card-body p-5">
+                    <p class="text-xs uppercase tracking-wide text-base-content/60">Created Today</p>
+                    <div class="mt-2 flex items-end justify-between">
+                        <p class="text-4xl font-bold">{{ stats.my_shipments_today }}</p>
+                        <span class="icon-[tabler--clock] size-8 text-success/70"></span>
                     </div>
-                    <p class="text-5xl font-bold text-base-content mb-3">{{ stats.my_shipments_today }}</p>
-                    <p class="text-sm text-success">Today</p>
+                    <p class="text-xs text-success mt-2">Today</p>
                 </div>
             </div>
-
-            <!-- This Week -->
-            <div class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300">
-                <div class="card-body p-6">
-                    <div class="flex items-center gap-2 mb-6">
-                        <span class="icon-[tabler--calendar] size-6 text-secondary"></span>
-                        <h3 class="text-sm font-medium text-base-content">This Week</h3>
+            <div class="card bg-base-100 shadow-sm border border-info/15">
+                <div class="card-body p-5">
+                    <p class="text-xs uppercase tracking-wide text-base-content/60">This Week</p>
+                    <div class="mt-2 flex items-end justify-between">
+                        <p class="text-4xl font-bold">{{ stats.my_shipments_this_week }}</p>
+                        <span class="icon-[tabler--calendar] size-8 text-info/70"></span>
                     </div>
-                    <p class="text-5xl font-bold text-base-content mb-3">{{ stats.my_shipments_this_week }}</p>
-                    <p class="text-sm text-secondary">Last 7 days</p>
+                    <p class="text-xs text-info mt-2">Last 7 days</p>
                 </div>
             </div>
-
-            <!-- This Month -->
-            <div class="card bg-base-100 shadow-md hover:shadow-xl transition-all duration-300">
-                <div class="card-body p-6">
-                    <div class="flex items-center gap-2 mb-6">
-                        <span class="icon-[tabler--chart-bar] size-6 text-primary"></span>
-                        <h3 class="text-sm font-medium text-base-content">This Month</h3>
+            <div class="card bg-base-100 shadow-sm border border-secondary/15">
+                <div class="card-body p-5">
+                    <p class="text-xs uppercase tracking-wide text-base-content/60">This Month</p>
+                    <div class="mt-2 flex items-end justify-between">
+                        <p class="text-4xl font-bold">{{ stats.my_shipments_this_month }}</p>
+                        <span class="icon-[tabler--chart-bar] size-8 text-secondary/70"></span>
                     </div>
-                    <p class="text-5xl font-bold text-base-content mb-3">{{ stats.my_shipments_this_month }}</p>
-                    <p class="text-sm text-primary">Last 30 days</p>
+                    <p class="text-xs text-secondary mt-2">Last 30 days</p>
                 </div>
             </div>
         </div>
 
-        <!-- Ready for eDO Generation Section -->
-        {% if manifestsReadyForEDO|length > 0 %}
-        <div class="card bg-base-100 shadow-sm mb-8">
-            <div class="px-6 py-4 bg-success/10 rounded-t-box">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <span class="icon-[tabler--circle-check] size-5 text-success mr-3"></span>
-                        <div>
-                            <h3 class="text-lg font-semibold text-base-content">Ready for eDO Generation</h3>
-                            <p class="text-sm text-base-content/70">Manifests with verified payments and linked containers</p>
-                        </div>
-                    </div>
-                    <span class="badge badge-soft badge-success">
-                        {{ manifestsReadyForEDO|length }} Ready
-                    </span>
-                </div>
-            </div>
-            <div class="p-6">
-                <div class="w-full rounded-box bg-base-100 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Manifest</th>
-                                    <th>Broker</th>
-                                    <th>Containers</th>
-                                    <th>Payment Verified</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for manifest in manifestsReadyForEDO %}
-                                <tr>
-                                    <td>
-                                        <div class="font-medium">{{ manifest.manifestNumber }}</div>
-                                        <div class="text-xs text-base-content/50">BL: {{ manifest.blNumber }}</div>
-                                    </td>
-                                    <td>{{ manifest.broker.email }}</td>
-                                    <td>
-                                        {% set containers = manifest.getContainersLinkedToManifest() %}
-                                        <div>{{ containers|length }} container(s)</div>
-                                        <div class="text-xs text-base-content/50">
-                                            {% for container in containers %}{{ container.containerNumber }}{% if not loop.last %}, {% endif %}{% endfor %}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        {% set finalPayment = manifest.getFinalPayment() %}
-                                        {% if finalPayment and finalPayment.validatedAt %}
-                                            {{ finalPayment.validatedAt|date('M j, Y') }}
-                                        {% else %}
-                                            {{ manifest.updatedAt|date('M j, Y') }}
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if is_granted('ROLE_SL_STAFF') %}
-                                            <button onclick="openEDOGenerationModal({{ manifest.id }}, '{{ manifest.manifestNumber }}')"
-                                                    class="btn btn-circle btn-text btn-sm" aria-label="Generate eDOs">
-                                                <span class="icon-[tabler--plus] size-5"></span>
-                                            </button>
-                                            <button class="btn btn-circle btn-text btn-sm" aria-label="View manifest">
-                                                <span class="icon-[tabler--eye] size-5"></span>
-                                            </button>
-                                            <button class="btn btn-circle btn-text btn-sm" aria-label="More options">
-                                                <span class="icon-[tabler--dots-vertical] size-5"></span>
-                                            </button>
-                                        {% else %}
-                                            <span class="text-xs text-base-content/40">Restricted</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
+        {% include 'dashboard/_location_summary_cards.html.twig' with {
+            repositioningRoute: 'app_sl_staff_repositioning_index'
+        } %}
 
-        {# Port / Terminal and CY utilization cards #}
         {% include 'dashboard/_port_cy_location_cards.html.twig' with {
             repositioningRoute: 'app_sl_staff_repositioning_index',
             repositioningNewRoute: 'app_sl_staff_repositioning_new'
         } %}
 
-        <!-- NOA Creation Trends Chart -->
-        <div class="card bg-base-100 shadow-sm mb-8">
-            <div class="px-6 py-4">
-                <h3 class="text-lg font-medium text-base-content">NOA Creation Activity (Last 30 Days)</h3>
-                <p class="text-sm text-base-content/50">Track daily NOA creation trends across all staff</p>
+        <div class="card bg-base-100 shadow-sm">
+            <div class="px-5 py-4 border-b border-base-content/10 flex items-center justify-between">
+                <div>
+                    <h2 class="font-semibold text-lg">NOA Creation Trend</h2>
+                    <p class="text-xs text-base-content/60">Daily NOA creation for the last 30 days</p>
+                </div>
+                <a href="{{ path('manifest_workflow_list') }}" class="btn btn-ghost btn-sm gap-2">
+                    <span class="icon-[tabler--file-text] size-4"></span>
+                    View NOAs
+                </a>
             </div>
-            <div class="p-6">
+            <div class="p-5">
                 <div id="myShipmentTrendsChart" style="height: 300px;"></div>
             </div>
         </div>
 
-        <!-- Recent Shipments -->
-        <div class="card bg-base-100 shadow-sm">
-            <div class="px-6 py-4 flex justify-between items-center">
-                <div>
-                    <h3 class="text-lg font-medium text-base-content">Recent NOAs</h3>
-                    <p class="text-sm text-base-content/50">Latest 10 Notice of Arrivals in the system</p>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <span class="badge badge-soft badge-info">
-                        {{ recentShipments|length }} NOAs
-                    </span>
-                    <a href="{{ path('manifest_workflow_list') }}" class="text-sm text-info hover:text-info font-medium">
-                        View All →
-                    </a>
-                </div>
-            </div>
-            <div class="p-8">
-                {% if recentShipments|length > 0 %}
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {% for shipment in recentShipments %}
-                            <div class="card bg-base-100 shadow-sm p-6 hover:shadow-lg hover:border-base-300 transition-all duration-200 cursor-pointer" onclick="window.location.href='{{ path('manifest_workflow_list') }}'">
-                                <!-- Header with NOA Number and Status -->
-                                <div class="flex items-start justify-between mb-6">
-                                    <div class="flex-1 min-w-0">
-                                        <h4 class="text-xl font-semibold text-base-content mb-1">{{ shipment.noaNumber }}</h4>
-                                        <p class="text-sm text-base-content/50">Created {{ shipment.createdAt|date('M j, Y \a\t g:i A') }}</p>
-                                    </div>
-                                    <div class="flex flex-col items-end space-y-2 ml-4">
-                                        <!-- Workflow Status Badge -->
-                                        <span class="badge badge-soft badge-info">
-                                            <span class="icon-[tabler--file-text] size-5 mr-1"></span>
-                                            NOA Created
-                                        </span>
-                                        
-                                        <!-- NOA ID -->
-                                        <span class="text-xs text-base-content/40 font-mono">#{{ shipment.id }}</span>
-                                    </div>
-                                </div>
-
-                                <!-- Key Information Grid -->
-                                <div class="grid grid-cols-2 gap-6 mb-6">
-                                    <div>
-                                        <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">B/L Number</p>
-                                        <p class="text-sm font-medium text-base-content font-mono">{{ shipment.blNumber ?: 'N/A' }}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Vessel</p>
-                                        <p class="text-sm font-medium text-base-content">{{ shipment.vessel ?: 'N/A' }}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">Consignee</p>
-                                        <p class="text-sm font-medium text-base-content truncate">{{ shipment.consigneeName ?: 'N/A' }}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">ETA</p>
-                                        <p class="text-sm font-medium text-base-content">{{ shipment.eta|date('M j, Y') }}</p>
-                                    </div>
-                                </div>
-
-                                <!-- Container Count -->
-                                <div class="border-t border-base-300 pt-4 mb-4">
-                                    <div class="flex flex-wrap gap-2">
-                                        <span class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium bg-success/10 text-success">
-                                            <span class="icon-[tabler--box] size-5 mr-1.5"></span>
-                                            {{ shipment.containers|length }} Container(s)
-                                        </span>
-                                        {% if shipment.blNumber %}
-                                            <span class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium bg-info/10 text-info">
-                                                B/L: {{ shipment.blNumber }}
-                                            </span>
-                                        {% endif %}
-                                        {% if shipment.voyage %}
-                                            <span class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium bg-primary/10 text-primary">
-                                                Voyage: {{ shipment.voyage }}
-                                            </span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-
-                                <!-- Action Footer -->
-                                <div class="flex items-center justify-between pt-4">
-                                    <div class="flex items-center space-x-2">
-                                        <span class="inline-flex items-center text-xs text-info font-medium">
-                                            <span class="icon-[tabler--file-text] size-5 mr-1.5"></span>
-                                            In Workflow
-                                        </span>
-                                    </div>
-                                    <div class="flex items-center space-x-3">
-                                        <button onclick="event.stopPropagation(); window.location.href='{{ path('manifest_workflow_list') }}'" 
-                                                class="btn btn-ghost btn-sm">
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-
-                    <!-- View All Button -->
-                    {% if recentShipments|length >= 10 %}
-                        <div class="mt-8 text-center">
-                            <a href="{{ path('manifest_workflow_list') }}" 
-                               class="btn btn-ghost">
-                                <span class="icon-[tabler--file-text] size-5"></span>
-                                View All NOAs
-                            </a>
-                        </div>
-                    {% endif %}
-                {% else %}
-                    <div class="text-center py-16">
-                        <div class="mx-auto w-24 h-24 bg-base-200 rounded-full flex items-center justify-center mb-6">
-                            <span class="icon-[tabler--ship] size-5 text-base-content/40" style="width:3rem;height:3rem;"></span>
-                        </div>
-                        <h3 class="text-xl font-medium text-base-content mb-3">No NOAs in system yet</h3>
-                        <p class="text-sm text-base-content/50 mb-8 max-w-sm mx-auto">There are no Notice of Arrival records in the system yet. Start by creating the first NOA to see it appear here.</p>
-                        <div class="space-y-4">
-                            <a href="{{ path('manifest_workflow_create') }}" 
-                               class="btn btn-success">
-                                <span class="icon-[tabler--plus] size-5"></span>
-                                Create First NOA
-                            </a>
-                            <div class="text-xs text-base-content/40">
-                                Tip: NOA statistics will update as more records are created in the system.
-                            </div>
-                        </div>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="mt-8 card bg-base-100 shadow-sm">
-            <div class="px-6 py-4">
-                <h3 class="text-lg font-medium text-base-content">Quick Actions</h3>
-            </div>
-            <div class="p-6">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <a href="{{ path('manifest_workflow_create') }}"
-                       class="btn btn-success">
-                        <span class="icon-[tabler--plus] size-5"></span>
-                        Create New NOA
-                    </a>
-                    
-                    <a href="{{ path('manifest_workflow_list') }}"
-                       class="btn btn-ghost">
-                        <span class="icon-[tabler--file-text] size-5"></span>
-                        View All NOAs
-                    </a>
-                    
-                    <a href="{{ path('app_sl_staff_dashboard') }}" 
-                       class="btn btn-ghost">
-                        <span class="icon-[tabler--refresh] size-5"></span>
-                        Refresh Dashboard
-                    </a>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -344,13 +136,13 @@
 let currentManifestId = null;
 let currentManifestNumber = null;
 
-function openEDOGenerationModal(manifestId, manifestNumber) {
+function openEDOGenerationModal(triggerButton, manifestId, manifestNumber) {
     // console.log('openEDOGenerationModal called with:', manifestId, manifestNumber);
     currentManifestId = manifestId;
     currentManifestNumber = manifestNumber;
     
-    // Find the button that was clicked to get container information
-    const clickedButton = document.querySelector(`button[onclick*="${manifestId}"]`);
+    // Read container data from the clicked button
+    const clickedButton = triggerButton;
     let containers = [];
     
     if (clickedButton && clickedButton.dataset.containers) {
@@ -456,6 +248,7 @@ function calculateExpirationDays() {
 
 function generateEDO() {
     const expirationDate = document.getElementById('expirationDate').value;
+    const manifestId = currentManifestId;
     
     if (!expirationDate) {
         alert('Please select an expiration date');
@@ -476,7 +269,7 @@ function generateEDO() {
     
     // Use the professional progress controller
     if (window.edoProgressController) {
-        window.edoProgressController.startGeneration(currentManifestId, expirationDate, 'manifest');
+        window.edoProgressController.startGeneration(manifestId, expirationDate, 'manifest');
     } else {
         console.error('EDO Progress Controller not initialized');
         alert('Error: Progress controller not available');

@@ -6,8 +6,11 @@
 {% set sortedFields = submission.formConfig and submission.formConfig.fields.fields is defined
     ? submission.formConfig.fields.fields|sort((a, b) => (a.order ?? 0) <=> (b.order ?? 0))
     : [] %}
-{% set logoUrl = submission.shippingLine.logoPath ? asset('uploads/shipping-lines/' ~ submission.shippingLine.logoPath) : (submission.shippingLine.portalConfig.logoUrl ?? null) %}
+{% set logoUrl = submission.shippingLine.logoPath ? asset('uploads/shipping-lines/' ~ submission.shippingLine.logoPath) : (submission.shippingLine.portalConfig ? submission.shippingLine.portalConfig.logoUrl|default(null) : null) %}
 {% set isComplianceRequired = submission.status.value == 'COMPLIANCE_REQUIRED' %}
+{% set isApproved = submission.status.value == 'APPROVED' %}
+{% set isAwaitingFinal = submission.isAwaitingFinalApproval() %}
+{% set isDenied = submission.status.value in ['DENIED', 'REJECTED'] %}
 {% set complianceFieldsToCorrect = complianceFieldsToCorrect|default([]) %}
 {% set complianceFlaggedIds = complianceFieldsToCorrect|column('id') %}
 {% set complianceFieldCount = complianceFieldsToCorrect|length %}
@@ -18,11 +21,25 @@
     {% endif %}
 {% endfor %}
 {% set unchangedFieldCount = sortedFields|filter(f => f.type not in ['section_heading', 'divider'] and f.id not in complianceFlaggedIds)|length %}
-{% set stepperCurrent = isComplianceRequired ? 2 : (submission.evaluatedAt ? 3 : 2) %}
+{% if isApproved %}
+    {% set stepperCurrent = 5 %}
+{% elseif isAwaitingFinal %}
+    {% set stepperCurrent = 3 %}
+{% elseif isComplianceRequired %}
+    {% set stepperCurrent = 2 %}
+{% elseif submission.evaluatedAt %}
+    {% set stepperCurrent = isDenied ? 3 : 2 %}
+{% else %}
+    {% set stepperCurrent = 1 %}
+{% endif %}
+{% set showApplicantFeedback = submission.denialReason and submission.status.value in ['DENIED', 'REJECTED', 'COMPLIANCE_REQUIRED'] %}
 
 {% set statusBadge = 'badge-ghost' %}
 {% set statusIcon = 'help-circle' %}
-{% if submission.status.value == 'APPROVED' %}
+{% if submission.status.value == 'AWAITING_FINAL_APPROVAL' %}
+    {% set statusBadge = 'badge-info' %}
+    {% set statusIcon = 'hourglass' %}
+{% elseif submission.status.value == 'APPROVED' %}
     {% set statusBadge = 'badge-success' %}
     {% set statusIcon = 'circle-check' %}
 {% elseif submission.status.value in ['DENIED', 'REJECTED'] %}
@@ -63,10 +80,15 @@
                             </ul>
                         </div>
                         <h1 class="text-2xl font-bold text-base-content">
-                            {% if isComplianceRequired %}Compliance Review{% else %}Application Details{% endif %}
+                            {% if isApproved %}Accreditation Approved
+                            {% elseif isComplianceRequired %}Compliance Review
+                            {% elseif isAwaitingFinal %}Awaiting Final Approval
+                            {% else %}Application Details{% endif %}
                         </h1>
                         <p class="text-sm text-base-content/60 mt-1">
-                            {% if isComplianceRequired %}
+                            {% if isApproved and submission.approvedAt %}
+                                Fully approved {{ submission.approvedAt|date('F j, Y \\a\\t g:i A') }}
+                            {% elseif isComplianceRequired %}
                                 {{ complianceFieldCount }} field{{ complianceFieldCount == 1 ? '' : 's' }} need{{ complianceFieldCount == 1 ? 's' : '' }} your attention before resubmitting.
                             {% else %}
                                 Submitted {{ submission.submittedAt|date('F j, Y \\a\\t g:i A') }}
@@ -86,7 +108,13 @@
                     {% endif %}
                     <div class="min-w-0">
                         <p class="font-semibold text-base-content truncate">{{ submission.shippingLine.brandName }}</p>
-                        <span class="badge {{ statusBadge }} badge-sm mt-1">{{ submission.status.value|replace({'_': ' '})|title }}</span>
+                        <span class="badge {{ statusBadge }} badge-sm mt-1">
+                            {% if isAwaitingFinal %}
+                                Awaiting Final Approval
+                            {% else %}
+                                {{ submission.status.displayName }}
+                            {% endif %}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -94,14 +122,25 @@
     </div>
 
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 space-y-6">
-        {% if submission.status.value == 'APPROVED' %}
+        {% if isApproved %}
             <div class="alert alert-success shadow-sm">
                 <span class="icon-[tabler--circle-check] size-6"></span>
                 <div>
                     <h3 class="font-bold">SAS Accreditation Approved</h3>
                     <p class="text-sm">Your accreditation for {{ submission.shippingLine.brandName }} is active. You now have secured access to their services on OPTIMUS.</p>
                     {% if submission.approvedAt %}
-                        <p class="text-xs mt-2 opacity-80">Approved on {{ submission.approvedAt|date('F j, Y') }}</p>
+                        <p class="text-xs mt-2 opacity-80">Final approval on {{ submission.approvedAt|date('F j, Y \\a\\t g:i A') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% elseif isAwaitingFinal %}
+            <div class="alert alert-info shadow-sm">
+                <span class="icon-[tabler--hourglass] size-6"></span>
+                <div>
+                    <h3 class="font-bold">Awaiting Shipping Admin Final Approval</h3>
+                    <p class="text-sm">Your application passed evaluator review. A Shipping Lines Admin must complete final approval before you can use manifest and payment services for {{ submission.shippingLine.brandName }}.</p>
+                    {% if submission.evaluatedAt %}
+                        <p class="text-xs mt-2 opacity-80">Evaluator approved on {{ submission.evaluatedAt|date('F j, Y') }}</p>
                     {% endif %}
                 </div>
             </div>
@@ -175,20 +214,21 @@
                         {% include 'components/flyonui_stepper.html.twig' with {
                             steps: [
                                 { label: 'Application' },
-                                { label: isComplianceRequired ? 'Compliance' : 'Review' },
-                                { label: 'Evaluation' }
+                                { label: 'Evaluator Review' },
+                                { label: 'Final Approval' },
+                                { label: isApproved ? 'Approved' : (isDenied ? 'Decision' : 'Complete') }
                             ],
                             current: stepperCurrent
                         } %}
                     </div>
                 </div>
 
-                {% if submission.denialReason and not isComplianceRequired %}
+                {% if showApplicantFeedback %}
                     <div class="card bg-base-100 shadow-sm border border-warning/20">
                         <div class="card-body p-5 sm:p-6">
                             <h2 class="font-semibold text-lg text-base-content flex items-center gap-2 mb-3">
                                 <span class="icon-[tabler--message] size-5 text-warning"></span>
-                                Evaluator Feedback
+                                {% if isComplianceRequired %}Evaluator Feedback{% else %}Review Comments{% endif %}
                             </h2>
                             <div class="rounded-xl bg-warning/5 p-4">
                                 <p class="text-sm whitespace-pre-wrap text-base-content">{{ submission.denialReason }}</p>
@@ -268,7 +308,9 @@
                                     {% for field in sortedFields %}
                                         {% include 'accreditation/_detail_field.html.twig' with {
                                             field: field,
-                                            submittedData: submission.submittedData
+                                            submittedData: submission.submittedData,
+                                            showFileDownload: true,
+                                            fileDownloadRoute: 'accreditation_file_download'
                                         } %}
                                     {% endfor %}
                                 </div>
@@ -350,10 +392,26 @@
                                 <div class="size-14 {{ statusBadge }} rounded-full flex items-center justify-center mb-3">
                                     <span class="icon-[tabler--{{ statusIcon }}] size-7"></span>
                                 </div>
-                                <p class="text-xl font-bold text-base-content">{{ submission.status.value|replace({'_': ' '})|title }}</p>
+                                <p class="text-xl font-bold text-base-content">
+                                    {% if isAwaitingFinal %}Awaiting Final Approval
+                                    {% else %}{{ submission.status.displayName }}{% endif %}
+                                </p>
                                 <p class="text-xs text-base-content/60 mt-1">Application #{{ submission.id }}</p>
                             </div>
                         </div>
+
+                        {% if isApproved %}
+                            <div class="rounded-xl bg-success/5 border border-success/20 p-4 text-sm space-y-2">
+                                <div class="flex justify-between gap-3">
+                                    <span class="text-base-content/60">Evaluator reviewed</span>
+                                    <span class="font-medium">{{ submission.evaluatedAt ? submission.evaluatedAt|date('M j, Y') : '—' }}</span>
+                                </div>
+                                <div class="flex justify-between gap-3">
+                                    <span class="text-base-content/60">Final approval</span>
+                                    <span class="font-medium">{{ submission.approvedAt ? submission.approvedAt|date('M j, Y') : '—' }}</span>
+                                </div>
+                            </div>
+                        {% endif %}
 
                         <div>
                             <h3 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3">Timeline</h3>
@@ -377,13 +435,29 @@
                                             <span class="icon-[tabler--{{ isComplianceRequired ? 'alert-triangle' : 'circle-check' }}] size-4 {{ isComplianceRequired ? 'text-warning' : 'text-secondary' }}"></span>
                                         </div>
                                         <div class="timeline-end timeline-box text-xs py-2">
-                                            <p class="font-medium">{{ isComplianceRequired ? 'Compliance requested' : 'Evaluated' }}</p>
+                                            <p class="font-medium">
+                                                {% if isComplianceRequired %}Compliance requested
+                                                {% elseif isApproved or isAwaitingFinal %}Evaluator approved
+                                                {% else %}Evaluated{% endif %}
+                                            </p>
                                             <p class="text-base-content/60">{{ submission.evaluatedAt|date('g:i A') }}</p>
                                         </div>
-                                        {% if submission.approvedAt %}<hr class="bg-success/40" />{% endif %}
+                                        {% if submission.approvedAt or isAwaitingFinal %}<hr class="bg-base-content/10" />{% endif %}
                                     </li>
                                 {% endif %}
-                                {% if submission.approvedAt %}
+                                {% if isAwaitingFinal %}
+                                    <li>
+                                        <hr class="bg-base-content/10" />
+                                        <div class="timeline-start text-xs text-base-content/60">{{ submission.evaluatedAt ? submission.evaluatedAt|date('M j') : '—' }}</div>
+                                        <div class="timeline-middle">
+                                            <span class="icon-[tabler--hourglass] size-4 text-info"></span>
+                                        </div>
+                                        <div class="timeline-end timeline-box text-xs py-2">
+                                            <p class="font-medium">Awaiting final approval</p>
+                                            <p class="text-base-content/60">Shipping admin review</p>
+                                        </div>
+                                    </li>
+                                {% elseif submission.approvedAt %}
                                     <li>
                                         <hr class="bg-success/40" />
                                         <div class="timeline-start text-xs text-base-content/60">{{ submission.approvedAt|date('M j') }}</div>
@@ -391,7 +465,7 @@
                                             <span class="icon-[tabler--circle-check] size-4 text-success"></span>
                                         </div>
                                         <div class="timeline-end timeline-box text-xs py-2">
-                                            <p class="font-medium">Approved</p>
+                                            <p class="font-medium">Fully approved</p>
                                             <p class="text-base-content/60">{{ submission.approvedAt|date('g:i A') }}</p>
                                         </div>
                                     </li>
@@ -425,17 +499,24 @@
                         </div>
 
                         <div class="space-y-2 pt-2">
-                            {% if submission.status.value in ['DENIED', 'REJECTED'] %}
+                            {% if isApproved %}
+                                <a href="{{ path('accreditation_index') }}" class="btn btn-success w-full gap-2">
+                                    <span class="icon-[tabler--circle-check] size-4"></span>
+                                    Back to SAS Center
+                                </a>
+                            {% elseif submission.status.value in ['DENIED', 'REJECTED'] %}
                                 <a href="{{ path('accreditation_submit', {shippingLineId: submission.shippingLine.id}) }}"
                                    class="btn btn-primary w-full gap-2">
                                     <span class="icon-[tabler--upload] size-4"></span>
                                     Submit New Application
                                 </a>
                             {% endif %}
-                            <a href="{{ path('accreditation_index') }}" class="btn btn-ghost w-full gap-2">
-                                <span class="icon-[tabler--arrow-left] size-4"></span>
-                                Back to SAS Center
-                            </a>
+                            {% if not isApproved %}
+                                <a href="{{ path('accreditation_index') }}" class="btn btn-ghost w-full gap-2">
+                                    <span class="icon-[tabler--arrow-left] size-4"></span>
+                                    Back to SAS Center
+                                </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -443,41 +524,45 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
-<div id="documentModal" class="fixed inset-0 z-[9999] hidden">
-    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal()"></div>
-    <div class="fixed inset-0 overflow-y-auto">
-        <div class="flex min-h-full items-center justify-center p-4">
-            <div class="relative bg-base-100 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col">
-                <div class="flex items-center justify-between px-6 py-4 border-b border-base-300">
-                    <h3 class="text-lg font-bold flex items-center gap-2" id="modalTitle">
-                        <span class="icon-[tabler--file-text] size-5"></span>
-                        Document Viewer
-                    </h3>
-                    <button type="button" onclick="closeModal()" class="btn btn-ghost btn-sm btn-circle">
-                        <span class="icon-[tabler--x] size-5"></span>
-                    </button>
-                </div>
-                <div class="flex-1 p-6 overflow-auto">
-                    <div id="documentContent" class="flex items-center justify-center min-h-[400px]">
-                        <div class="text-center">
-                            <span class="loading loading-spinner loading-lg text-primary"></span>
-                            <p class="text-base-content font-medium mt-4">Loading document...</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-base-300">
-                    <a id="downloadLink" href="#" target="_blank" class="btn btn-primary gap-2">
-                        <span class="icon-[tabler--download] size-4"></span>
-                        Download
-                    </a>
-                    <button type="button" onclick="closeModal()" class="btn btn-ghost">Close</button>
+{% block page_modals %}
+<div id="documentModal"
+     class="hidden fixed inset-0 z-[999999] items-center justify-center p-4"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="modalTitle">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-md" data-doc-modal-dismiss></div>
+    <div class="relative bg-base-100 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col z-10" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-base-300 shrink-0">
+            <h3 class="text-lg font-bold flex items-center gap-2" id="modalTitle">
+                <span class="icon-[tabler--file-text] size-5"></span>
+                Document Viewer
+            </h3>
+            <button type="button" data-doc-modal-dismiss class="btn btn-ghost btn-sm btn-circle" aria-label="Close">
+                <span class="icon-[tabler--x] size-5"></span>
+            </button>
+        </div>
+        <div class="flex-1 p-6 overflow-auto min-h-0">
+            <div id="documentContent" class="flex items-center justify-center min-h-[400px] bg-base-200/50 rounded-xl">
+                <div class="text-center">
+                    <span class="loading loading-spinner loading-lg text-primary"></span>
+                    <p class="text-base-content font-medium mt-4">Loading document...</p>
                 </div>
             </div>
         </div>
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-base-300 shrink-0">
+            <a id="downloadLink" href="#" target="_blank" rel="noopener" class="btn btn-primary gap-2">
+                <span class="icon-[tabler--download] size-4"></span>
+                Download
+            </a>
+            <button type="button" data-doc-modal-dismiss class="btn btn-ghost">Close</button>
+        </div>
     </div>
 </div>
+{% endblock %}
 
+{% block page_scripts %}
 <script>
 function openDocumentModal(fileId, documentTitle) {
     const modal = document.getElementById('documentModal');
@@ -487,11 +572,12 @@ function openDocumentModal(fileId, documentTitle) {
 
     modalTitle.innerHTML = '<span class="icon-[tabler--file-text] size-5"></span> ' + (documentTitle || 'Document Viewer');
 
-    const viewUrl = '{{ path('accreditation_file_download', {fileId: '__FILE_ID__'}) }}'.replace('__FILE_ID__', fileId);
+    const viewUrl = '{{ path('accreditation_file_download', {fileId: '__FILE_ID__'}) }}'.replace('__FILE_ID__', encodeURIComponent(fileId));
     downloadLink.href = viewUrl;
 
     modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+    modal.classList.add('flex');
+    document.body.classList.add('overflow-hidden');
 
     documentContent.innerHTML = '<div class="text-center"><span class="loading loading-spinner loading-lg text-primary"></span><p class="text-base-content font-medium mt-4">Loading document...</p></div>';
 
@@ -544,7 +630,8 @@ function showDocumentError(errorMessage, fileUrl, documentTitle) {
 function closeModal() {
     const modal = document.getElementById('documentModal');
     modal.classList.add('hidden');
-    document.body.style.overflow = '';
+    modal.classList.remove('flex');
+    document.body.classList.remove('overflow-hidden');
 
     const documentContent = document.getElementById('documentContent');
     const iframe = documentContent.querySelector('iframe');
@@ -552,20 +639,27 @@ function closeModal() {
 
     if (iframe && iframe.src.startsWith('blob:')) URL.revokeObjectURL(iframe.src);
     if (img && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+
+    documentContent.innerHTML = '<div class="text-center"><span class="loading loading-spinner loading-lg text-primary"></span><p class="text-base-content font-medium mt-4">Loading document...</p></div>';
 }
+
+document.querySelectorAll('[data-doc-modal-dismiss]').forEach(function (el) {
+    el.addEventListener('click', closeModal);
+});
 
 document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
         const modal = document.getElementById('documentModal');
-        if (!modal.classList.contains('hidden')) closeModal();
+        if (modal && !modal.classList.contains('hidden')) closeModal();
     }
 });
 
 document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.view-document-btn').forEach(function (button) {
-        button.addEventListener('click', function () {
-            openDocumentModal(this.getAttribute('data-file-id'), this.getAttribute('data-document-name'));
-        });
+    document.addEventListener('click', function (e) {
+        const button = e.target.closest('.view-document-btn');
+        if (!button) return;
+        e.preventDefault();
+        openDocumentModal(button.getAttribute('data-file-id'), button.getAttribute('data-document-name'));
     });
 
     document.querySelectorAll('.toast .alert').forEach(function (alert) {

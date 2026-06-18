@@ -350,7 +350,7 @@ class EDORenewalService implements EDORenewalServiceInterface
 
         // Generate NEW PDF using the same template as original eDO generation
         try {
-            $pdfPath = $this->edoDocumentGenerator->generatePDF($newEdo);
+            $pdfPath = $this->edoDocumentGenerator->generatePDF($newEdo, $generatedBy);
             $newEdo->setPdfPath($pdfPath);
             
             // Generate digital signature for the new PDF

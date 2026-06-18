@@ -5,7 +5,9 @@ namespace App\Controller;
 use App\Entity\Consignee;
 use App\Entity\ContainerType;
 use App\Entity\ContainerSize;
+use App\Entity\Container;
 use App\Entity\ShippingLineTerminalAllocation;
+use App\Repository\ContainerRepository;
 use App\Entity\Enum\UserRole;
 use App\Exception\BulkImportValidationException;
 use App\Exception\InsufficientCapacityException;
@@ -83,12 +85,27 @@ class NOAController extends AbstractController
             // Process containers
             $containers = [];
             $containerAllocations = [];
+            $submittedContainerNumbers = [];
+            $submittedContainerNumbersNormalized = [];
             $portLocation = trim((string) ($data['portLocation'] ?? ''));
             
             foreach ($data['containers'] as $containerData) {
-                if (empty($containerData['number'])) {
+                $containerNumber = strtoupper(trim((string) ($containerData['number'] ?? '')));
+                $normalizedContainerNumber = ContainerRepository::normalizeContainerNumber($containerNumber);
+                if ($containerNumber === '') {
                     return $this->json(['error' => 'Container number is required for all containers'], Response::HTTP_BAD_REQUEST);
                 }
+                if ($normalizedContainerNumber === '') {
+                    return $this->json(['error' => 'Invalid container number format'], Response::HTTP_BAD_REQUEST);
+                }
+                if (in_array($normalizedContainerNumber, $submittedContainerNumbersNormalized, true)) {
+                    return $this->json([
+                        'error' => 'Duplicate container number in this NOA request',
+                        'message' => sprintf('Container number "%s" is repeated in the submitted list.', $containerNumber),
+                    ], Response::HTTP_BAD_REQUEST);
+                }
+                $submittedContainerNumbers[] = $containerNumber;
+                $submittedContainerNumbersNormalized[] = $normalizedContainerNumber;
                 if (empty($containerData['typeId'])) {
                     return $this->json(['error' => 'Container type is required for all containers'], Response::HTTP_BAD_REQUEST);
                 }
@@ -136,13 +153,30 @@ class NOAController extends AbstractController
                 }
 
                 $containers[] = [
-                    'number' => $containerData['number'],
+                    'number' => $containerNumber,
                     'type' => $type,
                     'size' => $size,
                 ];
                 
                 // Store allocation for later assignment
                 $containerAllocations[] = $cyAllocation;
+            }
+
+            /** @var ContainerRepository $containerRepository */
+            $containerRepository = $this->entityManager->getRepository(Container::class);
+            $existingInventoryContainerNumbers = $containerRepository
+                ->findInventoryMatchesByNormalizedNumbers($submittedContainerNumbersNormalized);
+
+            if (!empty($existingInventoryContainerNumbers)) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Duplicate container number in inventory',
+                    'message' => sprintf(
+                        'Container number already exists in inventory: %s',
+                        implode(', ', $existingInventoryContainerNumbers)
+                    ),
+                    'duplicates' => $existingInventoryContainerNumbers,
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
 
             // Get CY allocation data before creating NOA
@@ -293,13 +327,29 @@ class NOAController extends AbstractController
                         $manifest->setNoa($noa);
                         $manifest->setConsignee($consignee);
                         $manifest->setBroker($broker);
-                        $manifest->setCreatedAt(new \DateTime());
+                        $manifest->setBlNumber($noa->getBlNumber());
+                        $manifest->setVesselName($noa->getVesselNumber());
+                        $manifest->setArrivalDate($noa->getEta());
+
+                        /** @var \App\Entity\User $actor */
+                        $actor = $this->getUser();
+                        $manifest->setCreatedBy($actor);
+
+                        $shippingLine = $actor->getShippingLineScope()
+                            ?? $noa->getCreatedBy()?->getShippingLineScope();
+                        if (!$shippingLine) {
+                            throw new \RuntimeException('No shipping line found for manifest auto-link');
+                        }
+                        $manifest->setShippingLine($shippingLine);
+                        $manifest->setManifestNumber(sprintf(
+                            'MAN-%s-%s',
+                            (new \DateTime())->format('Ymd'),
+                            strtoupper(substr(md5(uniqid((string) mt_rand(), true)), 0, 6))
+                        ));
                         
                         $this->entityManager->persist($manifest);
                         $this->entityManager->flush();
 
-                        /** @var \App\Entity\User $actor */
-                        $actor = $this->getUser();
                         $this->manifestService->recordNoaGeneratedWorkflow(
                             $manifest,
                             $actor,
@@ -319,7 +369,7 @@ class NOAController extends AbstractController
                         $this->entityManager->rollback();
                         error_log('WARNING: No broker linked to consignee ' . $consignee->getEmail() . ' - containers not auto-linked');
                     }
-                } catch (\Exception $manifestError) {
+                } catch (\Throwable $manifestError) {
                     $this->entityManager->rollback();
                     error_log('WARNING: Failed to auto-create manifest for NOA ' . $noa->getNoaNumber() . ': ' . $manifestError->getMessage());
                     // Don't fail the entire NOA creation if manifest auto-creation fails
@@ -744,6 +794,43 @@ class NOAController extends AbstractController
                 'success' => false,
                 'error' => 'Failed to validate capacity',
                 'message' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/validate-container-number', name: 'noa_validate_container_number', methods: ['POST'])]
+    public function validateContainerNumber(Request $request): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('create', 'NOA');
+
+        try {
+            $data = json_decode($request->getContent(), true);
+            $containerNumber = strtoupper(trim((string) ($data['containerNumber'] ?? '')));
+            $normalized = ContainerRepository::normalizeContainerNumber($containerNumber);
+
+            if ($containerNumber === '' || $normalized === '') {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Container number is required',
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            /** @var ContainerRepository $containerRepository */
+            $containerRepository = $this->entityManager->getRepository(Container::class);
+            $existing = $containerRepository->findOneInventoryMatchByNormalizedNumber($normalized);
+
+            return $this->json([
+                'success' => true,
+                'exists' => $existing !== null,
+                'input' => $containerNumber,
+                'matchedContainerNumber' => $existing['container_number'] ?? null,
+                'matchedContainerId' => isset($existing['id']) ? (int) $existing['id'] : null,
+            ], Response::HTTP_OK);
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Failed to validate container number',
+                'message' => $e->getMessage(),
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }

@@ -49,7 +49,7 @@
         {% endblock %}
         
         {# FlyonUI JavaScript for interactive components (dropdowns, modals, tooltips, accordions) #}
-        <script src="https://cdn.jsdelivr.net/npm/flyonui@2.4.1/dist/js/flyonui.js"></script>
+        <script src="{{ asset('vendor/flyonui/flyonui.js') }}?v={{ 'now'|date('U') }}"></script>
 
         {# Theme switcher — setTheme() called directly via onclick on theme buttons #}
         <script>

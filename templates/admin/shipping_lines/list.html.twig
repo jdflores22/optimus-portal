@@ -12,222 +12,192 @@
 {% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <div class="card bg-base-100 shadow-sm">
-        <div class="card-body">
-            <h1 class="card-title text-xl sm:text-2xl">Shipping Lines Management</h1>
-            <p class="text-sm text-base-content/70">Manage shipping lines and their configurations</p>
+{% set totalLines = shippingLines|length %}
+{% set activeLines = shippingLines|filter(line => line.isActive)|length %}
+{% set unassignedLines = shippingLines|filter(line => line.shippingLineAdmins|length == 0)|length %}
+{% set totalAdmins = 0 %}
+{% for line in shippingLines %}
+    {% set totalAdmins = totalAdmins + line.shippingLineAdmins|length %}
+{% endfor %}
+
+<div class="max-w-7xl mx-auto w-full space-y-6">
+    <div class="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/15 via-base-100 to-base-100 shadow-sm p-5 sm:p-7">
+        <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-6">
+            <div class="space-y-3">
+                <span class="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                    <span class="icon-[tabler--building-community] size-3.5"></span>
+                    Shipping Lines Console
+                </span>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-base-content leading-tight">Shipping Lines Management</h1>
+                    <p class="mt-2 text-sm sm:text-base text-base-content/70 max-w-2xl">
+                        Manage shipping lines, monitor admin assignments, and keep each line operational.
+                    </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="badge badge-primary badge-lg gap-2">
+                        <span class="icon-[tabler--building] size-4"></span>
+                        {{ totalLines }} total
+                    </span>
+                    <span class="badge badge-success badge-soft badge-lg gap-2">
+                        <span class="icon-[tabler--circle-check] size-4"></span>
+                        {{ activeLines }} active
+                    </span>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 xl:justify-end">
+                <a href="{{ path('admin_shipping_lines_create') }}" class="btn btn-primary btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--plus] size-4"></span>
+                    New Shipping Line
+                </a>
+                {% if app.user.role.value == 'SYSTEM_ADMIN' %}
+                <a href="{{ path('admin_shipping_lines_statistics') }}" class="btn btn-outline btn-primary btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--chart-bar] size-4"></span>
+                    Statistics
+                </a>
+                {% endif %}
+                <a href="{{ path('admin_shipping_lines_export') }}" class="btn btn-ghost btn-sm sm:btn-md gap-2">
+                    <span class="icon-[tabler--download] size-4"></span>
+                    Export
+                </a>
+            </div>
         </div>
     </div>
 
-        <!-- Flash Messages -->
-        {% for message in app.flashes('success') %}
-            <div class="alert alert-success mb-4">
-                <span class="icon-[tabler--check] size-5"></span>
-                <span>{{ message }}</span>
-            </div>
-        {% endfor %}
-        {% for message in app.flashes('error') %}
-            <div class="alert alert-error mb-4">
-                <span class="icon-[tabler--alert-circle] size-5"></span>
-                <span>{{ message }}</span>
-            </div>
-        {% endfor %}
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success shadow-sm">
+            <span class="icon-[tabler--check] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-error shadow-sm">
+            <span class="icon-[tabler--alert-circle] size-5"></span>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
 
-        <!-- Quick Stats -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
-                <div class="card-body p-4">
-                    <div class="flex items-center gap-3">
-                        <div class="avatar placeholder">
-                            <div class="w-10 sm:w-12 bg-primary/10 text-primary rounded-full">
-                                <span class="icon-[tabler--building] size-5 sm:size-6"></span>
-                            </div>
-                        </div>
-                        <div>
-                            <p class="text-xs sm:text-sm text-base-content/70">Total Lines</p>
-                            <p class="text-2xl sm:text-3xl font-bold">{{ shippingLines|length }}</p>
-                            <p class="text-xs text-primary font-medium">Registered</p>
-                        </div>
-                    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow-sm border border-primary/15">
+            <div class="card-body p-5">
+                <p class="text-xs uppercase tracking-wide text-base-content/60">Total Lines</p>
+                <div class="mt-2 flex items-end justify-between">
+                    <p class="text-4xl font-bold">{{ totalLines }}</p>
+                    <span class="icon-[tabler--building] size-8 text-primary/70"></span>
                 </div>
-            </div>
-
-            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
-                <div class="card-body p-4">
-                    <div class="flex items-center gap-3">
-                        <div class="avatar placeholder">
-                            <div class="w-10 sm:w-12 bg-success/10 text-success rounded-full">
-                                <span class="icon-[tabler--circle-check] size-5 sm:size-6"></span>
-                            </div>
-                        </div>
-                        <div>
-                            <p class="text-xs sm:text-sm text-base-content/70">Active Lines</p>
-                            <p class="text-2xl sm:text-3xl font-bold">{{ shippingLines|filter(line => line.isActive)|length }}</p>
-                            <p class="text-xs text-success font-medium">Operational</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
-                <div class="card-body p-4">
-                    <div class="flex items-center gap-3">
-                        <div class="avatar placeholder">
-                            <div class="w-10 sm:w-12 bg-secondary/10 text-secondary rounded-full">
-                                <span class="icon-[tabler--users] size-5 sm:size-6"></span>
-                            </div>
-                        </div>
-                        <div>
-                            <p class="text-xs sm:text-sm text-base-content/70">Total Admins</p>
-                            {% set totalAdmins = 0 %}
-                            {% for line in shippingLines %}
-                                {% set totalAdmins = totalAdmins + line.shippingLineAdmins|length %}
-                            {% endfor %}
-                            <p class="text-2xl sm:text-3xl font-bold">{{ totalAdmins }}</p>
-                            <p class="text-xs text-secondary font-medium">Assigned</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
-                <div class="card-body p-4">
-                    <div class="flex items-center gap-3">
-                        <div class="avatar placeholder">
-                            <div class="w-10 sm:w-12 bg-warning/10 text-warning rounded-full">
-                                <span class="icon-[tabler--clock] size-5 sm:size-6"></span>
-                            </div>
-                        </div>
-                        <div>
-                            <p class="text-xs sm:text-sm text-base-content/70">Unassigned</p>
-                            <p class="text-2xl sm:text-3xl font-bold">{{ shippingLines|filter(line => line.shippingLineAdmins|length == 0)|length }}</p>
-                            <p class="text-xs text-warning font-medium">Need admins</p>
-                        </div>
-                    </div>
-                </div>
+                <p class="text-xs text-primary mt-2">Registered</p>
             </div>
         </div>
-
-        <!-- Actions Bar -->
-        <div class="card bg-base-100 shadow-sm">
-            <div class="card-body p-4 sm:p-6">
-                <h3 class="font-semibold text-base sm:text-lg mb-4">Quick Actions</h3>
-                <div class="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
-                    <a href="{{ path('admin_shipping_lines_create') }}" class="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto">
-                        <span class="icon-[tabler--plus] size-4 sm:size-5"></span>
-                        Create Shipping Line
-                    </a>
-                    {% if app.user.role.value == 'SYSTEM_ADMIN' %}
-                    <a href="{{ path('admin_shipping_lines_statistics') }}" class="btn btn-outline btn-sm sm:btn-md w-full sm:w-auto">
-                        <span class="icon-[tabler--chart-bar] size-4 sm:size-5"></span>
-                        View Statistics
-                    </a>
-                    {% endif %}
-                    <a href="{{ path('admin_shipping_lines_export') }}" class="btn btn-outline btn-sm sm:btn-md w-full sm:w-auto">
-                        <span class="icon-[tabler--download] size-4 sm:size-5"></span>
-                        Export Data
-                    </a>
+        <div class="card bg-base-100 shadow-sm border border-success/15">
+            <div class="card-body p-5">
+                <p class="text-xs uppercase tracking-wide text-base-content/60">Active Lines</p>
+                <div class="mt-2 flex items-end justify-between">
+                    <p class="text-4xl font-bold">{{ activeLines }}</p>
+                    <span class="icon-[tabler--circle-check] size-8 text-success/70"></span>
                 </div>
+                <p class="text-xs text-success mt-2">Operational</p>
             </div>
         </div>
-
-        <!-- Shipping Lines List -->
-        <div class="card bg-base-100 shadow-sm">
-            <div class="card-body p-3 sm:p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-semibold text-base sm:text-lg">All Shipping Lines</h3>
-                    <span class="badge badge-ghost text-xs sm:text-sm">{{ shippingLines|length }} total</span>
+        <div class="card bg-base-100 shadow-sm border border-info/15">
+            <div class="card-body p-5">
+                <p class="text-xs uppercase tracking-wide text-base-content/60">Assigned Admins</p>
+                <div class="mt-2 flex items-end justify-between">
+                    <p class="text-4xl font-bold">{{ totalAdmins }}</p>
+                    <span class="icon-[tabler--users] size-8 text-info/70"></span>
                 </div>
-                {% if shippingLines is empty %}
-                    <div class="text-center py-8 sm:py-12">
-                        <span class="icon-[tabler--building] size-10 sm:size-12 text-base-content/40 mx-auto"></span>
-                        <h3 class="mt-3 sm:mt-4 text-sm sm:text-base font-medium">No shipping lines</h3>
-                        <p class="mt-2 text-xs sm:text-sm text-base-content/70">Get started by creating a new shipping line.</p>
-                        <div class="mt-4 sm:mt-6">
-                            <a href="{{ path('admin_shipping_lines_create') }}" class="btn btn-primary btn-sm sm:btn-md">
-                                <span class="icon-[tabler--plus] size-4 sm:size-5"></span>
-                                Create Shipping Line
-                            </a>
-                        </div>
+                <p class="text-xs text-info mt-2">Across lines</p>
+            </div>
+        </div>
+        <div class="card bg-base-100 shadow-sm border border-warning/15">
+            <div class="card-body p-5">
+                <p class="text-xs uppercase tracking-wide text-base-content/60">Need Admins</p>
+                <div class="mt-2 flex items-end justify-between">
+                    <p class="text-4xl font-bold">{{ unassignedLines }}</p>
+                    <span class="icon-[tabler--alert-triangle] size-8 text-warning/70"></span>
+                </div>
+                <p class="text-xs text-warning mt-2">Unassigned lines</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm border border-base-content/10">
+        <div class="card-body p-4 sm:p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-semibold text-lg">All Shipping Lines</h3>
+                <span class="badge badge-ghost">{{ totalLines }} total</span>
+            </div>
+
+            {% if shippingLines is empty %}
+                <div class="text-center py-10 sm:py-14">
+                    <span class="icon-[tabler--building] size-12 text-base-content/40 mx-auto"></span>
+                    <h3 class="mt-4 text-base font-medium">No shipping lines yet</h3>
+                    <p class="mt-2 text-sm text-base-content/70">Get started by creating your first shipping line.</p>
+                    <div class="mt-6">
+                        <a href="{{ path('admin_shipping_lines_create') }}" class="btn btn-primary">
+                            <span class="icon-[tabler--plus] size-4"></span>
+                            Create Shipping Line
+                        </a>
                     </div>
-                {% else %}
-                    <div class="space-y-2 sm:space-y-3">
-                        {% for shippingLine in shippingLines %}
-                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-base-200 rounded-lg hover:bg-base-300 transition-colors gap-3">
-                                <div class="flex items-center gap-3 flex-1 min-w-0">
-                                    <div class="avatar placeholder flex-shrink-0">
+                </div>
+            {% else %}
+                <div class="space-y-3">
+                    {% for shippingLine in shippingLines %}
+                        <div class="rounded-xl border border-base-content/10 p-4 hover:bg-base-200/50 transition-colors">
+                            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                <div class="flex items-center gap-3 min-w-0 flex-1">
+                                    <div class="avatar placeholder shrink-0">
                                         {% if shippingLine.shippingLineAdmins|length > 0 %}
                                             {% set firstAdmin = shippingLine.shippingLineAdmins|first %}
-                                            <div class="w-10 h-10 sm:w-12 sm:h-12 {{ avatar_colors(firstAdmin) }} rounded-full">
-                                                <span class="text-xs sm:text-sm font-medium">
-                                                    {{ shippingLine.brandName|slice(0, 2)|upper }}
-                                                </span>
+                                            <div class="w-12 h-12 {{ avatar_colors(firstAdmin) }} rounded-full">
+                                                <span class="text-sm font-medium">{{ shippingLine.brandName|slice(0, 2)|upper }}</span>
                                             </div>
                                         {% else %}
-                                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-neutral text-neutral-content rounded-full">
-                                                <span class="text-xs sm:text-sm font-medium">
-                                                    {{ shippingLine.brandName|slice(0, 2)|upper }}
-                                                </span>
+                                            <div class="w-12 h-12 bg-neutral text-neutral-content rounded-full">
+                                                <span class="text-sm font-medium">{{ shippingLine.brandName|slice(0, 2)|upper }}</span>
                                             </div>
                                         {% endif %}
                                     </div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-2 flex-wrap">
-                                            <h4 class="text-base sm:text-lg font-medium truncate">{{ shippingLine.brandName }}</h4>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-center flex-wrap gap-2">
+                                            <h4 class="text-base sm:text-lg font-semibold truncate">{{ shippingLine.brandName }}</h4>
                                             {% if shippingLine.isActive %}
-                                                <span class="badge badge-success badge-soft badge-xs sm:badge-sm gap-1">
-                                                    <span class="badge-dot"></span>
-                                                    Active
-                                                </span>
+                                                <span class="badge badge-success badge-soft badge-sm gap-1"><span class="badge-dot"></span>Active</span>
                                             {% else %}
-                                                <span class="badge badge-error badge-soft badge-xs sm:badge-sm gap-1">
-                                                    <span class="badge-dot"></span>
-                                                    Inactive
-                                                </span>
+                                                <span class="badge badge-error badge-soft badge-sm gap-1"><span class="badge-dot"></span>Inactive</span>
                                             {% endif %}
                                         </div>
-                                        <div class="mt-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-base-content/70">
-                                            <span class="flex items-center gap-1">
-                                                <span class="icon-[tabler--users] size-3 sm:size-4"></span>
-                                                {{ shippingLine.shippingLineAdmins|length }} admin(s)
-                                            </span>
-                                            <span class="hidden sm:flex items-center gap-1">
-                                                <span class="icon-[tabler--calendar] size-4"></span>
-                                                Created {{ shippingLine.createdAt|date('M d, Y') }}
-                                            </span>
+                                        <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs sm:text-sm text-base-content/70">
+                                            <span class="inline-flex items-center gap-1"><span class="icon-[tabler--users] size-4"></span>{{ shippingLine.shippingLineAdmins|length }} admin(s)</span>
+                                            <span class="inline-flex items-center gap-1"><span class="icon-[tabler--calendar] size-4"></span>Created {{ shippingLine.createdAt|date('M d, Y') }}</span>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                                    <a href="{{ path('admin_shipping_lines_detail', {id: shippingLine.id}) }}" 
-                                       class="btn btn-xs sm:btn-sm btn-outline flex-1 sm:flex-initial">
-                                        <span class="icon-[tabler--eye] size-3 sm:size-4"></span>
-                                        <span class="hidden sm:inline">View Details</span>
-                                        <span class="sm:hidden">View</span>
+                                <div class="flex items-center gap-2 flex-wrap lg:flex-nowrap">
+                                    <a href="{{ path('admin_shipping_lines_detail', {id: shippingLine.id}) }}" class="btn btn-sm btn-outline flex-1 lg:flex-initial">
+                                        <span class="icon-[tabler--eye] size-4"></span>
+                                        View
                                     </a>
                                     {% if app.user.role.value == 'SYSTEM_ADMIN' %}
                                         {% if shippingLine.isActive %}
-                                            <button onclick="openDeactivateModal({{ shippingLine.id }}, '{{ shippingLine.brandName|e('js') }}')" 
-                                                    class="btn btn-xs sm:btn-sm btn-error btn-outline flex-1 sm:flex-initial">
-                                                <span class="icon-[tabler--ban] size-3 sm:size-4"></span>
-                                                <span class="hidden sm:inline">Deactivate</span>
+                                            <button onclick="openDeactivateModal({{ shippingLine.id }}, '{{ shippingLine.brandName|e('js') }}')" class="btn btn-sm btn-error btn-outline flex-1 lg:flex-initial">
+                                                <span class="icon-[tabler--ban] size-4"></span>
+                                                Deactivate
                                             </button>
                                         {% else %}
-                                            <button onclick="openActivateModal({{ shippingLine.id }}, '{{ shippingLine.brandName|e('js') }}')" 
-                                                    class="btn btn-xs sm:btn-sm btn-success btn-outline flex-1 sm:flex-initial">
-                                                <span class="icon-[tabler--circle-check] size-3 sm:size-4"></span>
-                                                <span class="hidden sm:inline">Activate</span>
+                                            <button onclick="openActivateModal({{ shippingLine.id }}, '{{ shippingLine.brandName|e('js') }}')" class="btn btn-sm btn-success btn-outline flex-1 lg:flex-initial">
+                                                <span class="icon-[tabler--circle-check] size-4"></span>
+                                                Activate
                                             </button>
                                         {% endif %}
                                     {% endif %}
                                 </div>
                             </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
+    </div>
 </div>
 {% endblock %}
 

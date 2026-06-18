@@ -102,8 +102,12 @@ abstract class BaseApiController extends AbstractController
      */
     protected function validateFileUpload($file, array $allowedMimeTypes = [], int $maxSizeBytes = 10485760): ?JsonResponse
     {
-        if (!$file) {
+        if (!$file || !$file->isValid()) {
             return $this->errorResponse('File is required', 400);
+        }
+
+        if ($file->getSize() <= 0) {
+            return $this->errorResponse('File is empty', 400);
         }
 
         // Check file size (default 10MB)
