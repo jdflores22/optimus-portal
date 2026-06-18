@@ -17,8 +17,10 @@ yarn-error.log
 package-lock.json
 ###< Node.js ###
 
-###> Tailwind CSS ###
-/public/css/
+###> Tailwind CSS (built assets committed for Hostinger deploys without npm) ###
+/public/css/**
+!public/css/
+!public/css/**
 ###< Tailwind CSS ###
 
 ###> IDE ###

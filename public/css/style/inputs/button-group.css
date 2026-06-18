@@ -1,0 +1,28 @@
+/* --------------------------- */
+/* Button Group */
+/* --------------------------- */
+@layer utilities {
+  .MuiButtonGroup-root .MuiButtonGroup-groupedHorizontal.MuiButtonGroup-firstButton,
+  .MuiButtonGroup-root .MuiButtonGroup-groupedHorizontal.MuiButtonGroup-middleButton {
+    @apply rounded-e-none border-e border-r-0 border-e-gray-400;
+  }
+
+  .MuiButtonGroup-root .MuiButtonGroup-groupedHorizontal.MuiButtonGroup-lastButton,
+  .MuiButtonGroup-root .MuiButtonGroup-groupedHorizontal.MuiButtonGroup-middleButton {
+    @apply rounded-s-none;
+  }
+
+  .MuiButtonGroup-root .MuiButtonGroup-groupedVertical.MuiButtonGroup-firstButton,
+  .MuiButtonGroup-root .MuiButtonGroup-groupedVertical.MuiButtonGroup-middleButton {
+    @apply rounded-b-none;
+  }
+
+  .MuiButtonGroup-root .MuiButtonGroup-groupedVertical.MuiButtonGroup-lastButton,
+  .MuiButtonGroup-root .MuiButtonGroup-groupedVertical.MuiButtonGroup-middleButton {
+    @apply rounded-t-none;
+  }
+
+  .MuiButtonGroup-root .MuiButton-root {
+    @apply border-text-contrast/25! ring-0;
+  }
+}

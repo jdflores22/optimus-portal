@@ -1,0 +1,60 @@
+/* --------------------------- */
+/* Theme Purple */
+/* --------------------------- */
+
+@layer base {
+  .theme-purple {
+    --primary: 306 58% 47%;
+    --primary-light: 306 58% 57%;
+    --primary-dark: 306 58% 37%;
+
+    --secondary: 267 66% 60%;
+    --secondary-light: 267 66% 70%;
+    --secondary-dark: 267 66% 50%;
+
+    --accent-1: 214 66% 60%;
+    --accent-1-light: 214 66% 70%;
+    --accent-1-dark: 214 66% 50%;
+
+    --accent-2: 177 56% 55%;
+    --accent-2-light: 177 56% 65%;
+    --accent-2-dark: 177 56% 45%;
+
+    --accent-3: 136 49% 49%;
+    --accent-3-light: 136 49% 59%;
+    --accent-3-dark: 136 49% 39%;
+
+    --accent-4: 85 49% 49%;
+    --accent-4-light: 85 49% 59%;
+    --accent-4-dark: 85 49% 39%;
+
+    color-scheme: light;
+  }
+  .theme-purple.dark {
+    --primary: 306 58% 47%;
+    --primary-light: 306 58% 57%;
+    --primary-dark: 306 58% 37%;
+
+    --secondary: 267 66% 60%;
+    --secondary-light: 267 66% 70%;
+    --secondary-dark: 267 66% 50%;
+
+    --accent-1: 214 66% 60%;
+    --accent-1-light: 214 66% 70%;
+    --accent-1-dark: 214 66% 50%;
+
+    --accent-2: 177 56% 55%;
+    --accent-2-light: 177 56% 65%;
+    --accent-2-dark: 177 56% 45%;
+
+    --accent-3: 136 49% 49%;
+    --accent-3-light: 136 49% 59%;
+    --accent-3-dark: 136 49% 39%;
+
+    --accent-4: 85 49% 49%;
+    --accent-4-light: 85 49% 59%;
+    --accent-4-dark: 85 49% 39%;
+
+    color-scheme: dark;
+  }
+}

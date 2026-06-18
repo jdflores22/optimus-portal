@@ -1,0 +1,60 @@
+/* --------------------------- */
+/* Theme Green */
+/* --------------------------- */
+
+@layer base {
+  .theme-green {
+    --primary: 99 53% 48%;
+    --primary-light: 99 53% 58%;
+    --primary-dark: 99 53% 38%;
+
+    --secondary: 150 69% 34%;
+    --secondary-light: 150 69% 44%;
+    --secondary-dark: 150 69% 24%;
+
+    --accent-1: 193 86% 55%;
+    --accent-1-light: 193 86% 65%;
+    --accent-1-dark: 193 86% 45%;
+
+    --accent-2: 219 82% 59%;
+    --accent-2-light: 219 82% 69%;
+    --accent-2-dark: 219 82% 49%;
+
+    --accent-3: 251 78% 63%;
+    --accent-3-light: 251 78% 73%;
+    --accent-3-dark: 251 78% 53%;
+
+    --accent-4: 292 78% 61%;
+    --accent-4-light: 292 78% 71%;
+    --accent-4-dark: 292 78% 51%;
+
+    color-scheme: light;
+  }
+  .theme-green.dark {
+    --primary: 99 53% 48%;
+    --primary-light: 99 53% 58%;
+    --primary-dark: 99 53% 38%;
+
+    --secondary: 150 69% 34%;
+    --secondary-light: 150 69% 44%;
+    --secondary-dark: 150 69% 24%;
+
+    --accent-1: 193 86% 55%;
+    --accent-1-light: 193 86% 65%;
+    --accent-1-dark: 193 86% 45%;
+
+    --accent-2: 219 82% 59%;
+    --accent-2-light: 219 82% 69%;
+    --accent-2-dark: 219 82% 49%;
+
+    --accent-3: 251 78% 63%;
+    --accent-3-light: 251 78% 73%;
+    --accent-3-dark: 251 78% 53%;
+
+    --accent-4: 292 78% 61%;
+    --accent-4-light: 292 78% 71%;
+    --accent-4-dark: 292 78% 51%;
+
+    color-scheme: dark;
+  }
+}

@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "build:css": "npx tailwindcss -i ./assets/css/app.css -o ./public/css/app.css",
+    "build:assets": "npm run build:css && npm run copy:vendor",
     "watch:css": "npx tailwindcss -i ./assets/css/app.css -o ./public/css/app.css --watch",
     "copy:vendor": "node scripts/copy-vendor.js",
     "postinstall": "npm run copy:vendor",

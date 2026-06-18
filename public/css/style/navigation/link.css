@@ -1,0 +1,89 @@
+@layer utilities {
+  .MuiLink-underlineAlways {
+    &:hover {
+      @apply no-underline;
+    }
+  }
+
+  .link-primary {
+    @apply text-primary underline;
+    &:hover {
+      @apply no-underline;
+    }
+  }
+
+  .link-secondary {
+    @apply text-secondary underline;
+    &:hover {
+      @apply no-underline;
+    }
+  }
+
+  .link-text-primary {
+    @apply text-text-primary underline;
+    &:hover {
+      @apply no-underline;
+    }
+  }
+
+  .link-text-secondary {
+    @apply text-text-secondary underline;
+    &:hover {
+      @apply no-underline;
+    }
+  }
+
+  .link-text-disabled {
+    @apply text-text-disabled underline;
+    &:hover {
+      @apply no-underline;
+    }
+  }
+
+  .link-info {
+    @apply text-info underline;
+    &:hover {
+      @apply no-underline;
+    }
+  }
+
+  .link-error {
+    @apply text-error underline;
+    &:hover {
+      @apply no-underline;
+    }
+  }
+
+  .link-success {
+    @apply text-success underline;
+    &:hover {
+      @apply no-underline;
+    }
+  }
+
+  .link-warning {
+    @apply text-warning underline;
+    &:hover {
+      @apply no-underline;
+    }
+  }
+
+  .link-button {
+    @apply font-body text-base leading-6 font-medium tracking-normal normal-case;
+  }
+
+  .link-body2 {
+    @apply font-body text-sm leading-6 font-medium tracking-normal normal-case;
+  }
+
+  .link-underline-none {
+    @apply no-underline;
+  }
+
+  .link-underline-hover {
+    @apply no-underline;
+    &:hover {
+      @apply underline;
+    }
+  }
+}

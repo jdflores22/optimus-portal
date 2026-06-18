@@ -1,0 +1,18 @@
+/* --------------------------- */
+/* Breadcrumb */
+/* --------------------------- */
+@layer utilities {
+  .MuiBreadcrumbs-ol {
+    @apply font-body text-text-secondary text-sm leading-5 tracking-wide;
+    .MuiBreadcrumbs-li {
+      @apply text-text-secondary;
+
+      a {
+        @apply text-text-secondary;
+        &:hover {
+          @apply text-primary;
+        }
+      }
+    }
+  }
+}

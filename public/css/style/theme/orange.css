@@ -1,0 +1,60 @@
+/* --------------------------- */
+/* Theme Orange */
+/* --------------------------- */
+
+@layer base {
+  .theme-orange {
+    --primary: 35 94% 57%;
+    --primary-light: 35 94% 67%;
+    --primary-dark: 35 94% 47%;
+
+    --secondary: 19 77% 48%;
+    --secondary-light: 19 77% 58%;
+    --secondary-dark: 19 77% 38%;
+
+    --accent-1: 336 87% 52%;
+    --accent-1-light: 336 87% 62%;
+    --accent-1-dark: 336 87% 42%;
+
+    --accent-2: 306 43% 51%;
+    --accent-2-light: 306 43% 61%;
+    --accent-2-dark: 306 43% 41%;
+
+    --accent-3: 262 76% 63%;
+    --accent-3-light: 262 76% 73%;
+    --accent-3-dark: 262 76% 53%;
+
+    --accent-4: 219 89% 63%;
+    --accent-4-light: 219 89% 73%;
+    --accent-4-dark: 219 89% 53%;
+
+    color-scheme: light;
+  }
+  .theme-orange.dark {
+    --primary: 35 94% 57%;
+    --primary-light: 35 94% 67%;
+    --primary-dark: 35 94% 47%;
+
+    --secondary: 19 77% 48%;
+    --secondary-light: 19 77% 58%;
+    --secondary-dark: 19 77% 38%;
+
+    --accent-1: 336 87% 52%;
+    --accent-1-light: 336 87% 62%;
+    --accent-1-dark: 336 87% 42%;
+
+    --accent-2: 306 43% 51%;
+    --accent-2-light: 306 43% 61%;
+    --accent-2-dark: 306 43% 41%;
+
+    --accent-3: 262 76% 63%;
+    --accent-3-light: 262 76% 73%;
+    --accent-3-dark: 262 76% 53%;
+
+    --accent-4: 219 89% 63%;
+    --accent-4-light: 219 89% 73%;
+    --accent-4-dark: 219 89% 53%;
+
+    color-scheme: dark;
+  }
+}

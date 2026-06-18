@@ -2,22 +2,11 @@
 
 declare(strict_types=1);
 
-$base = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
-$requestUri = $_SERVER['REQUEST_URI'] ?? '/';
-$path = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 
-if ($base !== '' && str_starts_with($path, $base)) {
-    $suffix = substr($path, strlen($base)) ?: '/';
-} else {
-    $suffix = $path;
-}
+require_once __DIR__ . '/config/front-controller.php';
+optimus_prepare_request();
 
-$target = $base . '/public' . ($suffix === '/' ? '/' : $suffix);
+require_once __DIR__ . '/vendor/autoload_runtime.php';
 
-$query = parse_url($requestUri, PHP_URL_QUERY);
-if ($query !== null && $query !== '') {
-    $target .= '?' . $query;
-}
-
-header('Location: ' . $target, true, 302);
-exit;
+return optimus_kernel_factory();
