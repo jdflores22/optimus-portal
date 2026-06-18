@@ -37,7 +37,15 @@ package-lock.json
 ###> User Uploads & Generated Files ###
 /public/uploads/
 /public/assets/
-/public/vendor/
+/public/vendor/**
+!public/vendor/flyonui/
+!public/vendor/flyonui/**
+!public/vendor/notyf/
+!public/vendor/notyf/**
+!public/vendor/lodash/
+!public/vendor/lodash/**
+!public/vendor/apexcharts/
+!public/vendor/apexcharts/**
 *.pdf
 ###< User Uploads & Generated Files ###
 
