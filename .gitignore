@@ -63,6 +63,7 @@ package-lock.json
 *.md
 !README.md
 !docs/HOSTINGER-PRODUCTION-DEPLOYMENT.md
+!docs/OPTIMUS-V2-REPOSITORY.md
 ###< Documentation Files ###
 
 ###> Environment Files ###
@@ -120,6 +121,10 @@ deploy-*.sh
 ###> SSH & Config Files ###
 *_ssh_config.txt
 ###< SSH & Config Files ###
+
+###> Optimus V2 (separate repository) ###
+/optimus-v2/
+###< Optimus V2 (separate repository) ###
 
 ###> Direct Upload Scripts ###
 index_direct_upload.php
