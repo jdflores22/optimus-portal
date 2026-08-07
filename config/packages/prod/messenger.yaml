@@ -1,0 +1,10 @@
+# Hostinger shared hosting has no always-on messenger worker unless you add cron.
+# Process notification messages during the web request instead of queuing them.
+# Mail is sent directly via prod/mailer.yaml (message_bus: false).
+framework:
+    messenger:
+        transports:
+            sync: 'sync://'
+        routing:
+            'App\Message\SendEmailNotificationMessage': sync
+            'App\Message\SendInAppNotificationMessage': sync

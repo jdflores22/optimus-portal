@@ -1,9 +1,9 @@
 framework:
     mailer:
-        # Production configuration - use real SMTP
+        # Send immediately on Hostinger — no background worker required
+        message_bus: false
         dsn: '%env(MAILER_DSN)%'
         headers:
             from: '%env(MAILER_FROM_EMAIL)%'
-        # Enable delivery in production
         envelope:
             sender: '%env(MAILER_FROM_EMAIL)%'

@@ -62,6 +62,7 @@ package-lock.json
 ###> Documentation Files ###
 *.md
 !README.md
+!docs/HOSTINGER-PRODUCTION-DEPLOYMENT.md
 ###< Documentation Files ###
 
 ###> Environment Files ###
@@ -111,6 +112,8 @@ backup_*/
 ###> Deployment Scripts ###
 deploy-*.ps1
 deploy-*.sh
+!scripts/deploy-fresh-hostinger.sh
+!scripts/deploy-update-hostinger.sh
 *-upload.zip
 ###< Deployment Scripts ###
 

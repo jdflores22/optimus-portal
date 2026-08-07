@@ -10,7 +10,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -27,12 +26,12 @@ class ForgotPasswordController extends AbstractController
     }
 
     #[Route('/forgot-password', name: 'forgot_password', methods: ['GET', 'POST'])]
-    public function requestOtp(Request $request, SessionInterface $session): Response
+    public function requestOtp(Request $request): Response
     {
         if ($request->isMethod('POST')) {
-            $email = $request->request->get('email');
+            $email = trim((string) $request->request->get('email', ''));
             
-            if (!$email) {
+            if ($email === '') {
                 $this->addFlash('error', 'Please provide your email address.');
                 return $this->redirectToRoute('forgot_password');
             }
@@ -40,21 +39,16 @@ class ForgotPasswordController extends AbstractController
             $user = $this->entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
             
             if ($user) {
-                // Generate 6-digit OTP
-                $otp = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
-                
-                // Set OTP and expiry
+                $otp = str_pad((string) random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
                 $expiresAt = new \DateTime('+' . self::OTP_EXPIRY_MINUTES . ' minutes');
                 $user->setPasswordResetOtp($otp);
                 $user->setPasswordResetOtpExpiresAt($expiresAt);
                 
                 $this->entityManager->flush();
                 
-                // Send OTP via email
                 try {
                     $this->emailService->sendPasswordResetOtp($user, $otp);
                     
-                    // Log password reset request
                     $this->activityLogService->logActivity(
                         $user,
                         ActivityLog::TYPE_PASSWORD_RESET_REQUESTED,
@@ -67,8 +61,7 @@ class ForgotPasswordController extends AbstractController
                         ]
                     );
                     
-                    // Store email in session for next step
-                    $session->set('password_reset_email', $email);
+                    $request->getSession()->set('password_reset_email', $email);
                     
                     $this->addFlash('success', 'A 6-digit OTP has been sent to your email address. Please check your inbox.');
                     return $this->redirectToRoute('forgot_password_verify_otp');
@@ -78,7 +71,6 @@ class ForgotPasswordController extends AbstractController
                 }
             }
             
-            // Always show success message for security (don't reveal if email exists)
             $this->addFlash('success', 'If an account with that email exists, you will receive an OTP shortly.');
             return $this->redirectToRoute('app_login');
         }
@@ -87,8 +79,9 @@ class ForgotPasswordController extends AbstractController
     }
 
     #[Route('/forgot-password/verify-otp', name: 'forgot_password_verify_otp', methods: ['GET', 'POST'])]
-    public function verifyOtp(Request $request, SessionInterface $session): Response
+    public function verifyOtp(Request $request): Response
     {
+        $session = $request->getSession();
         $email = $session->get('password_reset_email');
         
         if (!$email) {
@@ -97,9 +90,9 @@ class ForgotPasswordController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
-            $otp = $request->request->get('otp');
+            $otp = trim((string) $request->request->get('otp', ''));
             
-            if (!$otp) {
+            if ($otp === '') {
                 $this->addFlash('error', 'Please enter the OTP.');
                 return $this->redirectToRoute('forgot_password_verify_otp');
             }
@@ -109,32 +102,29 @@ class ForgotPasswordController extends AbstractController
             if (!$user) {
                 $this->addFlash('error', 'Invalid session. Please start again.');
                 $session->remove('password_reset_email');
+                $session->remove('password_reset_otp_verified');
                 return $this->redirectToRoute('forgot_password');
             }
 
-            // Verify OTP
-            if ($user->getPasswordResetOtp() === $otp && $user->isPasswordResetOtpValid()) {
-                // Log OTP verification
-                $this->activityLogService->logActivity(
-                    $user,
-                    ActivityLog::TYPE_PASSWORD_RESET_OTP_VERIFIED,
-                    'User',
-                    $user->getId(),
-                    null,
-                    [
-                        'email' => $user->getEmail()
-                    ]
-                );
-                
-                // Store verification flag in session
-                $session->set('password_reset_otp_verified', true);
-                
-                $this->addFlash('success', 'OTP verified successfully. You can now reset your password.');
-                return $this->redirectToRoute('forgot_password_reset');
-            } else {
+            $storedOtp = (string) $user->getPasswordResetOtp();
+            if (!hash_equals($storedOtp, $otp) || !$user->isPasswordResetOtpValid()) {
                 $this->addFlash('error', 'Invalid or expired OTP. Please try again.');
                 return $this->redirectToRoute('forgot_password_verify_otp');
             }
+
+            $this->activityLogService->logActivity(
+                $user,
+                ActivityLog::TYPE_PASSWORD_RESET_OTP_VERIFIED,
+                'User',
+                $user->getId(),
+                null,
+                ['email' => $user->getEmail()]
+            );
+
+            $session->set('password_reset_otp_verified', true);
+
+            $this->addFlash('success', 'OTP verified successfully. You can now reset your password.');
+            return $this->redirectToRoute('forgot_password_reset');
         }
 
         return $this->render('security/verify_otp.html.twig', [
@@ -143,8 +133,9 @@ class ForgotPasswordController extends AbstractController
     }
 
     #[Route('/forgot-password/reset', name: 'forgot_password_reset', methods: ['GET', 'POST'])]
-    public function resetPassword(Request $request, SessionInterface $session): Response
+    public function resetPassword(Request $request): Response
     {
+        $session = $request->getSession();
         $email = $session->get('password_reset_email');
         $otpVerified = $session->get('password_reset_otp_verified');
         
@@ -181,47 +172,7 @@ class ForgotPasswordController extends AbstractController
                 return $this->redirectToRoute('forgot_password');
             }
 
-            // Hash and set new password
-            $hashedPassword = $this->passwordHasher->hashPassword($user, $newPassword);
-            $user->setPasswordHash($hashedPassword);
-            
-            // Clear OTP
-            $user->setPasswordResetOtp(null);
-            $user->setPasswordResetOtpExpiresAt(null);
-            
-            // Reset failed login attempts
-            $user->resetFailedLoginAttempts();
-            $user->setLockedUntil(null);
-            
-            $this->entityManager->flush();
-            
-            // Log password reset completion
-            $this->activityLogService->logActivity(
-                $user,
-                ActivityLog::TYPE_PASSWORD_RESET_COMPLETED,
-                'User',
-                $user->getId(),
-                null,
-                [
-                    'email' => $user->getEmail()
-                ]
-            );
-            
-            // Send password change confirmation email
-            try {
-                $this->emailService->sendPasswordChangeConfirmation($user);
-            } catch (\Exception $e) {
-                // Log error but don't fail the password reset
-                // The password has already been changed successfully
-                error_log('Failed to send password change confirmation email: ' . $e->getMessage());
-            }
-            
-            // Clear session
-            $session->remove('password_reset_email');
-            $session->remove('password_reset_otp_verified');
-            
-            $this->addFlash('success', 'Your password has been reset successfully. You can now log in with your new password.');
-            return $this->redirectToRoute('app_login');
+            return $this->completePasswordReset($request, $user, $newPassword);
         }
 
         return $this->render('security/reset_password.html.twig', [
@@ -230,8 +181,9 @@ class ForgotPasswordController extends AbstractController
     }
 
     #[Route('/forgot-password/resend-otp', name: 'forgot_password_resend_otp', methods: ['POST'])]
-    public function resendOtp(SessionInterface $session): Response
+    public function resendOtp(Request $request): Response
     {
+        $session = $request->getSession();
         $email = $session->get('password_reset_email');
         
         if (!$email) {
@@ -242,21 +194,16 @@ class ForgotPasswordController extends AbstractController
         $user = $this->entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
         
         if ($user) {
-            // Generate new OTP
-            $otp = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
-            
-            // Set OTP and expiry
+            $otp = str_pad((string) random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
             $expiresAt = new \DateTime('+' . self::OTP_EXPIRY_MINUTES . ' minutes');
             $user->setPasswordResetOtp($otp);
             $user->setPasswordResetOtpExpiresAt($expiresAt);
             
             $this->entityManager->flush();
             
-            // Send OTP via email
             try {
                 $this->emailService->sendPasswordResetOtp($user, $otp);
                 
-                // Log OTP resend
                 $this->activityLogService->logActivity(
                     $user,
                     ActivityLog::TYPE_PASSWORD_RESET_REQUESTED,
@@ -277,5 +224,41 @@ class ForgotPasswordController extends AbstractController
         }
         
         return $this->redirectToRoute('forgot_password_verify_otp');
+    }
+
+    private function completePasswordReset(Request $request, User $user, string $newPassword): Response
+    {
+        $session = $request->getSession();
+
+        $hashedPassword = $this->passwordHasher->hashPassword($user, $newPassword);
+        $user->setPasswordHash($hashedPassword);
+        $user->setPasswordResetOtp(null);
+        $user->setPasswordResetOtpExpiresAt(null);
+        $user->resetFailedLoginAttempts();
+        $user->setLockedUntil(null);
+
+        $this->entityManager->flush();
+
+        $this->activityLogService->logActivity(
+            $user,
+            ActivityLog::TYPE_PASSWORD_RESET_COMPLETED,
+            'User',
+            $user->getId(),
+            null,
+            ['email' => $user->getEmail()]
+        );
+
+        try {
+            $this->emailService->sendPasswordChangeConfirmation($user);
+        } catch (\Exception $e) {
+            error_log('Failed to send password change confirmation email: ' . $e->getMessage());
+        }
+
+        $session->remove('password_reset_email');
+        $session->remove('password_reset_otp_verified');
+
+        $this->addFlash('success', 'Your password has been reset successfully. You can now log in with your new password.');
+
+        return $this->redirectToRoute('app_login');
     }
 }

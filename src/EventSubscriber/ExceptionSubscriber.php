@@ -16,17 +16,16 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\KernelEvents;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 class ExceptionSubscriber implements EventSubscriberInterface
 {
-    private LoggerInterface $logger;
-    private string $environment;
-
-    public function __construct(LoggerInterface $logger, string $environment)
-    {
-        $this->logger = $logger;
-        $this->environment = $environment;
+    public function __construct(
+        private LoggerInterface $logger,
+        private string $environment,
+        private UrlGeneratorInterface $urlGenerator
+    ) {
     }
 
     public static function getSubscribedEvents(): array
@@ -58,13 +57,12 @@ class ExceptionSubscriber implements EventSubscriberInterface
         
         // Handle 403 Forbidden - redirect to login for HTML requests
         if ($statusCode === Response::HTTP_FORBIDDEN && !$isJsonRequest) {
-            // Redirect to login page with return URL
-            $loginUrl = '/login';
+            $loginUrl = $this->urlGenerator->generate('app_login');
             $returnUrl = $request->getPathInfo();
             if ($returnUrl && $returnUrl !== '/') {
                 $loginUrl .= '?redirect=' . urlencode($returnUrl);
             }
-            
+
             $response = new Response('', Response::HTTP_FOUND, [
                 'Location' => $loginUrl
             ]);

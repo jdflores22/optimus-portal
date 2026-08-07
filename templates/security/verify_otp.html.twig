@@ -278,13 +278,14 @@
                         otpInputs[index + 1].focus();
                     }
                     
-                    // Combine digits
                     const otp = combineOtpDigits();
-                    
-                    // Auto-submit when all 6 digits entered
                     if (otp.length === 6) {
                         setTimeout(() => {
-                            form.submit();
+                            if (typeof form.requestSubmit === 'function') {
+                                form.requestSubmit();
+                            } else {
+                                form.submit();
+                            }
                         }, 300);
                     }
                 });
@@ -312,24 +313,25 @@
                         // Focus last box
                         otpInputs[5].focus();
                         
-                        // Combine and auto-submit
                         combineOtpDigits();
                         setTimeout(() => {
-                            form.submit();
+                            if (typeof form.requestSubmit === 'function') {
+                                form.requestSubmit();
+                            } else {
+                                form.submit();
+                            }
                         }, 300);
                     }
                 });
             });
 
-            // Handle verify form submission
-            form.addEventListener('submit', function(e) {
+            form.addEventListener('submit', function() {
                 const btn = document.getElementById('verifyBtn');
                 const btnText = document.getElementById('verifyBtnText');
                 const btnSpinner = document.getElementById('verifyBtnSpinner');
-                
-                // Ensure OTP is combined before submit
+
                 combineOtpDigits();
-                
+
                 btn.disabled = true;
                 btnText.textContent = 'Verifying...';
                 btnSpinner.classList.remove('hidden');
